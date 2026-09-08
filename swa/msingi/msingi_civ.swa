@@ -1,0 +1,94 @@
+// msingi_civ.swa — tafsiri ya include/common.h (C) kwenda Swa.
+//
+// Kiambishi: civ_ (jina la asili la mradi). Faili hili linahusishwa
+// na kila moduli ya Dominion — angalia ../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - Hakuna enum wala macro kwenye Swa — misimbo ya hitilafu ni
+//     viambatanisho vya N32 vya ulimwengu, na macros za
+//     CIV_SUCCESS/CIV_FAILED/MIN/MAX/CLAMP zimekuwa kazi za kawaida.
+//   - achilia ni neno muhimu la lugha (si jina la kazi linaloweza
+//     kuandikwa) — hakuna kazi ya "civ_free" hapa; wito wa moja kwa
+//     moja wa achilia unafanyika mahali kielekezi kinapoachwa.
+//   - civ_log haitumii hoja zisizo na kikomo (Swa haina hilo) —
+//     inafuata muundo uleule wa andika()/andika_stderr(): kigezo
+//     kimoja cha muundo + nafasi sita za hoja za N64.
+
+husisha { maktaba/kumbukumbu.swa }
+
+// ---------- Toleo ----------
+N32 CIV_TOLEO_KUU = 0;
+N32 CIV_TOLEO_KATI = 1;
+N32 CIV_TOLEO_NDOGO = 0;
+
+// ---------- Viwango vya urefu wa mfuatano ----------
+N32 CIV_MFUATANO_UREFU_MKUBWA = 256;
+N32 CIV_MFUATANO_UREFU_KATI = 128;
+N32 CIV_MFUATANO_UREFU_MDOGO = 64;
+
+// ---------- Misimbo ya hitilafu (badala ya civ_error_t enum) ----------
+N32 CIV_SAWA = 0;
+N32 CIV_HITILAFU_KIELEKEZI_TUPU = -1;
+N32 CIV_HITILAFU_KUMBUKUMBU_IMEISHA = -2;
+N32 CIV_HITILAFU_HOJA_MBAYA = -3;
+N32 CIV_HITILAFU_HAIJAPATIKANA = -4;
+N32 CIV_HITILAFU_HALI_MBAYA = -5;
+N32 CIV_HITILAFU_IO = -6;
+N32 CIV_HITILAFU_DATA_MBAYA = -7;
+N32 CIV_HITILAFU_UANZISHAJI_UMESHINDWA = -8;
+
+// ---------- Viwango vya kumbukumbu (logging) ----------
+N32 CIV_LOG_UTATUZI = 0;
+N32 CIV_LOG_TAARIFA = 1;
+N32 CIV_LOG_ONYO = 2;
+N32 CIV_LOG_HITILAFU = 3;
+N32 CIV_LOG_MBAYA_KABISA = 4;
+
+// ---------- Matokeo ya operesheni (badala ya civ_result_t) ----------
+muundo CivMatokeo {
+    N32 hitilafu;
+    N8* ujumbe;
+};
+
+N32 kiwango_cha_chini(N32 a, N32 b) {
+    kama (a < b) { rudisha a; }
+    rudisha b;
+}
+
+N32 kiwango_cha_juu(N32 a, N32 b) {
+    kama (a > b) { rudisha a; }
+    rudisha b;
+}
+
+N32 finya(N32 thamani, N32 chini, N32 juu) {
+    rudisha kiwango_cha_juu(chini, kiwango_cha_chini(juu, thamani));
+}
+
+N32 civ_mafanikio(CivMatokeo m) {
+    kama (m.hitilafu == CIV_SAWA) { rudisha 1; }
+    rudisha 0;
+}
+
+N32 civ_imeshindwa(CivMatokeo m) {
+    kama (m.hitilafu == CIV_SAWA) { rudisha 0; }
+    rudisha 1;
+}
+
+// civ_log: nafasi sita za N64 kama andika() — zisizotumika ni 0.
+W0 civ_log(N32 kiwango, N8* umbizo, N64 a1, N64 a2, N64 a3, N64 a4, N64 a5, N64 a6) {
+    kama (kiwango >= CIV_LOG_HITILAFU) {
+        andika_stderr(umbizo, a1, a2, a3, a4, a5, a6);
+    } sivyo {
+        andika(umbizo, a1, a2, a3, a4, a5, a6);
+    }
+}
+
+// civ_thibitisha: badala ya CIV_ASSERT — daima inafanya kazi (hakuna
+// tofauti ya DEBUG/release kwenye Swa kwa sasa). Sharti likishindwa,
+// inaandika ujumbe na kutoka kwa msimbo 1 (syscall 60 = exit).
+W0 civ_thibitisha(N32 sharti, N8* ujumbe) {
+    kama (sharti == 0) {
+        andika_stderr(ujumbe, 0, 0, 0, 0, 0, 0);
+        wito_wa_mfumo(60, 1, 0, 0, 0, 0, 0);
+    }
+}
