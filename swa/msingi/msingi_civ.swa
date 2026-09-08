@@ -64,6 +64,20 @@ N32 finya(N32 thamani, N32 chini, N32 juu) {
     rudisha kiwango_cha_juu(chini, kiwango_cha_chini(juu, thamani));
 }
 
+D64 kiwango_cha_chini_d64(D64 a, D64 b) {
+    kama (a < b) { rudisha a; }
+    rudisha b;
+}
+
+D64 kiwango_cha_juu_d64(D64 a, D64 b) {
+    kama (a > b) { rudisha a; }
+    rudisha b;
+}
+
+D64 finya_d64(D64 thamani, D64 chini, D64 juu) {
+    rudisha kiwango_cha_juu_d64(chini, kiwango_cha_chini_d64(juu, thamani));
+}
+
 N32 civ_mafanikio(CivMatokeo m) {
     kama (m.hitilafu == CIV_SAWA) { rudisha 1; }
     rudisha 0;
