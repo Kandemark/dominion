@@ -1,0 +1,655 @@
+// maendeleo.swa — tafsiri ya
+// src/core/governance/evolution/governance_evolution.c (na .h) kwenda
+// Swa. Mfumo wa mihimili 7 endelevu ya utawala — kila mhimili
+// unaathiri jambo halisi la mchezo, hakuna usanidi "mbaya".
+//
+// Kiambishi: utawala_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - civ_governance_apply_decision ilitumia `const double *deltas =
+//     &decision->a_centralization;` kisha `deltas[0..6]` kutembea
+//     kwenye maeneo 7 yanayofuatana ya muundo kama safu — hii
+//     inategemea mpangilio wa kumbukumbu wa muundo wa C na, muhimu
+//     zaidi, ni D64* (kielekezi cha desimali) ambayo HAIFANYI KAZI
+//     KABISA kwenye Swa (lugha-swa/swa#181, nimethibitisha moja kwa
+//     moja). Badala yake: matawi matatu ya wazi (kama choice==0/1/2),
+//     kila moja likiweka mihimili saba kwa majina — sio tu suluhisho
+//     la mdudu, ni usomaji bora zaidi pia.
+//   - rand()/RAND_MAX zimebadilishwa na civ_nasibu_chini_ya (LCG ya
+//     Swa) kutoka msingi_civ.swa.
+//   - snprintf yenye %s mbili (mfano "%s %s") imebadilishwa na
+//     unganisha_mfuatano (mfuatano.swa) mara mbili mfululizo, kwenye
+//     bafa la muda kabla ya bafa la mwisho la mwitaji — kuepuka
+//     kuandika bafa moja huku ikisomwa (chanzo na lengwa sawa).
+//   - static char title[...] + strcpy (jina moja kati ya machache
+//     yaliyobainishwa mapema) imekuwa kurudisha N8* ya moja kwa moja
+//     kwa maandishi ya kudumu — hakuna haja ya nakala ya ndani.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+muundo UtawaliSifa {
+    D64 umoja_wa_madaraka;    // centralization: 0 imegawanyika -> 1 umoja
+    D64 uwakilishi;            // representation: 0 hakuna -> 1 kamili
+    D64 kijeshi;               // militarization: 0 kiraia -> 1 kijeshi
+    D64 mamlaka_ya_dini;       // religious_authority
+    D64 ustahiki;              // meritocracy: 0 urithi -> 1 mtihani/sifa
+    D64 uhuru_wa_kiuchumi;     // economic_freedom
+    D64 kiwango_cha_mila;      // tradition_index
+};
+
+muundo UtawaliHali {
+    UtawaliSifa sifa;
+    D64 utulivu;
+    D64 uhalali;
+    D64 rushwa;
+    N32 muda_wa_kupumzika_mageuzi;   // reform_cooldown
+
+    N32 umri_wa_kiongozi;
+    N32 mgogoro_wa_urithi;
+    D64 utulivu_wa_urithi;
+
+    N32 dharura_inaendelea;          // 0/1
+    N32 dharura_muda_uliobaki;
+    D64 dharura_unyakuzi_wa_madaraka;
+
+    D64 upendeleo_wa_uhuru_wa_ndani;
+};
+
+muundo UtawaliUamuzi {
+    N8* ombi;
+    N8* chaguo_a;
+    N8* chaguo_b;
+    N8* chaguo_c;
+
+    D64 a_umoja_wa_madaraka; D64 a_uwakilishi; D64 a_kijeshi;
+    D64 a_dini; D64 a_ustahiki; D64 a_kiuchumi; D64 a_mila;
+
+    D64 b_umoja_wa_madaraka; D64 b_uwakilishi; D64 b_kijeshi;
+    D64 b_dini; D64 b_ustahiki; D64 b_kiuchumi; D64 b_mila;
+
+    D64 c_umoja_wa_madaraka; D64 c_uwakilishi; D64 c_kijeshi;
+    D64 c_dini; D64 c_ustahiki; D64 c_kiuchumi; D64 c_mila;
+
+    D64 a_utulivu; D64 b_utulivu; D64 c_utulivu;
+
+    D64 idadi_ya_chini_ya_watu;
+    D64 utamaduni_wa_chini;
+};
+
+W0 utawala_anzisha(UtawaliHali* s) {
+    // Hali ya kikabila/inayoibuka ya wastani — inaweza kubinafsishwa
+    // kwa kabila kwenye siku zijazo.
+    s->sifa.umoja_wa_madaraka = 0.55;
+    s->sifa.uwakilishi = 0.15;
+    s->sifa.kijeshi = 0.30;
+    s->sifa.mamlaka_ya_dini = 0.40;
+    s->sifa.ustahiki = 0.25;
+    s->sifa.uhuru_wa_kiuchumi = 0.50;
+    s->sifa.kiwango_cha_mila = 0.70;
+
+    s->utulivu = 0.60;
+    s->uhalali = 0.60;
+    s->rushwa = 0.05;
+    s->muda_wa_kupumzika_mageuzi = 10;
+    s->umri_wa_kiongozi = 35;
+    s->mgogoro_wa_urithi = 0;
+    s->utulivu_wa_urithi = 0.70;
+    s->dharura_inaendelea = 0;
+    s->dharura_muda_uliobaki = 0;
+    s->dharura_unyakuzi_wa_madaraka = 0.0;
+    s->upendeleo_wa_uhuru_wa_ndani = 0.40;
+}
+
+// ---------- Maswali ya athari kwenye mchezo — kila mhimili unagusa angalau moja ----------
+
+D64 utawala_ufanisi(UtawaliHali* s, D64 idadi_ya_watu, D64 kiwango_cha_utamaduni) {
+    UtawaliSifa* t = &s->sifa;
+
+    D64 ufanisi = 0.40 + t->ustahiki * 0.35;
+    ufanisi = ufanisi + t->umoja_wa_madaraka * 0.15 * (1.0 - idadi_ya_watu / 2000000.0);
+    ufanisi = ufanisi + t->uhuru_wa_kiuchumi * 0.10;
+    ufanisi = ufanisi * (1.0 - s->rushwa * 0.6);
+
+    kama (s->dharura_inaendelea != 0) {
+        ufanisi = ufanisi * (1.0 + s->dharura_unyakuzi_wa_madaraka * 0.15);
+    }
+
+    rudisha finya_d64(ufanisi, 0.10, 0.95);
+}
+
+D64 utawala_furaha(UtawaliHali* s, D64 idadi_ya_watu, D64 kiwango_cha_utamaduni) {
+    UtawaliSifa* t = &s->sifa;
+
+    D64 furaha_ya_uwakilishi = 0.0;
+    kama (t->uwakilishi < 0.15) {
+        furaha_ya_uwakilishi = t->uwakilishi * 0.5;
+    } sivyo { kama (t->uwakilishi > 0.75) {
+        furaha_ya_uwakilishi = 0.75 - (t->uwakilishi - 0.75) * 0.3;
+    } sivyo {
+        furaha_ya_uwakilishi = 0.55 + t->uwakilishi * 0.25;
+    } }
+
+    D64 furaha_ya_uchumi = 0.40 + t->uhuru_wa_kiuchumi * 0.35;
+
+    D64 furaha_ya_mila = 0.0;
+    kama (t->kiwango_cha_mila < 0.20) {
+        furaha_ya_mila = 0.30 + t->kiwango_cha_mila;
+    } sivyo { kama (t->kiwango_cha_mila > 0.80) {
+        furaha_ya_mila = 0.85 - (t->kiwango_cha_mila - 0.80) * 0.5;
+    } sivyo {
+        furaha_ya_mila = 0.50 + t->kiwango_cha_mila * 0.15;
+    } }
+
+    D64 adhabu_ya_kijeshi = t->kijeshi * 0.15;
+    D64 furaha_ya_dini = t->mamlaka_ya_dini * (0.20 - kiwango_cha_utamaduni * 0.15);
+    D64 nyongeza_ya_utulivu = s->utulivu * 0.15;
+    N32 mgogoro = s->mgogoro_wa_urithi;
+    D64 adhabu_ya_mgogoro = mgogoro * 0.001;
+
+    D64 furaha = furaha_ya_uwakilishi * 0.25 + furaha_ya_uchumi * 0.25
+               + furaha_ya_mila * 0.15 + nyongeza_ya_utulivu + furaha_ya_dini
+               - adhabu_ya_kijeshi - adhabu_ya_mgogoro;
+
+    furaha = furaha * (1.0 - s->rushwa * 0.3);
+
+    rudisha finya_d64(furaha, 0.05, 0.95);
+}
+
+D64 utawala_faida_ya_kijeshi(UtawaliHali* s) {
+    UtawaliSifa* t = &s->sifa;
+    D64 faida = 1.0 + t->kijeshi * 0.25;
+    faida = faida + t->umoja_wa_madaraka * 0.10;
+    faida = faida + t->ustahiki * 0.08;
+    kama (s->dharura_inaendelea != 0) {
+        faida = faida + s->dharura_unyakuzi_wa_madaraka * 0.12;
+    }
+    rudisha finya_d64(faida, 0.80, 1.50);
+}
+
+D64 utawala_faida_ya_utafiti(UtawaliHali* s) {
+    UtawaliSifa* t = &s->sifa;
+    D64 faida = 1.0 + (1.0 - t->mamlaka_ya_dini) * 0.20;
+    faida = faida + t->ustahiki * 0.15;
+    faida = faida + t->uhuru_wa_kiuchumi * 0.10;
+
+    kama (t->kiwango_cha_mila > 0.85) {
+        faida = faida - (t->kiwango_cha_mila - 0.85) * 0.40;
+    } sivyo {
+        faida = faida + t->kiwango_cha_mila * 0.05;
+    }
+
+    rudisha finya_d64(faida, 0.50, 1.60);
+}
+
+D64 utawala_faida_ya_umoja(UtawaliHali* s) {
+    UtawaliSifa* t = &s->sifa;
+    D64 faida = 0.60 + t->kiwango_cha_mila * 0.25 + t->mamlaka_ya_dini * 0.15;
+    faida = faida + t->uwakilishi * 0.10;
+    faida = faida - t->umoja_wa_madaraka * (1.0 - t->uwakilishi) * 0.15;
+    rudisha finya_d64(faida, 0.30, 1.0);
+}
+
+D64 utawala_faida_ya_kiuchumi(UtawaliHali* s) {
+    UtawaliSifa* t = &s->sifa;
+    D64 faida = 1.0 + t->uhuru_wa_kiuchumi * 0.20 + t->ustahiki * 0.10;
+    faida = faida + t->umoja_wa_madaraka * 0.08;
+    faida = faida * (1.0 - s->rushwa * 0.5);
+    rudisha finya_d64(faida, 0.60, 1.40);
+}
+
+D64 utawala_upinzani_wa_rushwa(UtawaliHali* s) {
+    UtawaliSifa* t = &s->sifa;
+    D64 upinzani = 0.30 + t->ustahiki * 0.35;
+    upinzani = upinzani + t->uwakilishi * 0.20;
+    upinzani = upinzani + (1.0 - t->mamlaka_ya_dini) * 0.10;
+    upinzani = upinzani - t->umoja_wa_madaraka * (1.0 - t->uwakilishi) * 0.15;
+    rudisha finya_d64(upinzani, 0.10, 0.90);
+}
+
+D64 utawala_faida_ya_biashara(UtawaliHali* s) {
+    UtawaliSifa* t = &s->sifa;
+    D64 faida = 1.0 + t->uhuru_wa_kiuchumi * 0.20;
+    faida = faida + (1.0 - t->kijeshi) * 0.10;
+    faida = faida + t->umoja_wa_madaraka * 0.05;
+    rudisha finya_d64(faida, 0.60, 1.40);
+}
+
+// ---------- Urithi ----------
+
+D64 utawala_ulaini_wa_urithi(UtawaliHali* s) {
+    D64 matokeo = s->utulivu * 0.25 + s->uhalali * 0.20
+                + s->sifa.kiwango_cha_mila * 0.20
+                + s->sifa.ustahiki * 0.15
+                + (1.0 - s->rushwa) * 0.10
+                + s->utulivu_wa_urithi * 0.10;
+    rudisha matokeo;
+}
+
+W0 utawala_anzisha_urithi(UtawaliHali* s) {
+    D64 ulaini = utawala_ulaini_wa_urithi(s);
+
+    kama (s->sifa.ustahiki < 0.30) {
+        ulaini = s->sifa.kiwango_cha_mila * 0.8 + s->utulivu_wa_urithi * 0.2;
+    } sivyo { kama (s->sifa.ustahiki > 0.70) {
+        ulaini = s->sifa.ustahiki * 0.6 + s->utulivu * 0.4;
+    } sivyo {
+        ulaini = s->utulivu * 0.5 + s->uhalali * 0.3 + s->utulivu_wa_urithi * 0.2;
+    } }
+
+    D64 mgogoro_d = (1.0 - ulaini) * 100.0;
+    N32 mgogoro = mgogoro_d;
+    kama (mgogoro < 0) { mgogoro = 0; }
+    s->mgogoro_wa_urithi = mgogoro;
+
+    s->umri_wa_kiongozi = 25 + civ_nasibu_chini_ya(30);
+    s->utulivu = s->utulivu - (1.0 - ulaini) * 0.3;
+    s->uhalali = s->uhalali - (1.0 - ulaini) * 0.2;
+    s->muda_wa_kupumzika_mageuzi = 0;
+
+    kama (s->sifa.kiwango_cha_mila > 0.70 && ulaini > 0.6) {
+        s->uhalali = s->uhalali + 0.05;
+        s->sifa.kiwango_cha_mila = s->sifa.kiwango_cha_mila + 0.02;
+        kama (s->sifa.kiwango_cha_mila > 1.0) { s->sifa.kiwango_cha_mila = 1.0; }
+    }
+
+    kama (s->sifa.ustahiki > 0.60 && ulaini > 0.5) {
+        s->rushwa = s->rushwa * 0.85;
+        s->sifa.ustahiki = s->sifa.ustahiki + 0.01;
+        kama (s->sifa.ustahiki > 1.0) { s->sifa.ustahiki = 1.0; }
+    }
+}
+
+N32 utawala_zeesha_kiongozi(UtawaliHali* s) {
+    s->umri_wa_kiongozi = s->umri_wa_kiongozi + 1;
+
+    D64 vifo = 0.0;
+    kama (s->umri_wa_kiongozi > 60) {
+        N32 zaidi = s->umri_wa_kiongozi - 60;
+        vifo = zaidi * 0.003;
+    }
+    kama (s->umri_wa_kiongozi > 80) {
+        N32 zaidi2 = s->umri_wa_kiongozi - 80;
+        vifo = 0.06 + zaidi2 * 0.02;
+    }
+
+    kama (s->sifa.kijeshi > 0.6) {
+        vifo = vifo + s->sifa.kijeshi * 0.01;
+    }
+    vifo = vifo + s->rushwa * 0.02;
+    kama (s->mgogoro_wa_urithi > 0) {
+        vifo = vifo + s->mgogoro_wa_urithi * 0.005;
+    }
+
+    D64 kura_d = civ_nasibu_chini_ya(100000);
+    D64 kura = kura_d / 100000.0;
+
+    kama (kura < vifo) {
+        utawala_anzisha_urithi(s);
+        rudisha 1;
+    }
+    rudisha 0;
+}
+
+// ---------- Madaraka ya dharura ----------
+
+W0 utawala_tangaza_dharura(UtawaliHali* s) {
+    s->dharura_inaendelea = 1;
+    s->dharura_muda_uliobaki = 40;
+    s->dharura_unyakuzi_wa_madaraka = 0.30 + (1.0 - s->sifa.uwakilishi) * 0.30;
+    kama (s->dharura_unyakuzi_wa_madaraka > 0.80) { s->dharura_unyakuzi_wa_madaraka = 0.80; }
+
+    s->sifa.umoja_wa_madaraka = s->sifa.umoja_wa_madaraka + 0.15;
+    s->sifa.uwakilishi = s->sifa.uwakilishi - 0.10;
+    s->sifa.kijeshi = s->sifa.kijeshi + 0.05;
+
+    kama (s->sifa.umoja_wa_madaraka > 1.0) { s->sifa.umoja_wa_madaraka = 1.0; }
+    kama (s->sifa.uwakilishi < 0.0) { s->sifa.uwakilishi = 0.0; }
+    kama (s->sifa.kijeshi > 1.0) { s->sifa.kijeshi = 1.0; }
+}
+
+N32 utawala_maliza_dharura(UtawaliHali* s) {
+    kama (s->dharura_inaendelea == 0) { rudisha 1; }
+
+    D64 upinzani = s->dharura_unyakuzi_wa_madaraka * (1.0 - s->sifa.uwakilishi);
+    D64 urejeshaji = s->sifa.uwakilishi * 0.5 + s->uhalali * 0.3 + (1.0 - s->rushwa) * 0.2;
+
+    kama (urejeshaji > upinzani) {
+        s->dharura_inaendelea = 0;
+        s->dharura_muda_uliobaki = 0;
+        s->dharura_unyakuzi_wa_madaraka = 0.0;
+        s->sifa.umoja_wa_madaraka = s->sifa.umoja_wa_madaraka - 0.10;
+        s->sifa.uwakilishi = s->sifa.uwakilishi + 0.05;
+        s->sifa.kijeshi = s->sifa.kijeshi - 0.03;
+        kama (s->sifa.umoja_wa_madaraka < 0.0) { s->sifa.umoja_wa_madaraka = 0.0; }
+        kama (s->sifa.uwakilishi > 1.0) { s->sifa.uwakilishi = 1.0; }
+        rudisha 1;
+    }
+
+    s->dharura_muda_uliobaki = 20;
+    s->utulivu = s->utulivu - 0.08;
+    s->uhalali = s->uhalali - 0.10;
+    rudisha 0;
+}
+
+W0 utawala_sasisha_dharura(UtawaliHali* s, D64 dt) {
+    kama (s->dharura_inaendelea == 0) { rudisha; }
+
+    s->dharura_muda_uliobaki = s->dharura_muda_uliobaki - 1;
+    kama (s->dharura_muda_uliobaki <= 0) {
+        utawala_maliza_dharura(s);
+    }
+
+    s->sifa.umoja_wa_madaraka = s->sifa.umoja_wa_madaraka + 0.0005 * dt;
+    s->sifa.uwakilishi = s->sifa.uwakilishi - 0.0003 * dt;
+    kama (s->sifa.uwakilishi < 0.0) { s->sifa.uwakilishi = 0.0; }
+}
+
+// ---------- Sasisho kuu ----------
+
+CivMatokeo utawala_sasisha(UtawaliHali* s, D64 idadi_ya_watu, D64 kiwango_cha_utamaduni) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = "imesasishwa";
+
+    utawala_zeesha_kiongozi(s);
+    utawala_sasisha_dharura(s, 1.0);
+
+    kama (s->mgogoro_wa_urithi > 0) {
+        s->mgogoro_wa_urithi = s->mgogoro_wa_urithi - 1;
+        D64 mgogoro_sasa = s->mgogoro_wa_urithi;
+        s->utulivu = s->utulivu - mgogoro_sasa * 0.0001;
+    }
+
+    kama (s->muda_wa_kupumzika_mageuzi < 100) {
+        s->muda_wa_kupumzika_mageuzi = s->muda_wa_kupumzika_mageuzi + 1;
+    }
+
+    D64 uwiano_wa_rushwa = 1.0 - utawala_upinzani_wa_rushwa(s);
+    s->rushwa = s->rushwa + (uwiano_wa_rushwa - s->rushwa) * 0.01;
+
+    D64 furaha = utawala_furaha(s, idadi_ya_watu, kiwango_cha_utamaduni);
+    D64 lengo_la_uhalali = furaha * 0.6 + s->sifa.uwakilishi * 0.3 + s->utulivu * 0.1;
+    s->uhalali = s->uhalali + (lengo_la_uhalali - s->uhalali) * 0.02;
+
+    D64 umoja = utawala_faida_ya_umoja(s);
+    D64 lengo_la_utulivu = umoja * 0.4 + s->uhalali * 0.3 - s->rushwa * 0.3 + 0.30;
+    s->utulivu = s->utulivu + (lengo_la_utulivu - s->utulivu) * 0.015;
+
+    s->utulivu_wa_urithi = s->utulivu_wa_urithi + (s->sifa.kiwango_cha_mila * 0.4
+                          + s->sifa.ustahiki * 0.3 - s->rushwa * 0.3
+                          - s->utulivu_wa_urithi) * 0.02;
+
+    s->utulivu = finya_d64(s->utulivu, 0.0, 1.0);
+    s->uhalali = finya_d64(s->uhalali, 0.0, 1.0);
+    kama (s->rushwa < 0.0) { s->rushwa = 0.0; }
+
+    rudisha r;
+}
+
+// ---------- Maamuzi ----------
+
+N32 utawala_inapaswa_kuamua(UtawaliHali* s, D64 idadi_ya_watu, D64 kiwango_cha_utamaduni) {
+    kama (s->muda_wa_kupumzika_mageuzi < 15) { rudisha 0; }
+
+    kama (s->uhalali < 0.30 && idadi_ya_watu > 500.0) { rudisha 1; }
+    kama (s->mgogoro_wa_urithi > 30) { rudisha 1; }
+    kama (idadi_ya_watu > 50000.0 && s->sifa.uwakilishi < 0.20) { rudisha 1; }
+    kama (s->rushwa > 0.40) { rudisha 1; }
+    kama (s->dharura_inaendelea != 0 && s->dharura_muda_uliobaki < 10) { rudisha 1; }
+
+    D64 kura_d = civ_nasibu_chini_ya(10000);
+    D64 kura = kura_d / 10000.0;
+    kama (kura < 0.03) { rudisha 1; }
+
+    rudisha 0;
+}
+
+UtawaliUamuzi utawala_zalisha_uamuzi(UtawaliHali* s, D64 idadi_ya_watu, D64 kiwango_cha_utamaduni) {
+    UtawaliUamuzi d;
+    d.a_umoja_wa_madaraka = 0.0; d.a_uwakilishi = 0.0; d.a_kijeshi = 0.0;
+    d.a_dini = 0.0; d.a_ustahiki = 0.0; d.a_kiuchumi = 0.0; d.a_mila = 0.0;
+    d.b_umoja_wa_madaraka = 0.0; d.b_uwakilishi = 0.0; d.b_kijeshi = 0.0;
+    d.b_dini = 0.0; d.b_ustahiki = 0.0; d.b_kiuchumi = 0.0; d.b_mila = 0.0;
+    d.c_umoja_wa_madaraka = 0.0; d.c_uwakilishi = 0.0; d.c_kijeshi = 0.0;
+    d.c_dini = 0.0; d.c_ustahiki = 0.0; d.c_kiuchumi = 0.0; d.c_mila = 0.0;
+    d.a_utulivu = 0.0; d.b_utulivu = 0.0; d.c_utulivu = 0.0;
+
+    kama (s->mgogoro_wa_urithi > 30) {
+        d.ombi = "Urithi wa madaraka unapingwa. Tutaisuluhishaje?";
+        d.chaguo_a = "Mdai mwenye nguvu zaidi anachukua madaraka kwa nguvu";
+        d.chaguo_b = "Baraza la wazee/watukufu linamchagua mrithi";
+        d.chaguo_c = "Wananchi wenyewe wamchague kiongozi wao ajaye";
+        d.a_kijeshi = 0.12; d.a_umoja_wa_madaraka = 0.08;
+        d.a_utulivu = -0.05; d.a_ustahiki = -0.05;
+        d.b_mila = 0.08; d.b_umoja_wa_madaraka = 0.03;
+        d.b_utulivu = 0.05; d.b_ustahiki = 0.02;
+        d.c_uwakilishi = 0.12; d.c_umoja_wa_madaraka = -0.08;
+        d.c_utulivu = -0.02; d.c_ustahiki = 0.05;
+    } sivyo { kama (s->uhalali < 0.30) {
+        d.ombi = "Wananchi wanahoji haki yetu ya kutawala. Tufanye nini?";
+        d.chaguo_a = "Tukandamize — tuimarishe udhibiti na kunyamazisha upinzani";
+        d.chaguo_b = "Tutoe mageuzi huku tukishikilia mamlaka ya msingi";
+        d.chaguo_c = "Tukubali mageuzi makubwa — wananchi washiriki utawala";
+        d.a_umoja_wa_madaraka = 0.10; d.a_kijeshi = 0.08;
+        d.a_uwakilishi = -0.05; d.a_utulivu = 0.05;
+        d.b_uwakilishi = 0.06; d.b_utulivu = 0.03; d.b_kiuchumi = 0.04;
+        d.c_uwakilishi = 0.15; d.c_umoja_wa_madaraka = -0.10;
+        d.c_utulivu = -0.08; d.c_kiuchumi = -0.04; d.c_ustahiki = 0.05;
+    } sivyo { kama (s->rushwa > 0.35) {
+        d.ombi = "Kashfa za rushwa zinaharibu imani ya umma. Tujibu vipi?";
+        d.chaguo_a = "Tuwasafishe wafisadi — adhabu kali, mfano wa onyo";
+        d.chaguo_b = "Tuunde tume huru ya kupambana na rushwa";
+        d.chaguo_c = "Tugeuze fikira za umma — tuanzishe vita ya nje";
+        d.a_utulivu = -0.05; d.a_ustahiki = 0.08; d.a_umoja_wa_madaraka = 0.05;
+        d.b_ustahiki = 0.06; d.b_uwakilishi = 0.04; d.b_utulivu = 0.03;
+        d.c_kijeshi = 0.10; d.c_umoja_wa_madaraka = 0.05;
+        d.c_utulivu = 0.05; d.c_uwakilishi = -0.04; d.c_kiuchumi = -0.05;
+    } sivyo {
+        d.ombi = "Nchi inaendelea kubadilika. Tuchukue mwelekeo gani?";
+        d.chaguo_a = "Tuunganishe madaraka — mamlaka kuu imara zaidi";
+        d.chaguo_b = "Tudumishe uwiano wa sasa — tuendelee kama ilivyo";
+        d.chaguo_c = "Tugawe madaraka — tuimarishe utawala wa ndani na wa wananchi";
+        d.a_umoja_wa_madaraka = 0.08; d.a_uwakilishi = -0.04;
+        d.a_utulivu = 0.03; d.a_kiuchumi = 0.03;
+        d.b_utulivu = 0.05; d.b_mila = 0.03;
+        d.c_umoja_wa_madaraka = -0.08; d.c_uwakilishi = 0.10;
+        d.c_utulivu = -0.03; d.c_ustahiki = 0.04; d.c_kiuchumi = -0.02;
+    } } }
+
+    d.idadi_ya_chini_ya_watu = idadi_ya_watu;
+    d.utamaduni_wa_chini = kiwango_cha_utamaduni;
+    rudisha d;
+}
+
+W0 utawala_tekeleza_uamuzi(UtawaliHali* s, UtawaliUamuzi* d, N32 chaguo) {
+    kama (chaguo == 0) {
+        s->utulivu = s->utulivu + d->a_utulivu;
+        s->sifa.umoja_wa_madaraka = s->sifa.umoja_wa_madaraka + d->a_umoja_wa_madaraka;
+        s->sifa.uwakilishi = s->sifa.uwakilishi + d->a_uwakilishi;
+        s->sifa.kijeshi = s->sifa.kijeshi + d->a_kijeshi;
+        s->sifa.mamlaka_ya_dini = s->sifa.mamlaka_ya_dini + d->a_dini;
+        s->sifa.ustahiki = s->sifa.ustahiki + d->a_ustahiki;
+        s->sifa.uhuru_wa_kiuchumi = s->sifa.uhuru_wa_kiuchumi + d->a_kiuchumi;
+        s->sifa.kiwango_cha_mila = s->sifa.kiwango_cha_mila + d->a_mila;
+    } sivyo { kama (chaguo == 1) {
+        s->utulivu = s->utulivu + d->b_utulivu;
+        s->sifa.umoja_wa_madaraka = s->sifa.umoja_wa_madaraka + d->b_umoja_wa_madaraka;
+        s->sifa.uwakilishi = s->sifa.uwakilishi + d->b_uwakilishi;
+        s->sifa.kijeshi = s->sifa.kijeshi + d->b_kijeshi;
+        s->sifa.mamlaka_ya_dini = s->sifa.mamlaka_ya_dini + d->b_dini;
+        s->sifa.ustahiki = s->sifa.ustahiki + d->b_ustahiki;
+        s->sifa.uhuru_wa_kiuchumi = s->sifa.uhuru_wa_kiuchumi + d->b_kiuchumi;
+        s->sifa.kiwango_cha_mila = s->sifa.kiwango_cha_mila + d->b_mila;
+    } sivyo { kama (chaguo == 2) {
+        s->utulivu = s->utulivu + d->c_utulivu;
+        s->sifa.umoja_wa_madaraka = s->sifa.umoja_wa_madaraka + d->c_umoja_wa_madaraka;
+        s->sifa.uwakilishi = s->sifa.uwakilishi + d->c_uwakilishi;
+        s->sifa.kijeshi = s->sifa.kijeshi + d->c_kijeshi;
+        s->sifa.mamlaka_ya_dini = s->sifa.mamlaka_ya_dini + d->c_dini;
+        s->sifa.ustahiki = s->sifa.ustahiki + d->c_ustahiki;
+        s->sifa.uhuru_wa_kiuchumi = s->sifa.uhuru_wa_kiuchumi + d->c_kiuchumi;
+        s->sifa.kiwango_cha_mila = s->sifa.kiwango_cha_mila + d->c_mila;
+    } sivyo { rudisha; } } }
+
+    s->sifa.umoja_wa_madaraka = finya_d64(s->sifa.umoja_wa_madaraka, 0.0, 1.0);
+    s->sifa.uwakilishi = finya_d64(s->sifa.uwakilishi, 0.0, 1.0);
+    s->sifa.kijeshi = finya_d64(s->sifa.kijeshi, 0.0, 1.0);
+    s->sifa.mamlaka_ya_dini = finya_d64(s->sifa.mamlaka_ya_dini, 0.0, 1.0);
+    s->sifa.ustahiki = finya_d64(s->sifa.ustahiki, 0.0, 1.0);
+    s->sifa.uhuru_wa_kiuchumi = finya_d64(s->sifa.uhuru_wa_kiuchumi, 0.0, 1.0);
+    s->sifa.kiwango_cha_mila = finya_d64(s->sifa.kiwango_cha_mila, 0.0, 1.0);
+
+    s->muda_wa_kupumzika_mageuzi = 0;
+}
+
+// ---------- Maelezo — lebo 20+ za utawala kutoka mihimili 7 ----------
+
+N8* utawala_eleza(UtawaliHali* s, N8* bafa, N8* bafa_muda) {
+    UtawaliSifa* t = &s->sifa;
+
+    kama (t->mamlaka_ya_dini > 0.65 && t->umoja_wa_madaraka > 0.60) {
+        N8* neno1 = "Theokrasi ya Uwakilishi";
+        N8* neno2 = "Theokrasi ya Kati";
+        kama (t->uwakilishi > 0.30) { nakili_mfuatano(bafa, neno1); } sivyo { nakili_mfuatano(bafa, neno2); }
+        rudisha bafa;
+    }
+    kama (t->kijeshi > 0.70 && t->uwakilishi < 0.25) {
+        kama (t->umoja_wa_madaraka > 0.70) { nakili_mfuatano(bafa, "Serikali ya Kijeshi ya Umoja"); }
+        sivyo { nakili_mfuatano(bafa, "Serikali ya Kijeshi ya Shirikisho"); }
+        rudisha bafa;
+    }
+    kama (t->kijeshi > 0.55) {
+        kama (t->ustahiki > 0.50) { nakili_mfuatano(bafa, "Utawala wa Kijeshi wa Ustahiki"); }
+        sivyo { nakili_mfuatano(bafa, "Utawala wa Kijeshi wa Amri"); }
+        rudisha bafa;
+    }
+    kama (t->uhuru_wa_kiuchumi > 0.80 && t->uwakilishi > 0.50) {
+        kama (t->umoja_wa_madaraka > 0.60) { nakili_mfuatano(bafa, "Demokrasia ya Soko ya Umoja"); }
+        sivyo { nakili_mfuatano(bafa, "Demokrasia ya Soko ya Shirikisho"); }
+        rudisha bafa;
+    }
+    kama (t->uhuru_wa_kiuchumi > 0.80) {
+        kama (t->kiwango_cha_mila > 0.60) { nakili_mfuatano(bafa, "Plutokrasia ya Kimila"); }
+        sivyo { nakili_mfuatano(bafa, "Plutokrasia ya Kibiashara"); }
+        rudisha bafa;
+    }
+    kama (t->ustahiki > 0.70 && t->uwakilishi > 0.45) {
+        kama (t->umoja_wa_madaraka > 0.55) { nakili_mfuatano(bafa, "Jamhuri ya Kiteknokrasia ya Umoja"); }
+        sivyo { nakili_mfuatano(bafa, "Jamhuri ya Kiteknokrasia ya Shirikisho"); }
+        rudisha bafa;
+    }
+    kama (t->ustahiki > 0.70) {
+        kama (t->umoja_wa_madaraka > 0.70) { nakili_mfuatano(bafa, "Teknokrasia ya Kati"); }
+        sivyo { nakili_mfuatano(bafa, "Teknokrasia iliyogawanyika"); }
+        rudisha bafa;
+    }
+    kama (t->uwakilishi > 0.65 && t->umoja_wa_madaraka < 0.40) {
+        kama (t->kiwango_cha_mila > 0.60) { nakili_mfuatano(bafa, "Muungano wa Kimila"); }
+        sivyo { nakili_mfuatano(bafa, "Muungano wa Kiendelevu"); }
+        rudisha bafa;
+    }
+    kama (t->uwakilishi > 0.65) {
+        kama (t->umoja_wa_madaraka > 0.60) { nakili_mfuatano(bafa, "Demokrasia ya Umoja"); }
+        sivyo { nakili_mfuatano(bafa, "Demokrasia ya Shirikisho"); }
+        rudisha bafa;
+    }
+    kama (t->uwakilishi > 0.40) {
+        kama (t->umoja_wa_madaraka > 0.60) { nakili_mfuatano(bafa, "Jamhuri ya Kati"); }
+        sivyo { nakili_mfuatano(bafa, "Jamhuri ya Shirikisho"); }
+        rudisha bafa;
+    }
+    kama (t->umoja_wa_madaraka > 0.75 && t->kiwango_cha_mila > 0.60) {
+        kama (t->mamlaka_ya_dini > 0.50) { nakili_mfuatano(bafa, "Ufalme wa Kimungu"); }
+        sivyo { kama (t->ustahiki > 0.40) { nakili_mfuatano(bafa, "Ufalme Ulioelimika"); }
+        sivyo { nakili_mfuatano(bafa, "Ufalme Kamili"); } }
+        rudisha bafa;
+    }
+    kama (t->umoja_wa_madaraka > 0.75) {
+        kama (t->kijeshi > 0.40) { nakili_mfuatano(bafa, "Utawala wa Kiimla wa Kijeshi"); }
+        sivyo { kama (t->uhuru_wa_kiuchumi > 0.60) { nakili_mfuatano(bafa, "Utawala wa Kiimla wa Kimaendeleo"); }
+        sivyo { nakili_mfuatano(bafa, "Utawala wa Kiimla wa Kati"); } }
+        rudisha bafa;
+    }
+    kama (t->umoja_wa_madaraka < 0.30 && t->uwakilishi < 0.30) {
+        kama (t->kiwango_cha_mila > 0.60) { nakili_mfuatano(bafa, "Oligakia ya Watukufu"); }
+        sivyo { kama (t->uhuru_wa_kiuchumi > 0.60) { nakili_mfuatano(bafa, "Oligakia ya Wafanyabiashara"); }
+        sivyo { nakili_mfuatano(bafa, "Oligakia ya Baraza"); } }
+        rudisha bafa;
+    }
+    kama (t->kiwango_cha_mila > 0.75 && t->uwakilishi > 0.35) {
+        kama (t->umoja_wa_madaraka > 0.55) { nakili_mfuatano(bafa, "Ufalme wa Kikatiba wa Kati"); }
+        sivyo { nakili_mfuatano(bafa, "Ufalme wa Kikatiba wa Shirikisho"); }
+        rudisha bafa;
+    }
+    kama (t->kiwango_cha_mila > 0.75) {
+        kama (t->mamlaka_ya_dini > 0.50) { nakili_mfuatano(bafa, "Ukoo Mtakatifu wa Kifalme"); }
+        sivyo { nakili_mfuatano(bafa, "Ukoo wa Kifalme wa Kilimwengu"); }
+        rudisha bafa;
+    }
+    kama (t->uhuru_wa_kiuchumi < 0.25 && t->umoja_wa_madaraka > 0.60) {
+        kama (t->uwakilishi > 0.30) { nakili_mfuatano(bafa, "Uchumi wa Amri wa Baraza"); }
+        sivyo { nakili_mfuatano(bafa, "Uchumi wa Amri wa Halmashauri"); }
+        rudisha bafa;
+    }
+    kama (t->uwakilishi < 0.15 && t->umoja_wa_madaraka < 0.40) {
+        nakili_mfuatano(bafa, "Muungano wa Majemadari");
+        rudisha bafa;
+    }
+    kama (s->dharura_inaendelea != 0) {
+        kama (t->kijeshi > 0.50) { nakili_mfuatano(bafa, "Utawala wa Kijeshi wa Dharura"); }
+        sivyo { nakili_mfuatano(bafa, "Serikali ya Muda ya Dharura"); }
+        rudisha bafa;
+    }
+
+    kama (t->umoja_wa_madaraka > 0.55) { nakili_mfuatano(bafa_muda, "Nchi ya Kati"); }
+    sivyo { nakili_mfuatano(bafa_muda, "Nchi iliyogawanyika"); }
+    kama (t->uwakilishi > 0.35) { unganisha_mfuatano(bafa, bafa_muda, " (Wananchi Wanashiriki)"); }
+    sivyo { unganisha_mfuatano(bafa, bafa_muda, " (Ukuu wa Kikabila)"); }
+    rudisha bafa;
+}
+
+// ---------- Vyeo ----------
+
+N8* utawala_zalisha_cheo(UtawaliHali* s) {
+    kama (s == 0) { rudisha "Mkuu wa Kabila"; }
+    UtawaliSifa* t = &s->sifa;
+
+    kama (t->mamlaka_ya_dini > 0.70 && t->umoja_wa_madaraka > 0.60) { rudisha "Kuhani Mkuu"; }
+    kama (t->kijeshi > 0.70) {
+        kama (t->uwakilishi > 0.25) { rudisha "Amiri Jeshi Mkuu"; }
+        rudisha "Jenerali Mkuu";
+    }
+    kama (t->ustahiki > 0.70 && t->uwakilishi > 0.50) { rudisha "Msimamizi Mkuu wa Kwanza"; }
+    kama (t->ustahiki > 0.70) { rudisha "Mtendaji Mkuu"; }
+    kama (t->uwakilishi > 0.65) {
+        kama (t->umoja_wa_madaraka < 0.40) { rudisha "Wa Kwanza Miongoni mwa Sawa"; }
+        rudisha "Rais";
+    }
+    kama (t->umoja_wa_madaraka > 0.75 && t->kiwango_cha_mila > 0.60) {
+        kama (t->mamlaka_ya_dini > 0.50) { rudisha "Mtawala wa Kimungu"; }
+        kama (t->ustahiki > 0.40) { rudisha "Mtawala Aliyeelimika"; }
+        rudisha "Mfalme Mkuu";
+    }
+    kama (t->kiwango_cha_mila > 0.75) {
+        kama (t->umoja_wa_madaraka > 0.55) { rudisha "Bwana Mkuu"; }
+        rudisha "Bwana wa Juu";
+    }
+    kama (t->umoja_wa_madaraka > 0.70) { rudisha "Kiongozi Mkuu"; }
+    kama (t->uhuru_wa_kiuchumi > 0.80) { rudisha "Mfanyabiashara Mkuu"; }
+    rudisha "Kiongozi";
+}
+
+// ---------- Upendeleo wa ndani ----------
+
+W0 utawala_ongeza_upendeleo_wa_ndani(UtawaliHali* s, N8* aina_ya_upendeleo, D64 nguvu) {
+    kama (tafuta_mfuatano(aina_ya_upendeleo, "umoja") != -1) {
+        s->upendeleo_wa_uhuru_wa_ndani = s->upendeleo_wa_uhuru_wa_ndani - nguvu * 0.1;
+    } sivyo { kama (tafuta_mfuatano(aina_ya_upendeleo, "uhuru") != -1) {
+        s->upendeleo_wa_uhuru_wa_ndani = s->upendeleo_wa_uhuru_wa_ndani + nguvu * 0.1;
+    } sivyo { kama (tafuta_mfuatano(aina_ya_upendeleo, "bwana") != -1) {
+        s->sifa.kiwango_cha_mila = s->sifa.kiwango_cha_mila + nguvu * 0.02;
+    } sivyo { kama (tafuta_mfuatano(aina_ya_upendeleo, "jamhuri") != -1) {
+        s->sifa.uwakilishi = s->sifa.uwakilishi + nguvu * 0.02;
+    } } } }
+}
