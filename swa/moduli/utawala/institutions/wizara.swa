@@ -1,0 +1,312 @@
+// wizara.swa — tafsiri ya src/core/governance/institutions/ministry.c
+// (na .h) kwenda Swa. Wizara za serikali — mawaziri, bajeti, mageuzi.
+//
+// Kiambishi: utawala_wizara_ — angalia ../../../KANUNI-MAJINA.md.
+// ministries[] (kikomo = idadi ya aina za wizara, 10) na proposals[]
+// (kikomo 4 asili, malloc+realloc) zimebadilishwa kuwa vikomo
+// visivyobadilika (vigezo vyenye majina + kazi za kupata).
+//
+// MUHIMU: civ_ministry_appoint_minister/civ_ministry_create asili
+// zina jumla ya vigezo 6 (m/npc_id/name/comp/loy/amb), 3 kati yao
+// D64 — hii ni SALAMA chini ya #184 (chini ya kizingiti cha 7), lakini
+// karibu kabisa nacho. Angalia kwa makini kabla ya kuongeza kigezo
+// kingine chochote kwa kazi hizi.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 UTAWALA_WIZARA_ULINZI = 0;
+N32 UTAWALA_WIZARA_FEDHA = 1;
+N32 UTAWALA_WIZARA_MAMBO_YA_NJE = 2;
+N32 UTAWALA_WIZARA_SHERIA = 3;
+N32 UTAWALA_WIZARA_MAMBO_YA_NDANI = 4;
+N32 UTAWALA_WIZARA_UTAMADUNI = 5;
+N32 UTAWALA_WIZARA_SAYANSI = 6;
+N32 UTAWALA_WIZARA_BIASHARA = 7;
+N32 UTAWALA_WIZARA_KAZI = 8;
+N32 UTAWALA_WIZARA_AFYA = 9;
+N32 UTAWALA_WIZARA_IDADI = 10;
+
+N32 UTAWALA_MAGEUZI_YANASUBIRI = 0;
+N32 UTAWALA_MAGEUZI_YAMEKUBALIWA = 1;
+N32 UTAWALA_MAGEUZI_YAMEKATALIWA = 2;
+N32 UTAWALA_MAGEUZI_YANAENDELEA = 3;
+N32 UTAWALA_MAGEUZI_YAMEKAMILIKA = 4;
+
+N32 UTAWALA_WIZARA_MAPENDEKEZO_UPEO = 4;
+
+muundo UtawalaWizaraWaziri {
+    N8* jina;
+    N8* kitambulisho_cha_mtu;
+    D64 umahiri;
+    D64 uaminifu;
+    D64 tamaa;
+    D64 udhaifu_wa_rushwa;
+    N32 zamu_za_wadhifa;
+};
+
+muundo UtawalaWizaraPendekezo {
+    N8* jina;
+    N8* maelezo;
+    D64 gharama;
+    D64 gharama_endelevu;
+    D64 athari;
+    D64 maendeleo_ya_utekelezaji;
+    N32 hali_ya_pendekezo;
+    N32 zamu_zinazoendelea;
+};
+
+muundo UtawalaWizara {
+    N32 aina;
+    UtawalaWizaraWaziri waziri;
+    D64 bajeti;
+    D64 ufanisi;
+    D64 kiwango_cha_rushwa;
+    D64 kielezo_cha_nguvu;
+    D64 matokeo_ya_uwanja;
+    D64 kuridhika_kwa_umma;
+
+    UtawalaWizaraPendekezo pendekezo_0; UtawalaWizaraPendekezo pendekezo_1;
+    UtawalaWizaraPendekezo pendekezo_2; UtawalaWizaraPendekezo pendekezo_3;
+    N32 idadi_ya_mapendekezo;
+    N32 mageuzi_yaliyokamilika;
+};
+
+muundo UtawalaWizaraMeneja {
+    UtawalaWizara wizara_0; UtawalaWizara wizara_1; UtawalaWizara wizara_2;
+    UtawalaWizara wizara_3; UtawalaWizara wizara_4; UtawalaWizara wizara_5;
+    UtawalaWizara wizara_6; UtawalaWizara wizara_7; UtawalaWizara wizara_8;
+    UtawalaWizara wizara_9;
+    N32 idadi_ya_wizara;
+    D64 bajeti_jumla;
+    D64 shinikizo_la_bajeti;
+};
+
+UtawalaWizara* utawala_wizara_meneja_pata(UtawalaWizaraMeneja* mgr, N32 idx) {
+    kama (idx == 0) { rudisha &mgr->wizara_0; }
+    kama (idx == 1) { rudisha &mgr->wizara_1; }
+    kama (idx == 2) { rudisha &mgr->wizara_2; }
+    kama (idx == 3) { rudisha &mgr->wizara_3; }
+    kama (idx == 4) { rudisha &mgr->wizara_4; }
+    kama (idx == 5) { rudisha &mgr->wizara_5; }
+    kama (idx == 6) { rudisha &mgr->wizara_6; }
+    kama (idx == 7) { rudisha &mgr->wizara_7; }
+    kama (idx == 8) { rudisha &mgr->wizara_8; }
+    rudisha &mgr->wizara_9;
+}
+
+UtawalaWizaraPendekezo* utawala_wizara_pata_pendekezo(UtawalaWizara* m, N32 idx) {
+    kama (idx == 0) { rudisha &m->pendekezo_0; }
+    kama (idx == 1) { rudisha &m->pendekezo_1; }
+    kama (idx == 2) { rudisha &m->pendekezo_2; }
+    rudisha &m->pendekezo_3;
+}
+
+UtawalaWizaraMeneja* utawala_wizara_meneja_unda() {
+    UtawalaWizaraMeneja* mgr = tenga(ukubwa(UtawalaWizaraMeneja));
+    mgr->idadi_ya_wizara = 0;
+    mgr->bajeti_jumla = 0.0;
+    mgr->shinikizo_la_bajeti = 0.0;
+    rudisha mgr;
+}
+
+W0 utawala_wizara_meneja_uharibu(UtawalaWizaraMeneja* mgr) {
+    achilia mgr;
+}
+
+W0 utawala_wizara_anzisha(UtawalaWizara* m, N32 aina, N8* jina_la_waziri) {
+    m->aina = aina;
+    m->ufanisi = 0.45;
+    m->bajeti = 1000.0;
+    m->kielezo_cha_nguvu = 0.30;
+    m->kiwango_cha_rushwa = 0.0;
+    m->matokeo_ya_uwanja = 0.0;
+    m->kuridhika_kwa_umma = 0.0;
+    kama (jina_la_waziri != 0) { m->waziri.jina = jina_la_waziri; } sivyo { m->waziri.jina = "Wazi"; }
+
+    N32 r1 = civ_nasibu_chini_ya(40);
+    D64 r1d = r1;
+    m->waziri.umahiri = 0.40 + r1d / 100.0;
+    N32 r2 = civ_nasibu_chini_ya(30);
+    D64 r2d = r2;
+    m->waziri.uaminifu = 0.50 + r2d / 100.0;
+    N32 r3 = civ_nasibu_chini_ya(50);
+    D64 r3d = r3;
+    m->waziri.tamaa = 0.20 + r3d / 100.0;
+    N32 r4 = civ_nasibu_chini_ya(20);
+    D64 r4d = r4;
+    m->waziri.udhaifu_wa_rushwa = 0.05 + r4d / 100.0;
+    m->waziri.zamu_za_wadhifa = 0;
+
+    m->idadi_ya_mapendekezo = 0;
+    m->mageuzi_yaliyokamilika = 0;
+}
+
+UtawalaWizara* utawala_wizara_meneja_ongeza(UtawalaWizaraMeneja* mgr, N32 aina, N8* jina_la_waziri) {
+    kama (mgr == 0 || mgr->idadi_ya_wizara >= UTAWALA_WIZARA_IDADI) { rudisha 0; }
+    UtawalaWizara* m = utawala_wizara_meneja_pata(mgr, mgr->idadi_ya_wizara);
+    utawala_wizara_anzisha(m, aina, jina_la_waziri);
+    mgr->idadi_ya_wizara = mgr->idadi_ya_wizara + 1;
+    rudisha m;
+}
+
+W0 utawala_wizara_sindika_mageuzi(UtawalaWizara* m, D64 bajeti_inayopatikana, D64 muda) {
+    N32 i = 0;
+    wakati (i < m->idadi_ya_mapendekezo) {
+        UtawalaWizaraPendekezo* r = utawala_wizara_pata_pendekezo(m, i);
+        kama (r->hali_ya_pendekezo == UTAWALA_MAGEUZI_YANASUBIRI && bajeti_inayopatikana > r->gharama) {
+            r->hali_ya_pendekezo = UTAWALA_MAGEUZI_YANAENDELEA;
+            r->maendeleo_ya_utekelezaji = 0.0;
+        }
+        kama (r->hali_ya_pendekezo == UTAWALA_MAGEUZI_YANAENDELEA) {
+            r->maendeleo_ya_utekelezaji = r->maendeleo_ya_utekelezaji + (0.05 + m->ufanisi * 0.10) * muda;
+            r->zamu_zinazoendelea = r->zamu_zinazoendelea + 1;
+            kama (r->maendeleo_ya_utekelezaji >= 1.0) {
+                r->maendeleo_ya_utekelezaji = 1.0;
+                r->hali_ya_pendekezo = UTAWALA_MAGEUZI_YAMEKAMILIKA;
+                m->mageuzi_yaliyokamilika = m->mageuzi_yaliyokamilika + 1;
+                m->ufanisi = m->ufanisi + r->athari * 0.3;
+                kama (m->ufanisi > 0.95) { m->ufanisi = 0.95; }
+                m->kielezo_cha_nguvu = m->kielezo_cha_nguvu + r->athari * 0.1;
+                kama (m->kielezo_cha_nguvu > 0.85) { m->kielezo_cha_nguvu = 0.85; }
+            }
+        }
+        i = i + 1;
+    }
+}
+
+UtawalaWizaraPendekezo* utawala_wizara_pendekeza_mageuzi(UtawalaWizara* m, N8* jina, N8* maelezo) {
+    kama (m == 0 || jina == 0 || m->idadi_ya_mapendekezo >= UTAWALA_WIZARA_MAPENDEKEZO_UPEO) { rudisha 0; }
+    UtawalaWizaraPendekezo* r = utawala_wizara_pata_pendekezo(m, m->idadi_ya_mapendekezo);
+    r->jina = jina;
+    r->maelezo = maelezo;
+    r->gharama = 500.0 + m->waziri.umahiri * 2000.0;
+    r->athari = 0.05 + m->waziri.umahiri * 0.20 + m->waziri.tamaa * 0.10;
+    r->gharama_endelevu = r->gharama * 0.15;
+    r->hali_ya_pendekezo = UTAWALA_MAGEUZI_YANASUBIRI;
+    r->maendeleo_ya_utekelezaji = 0.0;
+    r->zamu_zinazoendelea = 0;
+    m->idadi_ya_mapendekezo = m->idadi_ya_mapendekezo + 1;
+    rudisha r;
+}
+
+W0 utawala_wizara_sasisha_zote(UtawalaWizaraMeneja* mgr, D64 bajeti_jumla, D64 ufanisi_wa_serikali,
+                                 D64 rushwa, D64 muda) {
+    kama (mgr == 0 || mgr->idadi_ya_wizara == 0) { rudisha; }
+    mgr->bajeti_jumla = bajeti_jumla;
+
+    N32 idadi_n = mgr->idadi_ya_wizara;
+    D64 idadi_d = idadi_n;
+    D64 sehemu_ya_msingi = bajeti_jumla / idadi_d;
+
+    D64 jumla_iliyodaiwa = 0.0;
+    N32 i = 0;
+    wakati (i < mgr->idadi_ya_wizara) {
+        UtawalaWizara* m = utawala_wizara_meneja_pata(mgr, i);
+        jumla_iliyodaiwa = jumla_iliyodaiwa + sehemu_ya_msingi * (0.7 + m->kielezo_cha_nguvu * 0.6);
+        i = i + 1;
+    }
+    mgr->shinikizo_la_bajeti = 1.0;
+    kama (bajeti_jumla > 0.0) { mgr->shinikizo_la_bajeti = jumla_iliyodaiwa / bajeti_jumla; }
+    kama (mgr->shinikizo_la_bajeti > 2.0) { mgr->shinikizo_la_bajeti = 2.0; }
+
+    i = 0;
+    wakati (i < mgr->idadi_ya_wizara) {
+        UtawalaWizara* m = utawala_wizara_meneja_pata(mgr, i);
+
+        m->bajeti = sehemu_ya_msingi * (0.7 + m->kielezo_cha_nguvu * 0.6);
+        kama (mgr->shinikizo_la_bajeti > 1.0) { m->bajeti = m->bajeti / mgr->shinikizo_la_bajeti; }
+
+        D64 ufanisi_lengwa = m->waziri.umahiri * 0.5 + ufanisi_wa_serikali * 0.3
+            + (m->bajeti / (sehemu_ya_msingi + 1.0)) * 0.2;
+        m->ufanisi = m->ufanisi + (ufanisi_lengwa - m->ufanisi) * 0.1 * muda;
+
+        m->kiwango_cha_rushwa = m->kiwango_cha_rushwa
+            + (m->waziri.udhaifu_wa_rushwa * rushwa + (1.0 - m->ufanisi) * 0.01 - m->kiwango_cha_rushwa) * 0.05 * muda;
+        kama (m->kiwango_cha_rushwa < 0.0) { m->kiwango_cha_rushwa = 0.0; }
+        kama (m->kiwango_cha_rushwa > 0.5) { m->kiwango_cha_rushwa = 0.5; }
+
+        m->matokeo_ya_uwanja = m->bajeti * m->ufanisi * (1.0 - m->kiwango_cha_rushwa);
+
+        D64 inayotarajiwa = sehemu_ya_msingi * 0.8;
+        m->kuridhika_kwa_umma = m->kuridhika_kwa_umma
+            + ((m->matokeo_ya_uwanja / (inayotarajiwa + 1.0)) - m->kuridhika_kwa_umma) * 0.1 * muda;
+        kama (m->kuridhika_kwa_umma < 0.1) { m->kuridhika_kwa_umma = 0.1; }
+        kama (m->kuridhika_kwa_umma > 1.0) { m->kuridhika_kwa_umma = 1.0; }
+
+        m->waziri.zamu_za_wadhifa = m->waziri.zamu_za_wadhifa + 1;
+
+        utawala_wizara_sindika_mageuzi(m, m->bajeti * 0.1, muda);
+
+        kama (m->waziri.tamaa > 0.60 && m->idadi_ya_mapendekezo < 3) {
+            N32 nafasi = civ_nasibu_chini_ya(100);
+            D64 tamaa_x5 = m->waziri.tamaa * 5.0;
+            N32 tamaa_x5_n = tamaa_x5;
+            kama (nafasi < tamaa_x5_n) {
+                utawala_wizara_pendekeza_mageuzi(m, "Mageuzi ya Ufanisi", "Panga upya uendeshaji");
+            }
+        }
+
+        i = i + 1;
+    }
+}
+
+W0 utawala_wizara_teua_waziri(UtawalaWizara* m, N8* kitambulisho_cha_mtu, N8* jina,
+                                D64 umahiri, D64 uaminifu, D64 tamaa) {
+    kama (m == 0) { rudisha; }
+    kama (kitambulisho_cha_mtu != 0) { m->waziri.kitambulisho_cha_mtu = kitambulisho_cha_mtu; }
+    kama (jina != 0) { m->waziri.jina = jina; }
+    m->waziri.umahiri = umahiri;
+    m->waziri.uaminifu = uaminifu;
+    m->waziri.tamaa = tamaa;
+    m->waziri.zamu_za_wadhifa = 0;
+}
+
+W0 utawala_wizara_ondoa_waziri(UtawalaWizara* m) {
+    kama (m == 0) { rudisha; }
+    m->waziri.kitambulisho_cha_mtu = "";
+    m->waziri.jina = "Wazi";
+    m->waziri.umahiri = 0.20;
+    m->waziri.uaminifu = 0.30;
+    m->waziri.tamaa = 0.10;
+    m->waziri.zamu_za_wadhifa = 0;
+    m->ufanisi = m->ufanisi * 0.70;
+}
+
+N32 utawala_wizara_waziri_anaweza_kutorokea(UtawalaWizara* m, D64 mzozo_wa_uhalali) {
+    kama (m == 0) { rudisha 0; }
+    D64 alama_ya_kutoroka = (1.0 - m->waziri.uaminifu) * 0.5 + m->waziri.tamaa * 0.3
+        + mzozo_wa_uhalali * 0.2 + m->kiwango_cha_rushwa * 0.2;
+    kama (alama_ya_kutoroka > 0.55) { rudisha 1; }
+    rudisha 0;
+}
+
+D64 utawala_wizara_matokeo_ya_ulinzi(UtawalaWizara* m) {
+    kama (m == 0 || m->aina != UTAWALA_WIZARA_ULINZI) { rudisha 0.0; }
+    rudisha m->matokeo_ya_uwanja * (0.3 + m->waziri.umahiri * 0.3 + m->ufanisi * 0.4);
+}
+
+D64 utawala_wizara_matokeo_ya_biashara(UtawalaWizara* m) {
+    kama (m == 0 || m->aina != UTAWALA_WIZARA_BIASHARA) { rudisha 0.0; }
+    rudisha m->matokeo_ya_uwanja * (0.2 + m->ufanisi * 0.5 + m->waziri.umahiri * 0.3);
+}
+
+D64 utawala_wizara_matokeo_ya_sayansi(UtawalaWizara* m) {
+    kama (m == 0 || m->aina != UTAWALA_WIZARA_SAYANSI) { rudisha 0.0; }
+    rudisha m->matokeo_ya_uwanja * (0.25 + m->ufanisi * 0.4 + m->waziri.umahiri * 0.35);
+}
+
+D64 utawala_wizara_matokeo_ya_afya(UtawalaWizara* m) {
+    kama (m == 0 || m->aina != UTAWALA_WIZARA_AFYA) { rudisha 0.0; }
+    rudisha m->matokeo_ya_uwanja * (0.20 + m->ufanisi * 0.4 + m->waziri.umahiri * 0.4);
+}
+
+UtawalaWizara* utawala_wizara_tafuta(UtawalaWizaraMeneja* mgr, N32 aina) {
+    kama (mgr == 0) { rudisha 0; }
+    N32 i = 0;
+    wakati (i < mgr->idadi_ya_wizara) {
+        UtawalaWizara* m = utawala_wizara_meneja_pata(mgr, i);
+        kama (m->aina == aina) { rudisha m; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
