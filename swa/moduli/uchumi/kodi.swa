@@ -1,0 +1,247 @@
+// kodi.swa — tafsiri ya src/core/economy/taxation.c (na .h) kwenda
+// Swa. Kodi — ngazi, aina, ufanisi wa ukusanyaji, na ukwepaji.
+//
+// Kiambishi: kodi_ — angalia ../../KANUNI-MAJINA.md.
+// policies[CIV_TAX_TYPE_COUNT] (safu ya muundo, aina 7) imegawanywa
+// kuwa vigezo 7 vyenye majina + kazi ya kupata. brackets[] (safu
+// inayokua ya C, kwa kodi ya mapato pekee kwa mazoezi halisi ya
+// faili hili) imekuwa vigezo 6 vya kizingiti/kiwango vyenye majina
+// (KODI_VIZINGITI_IDADI=6) badala ya safu ya per-sera (kwa kuwa aina
+// nyingine za kodi hazitumii vizingiti kwenye .c hii).
+
+husisha { msingi/msingi_civ.swa }
+
+N32 KODI_MAPATO = 0;
+N32 KODI_MASHIRIKA = 1;
+N32 KODI_MALI = 2;
+N32 KODI_MAUZO = 3;
+N32 KODI_FORODHA = 4;
+N32 KODI_ANASA = 5;
+N32 KODI_URITHI = 6;
+N32 KODI_AINA_IDADI = 7;
+N32 KODI_VIZINGITI_IDADI = 6;
+
+muundo KodiSera {
+    N32 aina;
+    N32 inafanya_kazi;
+    D64 kiwango_gorofa;
+    D64 ufanisi_wa_ukusanyaji;
+    D64 kiwango_cha_ukwepaji;
+};
+
+muundo KodiMfumo {
+    KodiSera s_0; KodiSera s_1; KodiSera s_2; KodiSera s_3;
+    KodiSera s_4; KodiSera s_5; KodiSera s_6;
+
+    D64 kizingiti_0; D64 kiwango_0; D64 kizingiti_1; D64 kiwango_1;
+    D64 kizingiti_2; D64 kiwango_2; D64 kizingiti_3; D64 kiwango_3;
+    D64 kizingiti_4; D64 kiwango_4; D64 kizingiti_5; D64 kiwango_5;
+    N32 idadi_ya_vizingiti;
+
+    D64 mapato_jumla;
+    D64 mapato_yanayotarajiwa;
+    D64 kiashiria_cha_mzigo_wa_kodi;
+    D64 mgawanyo_wa_gini;
+};
+
+KodiSera* kodi_pata_sera(KodiMfumo* t, N32 aina) {
+    kama (aina == 0) { rudisha &t->s_0; }
+    kama (aina == 1) { rudisha &t->s_1; }
+    kama (aina == 2) { rudisha &t->s_2; }
+    kama (aina == 3) { rudisha &t->s_3; }
+    kama (aina == 4) { rudisha &t->s_4; }
+    kama (aina == 5) { rudisha &t->s_5; }
+    rudisha &t->s_6;
+}
+
+W0 kodi_weka_kizingiti(KodiMfumo* t, N32 idx, D64 kizingiti, D64 kiwango) {
+    kama (idx == 0) { t->kizingiti_0 = kizingiti; t->kiwango_0 = kiwango; rudisha; }
+    kama (idx == 1) { t->kizingiti_1 = kizingiti; t->kiwango_1 = kiwango; rudisha; }
+    kama (idx == 2) { t->kizingiti_2 = kizingiti; t->kiwango_2 = kiwango; rudisha; }
+    kama (idx == 3) { t->kizingiti_3 = kizingiti; t->kiwango_3 = kiwango; rudisha; }
+    kama (idx == 4) { t->kizingiti_4 = kizingiti; t->kiwango_4 = kiwango; rudisha; }
+    t->kizingiti_5 = kizingiti; t->kiwango_5 = kiwango;
+}
+
+D64 kodi_pata_kizingiti(KodiMfumo* t, N32 idx) {
+    kama (idx == 0) { rudisha t->kizingiti_0; }
+    kama (idx == 1) { rudisha t->kizingiti_1; }
+    kama (idx == 2) { rudisha t->kizingiti_2; }
+    kama (idx == 3) { rudisha t->kizingiti_3; }
+    kama (idx == 4) { rudisha t->kizingiti_4; }
+    rudisha t->kizingiti_5;
+}
+
+D64 kodi_pata_kiwango(KodiMfumo* t, N32 idx) {
+    kama (idx == 0) { rudisha t->kiwango_0; }
+    kama (idx == 1) { rudisha t->kiwango_1; }
+    kama (idx == 2) { rudisha t->kiwango_2; }
+    kama (idx == 3) { rudisha t->kiwango_3; }
+    kama (idx == 4) { rudisha t->kiwango_4; }
+    rudisha t->kiwango_5;
+}
+
+KodiMfumo* kodi_unda() {
+    KodiMfumo* t = tenga(ukubwa(KodiMfumo));
+    N32 i = 0;
+    wakati (i < KODI_AINA_IDADI) {
+        KodiSera* s = kodi_pata_sera(t, i);
+        s->aina = i;
+        s->inafanya_kazi = 0;
+        s->kiwango_gorofa = 0.0;
+        s->ufanisi_wa_ukusanyaji = 0.85;
+        s->kiwango_cha_ukwepaji = 0.10;
+        i = i + 1;
+    }
+    t->s_0.inafanya_kazi = 1;
+    t->s_1.inafanya_kazi = 1;
+    t->s_1.kiwango_gorofa = 0.20;
+    t->s_3.inafanya_kazi = 1;
+    t->s_3.kiwango_gorofa = 0.05;
+
+    t->idadi_ya_vizingiti = 0;
+    t->mapato_jumla = 0.0;
+    t->mapato_yanayotarajiwa = 0.0;
+    t->kiashiria_cha_mzigo_wa_kodi = 0.0;
+    t->mgawanyo_wa_gini = 0.0;
+    rudisha t;
+}
+
+W0 kodi_uharibu(KodiMfumo* t) {
+    achilia t;
+}
+
+W0 kodi_ongeza_kizingiti(KodiMfumo* t, D64 kizingiti, D64 kiwango) {
+    kama (t->idadi_ya_vizingiti >= KODI_VIZINGITI_IDADI) { rudisha; }
+
+    N32 nafasi = t->idadi_ya_vizingiti;
+    N32 i = 0;
+    wakati (i < t->idadi_ya_vizingiti) {
+        kama (kizingiti < kodi_pata_kizingiti(t, i)) { nafasi = i; i = t->idadi_ya_vizingiti; }
+        sivyo { i = i + 1; }
+    }
+
+    N32 j = t->idadi_ya_vizingiti;
+    wakati (j > nafasi) {
+        D64 kz = kodi_pata_kizingiti(t, j - 1);
+        D64 kw = kodi_pata_kiwango(t, j - 1);
+        kodi_weka_kizingiti(t, j, kz, kw);
+        j = j - 1;
+    }
+    kodi_weka_kizingiti(t, nafasi, kizingiti, kiwango);
+    t->idadi_ya_vizingiti = t->idadi_ya_vizingiti + 1;
+}
+
+D64 kodi_hesabu_kodi_ya_mapato(KodiMfumo* t, D64 mapato) {
+    kama (t->s_0.inafanya_kazi == 0 || t->idadi_ya_vizingiti == 0) { rudisha 0.0; }
+
+    D64 kodi = 0.0;
+    D64 kizingiti_kilichopita = 0.0;
+
+    N32 i = 0;
+    wakati (i < t->idadi_ya_vizingiti) {
+        D64 kizingiti = kodi_pata_kizingiti(t, i);
+        D64 kiwango = kodi_pata_kiwango(t, i);
+        D64 mapato_ya_ngazi = mapato - kizingiti_kilichopita;
+        kama (mapato_ya_ngazi <= 0.0) { i = t->idadi_ya_vizingiti; }
+        sivyo {
+            D64 yanayotozwa = mapato_ya_ngazi;
+            kama (mapato > kizingiti) { yanayotozwa = kizingiti - kizingiti_kilichopita; }
+            kodi = kodi + yanayotozwa * kiwango;
+            kizingiti_kilichopita = kizingiti;
+            i = i + 1;
+        }
+    }
+
+    kama (mapato > kizingiti_kilichopita && t->idadi_ya_vizingiti > 0) {
+        D64 kiwango_cha_juu = kodi_pata_kiwango(t, t->idadi_ya_vizingiti - 1);
+        kodi = kodi + (mapato - kizingiti_kilichopita) * kiwango_cha_juu;
+    }
+    rudisha kodi;
+}
+
+W0 kodi_weka_sera(KodiMfumo* t, N32 aina, D64 kiwango_gorofa) {
+    kama (aina >= KODI_AINA_IDADI) { rudisha; }
+    D64 kiwango = kiwango_gorofa;
+    kama (kiwango < 0.0) { kiwango = 0.0; }
+    kama (kiwango > 1.0) { kiwango = 1.0; }
+    KodiSera* s = kodi_pata_sera(t, aina);
+    s->kiwango_gorofa = kiwango;
+}
+
+W0 kodi_geuza(KodiMfumo* t, N32 aina, N32 inafanya_kazi) {
+    kama (aina >= KODI_AINA_IDADI) { rudisha; }
+    KodiSera* s = kodi_pata_sera(t, aina);
+    s->inafanya_kazi = inafanya_kazi;
+}
+
+W0 kodi_sasisha(KodiMfumo* t, D64 muda, D64 pato_jumla, D64 idadi_ya_watu,
+                 D64 ufanisi_wa_utawala, D64 kiwango_cha_rushwa) {
+    D64 ufanisi_lengwa = ufanisi_wa_utawala * (1.0 - kiwango_cha_rushwa * 0.7);
+
+    N32 i = 0;
+    wakati (i < KODI_AINA_IDADI) {
+        KodiSera* s = kodi_pata_sera(t, i);
+        s->ufanisi_wa_ukusanyaji = s->ufanisi_wa_ukusanyaji
+            + (ufanisi_lengwa - s->ufanisi_wa_ukusanyaji) * 0.2;
+        s->kiwango_cha_ukwepaji = kiwango_cha_rushwa * 0.8;
+        i = i + 1;
+    }
+
+    D64 mapato = 0.0;
+    D64 pato_kwa_mtu = 0.0;
+    kama (idadi_ya_watu > 0.0) { pato_kwa_mtu = pato_jumla / idadi_ya_watu; }
+
+    kama (t->s_0.inafanya_kazi != 0 && t->idadi_ya_vizingiti > 0) {
+        D64 wastani_wa_kodi = kodi_hesabu_kodi_ya_mapato(t, pato_kwa_mtu);
+        mapato = mapato + wastani_wa_kodi * idadi_ya_watu * t->s_0.ufanisi_wa_ukusanyaji
+            * (1.0 - t->s_0.kiwango_cha_ukwepaji);
+    }
+
+    kama (t->s_1.inafanya_kazi != 0) {
+        D64 sehemu_ya_faida = 0.15;
+        mapato = mapato + pato_jumla * sehemu_ya_faida * t->s_1.kiwango_gorofa
+            * t->s_1.ufanisi_wa_ukusanyaji * (1.0 - t->s_1.kiwango_cha_ukwepaji);
+    }
+
+    kama (t->s_3.inafanya_kazi != 0) {
+        D64 matumizi = pato_jumla * 0.65;
+        mapato = mapato + matumizi * t->s_3.kiwango_gorofa
+            * t->s_3.ufanisi_wa_ukusanyaji * (1.0 - t->s_3.kiwango_cha_ukwepaji);
+    }
+
+    i = KODI_MALI;
+    wakati (i < KODI_AINA_IDADI) {
+        KodiSera* s = kodi_pata_sera(t, i);
+        kama (s->inafanya_kazi != 0) {
+            D64 msingi = 0.0;
+            kama (i == KODI_MALI) { msingi = pato_jumla * 0.02; }
+            sivyo { kama (i == 4) { msingi = pato_jumla * 0.05; }
+            sivyo { kama (i == KODI_ANASA) { msingi = pato_jumla * 0.01; }
+            sivyo { kama (i == KODI_URITHI) { msingi = pato_jumla * 0.005; } } } }
+            mapato = mapato + msingi * s->kiwango_gorofa
+                * s->ufanisi_wa_ukusanyaji * (1.0 - s->kiwango_cha_ukwepaji);
+        }
+        i = i + 1;
+    }
+
+    t->mapato_jumla = mapato;
+    t->mapato_yanayotarajiwa = mapato;
+
+    t->kiashiria_cha_mzigo_wa_kodi = 0.0;
+    kama (pato_jumla > 0.0) { t->kiashiria_cha_mzigo_wa_kodi = mapato / pato_jumla; }
+
+    D64 kiwango_cha_juu = 0.0;
+    kama (t->idadi_ya_vizingiti > 0) { kiwango_cha_juu = kodi_pata_kiwango(t, t->idadi_ya_vizingiti - 1); }
+    t->mgawanyo_wa_gini = 0.45 - (kiwango_cha_juu * 0.25);
+    kama (t->mgawanyo_wa_gini < 0.20) { t->mgawanyo_wa_gini = 0.20; }
+    kama (t->mgawanyo_wa_gini > 0.65) { t->mgawanyo_wa_gini = 0.65; }
+}
+
+D64 kodi_kiwango_cha_ufanisi(KodiMfumo* t) {
+    rudisha t->kiashiria_cha_mzigo_wa_kodi;
+}
+
+D64 kodi_utabiri_wa_mapato(KodiMfumo* t) {
+    rudisha t->mapato_yanayotarajiwa;
+}

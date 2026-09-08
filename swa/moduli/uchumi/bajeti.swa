@@ -1,0 +1,191 @@
+// bajeti.swa — tafsiri ya src/core/economy/budget.c (na .h) kwenda
+// Swa. Bajeti ya serikali — mapato, matumizi, deni, na nakisi.
+//
+// Kiambishi: bajeti_ — angalia ../../KANUNI-MAJINA.md.
+// allocations[CIV_BUDGET_CATEGORY_COUNT] (safu ya D64, aina 8)
+// imegawanywa kuwa vigezo 8 vyenye majina + kazi za kupata/kuweka
+// (D64 array haifanyi kazi, #181). history[] (safu inayokua ya C)
+// HAIKULETWA — .h ya C haitoi kazi yoyote ya "get_history"; rekodi
+// zinaandikwa lakini hazisomwi popote nje ya faili hili, kwa hiyo
+// hazihitajiki kwa API ya nje.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 BAJETI_JESHI = 0;
+N32 BAJETI_MIUNDOMBINU = 1;
+N32 BAJETI_ELIMU = 2;
+N32 BAJETI_AFYA = 3;
+N32 BAJETI_USTAWI = 4;
+N32 BAJETI_UTAFITI = 5;
+N32 BAJETI_UTAWALA = 6;
+N32 BAJETI_HUDUMA_YA_DENI = 7;
+N32 BAJETI_KATEGORIA_IDADI = 8;
+
+muundo BajetiMfumo {
+    D64 mgao_0; D64 mgao_1; D64 mgao_2; D64 mgao_3;
+    D64 mgao_4; D64 mgao_5; D64 mgao_6; D64 mgao_7;
+
+    D64 mapato_jumla;
+    D64 matumizi_jumla;
+    D64 nakisi;
+    D64 deni_la_taifa;
+    D64 kiwango_cha_riba_ya_deni;
+    D64 uwiano_wa_deni_kwa_pato;
+    D64 kiwango_cha_mkopo;
+    D64 afya_ya_kifedha;
+};
+
+D64 bajeti_pata_mgao(BajetiMfumo* b, N32 kategoria) {
+    kama (kategoria == 0) { rudisha b->mgao_0; }
+    kama (kategoria == 1) { rudisha b->mgao_1; }
+    kama (kategoria == 2) { rudisha b->mgao_2; }
+    kama (kategoria == 3) { rudisha b->mgao_3; }
+    kama (kategoria == 4) { rudisha b->mgao_4; }
+    kama (kategoria == 5) { rudisha b->mgao_5; }
+    kama (kategoria == 6) { rudisha b->mgao_6; }
+    rudisha b->mgao_7;
+}
+
+W0 bajeti_weka_mgao_moja_kwa_moja(BajetiMfumo* b, N32 kategoria, D64 thamani) {
+    kama (kategoria == 0) { b->mgao_0 = thamani; rudisha; }
+    kama (kategoria == 1) { b->mgao_1 = thamani; rudisha; }
+    kama (kategoria == 2) { b->mgao_2 = thamani; rudisha; }
+    kama (kategoria == 3) { b->mgao_3 = thamani; rudisha; }
+    kama (kategoria == 4) { b->mgao_4 = thamani; rudisha; }
+    kama (kategoria == 5) { b->mgao_5 = thamani; rudisha; }
+    kama (kategoria == 6) { b->mgao_6 = thamani; rudisha; }
+    b->mgao_7 = thamani;
+}
+
+W0 bajeti_sawazisha_mgao(BajetiMfumo* b) {
+    D64 jumla = bajeti_pata_mgao(b, 0) + bajeti_pata_mgao(b, 1) + bajeti_pata_mgao(b, 2)
+        + bajeti_pata_mgao(b, 3) + bajeti_pata_mgao(b, 4) + bajeti_pata_mgao(b, 5)
+        + bajeti_pata_mgao(b, 6) + bajeti_pata_mgao(b, 7);
+
+    kama (jumla <= 0.0) {
+        D64 sawa = 1.0 / 8.0;
+        N32 i = 0;
+        wakati (i < BAJETI_KATEGORIA_IDADI) {
+            bajeti_weka_mgao_moja_kwa_moja(b, i, sawa);
+            i = i + 1;
+        }
+    } sivyo {
+        N32 i = 0;
+        wakati (i < BAJETI_KATEGORIA_IDADI) {
+            D64 thamani = bajeti_pata_mgao(b, i) / jumla;
+            bajeti_weka_mgao_moja_kwa_moja(b, i, thamani);
+            i = i + 1;
+        }
+    }
+}
+
+BajetiMfumo* bajeti_unda() {
+    BajetiMfumo* b = tenga(ukubwa(BajetiMfumo));
+    D64 sawa = 1.0 / 8.0;
+    N32 i = 0;
+    wakati (i < BAJETI_KATEGORIA_IDADI) {
+        bajeti_weka_mgao_moja_kwa_moja(b, i, sawa);
+        i = i + 1;
+    }
+    b->kiwango_cha_riba_ya_deni = 0.03;
+    b->deni_la_taifa = 0.0;
+    b->afya_ya_kifedha = 0.75;
+    rudisha b;
+}
+
+W0 bajeti_uharibu(BajetiMfumo* b) {
+    achilia b;
+}
+
+D64 bajeti_mkopo_wa_juu(BajetiMfumo* b) {
+    rudisha b->mapato_jumla * 5.0 * (1.0 - b->uwiano_wa_deni_kwa_pato * 0.5);
+}
+
+D64 bajeti_kopa(BajetiMfumo* b, D64 kiasi) {
+    kama (kiasi <= 0.0) { rudisha 0.0; }
+    D64 mkopo_wa_juu = bajeti_mkopo_wa_juu(b);
+    D64 halisi = kiasi;
+    kama (kiasi > mkopo_wa_juu) { halisi = mkopo_wa_juu; }
+    b->deni_la_taifa = b->deni_la_taifa + halisi;
+    rudisha halisi;
+}
+
+D64 bajeti_lipa_deni(BajetiMfumo* b, D64 kiasi) {
+    kama (kiasi <= 0.0 || b->deni_la_taifa <= 0.0) { rudisha 0.0; }
+    D64 halisi = kiasi;
+    kama (kiasi > b->deni_la_taifa) { halisi = b->deni_la_taifa; }
+    b->deni_la_taifa = b->deni_la_taifa - halisi;
+    rudisha halisi;
+}
+
+W0 bajeti_sasisha(BajetiMfumo* b, D64 muda, D64 mapato_ya_kodi, D64 pato) {
+    b->mapato_jumla = mapato_ya_kodi;
+
+    D64 matumizi_ya_msingi = mapato_ya_kodi;
+    kama (matumizi_ya_msingi < pato * 0.01) { matumizi_ya_msingi = pato * 0.01; }
+
+    b->matumizi_jumla = 0.0;
+    N32 i = 0;
+    wakati (i < BAJETI_KATEGORIA_IDADI) {
+        b->matumizi_jumla = b->matumizi_jumla + matumizi_ya_msingi * bajeti_pata_mgao(b, i);
+        i = i + 1;
+    }
+
+    b->nakisi = b->mapato_jumla - b->matumizi_jumla;
+
+    kama (b->nakisi < 0.0) {
+        D64 hasi = 0.0 - b->nakisi;
+        bajeti_kopa(b, hasi);
+    } sivyo { kama (b->nakisi > 0.0 && b->deni_la_taifa > 0.0) {
+        bajeti_lipa_deni(b, b->nakisi * 0.7);
+    } }
+
+    D64 malipo_ya_riba = b->deni_la_taifa * b->kiwango_cha_riba_ya_deni;
+    b->deni_la_taifa = b->deni_la_taifa + malipo_ya_riba;
+
+    b->matumizi_jumla = b->matumizi_jumla + malipo_ya_riba;
+    b->nakisi = b->mapato_jumla - b->matumizi_jumla;
+
+    b->uwiano_wa_deni_kwa_pato = 0.0;
+    kama (pato > 0.0) { b->uwiano_wa_deni_kwa_pato = b->deni_la_taifa / pato; }
+
+    D64 kiwango_lengwa = 0.95 - b->uwiano_wa_deni_kwa_pato * 0.8;
+    kama (b->nakisi > 0.0) { kiwango_lengwa = kiwango_lengwa + 0.05; }
+    kama (kiwango_lengwa < 0.05) { kiwango_lengwa = 0.05; }
+    kama (kiwango_lengwa > 0.98) { kiwango_lengwa = 0.98; }
+    b->kiwango_cha_mkopo = kiwango_lengwa;
+
+    b->kiwango_cha_riba_ya_deni = 0.01 + (1.0 - b->kiwango_cha_mkopo) * 0.15;
+
+    D64 afya_ya_nakisi = 1.0;
+    kama (b->nakisi < 0.0) {
+        D64 nakisi_hasi = 0.0 - b->nakisi;
+        afya_ya_nakisi = 1.0 - nakisi_hasi / (pato * 0.1 + 1.0);
+    }
+    D64 afya_ya_deni = 1.0 - b->uwiano_wa_deni_kwa_pato;
+    kama (afya_ya_deni < 0.0) { afya_ya_deni = 0.0; }
+    kama (afya_ya_nakisi < 0.0) { afya_ya_nakisi = 0.0; }
+
+    b->afya_ya_kifedha = afya_ya_nakisi * 0.4 + afya_ya_deni * 0.4 + b->kiwango_cha_mkopo * 0.2;
+}
+
+W0 bajeti_weka_mgao(BajetiMfumo* b, N32 kategoria, D64 sehemu) {
+    kama (kategoria >= BAJETI_KATEGORIA_IDADI || sehemu < 0.0 || sehemu > 1.0) { rudisha; }
+    bajeti_weka_mgao_moja_kwa_moja(b, kategoria, sehemu);
+    bajeti_sawazisha_mgao(b);
+}
+
+D64 bajeti_matumizi_ya(BajetiMfumo* b, N32 kategoria) {
+    kama (kategoria >= BAJETI_KATEGORIA_IDADI) { rudisha 0.0; }
+    rudisha b->matumizi_jumla * bajeti_pata_mgao(b, kategoria);
+}
+
+D64 bajeti_uwiano_wa_ziada(BajetiMfumo* b) {
+    kama (b->matumizi_jumla <= 0.0) { rudisha 0.0; }
+    rudisha b->nakisi / b->matumizi_jumla;
+}
+
+N32 bajeti_ni_endelevu(BajetiMfumo* b) {
+    kama (b->afya_ya_kifedha > 0.3) { rudisha 1; }
+    rudisha 0;
+}
