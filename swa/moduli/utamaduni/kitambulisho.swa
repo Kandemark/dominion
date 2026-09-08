@@ -1,0 +1,217 @@
+// kitambulisho.swa — tafsiri ya src/core/culture/cultural_identity.c
+// (na .h) kwenda Swa.
+//
+// Kiambishi: utamaduni_kitambulisho_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - id/name/description (char[N] ndani ya struct) zimekuwa N8* —
+//     hazihifadhi nakala ya ndani, sawa na muundo uliothibitishwa
+//     kwenye siasa/kikundi.swa.
+//   - creation_time/last_update (time_t) zimeachwa — hazitumiki
+//     kwenye mantiki ya moduli, na kuziongeza kungehitaji syscall ya
+//     saa isiyo sehemu ya wigo huu.
+//   - MUHIMU: safu zinazokua (traits[], core_values[], identities[])
+//     zilikuwa zikitumia muundo wa "safu ya thamani za muundo" wa
+//     chanzo cha C (civ_cultural_trait_t*). Nilijaribu kutumia
+//     "TYPE**" (kielekezi-cha-kielekezi) moja kwa moja kwa Swa —
+//     hii ni MDUDU MPYA (lugha-swa/swa#185): kusoma kupitia
+//     safu[i] kunatoa takataka hata bila ukuzaji wowote wa safu.
+//     SULUHISHO LILILOTHIBITISHWA: safu inayokua ya vitu vya muundo
+//     maalum lazima ihifadhiwe kama N64* (SI TYPE**) — kila kipengele
+//     kinatengwa kivyake kwenye rundo (tenga), na kielekezi chake
+//     kinahifadhiwa kwenye nafasi ya N64 (ubadilishaji wa kimya kati
+//     ya N64 na kielekezi unafanya kazi kikamilifu). Muundo huu ndio
+//     unaotumika hapa chini kwa sifa[], thamani[], na vitambulisho[].
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+muundo UtamaduniSifa {
+    N8* jina;
+    D64 nguvu;      // strength, 0.0-1.0
+    D64 ushawishi;  // influence
+};
+
+muundo UtamaduniThamani {
+    N8* mhimili;    // axis
+    D64 alama;      // score
+};
+
+muundo UtamaduniKitambulisho {
+    N8* kitambulisho;
+    N8* jina;
+    N8* maelezo;
+
+    N64* sifa;              // N64* ya vielekezi vya UtamaduniSifa*
+    N32 idadi_ya_sifa;
+    N32 uwezo_wa_sifa;
+
+    N64* thamani;           // N64* ya vielekezi vya UtamaduniThamani*
+    N32 idadi_ya_thamani;
+    N32 uwezo_wa_thamani;
+
+    N8* mzazi_kitambulisho;
+
+    D64 mshikamano;         // cohesion
+    D64 upekee;             // distinctiveness
+    D64 eneo_la_ushawishi;  // influence_radius
+};
+
+muundo UtamaduniKitambulishoMfumo {
+    N64* vitambulisho;      // N64* ya vielekezi vya UtamaduniKitambulisho*
+    N32 idadi;
+    N32 uwezo;
+};
+
+UtamaduniKitambulishoMfumo* utamaduni_kitambulisho_mfumo_unda() {
+    UtamaduniKitambulishoMfumo* m = tenga(ukubwa(UtamaduniKitambulishoMfumo));
+    m->uwezo = 32;
+    m->idadi = 0;
+    m->vitambulisho = tenga(ukubwa(N64) * m->uwezo);
+    rudisha m;
+}
+
+UtamaduniKitambulisho* utamaduni_kitambulisho_mfumo_pata(UtamaduniKitambulishoMfumo* m, N32 idx) {
+    rudisha m->vitambulisho[idx];
+}
+
+UtamaduniKitambulisho* utamaduni_kitambulisho_unda(N8* kitambulisho, N8* jina) {
+    UtamaduniKitambulisho* k = tenga(ukubwa(UtamaduniKitambulisho));
+    k->kitambulisho = kitambulisho;
+    k->jina = jina;
+    k->maelezo = 0;
+    k->mzazi_kitambulisho = 0;
+    k->mshikamano = 0.5;
+    k->upekee = 0.5;
+    k->eneo_la_ushawishi = 10.0;
+    k->uwezo_wa_sifa = 16;
+    k->idadi_ya_sifa = 0;
+    k->sifa = tenga(ukubwa(N64) * k->uwezo_wa_sifa);
+    k->uwezo_wa_thamani = 8;
+    k->idadi_ya_thamani = 0;
+    k->thamani = tenga(ukubwa(N64) * k->uwezo_wa_thamani);
+    rudisha k;
+}
+
+UtamaduniSifa* utamaduni_kitambulisho_pata_sifa(UtamaduniKitambulisho* k, N32 idx) {
+    rudisha k->sifa[idx];
+}
+
+W0 utamaduni_kitambulisho_ongeza_sifa(UtamaduniKitambulisho* k, N8* jina_sifa, D64 nguvu) {
+    D64 nguvu_f = finya_d64(nguvu, 0.0, 1.0);
+
+    kama (k->idadi_ya_sifa >= k->uwezo_wa_sifa) {
+        k->uwezo_wa_sifa = k->uwezo_wa_sifa * 2;
+        k->sifa = badili(k->sifa, ukubwa(N64) * k->uwezo_wa_sifa);
+    }
+
+    UtamaduniSifa* s = tenga(ukubwa(UtamaduniSifa));
+    s->jina = jina_sifa;
+    s->nguvu = nguvu_f;
+    s->ushawishi = nguvu_f * 0.5;
+    k->sifa[k->idadi_ya_sifa] = s;
+    k->idadi_ya_sifa = k->idadi_ya_sifa + 1;
+}
+
+W0 utamaduni_kitambulisho_sasisha(UtamaduniKitambulisho* k, D64 muda) {
+    N32 i = 0;
+    wakati (i < k->idadi_ya_sifa) {
+        UtamaduniSifa* s = utamaduni_kitambulisho_pata_sifa(k, i);
+        s->ushawishi = s->nguvu * k->mshikamano;
+        i = i + 1;
+    }
+
+    kama (k->idadi_ya_sifa > 0) {
+        D64 jumla_ya_nguvu = 0.0;
+        i = 0;
+        wakati (i < k->idadi_ya_sifa) {
+            UtamaduniSifa* s = utamaduni_kitambulisho_pata_sifa(k, i);
+            jumla_ya_nguvu = jumla_ya_nguvu + s->nguvu;
+            i = i + 1;
+        }
+        N32 idadi_n = k->idadi_ya_sifa;
+        D64 idadi_d = idadi_n;
+        k->upekee = jumla_ya_nguvu / idadi_d;
+    }
+}
+
+D64 utamaduni_kitambulisho_fanana(UtamaduniKitambulisho* a, UtamaduniKitambulisho* b) {
+    D64 fanana = 0.0;
+    N32 idadi_ya_mfano = 0;
+
+    N32 i = 0;
+    wakati (i < a->idadi_ya_sifa) {
+        UtamaduniSifa* sa = utamaduni_kitambulisho_pata_sifa(a, i);
+        N32 j = 0;
+        N32 imepatikana = 0;
+        wakati (j < b->idadi_ya_sifa && imepatikana == 0) {
+            UtamaduniSifa* sb = utamaduni_kitambulisho_pata_sifa(b, j);
+            kama (linganisha_mfuatano(sa->jina, sb->jina) == 0) {
+                D64 tofauti = sa->nguvu - sb->nguvu;
+                kama (tofauti < 0.0) { tofauti = 0.0 - tofauti; }
+                fanana = fanana + (1.0 - tofauti);
+                idadi_ya_mfano = idadi_ya_mfano + 1;
+                imepatikana = 1;
+            }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+
+    kama (idadi_ya_mfano > 0) {
+        D64 idadi_d = idadi_ya_mfano;
+        fanana = fanana / idadi_d;
+    }
+
+    rudisha finya_d64(fanana, 0.0, 1.0);
+}
+
+W0 utamaduni_kitambulisho_mfumo_ongeza(UtamaduniKitambulishoMfumo* m, UtamaduniKitambulisho* k) {
+    kama (m->idadi >= m->uwezo) {
+        m->uwezo = m->uwezo * 2;
+        m->vitambulisho = badili(m->vitambulisho, ukubwa(N64) * m->uwezo);
+    }
+    m->vitambulisho[m->idadi] = k;
+    m->idadi = m->idadi + 1;
+}
+
+UtamaduniKitambulisho* utamaduni_kitambulisho_mfumo_tafuta(UtamaduniKitambulishoMfumo* m, N8* kitambulisho) {
+    N32 i = 0;
+    wakati (i < m->idadi) {
+        UtamaduniKitambulisho* k = utamaduni_kitambulisho_mfumo_pata(m, i);
+        kama (linganisha_mfuatano(k->kitambulisho, kitambulisho) == 0) {
+            rudisha k;
+        }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+UtamaduniKitambulisho* utamaduni_kitambulisho_gawanyika(UtamaduniKitambulishoMfumo* m,
+                                                          UtamaduniKitambulisho* mzazi, N8* jina) {
+    N8* kitambulisho_kipya = tenga(64);
+    unganisha_mfuatano(kitambulisho_kipya, mzazi->kitambulisho, "_br");
+
+    UtamaduniKitambulisho* mtoto = utamaduni_kitambulisho_unda(kitambulisho_kipya, jina);
+    mtoto->mzazi_kitambulisho = mzazi->kitambulisho;
+    mtoto->mshikamano = mzazi->mshikamano * 0.8;
+
+    N32 i = 0;
+    wakati (i < mzazi->idadi_ya_sifa) {
+        UtamaduniSifa* s = utamaduni_kitambulisho_pata_sifa(mzazi, i);
+        utamaduni_kitambulisho_ongeza_sifa(mtoto, s->jina, s->nguvu * 0.9);
+        i = i + 1;
+    }
+
+    utamaduni_kitambulisho_mfumo_ongeza(m, mtoto);
+    rudisha mtoto;
+}
+
+N8* utamaduni_kitambulisho_jina_maalum(UtamaduniKitambulisho* k, N8* aina) {
+    N8* hatua_ya_kwanza = tenga(128);
+    N8* jina_maalum = tenga(128);
+    unganisha_mfuatano(hatua_ya_kwanza, k->jina, " ");
+    unganisha_mfuatano(jina_maalum, hatua_ya_kwanza, aina);
+    rudisha jina_maalum;
+}
