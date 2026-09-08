@@ -1,0 +1,143 @@
+// soko_haramu.swa — tafsiri ya src/core/economy/black_market.c
+// (na .h) kwenda Swa. Magendo, uchumi wa rushwa, na biashara
+// haramu.
+//
+// Kiambishi: soko_haramu_ — angalia ../../KANUNI-MAJINA.md.
+// markets[CIV_CONTRABAND_TYPE_COUNT] (aina 5) imegawanywa kuwa
+// vigezo 5 vyenye majina. names[] ya chanzo cha C haikutumika popote
+// kwenye mantiki halisi (imetangazwa, kamwe haikusomwa) — haijaletwa.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 MAGENDO_SILAHA = 0;
+N32 MAGENDO_DAWA_ZA_KULEVYA = 1;
+N32 MAGENDO_BIDHAA = 2;
+N32 MAGENDO_BIASHARA_YA_BINADAMU = 3;
+N32 MAGENDO_BANDIA = 4;
+N32 MAGENDO_IDADI = 5;
+
+// SokoHaramuMazingira: hufunga viashiria vinne vya D64 vinavyopitishwa
+// pamoja kwenye soko_haramu_sasisha — kuepuka mdudu wa lugha-swa/swa
+// (kazi yenye jumla ya vigezo 7+, angalau kimoja D64, ikiitwa
+// kwenye kitanzi, huharibu kigezo cha mwitaji — angalia maelezo
+// kamili kwenye nguvukazi.swa).
+muundo SokoHaramuMazingira {
+    D64 kiwango_cha_rushwa;
+    D64 kiwango_cha_ukosefu_wa_kazi;
+    D64 kiwango_cha_kanuni;
+    D64 bajeti_ya_udhibiti;
+};
+
+muundo SokoHaramuSoko {
+    N32 aina;
+    D64 ujazo;                    // volume
+    D64 pato_la_faida;             // profit_margin
+    D64 shinikizo_la_udhibiti;     // enforcement_pressure
+    N32 inafanya_kazi;              // active
+};
+
+muundo SokoHaramuMfumo {
+    SokoHaramuSoko soko_0; SokoHaramuSoko soko_1; SokoHaramuSoko soko_2;
+    SokoHaramuSoko soko_3; SokoHaramuSoko soko_4;
+
+    D64 uchumi_haramu_jumla;         // fraction of GDP
+    D64 mapato_ya_rushwa;
+    D64 bajeti_ya_udhibiti;
+    D64 ufanisi_wa_udhibiti;
+    D64 kodi_iliyopotea;
+    D64 vurugu_za_uhalifu;
+};
+
+SokoHaramuSoko* soko_haramu_pata_soko(SokoHaramuMfumo* b, N32 aina) {
+    kama (aina == 0) { rudisha &b->soko_0; }
+    kama (aina == 1) { rudisha &b->soko_1; }
+    kama (aina == 2) { rudisha &b->soko_2; }
+    kama (aina == 3) { rudisha &b->soko_3; }
+    rudisha &b->soko_4;
+}
+
+SokoHaramuMfumo* soko_haramu_unda() {
+    SokoHaramuMfumo* b = tenga(ukubwa(SokoHaramuMfumo));
+    b->ufanisi_wa_udhibiti = 0.40;
+    b->bajeti_ya_udhibiti = 10000.0;
+    b->vurugu_za_uhalifu = 0.05;
+    b->uchumi_haramu_jumla = 0.0;
+    b->mapato_ya_rushwa = 0.0;
+    b->kodi_iliyopotea = 0.0;
+
+    N32 i = 0;
+    wakati (i < MAGENDO_IDADI) {
+        SokoHaramuSoko* m = soko_haramu_pata_soko(b, i);
+        m->aina = i;
+        D64 i_d = i;
+        m->ujazo = 5000.0 * (i_d + 1.0);
+        m->pato_la_faida = 0.3 + i_d * 0.1;
+        m->shinikizo_la_udhibiti = 0.0;
+        m->inafanya_kazi = 1;
+        i = i + 1;
+    }
+    rudisha b;
+}
+
+W0 soko_haramu_uharibu(SokoHaramuMfumo* b) {
+    achilia b;
+}
+
+W0 soko_haramu_sasisha(SokoHaramuMfumo* b, D64 muda, D64 pato, SokoHaramuMazingira* e) {
+    b->bajeti_ya_udhibiti = e->bajeti_ya_udhibiti;
+
+    D64 bajeti_kwa_pato = 0.0;
+    kama (pato > 0.0) { bajeti_kwa_pato = e->bajeti_ya_udhibiti / pato; }
+    b->ufanisi_wa_udhibiti = bajeti_kwa_pato * 50.0 * (1.0 - e->kiwango_cha_rushwa * 0.8);
+    b->ufanisi_wa_udhibiti = finya_d64(b->ufanisi_wa_udhibiti, 0.05, 0.95);
+
+    D64 haramu_jumla = 0.0;
+    N32 i = 0;
+    wakati (i < MAGENDO_IDADI) {
+        SokoHaramuSoko* m = soko_haramu_pata_soko(b, i);
+
+        m->shinikizo_la_udhibiti = b->ufanisi_wa_udhibiti;
+
+        D64 ukuaji = e->kiwango_cha_ukosefu_wa_kazi * 0.3 + e->kiwango_cha_kanuni * 0.15
+            + e->kiwango_cha_rushwa * 0.25 - m->shinikizo_la_udhibiti * 0.4;
+        m->ujazo = m->ujazo * (1.0 + ukuaji);
+        kama (m->ujazo < 100.0) { m->ujazo = 100.0; }
+
+        m->pato_la_faida = 0.2 + m->shinikizo_la_udhibiti * 0.4 + e->kiwango_cha_rushwa * 0.2;
+
+        haramu_jumla = haramu_jumla + m->ujazo;
+        i = i + 1;
+    }
+
+    kama (pato > 0.0) {
+        b->uchumi_haramu_jumla = haramu_jumla / pato;
+    } sivyo {
+        b->uchumi_haramu_jumla = 0.0;
+    }
+
+    b->mapato_ya_rushwa = haramu_jumla * e->kiwango_cha_rushwa * 0.15;
+    b->kodi_iliyopotea = haramu_jumla * 0.20;
+
+    b->vurugu_za_uhalifu = b->uchumi_haramu_jumla * 0.4
+        + b->ufanisi_wa_udhibiti * 0.1 * (1.0 - e->kiwango_cha_rushwa);
+    kama (b->vurugu_za_uhalifu > 1.0) { b->vurugu_za_uhalifu = 1.0; }
+}
+
+D64 soko_haramu_ukubwa(SokoHaramuMfumo* b) {
+    rudisha b->uchumi_haramu_jumla;
+}
+
+D64 soko_haramu_hasara_ya_kodi(SokoHaramuMfumo* b) {
+    rudisha b->kodi_iliyopotea;
+}
+
+W0 soko_haramu_operesheni_ya_kudhibiti(SokoHaramuMfumo* b, D64 uwekezaji) {
+    kama (uwekezaji <= 0.0) { rudisha; }
+    b->bajeti_ya_udhibiti = b->bajeti_ya_udhibiti + uwekezaji;
+    N32 i = 0;
+    wakati (i < MAGENDO_IDADI) {
+        SokoHaramuSoko* m = soko_haramu_pata_soko(b, i);
+        m->ujazo = m->ujazo * 0.85;
+        i = i + 1;
+    }
+}
