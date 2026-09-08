@@ -1,0 +1,166 @@
+// demografia.swa — tafsiri ya src/core/population/demographics.c (na .h)
+// kwenda Swa. Makundi ya umri, viwango vya uzazi/vifo, muundo wa
+// kikabila uliorahisishwa.
+//
+// Kiambishi: demografia_ — angalia ../../KANUNI-MAJINA.md (population/).
+// age_groups[7] (DEFAULT_AGE_GROUPS, safu ya muundo) imegawanywa kuwa
+// vigezo 7 vyenye majina + kazi ya kupata (mtindo uleule wa nguvukazi.swa).
+// ethnic_composition (safu inayoweza kukua kwa C, lakini kwenye faili
+// hili haiongezwi kamwe zaidi ya kundi 1) imekuwa kigezo kimoja cha D64.
+
+husisha { msingi/msingi_civ.swa }
+
+muundo DemografiaKundiLaUmri {
+    N32 umri_wa_chini;
+    N32 umri_wa_juu;
+    N32 idadi;
+    D64 kiwango_cha_uzazi;
+    D64 kiwango_cha_vifo;
+};
+
+muundo DemografiaMfumo {
+    N64 idadi_jumla;
+    DemografiaKundiLaUmri kundi_0; DemografiaKundiLaUmri kundi_1;
+    DemografiaKundiLaUmri kundi_2; DemografiaKundiLaUmri kundi_3;
+    DemografiaKundiLaUmri kundi_4; DemografiaKundiLaUmri kundi_5;
+    DemografiaKundiLaUmri kundi_6;
+    D64 uwiano_wa_jinsia;
+    D64 uwiano_wa_mjini;
+    D64 uwiano_wa_vijijini;
+    D64 muundo_wa_kikabila;
+};
+
+DemografiaKundiLaUmri* demografia_pata_kundi(DemografiaMfumo* d, N32 faharisi) {
+    kama (faharisi == 0) { rudisha &d->kundi_0; }
+    kama (faharisi == 1) { rudisha &d->kundi_1; }
+    kama (faharisi == 2) { rudisha &d->kundi_2; }
+    kama (faharisi == 3) { rudisha &d->kundi_3; }
+    kama (faharisi == 4) { rudisha &d->kundi_4; }
+    kama (faharisi == 5) { rudisha &d->kundi_5; }
+    rudisha &d->kundi_6;
+}
+
+N32 demografia_umri_wa_chini(N32 faharisi) {
+    kama (faharisi == 0) { rudisha 0; }
+    kama (faharisi == 1) { rudisha 15; }
+    kama (faharisi == 2) { rudisha 25; }
+    kama (faharisi == 3) { rudisha 35; }
+    kama (faharisi == 4) { rudisha 45; }
+    kama (faharisi == 5) { rudisha 55; }
+    rudisha 65;
+}
+
+N32 demografia_umri_wa_juu(N32 faharisi) {
+    kama (faharisi == 0) { rudisha 14; }
+    kama (faharisi == 1) { rudisha 24; }
+    kama (faharisi == 2) { rudisha 34; }
+    kama (faharisi == 3) { rudisha 44; }
+    kama (faharisi == 4) { rudisha 54; }
+    kama (faharisi == 5) { rudisha 64; }
+    rudisha 100;
+}
+
+D64 demografia_kiwango_cha_uzazi_cha_awali(N32 faharisi) {
+    kama (faharisi == 0) { rudisha 0.0; }
+    kama (faharisi == 1) { rudisha 0.3; }
+    kama (faharisi == 2) { rudisha 0.4; }
+    kama (faharisi == 3) { rudisha 0.3; }
+    kama (faharisi == 4) { rudisha 0.1; }
+    rudisha 0.0;
+}
+
+D64 demografia_kiwango_cha_vifo_cha_awali(N32 faharisi) {
+    kama (faharisi == 0) { rudisha 0.01; }
+    kama (faharisi == 1) { rudisha 0.005; }
+    kama (faharisi == 2) { rudisha 0.01; }
+    kama (faharisi == 3) { rudisha 0.02; }
+    kama (faharisi == 4) { rudisha 0.04; }
+    kama (faharisi == 5) { rudisha 0.08; }
+    rudisha 0.15;
+}
+
+D64 demografia_mgao_wa_awali(N32 faharisi) {
+    kama (faharisi == 0) { rudisha 0.25; }
+    kama (faharisi == 1) { rudisha 0.20; }
+    kama (faharisi == 2) { rudisha 0.18; }
+    kama (faharisi == 3) { rudisha 0.15; }
+    kama (faharisi == 4) { rudisha 0.12; }
+    kama (faharisi == 5) { rudisha 0.07; }
+    rudisha 0.03;
+}
+
+// demografia_anzisha: hujaza DemografiaMfumo ILIYOKWISHATENGWA (mfano
+// field iliyoingizwa KWA THAMANI kwenye muundo mwingine — angalia
+// idadi_ya_watu.swa kwa sababu, lugha-swa/swa#186) — HAITENGI
+// kumbukumbu yenyewe, tofauti na demografia_unda.
+W0 demografia_anzisha(DemografiaMfumo* d, N64 idadi_ya_awali) {
+    d->idadi_jumla = idadi_ya_awali;
+    d->uwiano_wa_jinsia = 0.5;
+    d->uwiano_wa_mjini = 0.6;
+    d->uwiano_wa_vijijini = 0.4;
+    d->muundo_wa_kikabila = 1.0;
+
+    D64 idadi_d = idadi_ya_awali;
+    N32 i = 0;
+    wakati (i < 7) {
+        DemografiaKundiLaUmri* k = demografia_pata_kundi(d, i);
+        k->umri_wa_chini = demografia_umri_wa_chini(i);
+        k->umri_wa_juu = demografia_umri_wa_juu(i);
+        D64 idadi_ya_kundi = idadi_d * demografia_mgao_wa_awali(i);
+        k->idadi = idadi_ya_kundi;
+        k->kiwango_cha_uzazi = demografia_kiwango_cha_uzazi_cha_awali(i);
+        k->kiwango_cha_vifo = demografia_kiwango_cha_vifo_cha_awali(i);
+        i = i + 1;
+    }
+}
+
+DemografiaMfumo* demografia_unda(N64 idadi_ya_awali) {
+    DemografiaMfumo* d = tenga(ukubwa(DemografiaMfumo));
+    demografia_anzisha(d, idadi_ya_awali);
+    rudisha d;
+}
+
+W0 demografia_uharibu(DemografiaMfumo* d) {
+    achilia d;
+}
+
+W0 demografia_sasisha(DemografiaMfumo* d, N32 uzazi, N32 vifo, D64 muda) {
+    d->idadi_jumla = d->idadi_jumla + uzazi - vifo;
+    kama (d->idadi_jumla < 0) { d->idadi_jumla = 0; }
+
+    DemografiaKundiLaUmri* kwanza = demografia_pata_kundi(d, 0);
+    kwanza->idadi = kwanza->idadi + uzazi;
+
+    N32 i = 0;
+    wakati (i < 7) {
+        DemografiaKundiLaUmri* k = demografia_pata_kundi(d, i);
+        D64 idadi_d = k->idadi;
+        D64 vifo_vya_kundi_d = idadi_d * k->kiwango_cha_vifo * muda;
+        N32 vifo_vya_kundi = vifo_vya_kundi_d;
+        k->idadi = k->idadi - vifo_vya_kundi;
+        kama (k->idadi < 0) { k->idadi = 0; }
+        i = i + 1;
+    }
+}
+
+N64 demografia_pata_jumla(DemografiaMfumo* d) {
+    rudisha d->idadi_jumla;
+}
+
+D64 demografia_uwiano_wa_nguvukazi(DemografiaMfumo* d) {
+    N64 wafanyakazi = 0;
+    N64 jumla = 0;
+    N32 i = 0;
+    wakati (i < 7) {
+        DemografiaKundiLaUmri* k = demografia_pata_kundi(d, i);
+        jumla = jumla + k->idadi;
+        kama (k->umri_wa_chini >= 15 && k->umri_wa_juu <= 64) {
+            wafanyakazi = wafanyakazi + k->idadi;
+        }
+        i = i + 1;
+    }
+    kama (jumla <= 0) { rudisha 0.0; }
+    D64 wafanyakazi_d = wafanyakazi;
+    D64 jumla_d = jumla;
+    rudisha wafanyakazi_d / jumla_d;
+}

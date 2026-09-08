@@ -136,3 +136,24 @@ N32 civ_nasibu_chini_ya(N32 kikomo) {
     kama (kikomo <= 0) { rudisha 0; }
     rudisha civ_nasibu() % kikomo;
 }
+
+// ---------- Hesabu za kielelezi (badala ya expf/exp ya libc) ----------
+// hesabu.swa ya lugha ya Swa haina kazi za D64 transcendental bado
+// (lugha-swa/swa#183, ombi la kipengele). civ_kielelezi ni ukadiriaji
+// wa mfululizo wa Taylor (maneno 30) — sahihi vya kutosha kwa
+// mahitaji ya uigaji (mfano: kiwango cha kuenea kwa utamaduni,
+// ambapo x ni kawaida kati ya -10 na 0). Si sahihi kabisa kwa x kubwa
+// sana chanya (mfululizo hausambamki haraka), lakini hakuna matumizi
+// kama hayo kwenye Dominion.
+D64 civ_kielelezi(D64 x) {
+    D64 jumla = 1.0;
+    D64 neno = 1.0;
+    N32 n = 1;
+    wakati (n <= 30) {
+        D64 n_d = n;
+        neno = neno * x / n_d;
+        jumla = jumla + neno;
+        n = n + 1;
+    }
+    rudisha jumla;
+}

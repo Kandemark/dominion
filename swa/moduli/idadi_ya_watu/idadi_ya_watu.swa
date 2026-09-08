@@ -1,0 +1,135 @@
+// idadi_ya_watu.swa — tafsiri ya src/core/population/population_manager.c
+// (na .h) kwenda Swa. Msimamizi mkuu wa idadi ya watu: viwango vya
+// uzazi/vifo/uhamiaji, elimu, afya, na maeneo.
+//
+// Kiambishi: idadi_ya_watu_ — angalia ../../KANUNI-MAJINA.md.
+// region_ids (safu inayokua ya char*, uwezo 10 unaoongezeka mara
+// mbili) imekuwa vigezo 8 vyenye majina vya N8* (kikomo cha maeneo
+// 8 — cha kutosha kwa mchezo, badala ya ukuaji usio na kikomo
+// ambao hauwezekani kwa urahisi bila safu za miundo ndani ya
+// muundo). to_dict/from_dict (JSON) hazikuletwa — hazina mantiki
+// halisi kwenye C (from_dict inarudisha upya tu bila kuchanganua).
+//
+// MUHIMU: `demografia` HAPA NI THAMANI (DemografiaMfumo), SI
+// KIELEKEZI (DemografiaMfumo*) — mdudu MPYA uliogunduliwa na
+// kuripotiwa (lugha-swa/swa#186): field ya muundo yenye aina ya
+// kielekezi kwenda muundo mwingine (mfano DemografiaMfumo*) haiwezi
+// kuhifadhi/kusoma thamani yake ya kielekezi kwa usahihi — jaribio
+// dogo lililotengwa kabisa lilithibitisha hili (`w->ndogo = n;`
+// kisha `w->ndogo->x` inarudisha takataka). Suluhisho: weka muundo
+// mdogo KWA THAMANI kama field, tumia `&pm->demografia` popote
+// panapohitajika kielekezi.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/idadi_ya_watu/demografia.swa }
+
+N32 IDADI_YA_WATU_MAENEO_KIWANGO_CHA_JUU = 8;
+
+muundo IdadiYaWatuMsimamizi {
+    DemografiaMfumo demografia;
+    D64 kiwango_cha_uzazi;
+    D64 kiwango_cha_vifo;
+    D64 kiwango_cha_uhamiaji;
+    D64 kiwango_cha_ukuaji;
+
+    D64 ubora_wa_elimu;
+    D64 kiashiria_cha_afya;
+    D64 kuridhika;
+
+    N8* eneo_0; N8* eneo_1; N8* eneo_2; N8* eneo_3;
+    N8* eneo_4; N8* eneo_5; N8* eneo_6; N8* eneo_7;
+    N32 idadi_ya_maeneo;
+};
+
+IdadiYaWatuMsimamizi* idadi_ya_watu_unda() {
+    IdadiYaWatuMsimamizi* pm = tenga(ukubwa(IdadiYaWatuMsimamizi));
+    pm->kiwango_cha_uzazi = 0.025;
+    pm->kiwango_cha_vifo = 0.015;
+    pm->kiwango_cha_uhamiaji = 0.0;
+    pm->kiwango_cha_ukuaji = pm->kiwango_cha_uzazi - pm->kiwango_cha_vifo;
+
+    pm->ubora_wa_elimu = 0.5;
+    pm->kiashiria_cha_afya = 0.6;
+    pm->kuridhika = 0.5;
+
+    demografia_anzisha(&pm->demografia, 1000);
+    pm->idadi_ya_maeneo = 0;
+    pm->eneo_0 = 0; pm->eneo_1 = 0; pm->eneo_2 = 0; pm->eneo_3 = 0;
+    pm->eneo_4 = 0; pm->eneo_5 = 0; pm->eneo_6 = 0; pm->eneo_7 = 0;
+    rudisha pm;
+}
+
+W0 idadi_ya_watu_uharibu(IdadiYaWatuMsimamizi* pm) {
+    achilia pm;
+}
+
+W0 idadi_ya_watu_sasisha(IdadiYaWatuMsimamizi* pm, D64 muda, D64 kigezo_cha_kiuchumi) {
+    N64 idadi_ya_sasa = demografia_pata_jumla(&pm->demografia);
+    D64 idadi_ya_sasa_d = idadi_ya_sasa;
+
+    D64 uzazi_d = idadi_ya_sasa_d * pm->kiwango_cha_uzazi * muda;
+    D64 vifo_d = idadi_ya_sasa_d * pm->kiwango_cha_vifo * muda * kigezo_cha_kiuchumi;
+
+    D64 kigezo_cha_afya = 1.0 - (1.0 - pm->kiashiria_cha_afya) * 0.3;
+    vifo_d = vifo_d * kigezo_cha_afya;
+
+    D64 kigezo_cha_elimu = 1.0 + pm->ubora_wa_elimu * 0.1;
+    uzazi_d = uzazi_d * kigezo_cha_elimu;
+
+    N32 uzazi = uzazi_d;
+    N32 vifo = vifo_d;
+
+    demografia_sasisha(&pm->demografia, uzazi, vifo, muda);
+
+    N64 idadi_mpya = demografia_pata_jumla(&pm->demografia);
+    kama (idadi_ya_sasa > 0 && muda > 0.0) {
+        D64 idadi_mpya_d = idadi_mpya;
+        pm->kiwango_cha_ukuaji = ((idadi_mpya_d - idadi_ya_sasa_d) / idadi_ya_sasa_d) / muda;
+    }
+}
+
+N8* idadi_ya_watu_pata_eneo(IdadiYaWatuMsimamizi* pm, N32 faharisi) {
+    kama (faharisi == 0) { rudisha pm->eneo_0; }
+    kama (faharisi == 1) { rudisha pm->eneo_1; }
+    kama (faharisi == 2) { rudisha pm->eneo_2; }
+    kama (faharisi == 3) { rudisha pm->eneo_3; }
+    kama (faharisi == 4) { rudisha pm->eneo_4; }
+    kama (faharisi == 5) { rudisha pm->eneo_5; }
+    kama (faharisi == 6) { rudisha pm->eneo_6; }
+    rudisha pm->eneo_7;
+}
+
+W0 idadi_ya_watu_weka_eneo(IdadiYaWatuMsimamizi* pm, N32 faharisi, N8* eneo) {
+    kama (faharisi == 0) { pm->eneo_0 = eneo; }
+    sivyo { kama (faharisi == 1) { pm->eneo_1 = eneo; }
+    sivyo { kama (faharisi == 2) { pm->eneo_2 = eneo; }
+    sivyo { kama (faharisi == 3) { pm->eneo_3 = eneo; }
+    sivyo { kama (faharisi == 4) { pm->eneo_4 = eneo; }
+    sivyo { kama (faharisi == 5) { pm->eneo_5 = eneo; }
+    sivyo { kama (faharisi == 6) { pm->eneo_6 = eneo; }
+    sivyo { pm->eneo_7 = eneo; } } } } } } }
+}
+
+W0 idadi_ya_watu_anzisha_eneo(IdadiYaWatuMsimamizi* pm, N8* eneo_id, N64 idadi_ya_awali) {
+    kama (eneo_id == 0) { rudisha; }
+
+    N32 i = 0;
+    wakati (i < pm->idadi_ya_maeneo) {
+        N8* uliopo = idadi_ya_watu_pata_eneo(pm, i);
+        kama (linganisha_mfuatano(uliopo, eneo_id) == 0) { rudisha; }
+        i = i + 1;
+    }
+
+    kama (pm->idadi_ya_maeneo >= IDADI_YA_WATU_MAENEO_KIWANGO_CHA_JUU) { rudisha; }
+    idadi_ya_watu_weka_eneo(pm, pm->idadi_ya_maeneo, eneo_id);
+    pm->idadi_ya_maeneo = pm->idadi_ya_maeneo + 1;
+}
+
+N64 idadi_ya_watu_pata_jumla(IdadiYaWatuMsimamizi* pm) {
+    rudisha demografia_pata_jumla(&pm->demografia);
+}
+
+D64 idadi_ya_watu_pata_kiwango_cha_ukuaji(IdadiYaWatuMsimamizi* pm) {
+    rudisha pm->kiwango_cha_ukuaji;
+}
