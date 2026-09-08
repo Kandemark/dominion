@@ -1,0 +1,243 @@
+// mahakama.swa — tafsiri ya src/core/governance/branches/judiciary.c
+// (na .h) kwenda Swa. Mfumo wa mahakama — kesi, ukaguzi wa kimahakama.
+//
+// Kiambishi: utawala_mahakama_ — angalia ../../../KANUNI-MAJINA.md.
+// courts[] (kikomo 4) na cases[] (kikomo 16 asili, kimepunguzwa kuwa
+// 6 kwa unyofu) zimebadilishwa kuwa vigezo vyenye majina + kazi za
+// kupata — mtindo uleule wa baraza.swa/mtendaji.swa. rand()/RAND_MAX
+// imebadilishwa kuwa civ_nasibu_chini_ya(1000)/1000.0.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 UTAWALA_MAHAKAMA_WILAYA = 0;
+N32 UTAWALA_MAHAKAMA_RUFAA = 1;
+N32 UTAWALA_MAHAKAMA_KUU = 2;
+N32 UTAWALA_MAHAKAMA_KATIBA = 3;
+N32 UTAWALA_MAHAKAMA_NGAZI_IDADI = 4;
+
+N32 UTAWALA_KESI_KIRAIA = 0;
+N32 UTAWALA_KESI_JINAI = 1;
+N32 UTAWALA_KESI_KIKATIBA = 2;
+N32 UTAWALA_KESI_KIUTAWALA = 3;
+
+N32 UTAWALA_KESI_IMEFUNGULIWA = 0;
+N32 UTAWALA_KESI_IMESIKILIZWA = 1;
+N32 UTAWALA_KESI_IMEAMULIWA = 2;
+N32 UTAWALA_KESI_IMEKATIWA_RUFAA = 3;
+N32 UTAWALA_KESI_IMEONDOLEWA = 4;
+
+N32 UTAWALA_MAHAKAMA_UPEO = 4;
+N32 UTAWALA_KESI_UPEO = 6;
+
+muundo UtawalaMahakamaMahakama {
+    N8* jina;
+    N32 ngazi;
+    N32 idadi_ya_majaji;
+    N32 majaji_upeo;
+    D64 uhuru;
+    D64 ufanisi;
+    D64 mzigo_wa_kesi;
+    D64 imani_ya_umma;
+};
+
+muundo UtawalaMahakamaKesi {
+    N8* jina;
+    N32 aina;
+    N32 hali_ya_kesi;
+    D64 utata;
+    D64 maslahi_ya_serikali;
+    N32 umri_wa_siku;
+    N32 ilivunja_sheria;
+};
+
+muundo UtawalaMahakama {
+    UtawalaMahakamaMahakama mahakama_0; UtawalaMahakamaMahakama mahakama_1;
+    UtawalaMahakamaMahakama mahakama_2; UtawalaMahakamaMahakama mahakama_3;
+    N32 idadi_ya_mahakama;
+
+    UtawalaMahakamaKesi kesi_0; UtawalaMahakamaKesi kesi_1;
+    UtawalaMahakamaKesi kesi_2; UtawalaMahakamaKesi kesi_3;
+    UtawalaMahakamaKesi kesi_4; UtawalaMahakamaKesi kesi_5;
+    N32 idadi_ya_kesi;
+
+    D64 utawala_wa_sheria;
+    D64 uhuru_wa_kimahakama;
+    D64 kielezo_cha_taratibu_zinazostahili;
+    N32 sheria_zilizovunjwa_jumla;
+    N32 mifano_iliyowekwa;
+};
+
+UtawalaMahakamaMahakama* utawala_mahakama_pata_mahakama(UtawalaMahakama* j, N32 idx) {
+    kama (idx == 0) { rudisha &j->mahakama_0; }
+    kama (idx == 1) { rudisha &j->mahakama_1; }
+    kama (idx == 2) { rudisha &j->mahakama_2; }
+    rudisha &j->mahakama_3;
+}
+
+UtawalaMahakamaKesi* utawala_mahakama_pata_kesi(UtawalaMahakama* j, N32 idx) {
+    kama (idx == 0) { rudisha &j->kesi_0; }
+    kama (idx == 1) { rudisha &j->kesi_1; }
+    kama (idx == 2) { rudisha &j->kesi_2; }
+    kama (idx == 3) { rudisha &j->kesi_3; }
+    kama (idx == 4) { rudisha &j->kesi_4; }
+    rudisha &j->kesi_5;
+}
+
+UtawalaMahakama* utawala_mahakama_unda() {
+    UtawalaMahakama* j = tenga(ukubwa(UtawalaMahakama));
+    j->idadi_ya_mahakama = 0;
+    j->idadi_ya_kesi = 0;
+    j->utawala_wa_sheria = 0.55;
+    j->uhuru_wa_kimahakama = 0.45;
+    j->kielezo_cha_taratibu_zinazostahili = 0.50;
+    j->sheria_zilizovunjwa_jumla = 0;
+    j->mifano_iliyowekwa = 0;
+    rudisha j;
+}
+
+W0 utawala_mahakama_uharibu(UtawalaMahakama* j) {
+    achilia j;
+}
+
+N32 utawala_mahakama_inaweza_kuvunja_sheria(UtawalaMahakama* j) {
+    kama (j == 0) { rudisha 0; }
+    kama (j->uhuru_wa_kimahakama > 0.25 && j->utawala_wa_sheria > 0.30) { rudisha 1; }
+    rudisha 0;
+}
+
+W0 utawala_mahakama_sindika_orodha_ya_kesi(UtawalaMahakama* j) {
+    N32 i = 0;
+    wakati (i < j->idadi_ya_kesi) {
+        UtawalaMahakamaKesi* cs = utawala_mahakama_pata_kesi(j, i);
+        cs->umri_wa_siku = cs->umri_wa_siku + 1;
+
+        N32 iliondolewa = 0;
+        kama (cs->umri_wa_siku > 100 && cs->hali_ya_kesi == UTAWALA_KESI_IMEFUNGULIWA) {
+            cs->hali_ya_kesi = UTAWALA_KESI_IMEONDOLEWA;
+            iliondolewa = 1;
+        }
+
+        kama (iliondolewa == 0 && cs->hali_ya_kesi == UTAWALA_KESI_IMEFUNGULIWA) {
+            UtawalaMahakamaMahakama* bora = 0;
+            N32 ci = 0;
+            wakati (ci < j->idadi_ya_mahakama) {
+                UtawalaMahakamaMahakama* c = utawala_mahakama_pata_mahakama(j, ci);
+                N32 chagua_hii = 0;
+                kama (bora == 0) { chagua_hii = 1; }
+                sivyo {
+                    N32 majaji_x2 = c->majaji_upeo * 2;
+                    D64 majaji_x2_d = majaji_x2;
+                    kama (c->ngazi > bora->ngazi && c->mzigo_wa_kesi < majaji_x2_d) { chagua_hii = 1; }
+                }
+                kama (chagua_hii == 1) { bora = c; }
+                ci = ci + 1;
+            }
+            kama (bora == 0 && j->idadi_ya_mahakama > 0) { bora = utawala_mahakama_pata_mahakama(j, 0); }
+
+            kama (bora != 0) {
+                D64 nafasi_ya_kutatua = bora->ufanisi / (cs->utata + 0.2) * 0.1;
+                kama (cs->aina == UTAWALA_KESI_KIKATIBA) { nafasi_ya_kutatua = nafasi_ya_kutatua * 0.5; }
+
+                N32 kura = civ_nasibu_chini_ya(1000);
+                D64 kura_d = kura;
+                D64 uwezekano = kura_d / 1000.0;
+
+                kama (uwezekano < nafasi_ya_kutatua) {
+                    cs->hali_ya_kesi = UTAWALA_KESI_IMEAMULIWA;
+                    j->mifano_iliyowekwa = j->mifano_iliyowekwa + 1;
+                    bora->mzigo_wa_kesi = bora->mzigo_wa_kesi + 1.0;
+
+                    kama (cs->aina == UTAWALA_KESI_KIKATIBA
+                          && utawala_mahakama_inaweza_kuvunja_sheria(j) != 0) {
+                        N32 kura2 = civ_nasibu_chini_ya(1000);
+                        D64 kura2_d = kura2;
+                        D64 uwezekano2 = kura2_d / 1000.0;
+                        kama (uwezekano2 < j->uhuru_wa_kimahakama * 0.5) {
+                            cs->ilivunja_sheria = 1;
+                            j->sheria_zilizovunjwa_jumla = j->sheria_zilizovunjwa_jumla + 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        i = i + 1;
+    }
+}
+
+W0 utawala_mahakama_sasisha(UtawalaMahakama* j, D64 muda, D64 ufanisi_wa_serikali,
+                              D64 rushwa, D64 uwiano_wa_udhibiti_mkuu, D64 uwakilishi) {
+    D64 lengo_la_uhuru = 0.30 + uwakilishi * 0.40 - uwiano_wa_udhibiti_mkuu * 0.20;
+    j->uhuru_wa_kimahakama = j->uhuru_wa_kimahakama
+        + (lengo_la_uhuru - j->uhuru_wa_kimahakama) * 0.03 * muda;
+    j->uhuru_wa_kimahakama = j->uhuru_wa_kimahakama - rushwa * 0.02 * muda;
+    kama (j->uhuru_wa_kimahakama < 0.05) { j->uhuru_wa_kimahakama = 0.05; }
+    kama (j->uhuru_wa_kimahakama > 0.95) { j->uhuru_wa_kimahakama = 0.95; }
+
+    N32 i = 0;
+    wakati (i < j->idadi_ya_mahakama) {
+        UtawalaMahakamaMahakama* c = utawala_mahakama_pata_mahakama(j, i);
+        D64 nyongeza = 0.0;
+        kama (c->ngazi == UTAWALA_MAHAKAMA_KUU) { nyongeza = 0.3; }
+        c->uhuru = j->uhuru_wa_kimahakama * (0.7 + nyongeza);
+        c->ufanisi = ufanisi_wa_serikali * (1.0 - rushwa * 0.5) - c->mzigo_wa_kesi * 0.001;
+        kama (c->ufanisi < 0.05) { c->ufanisi = 0.05; }
+        c->imani_ya_umma = c->imani_ya_umma
+            + (j->uhuru_wa_kimahakama * 0.3 + (1.0 - rushwa) * 0.3
+               - c->mzigo_wa_kesi * 0.0001 - c->imani_ya_umma) * 0.05 * muda;
+        i = i + 1;
+    }
+
+    utawala_mahakama_sindika_orodha_ya_kesi(j);
+
+    j->utawala_wa_sheria = j->uhuru_wa_kimahakama * 0.40 + j->kielezo_cha_taratibu_zinazostahili * 0.35
+        + (1.0 - rushwa) * 0.25;
+    kama (j->utawala_wa_sheria < 0.05) { j->utawala_wa_sheria = 0.05; }
+    kama (j->utawala_wa_sheria > 1.0) { j->utawala_wa_sheria = 1.0; }
+
+    j->kielezo_cha_taratibu_zinazostahili = j->kielezo_cha_taratibu_zinazostahili
+        + (uwakilishi * 0.3 + j->uhuru_wa_kimahakama * 0.2 - j->kielezo_cha_taratibu_zinazostahili) * 0.04 * muda;
+}
+
+UtawalaMahakamaMahakama* utawala_mahakama_unda_mahakama(UtawalaMahakama* j, N8* jina,
+                                                           N32 ngazi, N32 majaji_upeo) {
+    kama (j == 0 || jina == 0 || j->idadi_ya_mahakama >= UTAWALA_MAHAKAMA_UPEO) { rudisha 0; }
+    UtawalaMahakamaMahakama* c = utawala_mahakama_pata_mahakama(j, j->idadi_ya_mahakama);
+    c->jina = jina;
+    c->ngazi = ngazi;
+    c->majaji_upeo = majaji_upeo;
+    c->idadi_ya_majaji = 0;
+    c->uhuru = 0.45;
+    c->ufanisi = 0.50;
+    c->mzigo_wa_kesi = 0.0;
+    c->imani_ya_umma = 0.55;
+    j->idadi_ya_mahakama = j->idadi_ya_mahakama + 1;
+    rudisha c;
+}
+
+UtawalaMahakamaKesi* utawala_mahakama_fungua_kesi(UtawalaMahakama* j, N32 aina, N8* jina,
+                                                     D64 utata) {
+    kama (j == 0 || jina == 0 || j->idadi_ya_kesi >= UTAWALA_KESI_UPEO) { rudisha 0; }
+    UtawalaMahakamaKesi* cs = utawala_mahakama_pata_kesi(j, j->idadi_ya_kesi);
+    cs->jina = jina;
+    cs->aina = aina;
+    cs->hali_ya_kesi = UTAWALA_KESI_IMEFUNGULIWA;
+    cs->utata = utata;
+    kama (aina == UTAWALA_KESI_KIKATIBA) { cs->maslahi_ya_serikali = 0.70; } sivyo { cs->maslahi_ya_serikali = 0.30; }
+    cs->umri_wa_siku = 0;
+    cs->ilivunja_sheria = 0;
+    j->idadi_ya_kesi = j->idadi_ya_kesi + 1;
+    rudisha cs;
+}
+
+D64 utawala_mahakama_ulinzi_wa_haki(UtawalaMahakama* j) {
+    kama (j == 0) { rudisha 0.30; }
+    rudisha j->utawala_wa_sheria * 0.6 + j->uhuru_wa_kimahakama * 0.4;
+}
+
+D64 utawala_mahakama_kikwazo_cha_mtendaji(UtawalaMahakama* j) {
+    kama (j == 0) { rudisha 0.0; }
+    N32 sheria_n = j->sheria_zilizovunjwa_jumla;
+    D64 sheria_d = sheria_n;
+    rudisha j->uhuru_wa_kimahakama * 0.5 + sheria_d * 0.01;
+}

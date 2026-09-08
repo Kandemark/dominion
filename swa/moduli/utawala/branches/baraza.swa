@@ -1,0 +1,174 @@
+// baraza.swa — tafsiri ya src/core/governance/branches/council.c (na
+// .h) kwenda Swa. Utawala wa pamoja — mabaraza, majunta, presidiamu.
+//
+// Kiambishi: utawala_baraza_ — angalia ../../../KANUNI-MAJINA.md.
+// members[] (safu inayokua, malloc'd, hadi max_members) imebadilishwa
+// kuwa kikomo kisichobadilika cha wanachama 8 (vigezo vyenye majina
+// + kazi ya kupata) — sawa na mtindo uliothibitishwa kwenye
+// nguvukazi.swa. Hii inaepuka kabisa mdudu #182(b) (kuandika safu ya
+// muundo kupitia kielekezi) kwa kutotumia safu ya kweli kabisa.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 UTAWALA_BARAZA_SHIRIKISHO = 0;
+N32 UTAWALA_BARAZA_PRESIDIAMU = 1;
+N32 UTAWALA_BARAZA_JUNTA = 2;
+N32 UTAWALA_BARAZA_WAZEE = 3;
+N32 UTAWALA_BARAZA_UTAJIRI = 4;
+N32 UTAWALA_BARAZA_WATAALAMU = 5;
+
+N32 UTAWALA_BARAZA_WANACHAMA_UPEO = 8;
+
+muundo UtawalaBarazaMwanachama {
+    N8* jina;
+    N8* kitambulisho_cha_mtu;
+    D64 sehemu_ya_nguvu;
+    D64 umahiri;
+    D64 uaminifu;
+    N32 muda_wa_wadhifa;
+};
+
+muundo UtawalaBaraza {
+    N32 aina;
+    UtawalaBarazaMwanachama mwanachama_0; UtawalaBarazaMwanachama mwanachama_1;
+    UtawalaBarazaMwanachama mwanachama_2; UtawalaBarazaMwanachama mwanachama_3;
+    UtawalaBarazaMwanachama mwanachama_4; UtawalaBarazaMwanachama mwanachama_5;
+    UtawalaBarazaMwanachama mwanachama_6; UtawalaBarazaMwanachama mwanachama_7;
+    N32 idadi_ya_wanachama;
+    N32 wanachama_upeo;
+    D64 nguvu_ya_pamoja;
+    D64 mshikamano_wa_ndani;
+    D64 kasi_ya_uamuzi;
+    D64 upinzani_wa_rushwa;
+    N32 ina_mwenyekiti_wa_zamu;
+    N32 zamu_za_mzunguko_wa_mwenyekiti;
+    N32 mwenyekiti_wa_sasa_idx;
+};
+
+UtawalaBarazaMwanachama* utawala_baraza_pata_mwanachama(UtawalaBaraza* c, N32 idx) {
+    kama (idx == 0) { rudisha &c->mwanachama_0; }
+    kama (idx == 1) { rudisha &c->mwanachama_1; }
+    kama (idx == 2) { rudisha &c->mwanachama_2; }
+    kama (idx == 3) { rudisha &c->mwanachama_3; }
+    kama (idx == 4) { rudisha &c->mwanachama_4; }
+    kama (idx == 5) { rudisha &c->mwanachama_5; }
+    kama (idx == 6) { rudisha &c->mwanachama_6; }
+    rudisha &c->mwanachama_7;
+}
+
+UtawalaBaraza* utawala_baraza_unda(N32 aina, N32 wanachama_upeo) {
+    UtawalaBaraza* c = tenga(ukubwa(UtawalaBaraza));
+    c->aina = aina;
+    kama (wanachama_upeo > 0 && wanachama_upeo < UTAWALA_BARAZA_WANACHAMA_UPEO) {
+        c->wanachama_upeo = wanachama_upeo;
+    } sivyo {
+        c->wanachama_upeo = UTAWALA_BARAZA_WANACHAMA_UPEO;
+    }
+    c->idadi_ya_wanachama = 0;
+    c->nguvu_ya_pamoja = 0.50;
+    c->mshikamano_wa_ndani = 0.65;
+    c->kasi_ya_uamuzi = 0.40;
+    c->upinzani_wa_rushwa = 0.55;
+    kama (aina == UTAWALA_BARAZA_SHIRIKISHO) { c->ina_mwenyekiti_wa_zamu = 1; }
+    sivyo { c->ina_mwenyekiti_wa_zamu = 0; }
+    c->zamu_za_mzunguko_wa_mwenyekiti = 0;
+    c->mwenyekiti_wa_sasa_idx = 0;
+    rudisha c;
+}
+
+W0 utawala_baraza_uharibu(UtawalaBaraza* c) {
+    achilia c;
+}
+
+W0 utawala_baraza_zungusha_mwenyekiti(UtawalaBaraza* c) {
+    kama (c == 0 || c->idadi_ya_wanachama == 0) { rudisha; }
+    c->mwenyekiti_wa_sasa_idx = (c->mwenyekiti_wa_sasa_idx + 1) % c->idadi_ya_wanachama;
+}
+
+W0 utawala_baraza_sasisha(UtawalaBaraza* c, D64 muda, D64 uwiano_wa_udhibiti_mkuu,
+                            D64 uhalali, D64 rushwa, D64 mila) {
+    kama (c == 0) { rudisha; }
+
+    N32 idadi_p1 = c->idadi_ya_wanachama + 1;
+    D64 idadi_p1_d = idadi_p1;
+    c->kasi_ya_uamuzi = (1.0 / idadi_p1_d) * 3.0
+        + c->mshikamano_wa_ndani * 0.3 + uwiano_wa_udhibiti_mkuu * 0.2;
+    kama (c->kasi_ya_uamuzi > 1.0) { c->kasi_ya_uamuzi = 1.0; }
+    kama (c->kasi_ya_uamuzi < 0.05) { c->kasi_ya_uamuzi = 0.05; }
+
+    D64 lengo_la_mshikamano = mila * 0.3 + uhalali * 0.3 + (1.0 - rushwa) * 0.2 + 0.2;
+    c->mshikamano_wa_ndani = c->mshikamano_wa_ndani
+        + (lengo_la_mshikamano - c->mshikamano_wa_ndani) * 0.05 * muda;
+
+    c->nguvu_ya_pamoja = 0.0;
+    N32 i = 0;
+    wakati (i < c->idadi_ya_wanachama) {
+        UtawalaBarazaMwanachama* m = utawala_baraza_pata_mwanachama(c, i);
+        c->nguvu_ya_pamoja = c->nguvu_ya_pamoja + m->sehemu_ya_nguvu * m->umahiri;
+        i = i + 1;
+    }
+    c->nguvu_ya_pamoja = c->nguvu_ya_pamoja * c->mshikamano_wa_ndani;
+    kama (c->nguvu_ya_pamoja > 1.0) { c->nguvu_ya_pamoja = 1.0; }
+
+    N32 idadi_n = c->idadi_ya_wanachama;
+    N32 upeo_n = c->wanachama_upeo;
+    D64 idadi_nd = idadi_n;
+    D64 upeo_nd = upeo_n;
+    c->upinzani_wa_rushwa = (idadi_nd / upeo_nd) * 0.4
+        + c->mshikamano_wa_ndani * 0.3 + (1.0 - rushwa) * 0.3;
+
+    kama (c->ina_mwenyekiti_wa_zamu != 0 && c->idadi_ya_wanachama > 0) {
+        c->zamu_za_mzunguko_wa_mwenyekiti = c->zamu_za_mzunguko_wa_mwenyekiti + 1;
+        kama (c->zamu_za_mzunguko_wa_mwenyekiti >= 20) {
+            utawala_baraza_zungusha_mwenyekiti(c);
+            c->zamu_za_mzunguko_wa_mwenyekiti = 0;
+        }
+    }
+}
+
+UtawalaBarazaMwanachama* utawala_baraza_ongeza_mwanachama(UtawalaBaraza* c, N8* jina,
+                                                             N8* kitambulisho_cha_mtu,
+                                                             D64 sehemu_ya_nguvu) {
+    kama (c == 0 || jina == 0 || c->idadi_ya_wanachama >= c->wanachama_upeo) { rudisha 0; }
+    UtawalaBarazaMwanachama* m = utawala_baraza_pata_mwanachama(c, c->idadi_ya_wanachama);
+    m->jina = jina;
+    m->kitambulisho_cha_mtu = kitambulisho_cha_mtu;
+    m->sehemu_ya_nguvu = sehemu_ya_nguvu;
+    N32 r1 = civ_nasibu_chini_ya(40);
+    D64 r1d = r1;
+    m->umahiri = 0.40 + r1d / 100.0;
+    N32 r2 = civ_nasibu_chini_ya(30);
+    D64 r2d = r2;
+    m->uaminifu = 0.50 + r2d / 100.0;
+    m->muda_wa_wadhifa = 0;
+    c->idadi_ya_wanachama = c->idadi_ya_wanachama + 1;
+    rudisha m;
+}
+
+W0 utawala_baraza_ondoa_mwanachama(UtawalaBaraza* c, N32 idx) {
+    kama (c == 0 || idx < 0 || idx >= c->idadi_ya_wanachama) { rudisha; }
+    N32 i = idx;
+    wakati (i < c->idadi_ya_wanachama - 1) {
+        UtawalaBarazaMwanachama* lengwa = utawala_baraza_pata_mwanachama(c, i);
+        UtawalaBarazaMwanachama* kutoka = utawala_baraza_pata_mwanachama(c, i + 1);
+        lengwa->jina = kutoka->jina;
+        lengwa->kitambulisho_cha_mtu = kutoka->kitambulisho_cha_mtu;
+        lengwa->sehemu_ya_nguvu = kutoka->sehemu_ya_nguvu;
+        lengwa->umahiri = kutoka->umahiri;
+        lengwa->uaminifu = kutoka->uaminifu;
+        lengwa->muda_wa_wadhifa = kutoka->muda_wa_wadhifa;
+        i = i + 1;
+    }
+    c->idadi_ya_wanachama = c->idadi_ya_wanachama - 1;
+}
+
+D64 utawala_baraza_nguvu_ya_uamuzi(UtawalaBaraza* c) {
+    kama (c == 0) { rudisha 0.0; }
+    rudisha c->nguvu_ya_pamoja * c->kasi_ya_uamuzi;
+}
+
+N32 utawala_baraza_inaweza_kutenda(UtawalaBaraza* c) {
+    kama (c == 0) { rudisha 0; }
+    kama (c->mshikamano_wa_ndani > 0.25 && c->idadi_ya_wanachama > 0) { rudisha 1; }
+    rudisha 0;
+}
