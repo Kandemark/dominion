@@ -89,6 +89,12 @@ N32 civ_imeshindwa(CivMatokeo m) {
 }
 
 // civ_log: nafasi sita za N64 kama andika() — zisizotumika ni 0.
+// MUHIMU: tofauti na andika()/andika_stderr() (externi, hoja
+// huru), civ_log ni kazi ya kawaida ya Swa yenye vigezo vya N64
+// vilivyokaguliwa kikamilifu — kupitisha kielekezi (N8*, kama
+// jina la mtu) kwenye nafasi hizi ni kosa la aina wakati wa
+// kukusanya. Ukihitaji kuandika kielekezi kwenye ujumbe wa log,
+// tumia andika()/andika_stderr() moja kwa moja badala ya civ_log.
 W0 civ_log(N32 kiwango, N8* umbizo, N64 a1, N64 a2, N64 a3, N64 a4, N64 a5, N64 a6) {
     kama (kiwango >= CIV_LOG_HITILAFU) {
         andika_stderr(umbizo, a1, a2, a3, a4, a5, a6);
@@ -105,4 +111,28 @@ W0 civ_thibitisha(N32 sharti, N8* ujumbe) {
         andika_stderr(ujumbe, 0, 0, 0, 0, 0, 0);
         wito_wa_mfumo(60, 1, 0, 0, 0, 0, 0);
     }
+}
+
+// ---------- Nasibu (badala ya rand()/srand() ya libc) ----------
+// LCG rahisi (viwango vya Numerical Recipes) — si ya kificho, ni
+// kwa ajili ya uigaji tu. Hali ya ulimwengu moja, kama rand() ya C
+// (hakuna hali ya kila-nyuzi bado — Swa haina nyuzi kwa sasa).
+N32 civ_nasibu_hali = 88172645;
+
+W0 civ_nasibu_panda(N32 mbegu) {
+    kama (mbegu == 0) { mbegu = 1; }
+    civ_nasibu_hali = mbegu;
+}
+
+N32 civ_nasibu() {
+    civ_nasibu_hali = civ_nasibu_hali * 1103515245 + 12345;
+    N32 v = civ_nasibu_hali % 32768;
+    kama (v < 0) { v = 0 - v; }
+    rudisha v;
+}
+
+// [0, kikomo) — sawa na rand() % kikomo ya C.
+N32 civ_nasibu_chini_ya(N32 kikomo) {
+    kama (kikomo <= 0) { rudisha 0; }
+    rudisha civ_nasibu() % kikomo;
 }
