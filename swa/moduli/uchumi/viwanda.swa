@@ -1,0 +1,156 @@
+// viwanda.swa — tafsiri ya src/core/economy/manufacturing.c (na .h)
+// kwenda Swa. Viwanda, minyororo ya uzalishaji, pato la kiwanda, na
+// otomatiki.
+//
+// Kiambishi: viwanda_ — angalia ../../KANUNI-MAJINA.md.
+// factories[] (safu inayokua ya C) imekuwa VIWANDA_KIWANDA_IDADI=16
+// vigezo vyenye majina + kazi ya kupata.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 VIWANDA_KIWANDA_IDADI = 16;
+
+muundo ViwandaKiwanda {
+    N8* bidhaa;
+    D64 pato_kwa_mfanyakazi;
+    D64 kiwango_cha_mtaji;
+    D64 uwiano_wa_malighafi;
+    N32 wafanyakazi;
+    N32 uwezo;
+    N32 inafanya_kazi;
+};
+
+muundo ViwandaMfumo {
+    ViwandaKiwanda k_0; ViwandaKiwanda k_1; ViwandaKiwanda k_2; ViwandaKiwanda k_3;
+    ViwandaKiwanda k_4; ViwandaKiwanda k_5; ViwandaKiwanda k_6; ViwandaKiwanda k_7;
+    ViwandaKiwanda k_8; ViwandaKiwanda k_9; ViwandaKiwanda k_10; ViwandaKiwanda k_11;
+    ViwandaKiwanda k_12; ViwandaKiwanda k_13; ViwandaKiwanda k_14; ViwandaKiwanda k_15;
+
+    N32 idadi_ya_viwanda;
+    D64 pato_jumla_la_viwanda;
+    D64 matumizi_ya_uwezo;
+    D64 kiwango_cha_otomatiki;
+    D64 ufanisi_wa_mnyororo_wa_ugavi;
+};
+
+ViwandaKiwanda* viwanda_pata_kiwanda(ViwandaMfumo* m, N32 idx) {
+    kama (idx == 0) { rudisha &m->k_0; }
+    kama (idx == 1) { rudisha &m->k_1; }
+    kama (idx == 2) { rudisha &m->k_2; }
+    kama (idx == 3) { rudisha &m->k_3; }
+    kama (idx == 4) { rudisha &m->k_4; }
+    kama (idx == 5) { rudisha &m->k_5; }
+    kama (idx == 6) { rudisha &m->k_6; }
+    kama (idx == 7) { rudisha &m->k_7; }
+    kama (idx == 8) { rudisha &m->k_8; }
+    kama (idx == 9) { rudisha &m->k_9; }
+    kama (idx == 10) { rudisha &m->k_10; }
+    kama (idx == 11) { rudisha &m->k_11; }
+    kama (idx == 12) { rudisha &m->k_12; }
+    kama (idx == 13) { rudisha &m->k_13; }
+    kama (idx == 14) { rudisha &m->k_14; }
+    rudisha &m->k_15;
+}
+
+ViwandaMfumo* viwanda_unda() {
+    ViwandaMfumo* m = tenga(ukubwa(ViwandaMfumo));
+    m->idadi_ya_viwanda = 0;
+    m->pato_jumla_la_viwanda = 0.0;
+    m->matumizi_ya_uwezo = 0.70;
+    m->kiwango_cha_otomatiki = 0.15;
+    m->ufanisi_wa_mnyororo_wa_ugavi = 0.60;
+    rudisha m;
+}
+
+W0 viwanda_uharibu(ViwandaMfumo* m) {
+    achilia m;
+}
+
+ViwandaKiwanda* viwanda_ongeza_kiwanda(ViwandaMfumo* m, N8* bidhaa, N32 uwezo) {
+    kama (m->idadi_ya_viwanda >= VIWANDA_KIWANDA_IDADI) { rudisha 0; }
+    ViwandaKiwanda* f = viwanda_pata_kiwanda(m, m->idadi_ya_viwanda);
+    f->bidhaa = bidhaa;
+    f->uwezo = uwezo;
+    f->wafanyakazi = 0;
+    f->inafanya_kazi = 1;
+    f->kiwango_cha_mtaji = 0.3;
+    f->uwiano_wa_malighafi = 1.0;
+    f->pato_kwa_mfanyakazi = 0.0;
+    m->idadi_ya_viwanda = m->idadi_ya_viwanda + 1;
+    rudisha f;
+}
+
+W0 viwanda_weka_wafanyakazi(ViwandaKiwanda* f, N32 wafanyakazi) {
+    kama (wafanyakazi < 0 || wafanyakazi > f->uwezo) { rudisha; }
+    f->wafanyakazi = wafanyakazi;
+}
+
+W0 viwanda_sasisha(ViwandaMfumo* m, D64 muda, D64 kiwango_cha_teknolojia,
+                     D64 nguvukazi_inayopatikana, D64 malighafi_zinazopatikana,
+                     D64 ubora_wa_miundombinu) {
+    m->pato_jumla_la_viwanda = 0.0;
+    m->ufanisi_wa_mnyororo_wa_ugavi = m->ufanisi_wa_mnyororo_wa_ugavi
+        + (ubora_wa_miundombinu - m->ufanisi_wa_mnyororo_wa_ugavi) * 0.1;
+
+    m->kiwango_cha_otomatiki = m->kiwango_cha_otomatiki
+        + (kiwango_cha_teknolojia * 0.5 - m->kiwango_cha_otomatiki) * 0.05;
+
+    N32 wafanyakazi_walioteuliwa_jumla = 0;
+    N32 uwezo_jumla = 0;
+
+    N32 i = 0;
+    wakati (i < m->idadi_ya_viwanda) {
+        ViwandaKiwanda* f = viwanda_pata_kiwanda(m, i);
+        kama (f->inafanya_kazi != 0) {
+            N32 uwezo_wa_juu = f->uwezo;
+            D64 nguvukazi_n = nguvukazi_inayopatikana;
+            N32 wwt_d = wafanyakazi_walioteuliwa_jumla;
+            D64 wwt_dd = wwt_d;
+            kama (nguvukazi_n > 0.0 && wwt_dd < nguvukazi_n) {
+                D64 haijateuliwa_d = nguvukazi_n - wwt_dd;
+                N32 haijateuliwa = haijateuliwa_d;
+                kama (haijateuliwa < uwezo_wa_juu) { f->wafanyakazi = haijateuliwa; }
+                sivyo { f->wafanyakazi = uwezo_wa_juu; }
+                wafanyakazi_walioteuliwa_jumla = wafanyakazi_walioteuliwa_jumla + f->wafanyakazi;
+            } sivyo {
+                f->wafanyakazi = 0;
+            }
+
+            D64 tuzo_ya_otomatiki = 1.0 + m->kiwango_cha_otomatiki * 0.5;
+            D64 malighafi_kwa_kiwanda = 1.0;
+            N32 idadi_ya_viwanda = m->idadi_ya_viwanda;
+            D64 idadi_d = idadi_ya_viwanda;
+            kama (idadi_ya_viwanda > 0 && malighafi_zinazopatikana > 0.0) {
+                malighafi_kwa_kiwanda = malighafi_zinazopatikana / idadi_d;
+            }
+            D64 ufanisi_wa_malighafi = 1.0;
+            kama (malighafi_kwa_kiwanda <= f->uwiano_wa_malighafi) {
+                ufanisi_wa_malighafi = malighafi_kwa_kiwanda / (f->uwiano_wa_malighafi + 0.001);
+            }
+
+            f->pato_kwa_mfanyakazi = (1.0 + kiwango_cha_teknolojia * 0.8) * tuzo_ya_otomatiki
+                * m->ufanisi_wa_mnyororo_wa_ugavi * ufanisi_wa_malighafi;
+            N32 wafanyakazi_n = f->wafanyakazi;
+            D64 wafanyakazi_nd = wafanyakazi_n;
+            D64 pato_la_kiwanda = wafanyakazi_nd * f->pato_kwa_mfanyakazi;
+            m->pato_jumla_la_viwanda = m->pato_jumla_la_viwanda + pato_la_kiwanda;
+            uwezo_jumla = uwezo_jumla + f->uwezo;
+        }
+        i = i + 1;
+    }
+
+    m->matumizi_ya_uwezo = 0.0;
+    kama (uwezo_jumla > 0) {
+        N32 wwt = wafanyakazi_walioteuliwa_jumla;
+        D64 wwt_d = wwt;
+        D64 uwezo_jumla_d = uwezo_jumla;
+        m->matumizi_ya_uwezo = wwt_d / uwezo_jumla_d;
+    }
+}
+
+D64 viwanda_uzalishaji(ViwandaMfumo* m) {
+    kama (m->idadi_ya_viwanda == 0) { rudisha 0.0; }
+    N32 idadi = m->idadi_ya_viwanda;
+    D64 idadi_d = idadi;
+    rudisha m->pato_jumla_la_viwanda / idadi_d;
+}
