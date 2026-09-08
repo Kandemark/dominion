@@ -1,0 +1,68 @@
+// sarafu.swa — tafsiri ya src/core/economy/currency.c (na .h) kwenda
+// Swa. Sehemu ya civ_currency_t/civ_national_macro_state_t pekee —
+// civ_currency_manager_t (safu inayokua ya sarafu) haijatekelezwa
+// kwenye chanzo cha C chenyewe (imetangazwa kwenye .h, haitumiki
+// kwenye .c), kwa hiyo haijaletwa hapa pia.
+//
+// Kiambishi: sarafu_ — angalia ../../KANUNI-MAJINA.md.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+N32 SARAFU_MZUNGUKO_UKUAJI = 0;
+N32 SARAFU_MZUNGUKO_KILELE = 1;
+N32 SARAFU_MZUNGUKO_MDOROHO = 2;
+N32 SARAFU_MZUNGUKO_MSUKOSUKO_MKUBWA = 3;
+N32 SARAFU_MZUNGUKO_UPONYAJI = 4;
+
+muundo SarafuHaliYaTaifa {
+    D64 uzalishaji_wa_taifa;   // national_productivity
+    D64 uthabiti_wa_viwanda;   // industrial_stability
+    D64 kiashiria_cha_ukosefu_wa_kazi; // unemployment_index
+    N32 mzunguko_wa_sasa;      // current_cycle
+};
+
+muundo Sarafu {
+    N8* kitambulisho;
+    N8* jina;
+    D64 kiwango_cha_ubadilishaji;  // exchange_rate
+    D64 kiashiria_cha_mfumuko;     // inflation_index
+    D64 nguvu_ya_akiba;             // reserve_strength
+    D64 ujazo_wa_mzunguko;          // circulation_volume
+};
+
+W0 sarafu_anzisha(Sarafu* sarafu, N8* jina) {
+    sarafu->kitambulisho = "";
+    sarafu->jina = jina;
+    sarafu->kiwango_cha_ubadilishaji = 1.0;
+    sarafu->kiashiria_cha_mfumuko = 1.0;
+    sarafu->nguvu_ya_akiba = 0.8;
+    sarafu->ujazo_wa_mzunguko = 1000000.0;
+}
+
+W0 sarafu_sasisha_thamani(Sarafu* sarafu, SarafuHaliYaTaifa* jumla) {
+    D64 kigezo_cha_uzalishaji = jumla->uzalishaji_wa_taifa * 0.5;
+    D64 kigezo_cha_uthabiti = jumla->uthabiti_wa_viwanda * 0.3;
+    D64 kigezo_cha_mzunguko = 1.0;
+
+    kama (jumla->mzunguko_wa_sasa == SARAFU_MZUNGUKO_MDOROHO) {
+        kigezo_cha_mzunguko = 0.8;
+    } sivyo { kama (jumla->mzunguko_wa_sasa == SARAFU_MZUNGUKO_MSUKOSUKO_MKUBWA) {
+        kigezo_cha_mzunguko = 0.4;
+    } }
+
+    sarafu->kiwango_cha_ubadilishaji =
+        (kigezo_cha_uzalishaji + kigezo_cha_uthabiti + (1.0 - jumla->kiashiria_cha_ukosefu_wa_kazi))
+        * kigezo_cha_mzunguko;
+    sarafu->kiwango_cha_ubadilishaji = finya_d64(sarafu->kiwango_cha_ubadilishaji, 0.01, 5.0);
+
+    kama (sarafu->nguvu_ya_akiba < 0.3) {
+        sarafu->kiashiria_cha_mfumuko = sarafu->kiashiria_cha_mfumuko + 0.05;
+    }
+}
+
+D64 sarafu_nguvu_ya_ubadilishaji(Sarafu* a, Sarafu* b) {
+    D64 b_kiwango = b->kiwango_cha_ubadilishaji;
+    kama (b_kiwango < 0.01) { b_kiwango = 0.01; }
+    rudisha a->kiwango_cha_ubadilishaji / b_kiwango;
+}
