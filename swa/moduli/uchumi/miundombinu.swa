@@ -1,0 +1,142 @@
+// miundombinu.swa — tafsiri ya src/core/economy/infrastructure.c
+// (na .h) kwenda Swa. Barabara, bandari, minyororo ya ugavi, na
+// gharama ya usafirishaji.
+//
+// Kiambishi: miundombinu_ — angalia ../../KANUNI-MAJINA.md.
+// networks[CIV_INFRA_TYPE_COUNT] (safu ya muundo, nyanja 7)
+// imegawanywa kuwa vigezo 7 vyenye majina + kazi ya kupata (mtindo
+// uleule uliothibitishwa kwenye sera.swa/teknolojia.swa).
+
+husisha { msingi/msingi_civ.swa }
+
+N32 MIUNDOMBINU_BARABARA = 0;
+N32 MIUNDOMBINU_RELI = 1;
+N32 MIUNDOMBINU_BANDARI = 2;
+N32 MIUNDOMBINU_UWANJA_WA_NDEGE = 3;
+N32 MIUNDOMBINU_GRIDI_YA_UMEME = 4;
+N32 MIUNDOMBINU_MAWASILIANO = 5;
+N32 MIUNDOMBINU_MAJI = 6;
+N32 MIUNDOMBINU_IDADI = 7;
+
+muundo MiundombinuMtandao {
+    N32 aina;
+    D64 ufikiaji;               // coverage
+    D64 hali_ya_mtandao;                    // condition
+    D64 gharama_ya_matengenezo;
+    D64 maendeleo_ya_ujenzi;
+};
+
+muundo MiundombinuMfumo {
+    MiundombinuMtandao mtandao_0; MiundombinuMtandao mtandao_1;
+    MiundombinuMtandao mtandao_2; MiundombinuMtandao mtandao_3;
+    MiundombinuMtandao mtandao_4; MiundombinuMtandao mtandao_5;
+    MiundombinuMtandao mtandao_6;
+
+    D64 ubora_wa_jumla;
+    D64 kizidishi_cha_gharama_ya_usafiri;
+    D64 ufanisi_wa_mnyororo_wa_ugavi;
+    D64 mzigo_jumla_wa_matengenezo;
+};
+
+MiundombinuMtandao* miundombinu_pata_mtandao(MiundombinuMfumo* inf, N32 aina) {
+    kama (aina == 0) { rudisha &inf->mtandao_0; }
+    kama (aina == 1) { rudisha &inf->mtandao_1; }
+    kama (aina == 2) { rudisha &inf->mtandao_2; }
+    kama (aina == 3) { rudisha &inf->mtandao_3; }
+    kama (aina == 4) { rudisha &inf->mtandao_4; }
+    kama (aina == 5) { rudisha &inf->mtandao_5; }
+    rudisha &inf->mtandao_6;
+}
+
+MiundombinuMfumo* miundombinu_unda() {
+    MiundombinuMfumo* inf = tenga(ukubwa(MiundombinuMfumo));
+    N32 i = 0;
+    wakati (i < MIUNDOMBINU_IDADI) {
+        MiundombinuMtandao* n = miundombinu_pata_mtandao(inf, i);
+        n->aina = i;
+        n->ufikiaji = 0.35;
+        n->hali_ya_mtandao = 0.70;
+        n->gharama_ya_matengenezo = 5000.0;
+        n->maendeleo_ya_ujenzi = 0.0;
+        i = i + 1;
+    }
+    inf->mtandao_5.ufikiaji = 0.25;   // mawasiliano
+    inf->mtandao_3.ufikiaji = 0.10;   // uwanja wa ndege
+
+    inf->ubora_wa_jumla = 0.50;
+    inf->kizidishi_cha_gharama_ya_usafiri = 1.0;
+    inf->ufanisi_wa_mnyororo_wa_ugavi = 0.55;
+    inf->mzigo_jumla_wa_matengenezo = 0.0;
+    rudisha inf;
+}
+
+W0 miundombinu_uharibu(MiundombinuMfumo* inf) {
+    achilia inf;
+}
+
+W0 miundombinu_sasisha(MiundombinuMfumo* inf, D64 muda, D64 mgao_wa_bajeti,
+                         D64 idadi_ya_watu, D64 ukubwa_wa_jiografia) {
+    D64 kwa_kila_mtandao = mgao_wa_bajeti / MIUNDOMBINU_IDADI;
+
+    N32 i = 0;
+    wakati (i < MIUNDOMBINU_IDADI) {
+        MiundombinuMtandao* n = miundombinu_pata_mtandao(inf, i);
+
+        D64 uchakavu = idadi_ya_watu * 0.00001;
+        n->hali_ya_mtandao = n->hali_ya_mtandao - uchakavu * 0.1;
+        kama (n->hali_ya_mtandao < 0.0) { n->hali_ya_mtandao = 0.0; }
+
+        kama (kwa_kila_mtandao > 0.0) {
+            n->gharama_ya_matengenezo = kwa_kila_mtandao * 0.3;
+            n->hali_ya_mtandao = n->hali_ya_mtandao + kwa_kila_mtandao * 0.0001;
+            kama (n->hali_ya_mtandao > 1.0) { n->hali_ya_mtandao = 1.0; }
+        }
+
+        kama (n->maendeleo_ya_ujenzi > 0.0) {
+            n->ufikiaji = n->ufikiaji + n->maendeleo_ya_ujenzi * 0.01;
+            n->maendeleo_ya_ujenzi = n->maendeleo_ya_ujenzi * 0.9;
+            kama (n->ufikiaji > 1.0) { n->ufikiaji = 1.0; }
+        }
+
+        i = i + 1;
+    }
+
+    inf->ubora_wa_jumla = 0.0;
+    i = 0;
+    wakati (i < MIUNDOMBINU_IDADI) {
+        MiundombinuMtandao* n = miundombinu_pata_mtandao(inf, i);
+        inf->ubora_wa_jumla = inf->ubora_wa_jumla + n->ufikiaji * n->hali_ya_mtandao;
+        i = i + 1;
+    }
+    inf->ubora_wa_jumla = inf->ubora_wa_jumla / MIUNDOMBINU_IDADI;
+
+    inf->kizidishi_cha_gharama_ya_usafiri = 1.0 + (1.0 - inf->ubora_wa_jumla) * 2.0;
+
+    inf->ufanisi_wa_mnyororo_wa_ugavi = inf->mtandao_0.hali_ya_mtandao * 0.4
+        + inf->mtandao_1.hali_ya_mtandao * 0.2 + inf->mtandao_2.hali_ya_mtandao * 0.2
+        + inf->mtandao_5.hali_ya_mtandao * 0.2;
+
+    inf->mzigo_jumla_wa_matengenezo = 0.0;
+    i = 0;
+    wakati (i < MIUNDOMBINU_IDADI) {
+        MiundombinuMtandao* n = miundombinu_pata_mtandao(inf, i);
+        inf->mzigo_jumla_wa_matengenezo = inf->mzigo_jumla_wa_matengenezo + n->gharama_ya_matengenezo;
+        i = i + 1;
+    }
+}
+
+W0 miundombinu_wekeza(MiundombinuMfumo* inf, N32 aina, D64 kiasi) {
+    kama (aina >= MIUNDOMBINU_IDADI || kiasi <= 0.0) { rudisha; }
+    MiundombinuMtandao* n = miundombinu_pata_mtandao(inf, aina);
+    n->maendeleo_ya_ujenzi = n->maendeleo_ya_ujenzi + kiasi * 0.001;
+    n->hali_ya_mtandao = n->hali_ya_mtandao + kiasi * 0.0005;
+    kama (n->hali_ya_mtandao > 1.0) { n->hali_ya_mtandao = 1.0; }
+}
+
+D64 miundombinu_ufanisi_wa_biashara(MiundombinuMfumo* inf) {
+    rudisha inf->ufanisi_wa_mnyororo_wa_ugavi;
+}
+
+D64 miundombinu_gharama_ya_usafirishaji(MiundombinuMfumo* inf, D64 umbali) {
+    rudisha umbali * 0.01 * inf->kizidishi_cha_gharama_ya_usafiri;
+}

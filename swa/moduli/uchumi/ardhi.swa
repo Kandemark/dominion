@@ -1,0 +1,163 @@
+// ardhi.swa — tafsiri ya src/core/economy/land_use.c (na .h) kwenda
+// Swa. Thamani ya ardhi, ugawaji wa maeneo, na msongamano.
+//
+// Kiambishi: ardhi_ — angalia ../../KANUNI-MAJINA.md.
+// allocations[CIV_LAND_ZONE_COUNT] (nyanja 6) imegawanywa kuwa
+// vigezo 6 vyenye majina + kazi ya kupata.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 ARDHI_HAIJAENDELEZWA = 0;
+N32 ARDHI_KILIMO = 1;
+N32 ARDHI_MAKAZI = 2;
+N32 ARDHI_BIASHARA = 3;
+N32 ARDHI_VIWANDA = 4;
+N32 ARDHI_HIFADHI = 5;
+N32 ARDHI_IDADI_YA_MAENEO = 6;
+
+muundo ArdhiUgawaji {
+    N32 eneo;
+    D64 eneo_km2;
+    D64 thamani_kwa_km2;
+    D64 uzalishaji;
+    D64 maendeleo_ya_ujenzi;
+};
+
+muundo ArdhiMfumo {
+    ArdhiUgawaji ugawaji_0; ArdhiUgawaji ugawaji_1; ArdhiUgawaji ugawaji_2;
+    ArdhiUgawaji ugawaji_3; ArdhiUgawaji ugawaji_4; ArdhiUgawaji ugawaji_5;
+
+    D64 eneo_jumla_km2;
+    D64 msongamano_wa_watu;
+    D64 kiashiria_cha_thamani_ya_ardhi;
+    D64 shinikizo_la_maendeleo;
+};
+
+ArdhiUgawaji* ardhi_pata_ugawaji(ArdhiMfumo* l, N32 eneo) {
+    kama (eneo == 0) { rudisha &l->ugawaji_0; }
+    kama (eneo == 1) { rudisha &l->ugawaji_1; }
+    kama (eneo == 2) { rudisha &l->ugawaji_2; }
+    kama (eneo == 3) { rudisha &l->ugawaji_3; }
+    kama (eneo == 4) { rudisha &l->ugawaji_4; }
+    rudisha &l->ugawaji_5;
+}
+
+D64 ardhi_thamani_ya_awali(N32 eneo) {
+    kama (eneo == ARDHI_HAIJAENDELEZWA) { rudisha 100.0; }
+    kama (eneo == ARDHI_KILIMO) { rudisha 5000.0; }
+    kama (eneo == ARDHI_MAKAZI) { rudisha 50000.0; }
+    kama (eneo == ARDHI_BIASHARA) { rudisha 30000.0; }
+    kama (eneo == ARDHI_VIWANDA) { rudisha 20000.0; }
+    rudisha 200.0;
+}
+
+ArdhiMfumo* ardhi_unda(D64 eneo_jumla_km2) {
+    ArdhiMfumo* l = tenga(ukubwa(ArdhiMfumo));
+
+    kama (eneo_jumla_km2 > 0.0) { l->eneo_jumla_km2 = eneo_jumla_km2; }
+    sivyo { l->eneo_jumla_km2 = 10000.0; }
+
+    N32 i = 0;
+    wakati (i < ARDHI_IDADI_YA_MAENEO) {
+        ArdhiUgawaji* a = ardhi_pata_ugawaji(l, i);
+        a->eneo = i;
+        a->uzalishaji = 0.60;
+        a->thamani_kwa_km2 = ardhi_thamani_ya_awali(i);
+        a->eneo_km2 = 0.0;
+        a->maendeleo_ya_ujenzi = 0.0;
+        i = i + 1;
+    }
+
+    l->ugawaji_0.eneo_km2 = l->eneo_jumla_km2 * 0.70;  // haijaendelezwa
+    l->ugawaji_1.eneo_km2 = l->eneo_jumla_km2 * 0.20;  // kilimo
+    l->ugawaji_2.eneo_km2 = l->eneo_jumla_km2 * 0.05;  // makazi
+    l->ugawaji_3.eneo_km2 = l->eneo_jumla_km2 * 0.02;  // biashara
+    l->ugawaji_4.eneo_km2 = l->eneo_jumla_km2 * 0.02;  // viwanda
+    l->ugawaji_5.eneo_km2 = l->eneo_jumla_km2 * 0.01;  // hifadhi
+
+    l->kiashiria_cha_thamani_ya_ardhi = 1.0;
+    rudisha l;
+}
+
+W0 ardhi_uharibu(ArdhiMfumo* l) {
+    achilia l;
+}
+
+W0 ardhi_sasisha(ArdhiMfumo* l, D64 muda, N32 idadi_ya_watu, D64 pato_kwa_mtu,
+                   D64 kiwango_cha_ukuaji_wa_miji) {
+    D64 idadi_d = idadi_ya_watu;
+    kama (l->eneo_jumla_km2 > 0.0) {
+        l->msongamano_wa_watu = idadi_d / l->eneo_jumla_km2;
+    } sivyo {
+        l->msongamano_wa_watu = 0.0;
+    }
+
+    D64 imeendelezwa = l->ugawaji_1.eneo_km2 + l->ugawaji_2.eneo_km2
+        + l->ugawaji_3.eneo_km2 + l->ugawaji_4.eneo_km2;
+
+    kama (imeendelezwa > 0.0) {
+        l->shinikizo_la_maendeleo = idadi_d / imeendelezwa * 0.01;
+    } sivyo {
+        l->shinikizo_la_maendeleo = 0.5;
+    }
+
+    kama (l->shinikizo_la_maendeleo > 0.5 && l->ugawaji_0.eneo_km2 > 0.0) {
+        D64 badiliko = l->ugawaji_0.eneo_km2 * 0.002 * kiwango_cha_ukuaji_wa_miji;
+        kama (badiliko > 0.0) {
+            l->ugawaji_0.eneo_km2 = l->ugawaji_0.eneo_km2 - badiliko;
+            l->ugawaji_2.eneo_km2 = l->ugawaji_2.eneo_km2 + badiliko * 0.5;
+            l->ugawaji_3.eneo_km2 = l->ugawaji_3.eneo_km2 + badiliko * 0.3;
+            l->ugawaji_4.eneo_km2 = l->ugawaji_4.eneo_km2 + badiliko * 0.2;
+        }
+    }
+
+    N32 i = 0;
+    wakati (i < ARDHI_IDADI_YA_MAENEO) {
+        ArdhiUgawaji* a = ardhi_pata_ugawaji(l, i);
+        kama (a->eneo == ARDHI_HAIJAENDELEZWA) {
+            a->thamani_kwa_km2 = a->thamani_kwa_km2 * (1.0 + pato_kwa_mtu * 0.0001);
+        } sivyo {
+            a->thamani_kwa_km2 = a->thamani_kwa_km2
+                * (1.0 + pato_kwa_mtu * 0.0005 + l->shinikizo_la_maendeleo * 0.02);
+        }
+        i = i + 1;
+    }
+
+    D64 thamani_jumla = 0.0;
+    i = 0;
+    wakati (i < ARDHI_IDADI_YA_MAENEO) {
+        ArdhiUgawaji* a = ardhi_pata_ugawaji(l, i);
+        thamani_jumla = thamani_jumla + a->thamani_kwa_km2 * a->eneo_km2;
+        i = i + 1;
+    }
+    l->kiashiria_cha_thamani_ya_ardhi = thamani_jumla / (l->eneo_jumla_km2 * 1000.0 + 1.0);
+}
+
+W0 ardhi_badilisha_eneo(ArdhiMfumo* l, N32 kutoka, N32 kwenda, D64 kiasi_km2) {
+    kama (kutoka >= ARDHI_IDADI_YA_MAENEO || kwenda >= ARDHI_IDADI_YA_MAENEO) { rudisha; }
+    ArdhiUgawaji* chanzo = ardhi_pata_ugawaji(l, kutoka);
+    ArdhiUgawaji* lengo = ardhi_pata_ugawaji(l, kwenda);
+
+    D64 kiasi = kiasi_km2;
+    kama (kiasi > chanzo->eneo_km2) { kiasi = chanzo->eneo_km2; }
+    chanzo->eneo_km2 = chanzo->eneo_km2 - kiasi;
+    lengo->eneo_km2 = lengo->eneo_km2 + kiasi;
+}
+
+D64 ardhi_thamani_katika(ArdhiMfumo* l, N32 eneo) {
+    kama (eneo >= ARDHI_IDADI_YA_MAENEO) { rudisha 0.0; }
+    rudisha ardhi_pata_ugawaji(l, eneo)->thamani_kwa_km2;
+}
+
+D64 ardhi_inayopatikana_kwa(ArdhiMfumo* l, N32 eneo) {
+    kama (eneo >= ARDHI_IDADI_YA_MAENEO) { rudisha 0.0; }
+    ArdhiUgawaji* a = ardhi_pata_ugawaji(l, eneo);
+    D64 kimetumika = a->eneo_km2;
+    D64 kiwango_cha_juu = l->eneo_jumla_km2 * 0.3;
+    kama (eneo == ARDHI_HAIJAENDELEZWA || eneo == ARDHI_KILIMO) {
+        kiwango_cha_juu = l->eneo_jumla_km2;
+    }
+    D64 tofauti = kiwango_cha_juu - kimetumika;
+    kama (tofauti > 0.0) { rudisha tofauti; }
+    rudisha 0.0;
+}
