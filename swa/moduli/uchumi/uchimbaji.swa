@@ -1,0 +1,151 @@
+// uchimbaji.swa — tafsiri ya src/core/economy/extraction.c (na .h)
+// kwenda Swa. Uchimbaji wa rasilimali — madini, mbao, uvuvi, uwindaji.
+//
+// Kiambishi: uchimbaji_ — angalia ../../KANUNI-MAJINA.md.
+// sites[] (safu inayokua ya C) imekuwa UCHIMBAJI_ENEO_IDADI=16 vigezo
+// vyenye majina + kazi ya kupata.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 UCHIMBAJI_MADINI = 0;
+N32 UCHIMBAJI_MBAO = 1;
+N32 UCHIMBAJI_UVUVI = 2;
+N32 UCHIMBAJI_UWINDAJI = 3;
+N32 UCHIMBAJI_MAWE = 4;
+N32 UCHIMBAJI_ENEO_IDADI = 16;
+
+muundo UchimbajiEneo {
+    N32 aina;
+    N8* rasilimali;
+    D64 ukubwa_wa_akiba;
+    D64 kiwango_cha_uchimbaji;
+    D64 kiwango_cha_kupungua;
+    D64 ufanisi;
+    N32 imeisha;
+};
+
+muundo UchimbajiMfumo {
+    UchimbajiEneo e_0; UchimbajiEneo e_1; UchimbajiEneo e_2; UchimbajiEneo e_3;
+    UchimbajiEneo e_4; UchimbajiEneo e_5; UchimbajiEneo e_6; UchimbajiEneo e_7;
+    UchimbajiEneo e_8; UchimbajiEneo e_9; UchimbajiEneo e_10; UchimbajiEneo e_11;
+    UchimbajiEneo e_12; UchimbajiEneo e_13; UchimbajiEneo e_14; UchimbajiEneo e_15;
+
+    N32 idadi_ya_maeneo;
+    D64 pato_jumla;
+    D64 kiashiria_cha_uendelevu;
+};
+
+UchimbajiEneo* uchimbaji_pata_eneo(UchimbajiMfumo* e, N32 idx) {
+    kama (idx == 0) { rudisha &e->e_0; }
+    kama (idx == 1) { rudisha &e->e_1; }
+    kama (idx == 2) { rudisha &e->e_2; }
+    kama (idx == 3) { rudisha &e->e_3; }
+    kama (idx == 4) { rudisha &e->e_4; }
+    kama (idx == 5) { rudisha &e->e_5; }
+    kama (idx == 6) { rudisha &e->e_6; }
+    kama (idx == 7) { rudisha &e->e_7; }
+    kama (idx == 8) { rudisha &e->e_8; }
+    kama (idx == 9) { rudisha &e->e_9; }
+    kama (idx == 10) { rudisha &e->e_10; }
+    kama (idx == 11) { rudisha &e->e_11; }
+    kama (idx == 12) { rudisha &e->e_12; }
+    kama (idx == 13) { rudisha &e->e_13; }
+    kama (idx == 14) { rudisha &e->e_14; }
+    rudisha &e->e_15;
+}
+
+UchimbajiMfumo* uchimbaji_unda() {
+    UchimbajiMfumo* e = tenga(ukubwa(UchimbajiMfumo));
+    e->idadi_ya_maeneo = 0;
+    e->pato_jumla = 0.0;
+    e->kiashiria_cha_uendelevu = 0.80;
+    rudisha e;
+}
+
+W0 uchimbaji_uharibu(UchimbajiMfumo* e) {
+    achilia e;
+}
+
+UchimbajiEneo* uchimbaji_ongeza_eneo(UchimbajiMfumo* e, N32 aina, N8* rasilimali, D64 ukubwa_wa_akiba) {
+    kama (e->idadi_ya_maeneo >= UCHIMBAJI_ENEO_IDADI) { rudisha 0; }
+    UchimbajiEneo* s = uchimbaji_pata_eneo(e, e->idadi_ya_maeneo);
+    s->aina = aina;
+    s->rasilimali = rasilimali;
+    s->ukubwa_wa_akiba = ukubwa_wa_akiba;
+    s->kiwango_cha_uchimbaji = 0.0;
+    s->kiwango_cha_kupungua = 0.0;
+    s->ufanisi = 0.0;
+    s->imeisha = 0;
+    e->idadi_ya_maeneo = e->idadi_ya_maeneo + 1;
+    rudisha s;
+}
+
+W0 uchimbaji_sasisha(UchimbajiMfumo* e, D64 muda, D64 kiwango_cha_teknolojia,
+                       D64 nguvukazi_inayopatikana, D64 utajiri_wa_madini_wa_jiografia) {
+    e->pato_jumla = 0.0;
+    D64 jumla_ya_kupungua = 0.0;
+
+    N32 i = 0;
+    wakati (i < e->idadi_ya_maeneo) {
+        UchimbajiEneo* s = uchimbaji_pata_eneo(e, i);
+        kama (s->imeisha == 0) {
+            s->ufanisi = 0.3 + kiwango_cha_teknolojia * 0.5;
+            kama (nguvukazi_inayopatikana > 1000.0) { s->ufanisi = s->ufanisi + 0.2; }
+            kama (s->ufanisi > 1.0) { s->ufanisi = 1.0; }
+
+            s->kiwango_cha_uchimbaji = s->ukubwa_wa_akiba * s->ufanisi * 0.02
+                * utajiri_wa_madini_wa_jiografia * muda * 0.1;
+
+            s->ukubwa_wa_akiba = s->ukubwa_wa_akiba - s->kiwango_cha_uchimbaji;
+            kama (s->ukubwa_wa_akiba <= 0.0) {
+                s->ukubwa_wa_akiba = 0.0;
+                s->imeisha = 1;
+                s->kiwango_cha_uchimbaji = 0.0;
+            }
+
+            s->kiwango_cha_kupungua = 0.0;
+            kama (s->ukubwa_wa_akiba > 0.0) {
+                s->kiwango_cha_kupungua = s->kiwango_cha_uchimbaji / s->ukubwa_wa_akiba;
+            }
+            jumla_ya_kupungua = jumla_ya_kupungua + s->kiwango_cha_kupungua;
+            e->pato_jumla = e->pato_jumla + s->kiwango_cha_uchimbaji;
+        }
+        i = i + 1;
+    }
+
+    D64 wastani_wa_kupungua = 0.0;
+    kama (e->idadi_ya_maeneo > 0) {
+        N32 idadi = e->idadi_ya_maeneo;
+        D64 idadi_d = idadi;
+        wastani_wa_kupungua = jumla_ya_kupungua / idadi_d;
+    }
+    e->kiashiria_cha_uendelevu = e->kiashiria_cha_uendelevu
+        + ((1.0 - wastani_wa_kupungua * 10.0) - e->kiashiria_cha_uendelevu) * 0.05;
+    kama (e->kiashiria_cha_uendelevu < 0.0) { e->kiashiria_cha_uendelevu = 0.0; }
+    kama (e->kiashiria_cha_uendelevu > 1.0) { e->kiashiria_cha_uendelevu = 1.0; }
+}
+
+D64 uchimbaji_pato_kwa_aina(UchimbajiMfumo* e, N32 aina) {
+    D64 jumla = 0.0;
+    N32 i = 0;
+    wakati (i < e->idadi_ya_maeneo) {
+        UchimbajiEneo* s = uchimbaji_pata_eneo(e, i);
+        kama (s->aina == aina) { jumla = jumla + s->kiwango_cha_uchimbaji; }
+        i = i + 1;
+    }
+    rudisha jumla;
+}
+
+D64 uchimbaji_kiwango_cha_kupungua(UchimbajiMfumo* e) {
+    kama (e->idadi_ya_maeneo == 0) { rudisha 0.0; }
+    D64 jumla = 0.0;
+    N32 i = 0;
+    wakati (i < e->idadi_ya_maeneo) {
+        UchimbajiEneo* s = uchimbaji_pata_eneo(e, i);
+        jumla = jumla + s->kiwango_cha_kupungua;
+        i = i + 1;
+    }
+    N32 idadi = e->idadi_ya_maeneo;
+    D64 idadi_d = idadi;
+    rudisha jumla / idadi_d;
+}

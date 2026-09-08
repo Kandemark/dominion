@@ -1,0 +1,125 @@
+// uvumbuzi.swa — tafsiri ya src/core/economy/innovation_economy.c
+// (na .h) kwenda Swa. Uwekezaji wa utafiti, ubiasharaji wa
+// teknolojia, hataza, na kampuni changa.
+//
+// Kiambishi: uvumbuzi_ — angalia ../../KANUNI-MAJINA.md.
+// sectors[] (safu inayokua ya C) imekuwa UVUMBUZI_SEKTA_IDADI=8
+// vigezo vyenye majina + kazi ya kupata.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 UVUMBUZI_SEKTA_IDADI = 8;
+
+muundo UvumbuziSekta {
+    N8* jina;
+    D64 matumizi_ya_utafiti;
+    D64 kiwango_cha_uvumbuzi;
+    D64 usambazaji_wa_teknolojia;
+    N32 hataza_zinazofanya_kazi;
+    N32 kampuni_changa;
+};
+
+muundo UvumbuziMfumo {
+    UvumbuziSekta s_0; UvumbuziSekta s_1; UvumbuziSekta s_2; UvumbuziSekta s_3;
+    UvumbuziSekta s_4; UvumbuziSekta s_5; UvumbuziSekta s_6; UvumbuziSekta s_7;
+
+    N32 idadi_ya_sekta;
+    D64 utafiti_jumla;
+    D64 utafiti_kwa_pato;
+    D64 kiashiria_cha_uvumbuzi;
+    D64 ubiasharaji_wa_teknolojia;
+    D64 uzalishaji_wa_hataza;
+    D64 kiwango_cha_uundwaji_wa_kampuni_changa;
+};
+
+UvumbuziSekta* uvumbuzi_pata_sekta(UvumbuziMfumo* ie, N32 idx) {
+    kama (idx == 0) { rudisha &ie->s_0; }
+    kama (idx == 1) { rudisha &ie->s_1; }
+    kama (idx == 2) { rudisha &ie->s_2; }
+    kama (idx == 3) { rudisha &ie->s_3; }
+    kama (idx == 4) { rudisha &ie->s_4; }
+    kama (idx == 5) { rudisha &ie->s_5; }
+    kama (idx == 6) { rudisha &ie->s_6; }
+    rudisha &ie->s_7;
+}
+
+UvumbuziMfumo* uvumbuzi_unda() {
+    UvumbuziMfumo* ie = tenga(ukubwa(UvumbuziMfumo));
+    ie->idadi_ya_sekta = 0;
+    ie->kiashiria_cha_uvumbuzi = 0.35;
+    ie->ubiasharaji_wa_teknolojia = 0.25;
+    ie->uzalishaji_wa_hataza = 0.01;
+    ie->kiwango_cha_uundwaji_wa_kampuni_changa = 0.5;
+    rudisha ie;
+}
+
+W0 uvumbuzi_uharibu(UvumbuziMfumo* ie) {
+    achilia ie;
+}
+
+W0 uvumbuzi_ongeza_sekta(UvumbuziMfumo* ie, N8* jina) {
+    kama (ie->idadi_ya_sekta >= UVUMBUZI_SEKTA_IDADI) { rudisha; }
+    UvumbuziSekta* s = uvumbuzi_pata_sekta(ie, ie->idadi_ya_sekta);
+    s->jina = jina;
+    s->matumizi_ya_utafiti = 0.0;
+    s->kiwango_cha_uvumbuzi = 0.0;
+    s->usambazaji_wa_teknolojia = 0.1;
+    s->hataza_zinazofanya_kazi = 0;
+    s->kampuni_changa = 0;
+    ie->idadi_ya_sekta = ie->idadi_ya_sekta + 1;
+}
+
+muundo UvumbuziMazingira {
+    D64 elimu;
+    D64 imani_ya_biashara;
+    D64 kiwango_cha_kanuni;
+    D64 upatikanaji_wa_mtaji;
+};
+
+W0 uvumbuzi_sasisha(UvumbuziMfumo* ie, D64 muda, D64 pato, UvumbuziMazingira* m) {
+    ie->utafiti_kwa_pato = 0.01 + m->elimu * 0.03 + m->imani_ya_biashara * 0.01;
+    ie->utafiti_jumla = pato * ie->utafiti_kwa_pato;
+
+    ie->ubiasharaji_wa_teknolojia = m->elimu * 0.4 + m->imani_ya_biashara * 0.2
+        - m->kiwango_cha_kanuni * 0.1 + 0.15;
+    kama (ie->ubiasharaji_wa_teknolojia < 0.05) { ie->ubiasharaji_wa_teknolojia = 0.05; }
+    kama (ie->ubiasharaji_wa_teknolojia > 0.80) { ie->ubiasharaji_wa_teknolojia = 0.80; }
+
+    ie->uzalishaji_wa_hataza = 0.005 + ie->ubiasharaji_wa_teknolojia * 0.02;
+
+    ie->kiwango_cha_uundwaji_wa_kampuni_changa = m->upatikanaji_wa_mtaji * 0.4
+        + ie->ubiasharaji_wa_teknolojia * 0.3;
+
+    N32 i = 0;
+    wakati (i < ie->idadi_ya_sekta) {
+        UvumbuziSekta* s = uvumbuzi_pata_sekta(ie, i);
+
+        N32 idadi_p1 = ie->idadi_ya_sekta + 1;
+        D64 idadi_p1_d = idadi_p1;
+        s->matumizi_ya_utafiti = ie->utafiti_jumla / idadi_p1_d;
+
+        s->kiwango_cha_uvumbuzi = s->matumizi_ya_utafiti * ie->uzalishaji_wa_hataza
+            * (0.5 + m->elimu);
+        N32 hataza_mpya = s->kiwango_cha_uvumbuzi * 10.0;
+        s->hataza_zinazofanya_kazi = s->hataza_zinazofanya_kazi + hataza_mpya;
+
+        s->usambazaji_wa_teknolojia = s->usambazaji_wa_teknolojia
+            + (ie->ubiasharaji_wa_teknolojia - s->usambazaji_wa_teknolojia) * 0.2;
+
+        s->kampuni_changa = ie->kiwango_cha_uundwaji_wa_kampuni_changa * 10.0
+            * (0.5 + s->usambazaji_wa_teknolojia);
+
+        i = i + 1;
+    }
+
+    ie->kiashiria_cha_uvumbuzi = ie->utafiti_kwa_pato * 10.0 * ie->ubiasharaji_wa_teknolojia;
+    kama (ie->kiashiria_cha_uvumbuzi > 1.0) { ie->kiashiria_cha_uvumbuzi = 1.0; }
+}
+
+D64 uvumbuzi_faida_ya_uzalishaji(UvumbuziMfumo* ie) {
+    rudisha ie->kiashiria_cha_uvumbuzi * 0.05;
+}
+
+D64 uvumbuzi_kiwango_cha_usambazaji_wa_teknolojia(UvumbuziMfumo* ie) {
+    rudisha ie->ubiasharaji_wa_teknolojia;
+}

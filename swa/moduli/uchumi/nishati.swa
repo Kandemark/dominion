@@ -1,0 +1,151 @@
+// nishati.swa — tafsiri ya src/core/economy/energy.c (na .h) kwenda
+// Swa. Mafuta, umeme, gridi ya nishati, na kujitegemea kwa nishati.
+//
+// Kiambishi: nishati_ — angalia ../../KANUNI-MAJINA.md.
+// plants[] (safu inayokua ya C) imekuwa NISHATI_KIWANDA_IDADI=8
+// vigezo vyenye majina + kazi ya kupata (moja kwa kila aina ya chanzo
+// cha nishati, sawa na CIV_ENERGY_TYPE_COUNT=8 ya asili).
+
+husisha { msingi/msingi_civ.swa }
+
+N32 NISHATI_MAKAA = 0;
+N32 NISHATI_MAFUTA = 1;
+N32 NISHATI_GESI_ASILI = 2;
+N32 NISHATI_NYUKLIA = 3;
+N32 NISHATI_JUA = 4;
+N32 NISHATI_UPEPO = 5;
+N32 NISHATI_MAJI = 6;
+N32 NISHATI_JOTOARDHI = 7;
+N32 NISHATI_KIWANDA_IDADI = 8;
+
+muundo NishatiKiwanda {
+    N32 chanzo;
+    D64 uwezo_mw;
+    D64 pato_la_sasa_mw;
+    D64 ufanisi;
+    D64 gharama_kwa_mwh;
+    D64 uzito_wa_kaboni;
+    N32 inaweza_kujazwa;
+};
+
+muundo NishatiMfumo {
+    NishatiKiwanda k_0; NishatiKiwanda k_1; NishatiKiwanda k_2; NishatiKiwanda k_3;
+    NishatiKiwanda k_4; NishatiKiwanda k_5; NishatiKiwanda k_6; NishatiKiwanda k_7;
+
+    N32 idadi_ya_viwanda;
+    D64 uwezo_jumla_mw;
+    D64 mahitaji_jumla_mw;
+    D64 uaminifu_wa_gridi;
+    D64 bei_ya_nishati;
+    D64 kujitegemea_kwa_nishati;
+    D64 sehemu_inayoweza_kujazwa;
+    N32 kukatika_kwa_umeme;
+};
+
+NishatiKiwanda* nishati_pata_kiwanda(NishatiMfumo* e, N32 idx) {
+    kama (idx == 0) { rudisha &e->k_0; }
+    kama (idx == 1) { rudisha &e->k_1; }
+    kama (idx == 2) { rudisha &e->k_2; }
+    kama (idx == 3) { rudisha &e->k_3; }
+    kama (idx == 4) { rudisha &e->k_4; }
+    kama (idx == 5) { rudisha &e->k_5; }
+    kama (idx == 6) { rudisha &e->k_6; }
+    rudisha &e->k_7;
+}
+
+NishatiMfumo* nishati_unda() {
+    NishatiMfumo* e = tenga(ukubwa(NishatiMfumo));
+    e->idadi_ya_viwanda = 0;
+    e->uwezo_jumla_mw = 0.0;
+    e->mahitaji_jumla_mw = 0.0;
+    e->uaminifu_wa_gridi = 0.85;
+    e->bei_ya_nishati = 50.0;
+    e->kujitegemea_kwa_nishati = 0.90;
+    e->sehemu_inayoweza_kujazwa = 0.0;
+    e->kukatika_kwa_umeme = 0;
+    rudisha e;
+}
+
+W0 nishati_uharibu(NishatiMfumo* e) {
+    achilia e;
+}
+
+NishatiKiwanda* nishati_ongeza_kiwanda(NishatiMfumo* e, N32 chanzo, D64 uwezo, D64 ufanisi) {
+    kama (e->idadi_ya_viwanda >= NISHATI_KIWANDA_IDADI) { rudisha 0; }
+    NishatiKiwanda* p = nishati_pata_kiwanda(e, e->idadi_ya_viwanda);
+    p->chanzo = chanzo;
+    p->uwezo_mw = uwezo;
+    p->ufanisi = ufanisi;
+    p->pato_la_sasa_mw = 0.0;
+    p->inaweza_kujazwa = 0;
+    kama (chanzo >= NISHATI_JUA) { p->inaweza_kujazwa = 1; }
+    kama (p->inaweza_kujazwa != 0) {
+        p->gharama_kwa_mwh = 40.0;
+        p->uzito_wa_kaboni = 0.01;
+    } sivyo {
+        p->gharama_kwa_mwh = 60.0;
+        p->uzito_wa_kaboni = 0.8;
+    }
+    e->idadi_ya_viwanda = e->idadi_ya_viwanda + 1;
+    rudisha p;
+}
+
+W0 nishati_sasisha(NishatiMfumo* e, D64 muda, D64 idadi_ya_watu, D64 pato_la_viwanda,
+                     D64 kiwango_cha_teknolojia, D64 upatikanaji_wa_mafuta) {
+    e->mahitaji_jumla_mw = idadi_ya_watu * 0.001 + pato_la_viwanda * 0.01;
+
+    e->uwezo_jumla_mw = 0.0;
+    D64 uwezo_unaoweza_kujazwa = 0.0;
+
+    N32 i = 0;
+    wakati (i < e->idadi_ya_viwanda) {
+        NishatiKiwanda* p = nishati_pata_kiwanda(e, i);
+        p->ufanisi = p->ufanisi + (0.4 + kiwango_cha_teknolojia * 0.4 - p->ufanisi) * 0.05;
+
+        D64 kizidishi_cha_mafuta = 1.0;
+        kama (p->inaweza_kujazwa == 0) { kizidishi_cha_mafuta = upatikanaji_wa_mafuta; }
+
+        p->pato_la_sasa_mw = p->uwezo_mw * p->ufanisi * kizidishi_cha_mafuta;
+        e->uwezo_jumla_mw = e->uwezo_jumla_mw + p->uwezo_mw;
+
+        kama (p->inaweza_kujazwa != 0) {
+            uwezo_unaoweza_kujazwa = uwezo_unaoweza_kujazwa + p->uwezo_mw;
+        }
+        i = i + 1;
+    }
+
+    e->sehemu_inayoweza_kujazwa = 0.0;
+    kama (e->uwezo_jumla_mw > 0.0) {
+        e->sehemu_inayoweza_kujazwa = uwezo_unaoweza_kujazwa / e->uwezo_jumla_mw;
+    }
+
+    D64 ugavi_halisi = e->uwezo_jumla_mw * e->uaminifu_wa_gridi;
+    kama (e->mahitaji_jumla_mw > ugavi_halisi) { e->kukatika_kwa_umeme = 1; }
+    sivyo { e->kukatika_kwa_umeme = 0; }
+
+    D64 uwiano = 2.0;
+    kama (e->mahitaji_jumla_mw > 0.0) { uwiano = ugavi_halisi / e->mahitaji_jumla_mw; }
+    D64 bei_lengwa = 100.0 / (uwiano + 0.2);
+    bei_lengwa = bei_lengwa * (1.0 - e->sehemu_inayoweza_kujazwa * 0.3);
+    bei_lengwa = bei_lengwa / (1.0 + kiwango_cha_teknolojia * 0.3);
+    e->bei_ya_nishati = e->bei_ya_nishati + (bei_lengwa - e->bei_ya_nishati) * 0.1;
+
+    e->uaminifu_wa_gridi = e->uaminifu_wa_gridi
+        + (kiwango_cha_teknolojia * 0.1 - (1.0 - e->uaminifu_wa_gridi) * 0.02) * 0.5;
+    kama (e->uaminifu_wa_gridi < 0.20) { e->uaminifu_wa_gridi = 0.20; }
+    kama (e->uaminifu_wa_gridi > 0.99) { e->uaminifu_wa_gridi = 0.99; }
+
+    e->kujitegemea_kwa_nishati = 0.0;
+    kama (e->uwezo_jumla_mw > 0.0) {
+        e->kujitegemea_kwa_nishati = 1.0 - (1.0 - upatikanaji_wa_mafuta) * 0.5;
+    }
+}
+
+D64 nishati_ziada(NishatiMfumo* e) {
+    rudisha e->uwezo_jumla_mw - e->mahitaji_jumla_mw;
+}
+
+D64 nishati_mzigo_wa_gharama(NishatiMfumo* e, D64 pato) {
+    kama (pato <= 0.0) { rudisha 0.0; }
+    rudisha (e->bei_ya_nishati * e->mahitaji_jumla_mw) / pato;
+}
