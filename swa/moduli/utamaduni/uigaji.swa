@@ -1,0 +1,263 @@
+// uigaji.swa — tafsiri ya src/core/culture/cultural_assimilation.c
+// (na .h) kwenda Swa. Ufuatiliaji wa uigaji wa kiutamaduni (jinsi
+// utamaduni mmoja unavyofyonzwa/kuungana na mwingine).
+//
+// Kiambishi: utamaduni_uigaji_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - enum tatu (assimilation_type, integration_stage,
+//     assimilation_tool) zimekuwa viambatanisho vya N32.
+//   - active_tools[4] (safu ya ukubwa maalum ndani ya struct)
+//     imegawanywa kuwa vigezo 4 vyenye majina (chombo_0..chombo_3) —
+//     safu za ukubwa maalum HAZICHANGANULIWI kwenye muundo, ni
+//     tatizo lililothibitishwa la lugha.
+//   - source_culture_id/target_culture_id/region_id zimekuwa N8*
+//     (hazihifadhi nakala), sawa na muundo uliothibitishwa.
+//   - start_time/last_update (time_t) zimeachwa — ni kumbukumbu za
+//     muda tu, hazitumiki kwenye hesabu yoyote ya mantiki.
+//   - events[] (safu inayokua) inatumia muundo wa N64* (angalia
+//     maelezo kwenye kitambulisho.swa kuhusu lugha-swa/swa#185).
+//   - Uondoaji wa tukio wakati wa kurudia (memmove + i-- + continue
+//     kwenye C) umetafsiriwa kwa mkono: badala ya kuhamisha
+//     kipengele, tunahamisha VIELEKEZI vya N64 (vinavyofuata) chini
+//     nafasi moja — operesheni salama kwa sababu ni thamani za N64
+//     (vielekezi), si nakala za muundo kamili.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { moduli/utamaduni/kitambulisho.swa }
+
+N32 UTAMADUNI_UIGA_HIARI = 0;
+N32 UTAMADUNI_UIGA_KULAZIMISHWA = 1;
+N32 UTAMADUNI_UIGA_MCHANGANYIKO = 2;
+
+N32 UTAMADUNI_HATUA_UPINZANI = 0;
+N32 UTAMADUNI_HATUA_UKUBALI = 1;
+N32 UTAMADUNI_HATUA_KUCHUKUA = 2;
+N32 UTAMADUNI_HATUA_KUFYONZWA = 3;
+N32 UTAMADUNI_HATUA_UMOJA = 4;
+
+N32 UTAMADUNI_CHOMBO_ELIMU = 0;
+N32 UTAMADUNI_CHOMBO_PROPAGANDA = 1;
+N32 UTAMADUNI_CHOMBO_UHAMIAJI = 2;
+N32 UTAMADUNI_CHOMBO_MOTISHA_YA_KIUCHUMI = 3;
+N32 UTAMADUNI_CHOMBO_UUNGANISHO_WA_KIDINI = 4;
+
+muundo UtamaduniUigajiTukio {
+    N8* chanzo_utamaduni_id;
+    N8* lengwa_utamaduni_id;
+    N8* mkoa_id;
+
+    N32 aina;
+    N32 hatua;
+
+    D64 maendeleo;    // progress, 0.0-1.0
+    D64 kiwango;      // rate
+    D64 upinzani;     // resistance, 0.0-1.0
+
+    N32 chombo_0; N32 chombo_1; N32 chombo_2; N32 chombo_3;
+    N32 idadi_ya_vyombo;
+
+    N32 idadi_ya_watu_walioathirika;
+    D64 kiwango_cha_kuchukua;   // adoption_level
+};
+
+muundo UtamaduniUigajiTracker {
+    N64* matukio;           // N64* ya vielekezi vya UtamaduniUigajiTukio*
+    N32 idadi_ya_matukio;
+    N32 uwezo_wa_matukio;
+
+    D64 kiwango_cha_msingi;              // base_assimilation_rate
+    D64 kizidishi_cha_kulazimishwa;      // forced_assimilation_multiplier
+};
+
+UtamaduniUigajiTracker* utamaduni_uigaji_tracker_unda() {
+    UtamaduniUigajiTracker* t = tenga(ukubwa(UtamaduniUigajiTracker));
+    t->kiwango_cha_msingi = 0.01;
+    t->kizidishi_cha_kulazimishwa = 2.0;
+    t->uwezo_wa_matukio = 100;
+    t->idadi_ya_matukio = 0;
+    t->matukio = tenga(ukubwa(N64) * t->uwezo_wa_matukio);
+    rudisha t;
+}
+
+UtamaduniUigajiTukio* utamaduni_uigaji_tracker_pata_tukio_kwa_idx(UtamaduniUigajiTracker* t, N32 idx) {
+    rudisha t->matukio[idx];
+}
+
+N32 utamaduni_uigaji_tracker_ongeza_tukio(UtamaduniUigajiTracker* t, N8* chanzo_id,
+                                            N8* lengwa_id, N8* mkoa_id, N32 aina) {
+    N32 i = 0;
+    wakati (i < t->idadi_ya_matukio) {
+        UtamaduniUigajiTukio* uliopo = utamaduni_uigaji_tracker_pata_tukio_kwa_idx(t, i);
+        kama (linganisha_mfuatano(uliopo->chanzo_utamaduni_id, chanzo_id) == 0
+              && linganisha_mfuatano(uliopo->lengwa_utamaduni_id, lengwa_id) == 0) {
+            rudisha CIV_HITILAFU_HALI_MBAYA;
+        }
+        i = i + 1;
+    }
+
+    kama (t->idadi_ya_matukio >= t->uwezo_wa_matukio) {
+        t->uwezo_wa_matukio = t->uwezo_wa_matukio * 2;
+        t->matukio = badili(t->matukio, ukubwa(N64) * t->uwezo_wa_matukio);
+    }
+
+    UtamaduniUigajiTukio* tukio = tenga(ukubwa(UtamaduniUigajiTukio));
+    tukio->chanzo_utamaduni_id = chanzo_id;
+    tukio->lengwa_utamaduni_id = lengwa_id;
+    tukio->mkoa_id = mkoa_id;
+    tukio->aina = aina;
+    tukio->hatua = UTAMADUNI_HATUA_UPINZANI;
+    tukio->maendeleo = 0.0;
+    tukio->kiwango = t->kiwango_cha_msingi;
+    tukio->upinzani = 0.7;
+    tukio->idadi_ya_vyombo = 0;
+    tukio->chombo_0 = 0; tukio->chombo_1 = 0; tukio->chombo_2 = 0; tukio->chombo_3 = 0;
+    tukio->idadi_ya_watu_walioathirika = 0;
+    tukio->kiwango_cha_kuchukua = 0.0;
+
+    t->matukio[t->idadi_ya_matukio] = tukio;
+    t->idadi_ya_matukio = t->idadi_ya_matukio + 1;
+    rudisha CIV_SAWA;
+}
+
+D64 utamaduni_uigaji_hesabu_kiwango(UtamaduniUigajiTracker* t, UtamaduniKitambulisho* chanzo,
+                                      UtamaduniKitambulisho* lengwa, N32 aina) {
+    D64 kiwango_cha_msingi = t->kiwango_cha_msingi;
+
+    kama (aina == UTAMADUNI_UIGA_KULAZIMISHWA) {
+        kiwango_cha_msingi = kiwango_cha_msingi * t->kizidishi_cha_kulazimishwa;
+    }
+
+    kiwango_cha_msingi = kiwango_cha_msingi * chanzo->eneo_la_ushawishi * 0.1;
+    kiwango_cha_msingi = kiwango_cha_msingi * (1.0 - lengwa->mshikamano);
+
+    D64 mfanano = utamaduni_kitambulisho_fanana(chanzo, lengwa);
+    kiwango_cha_msingi = kiwango_cha_msingi * (1.0 + mfanano);
+
+    rudisha kiwango_cha_msingi;
+}
+
+W0 utamaduni_uigaji_sasisha_hatua(UtamaduniUigajiTukio* tukio) {
+    N32 hatua_ya_zamani = tukio->hatua;
+
+    kama (tukio->maendeleo > 0.9) {
+        tukio->hatua = UTAMADUNI_HATUA_UMOJA;
+    } sivyo { kama (tukio->maendeleo > 0.7) {
+        tukio->hatua = UTAMADUNI_HATUA_KUFYONZWA;
+    } sivyo { kama (tukio->maendeleo > 0.4) {
+        tukio->hatua = UTAMADUNI_HATUA_KUCHUKUA;
+    } sivyo { kama (tukio->maendeleo > 0.2) {
+        tukio->hatua = UTAMADUNI_HATUA_UKUBALI;
+    } } } }
+
+    kama (tukio->hatua != hatua_ya_zamani) {
+        tukio->upinzani = tukio->upinzani * 0.8;
+    }
+}
+
+N32 utamaduni_uigaji_tumia_chombo(UtamaduniUigajiTukio* tukio, N32 chombo) {
+    kama (tukio->idadi_ya_vyombo >= 4) {
+        rudisha CIV_HITILAFU_HALI_MBAYA;
+    }
+
+    kama (tukio->idadi_ya_vyombo == 0) { tukio->chombo_0 = chombo; }
+    sivyo { kama (tukio->idadi_ya_vyombo == 1) { tukio->chombo_1 = chombo; }
+    sivyo { kama (tukio->idadi_ya_vyombo == 2) { tukio->chombo_2 = chombo; }
+    sivyo { tukio->chombo_3 = chombo; } } }
+    tukio->idadi_ya_vyombo = tukio->idadi_ya_vyombo + 1;
+
+    tukio->upinzani = finya_d64(tukio->upinzani - 0.1, 0.0, 1.0);
+    tukio->kiwango = tukio->kiwango * 1.2;
+
+    rudisha CIV_SAWA;
+}
+
+W0 utamaduni_uigaji_tracker_sasisha(UtamaduniUigajiTracker* t, UtamaduniKitambulishoMfumo* m, D64 muda) {
+    N32 i = 0;
+    wakati (i < t->idadi_ya_matukio) {
+        UtamaduniUigajiTukio* tukio = utamaduni_uigaji_tracker_pata_tukio_kwa_idx(t, i);
+
+        UtamaduniKitambulisho* chanzo = utamaduni_kitambulisho_mfumo_tafuta(m, tukio->chanzo_utamaduni_id);
+        UtamaduniKitambulisho* lengwa = utamaduni_kitambulisho_mfumo_tafuta(m, tukio->lengwa_utamaduni_id);
+
+        N32 tumeondoa = 0;
+        kama (chanzo == 0 || lengwa == 0) {
+            // ondoa tukio batili: hamisha vielekezi vinavyofuata chini nafasi moja
+            N32 j = i;
+            wakati (j < t->idadi_ya_matukio - 1) {
+                t->matukio[j] = t->matukio[j + 1];
+                j = j + 1;
+            }
+            t->idadi_ya_matukio = t->idadi_ya_matukio - 1;
+            tumeondoa = 1;
+        }
+
+        kama (tumeondoa == 0) {
+            tukio->kiwango = utamaduni_uigaji_hesabu_kiwango(t, chanzo, lengwa, tukio->aina);
+
+            D64 nyongeza_ya_maendeleo = tukio->kiwango * (1.0 - tukio->upinzani) * muda;
+            tukio->maendeleo = finya_d64(tukio->maendeleo + nyongeza_ya_maendeleo, 0.0, 1.0);
+            tukio->kiwango_cha_kuchukua = tukio->maendeleo * (1.0 - tukio->upinzani);
+
+            kama (tukio->maendeleo > 0.1) {
+                N32 j = 0;
+                wakati (j < chanzo->idadi_ya_sifa) {
+                    UtamaduniSifa* sifa_ya_chanzo = utamaduni_kitambulisho_pata_sifa(chanzo, j);
+                    N8* jina_sifa = sifa_ya_chanzo->jina;
+                    D64 nguvu_ya_chanzo = sifa_ya_chanzo->nguvu;
+
+                    N32 imepatikana = 0;
+                    N32 k = 0;
+                    wakati (k < lengwa->idadi_ya_sifa && imepatikana == 0) {
+                        UtamaduniSifa* sifa_ya_lengwa = utamaduni_kitambulisho_pata_sifa(lengwa, k);
+                        kama (linganisha_mfuatano(sifa_ya_lengwa->jina, jina_sifa) == 0) {
+                            imepatikana = 1;
+                            D64 kuchukua = nguvu_ya_chanzo * tukio->kiwango_cha_kuchukua * muda * 0.1;
+                            sifa_ya_lengwa->nguvu = finya_d64(sifa_ya_lengwa->nguvu + kuchukua, 0.0, 1.0);
+                        }
+                        k = k + 1;
+                    }
+
+                    kama (imepatikana == 0 && tukio->kiwango_cha_kuchukua > 0.2) {
+                        utamaduni_kitambulisho_ongeza_sifa(lengwa, jina_sifa,
+                            nguvu_ya_chanzo * tukio->kiwango_cha_kuchukua * 0.5);
+                    }
+
+                    j = j + 1;
+                }
+            }
+
+            utamaduni_uigaji_sasisha_hatua(tukio);
+
+            kama (tukio->maendeleo >= 1.0) {
+                N32 j = i;
+                wakati (j < t->idadi_ya_matukio - 1) {
+                    t->matukio[j] = t->matukio[j + 1];
+                    j = j + 1;
+                }
+                t->idadi_ya_matukio = t->idadi_ya_matukio - 1;
+                tumeondoa = 1;
+            }
+        }
+
+        kama (tumeondoa == 0) {
+            i = i + 1;
+        }
+    }
+}
+
+UtamaduniUigajiTukio* utamaduni_uigaji_tracker_pata_tukio(UtamaduniUigajiTracker* t,
+                                                            N8* chanzo_id, N8* lengwa_id) {
+    N32 i = 0;
+    wakati (i < t->idadi_ya_matukio) {
+        UtamaduniUigajiTukio* tukio = utamaduni_uigaji_tracker_pata_tukio_kwa_idx(t, i);
+        kama (linganisha_mfuatano(tukio->chanzo_utamaduni_id, chanzo_id) == 0
+              && linganisha_mfuatano(tukio->lengwa_utamaduni_id, lengwa_id) == 0) {
+            rudisha tukio;
+        }
+        i = i + 1;
+    }
+    rudisha 0;
+}
