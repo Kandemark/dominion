@@ -172,3 +172,58 @@ D64 civ_mzizi(D64 x) {
     }
     rudisha kisio;
 }
+
+// civ_logasili: logarithm ya asili (ln, badala ya log() ya libc,
+// lugha-swa/swa#183). MUHIMU: civ_kielelezi (exp) kupitia mfululizo
+// wa Taylor haisambamki vizuri kwa x kubwa, kwa hiyo Newton juu ya
+// exp() haingekuwa sahihi kwa maadili makubwa (mfano maarifa
+// yanayokua bila kikomo). Badala yake: upunguzaji wa masafa (range
+// reduction) -- x inagawanywa/kuzidishwa mara kwa mara kwa 2 hadi
+// iwe kati ya 0.5 na 2.0 (idadi ya hatua = k, chanya au hasi),
+// kisha mfululizo wa atanh (unaosambamka haraka kwa hoja ndogo)
+// unatumika: ln(x_iliyopunguzwa) = 2*atanh((x-1)/(x+1)). Hatimaye
+// ln(x_asili) = ln(x_iliyopunguzwa) + k * ln(2). x<=0.0 hurudisha
+// 0.0 (hakuna logarithm halisi, sawa na muundo wa civ_mzizi).
+D64 civ_logasili(D64 x) {
+    kama (x <= 0.0) { rudisha 0.0; }
+
+    // MUHIMU: maneno ya D64 yenye tarakimu nyingi (>~10 baada ya nukta)
+    // huchanganuliwa vibaya KIMYA KIMYA (lugha-swa/swa#188) --
+    // 0.6931471805 (tarakimu 10) ni ndani ya kikomo salama.
+    D64 LN2 = 0.6931471805;
+    N32 k = 0;
+    D64 xr = x;
+    wakati (xr > 2.0) {
+        xr = xr / 2.0;
+        k = k + 1;
+    }
+    wakati (xr < 0.5) {
+        xr = xr * 2.0;
+        k = k - 1;
+    }
+
+    D64 z = (xr - 1.0) / (xr + 1.0);
+    D64 z2 = z * z;
+    D64 jumla = 0.0;
+    D64 neno = z;
+    N32 i = 1;
+    wakati (i <= 40) {
+        D64 i_d = i;
+        jumla = jumla + neno / i_d;
+        neno = neno * z2;
+        i = i + 2;
+    }
+
+    D64 k_d = k;
+    rudisha 2.0 * jumla + k_d * LN2;
+}
+
+// civ_kuinua: x kwa nguvu ya y (badala ya pow() ya libc,
+// lugha-swa/swa#183), kwa x > 0 pekee (kesi pekee inayohitajika
+// kwenye Dominion hadi sasa -- mfano (1.0 + kiwango)^kipeo ambapo
+// msingi daima ni >= 1.0). x^y = exp(y * ln(x)). x <= 0.0 hurudisha
+// 0.0.
+D64 civ_kuinua(D64 x, D64 y) {
+    kama (x <= 0.0) { rudisha 0.0; }
+    rudisha civ_kielelezi(y * civ_logasili(x));
+}
