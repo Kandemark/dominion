@@ -1,0 +1,158 @@
+// rushwa.swa — tafsiri ya src/core/governance/political/corruption.c
+// (na .h) kwenda Swa. Injini ya rushwa ya kimfumo.
+//
+// Kiambishi: utawala_rushwa_ — angalia ../../../KANUNI-MAJINA.md.
+// nodes[] (kikomo 32 asili) imepunguzwa kuwa kikomo cha nodi 12
+// (vigezo vyenye majina + kazi ya kupata). cliques[4][...] (safu ya
+// ndani ya kila nodi) imegawanywa kuwa vigezo 4 vyenye majina.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+N32 UTAWALA_RUSHWA_HONGO = 0;
+N32 UTAWALA_RUSHWA_UPENDELEO_WA_UKOO = 1;
+N32 UTAWALA_RUSHWA_UBADHIRIFU = 2;
+N32 UTAWALA_RUSHWA_UNYANG_ANYI = 3;
+N32 UTAWALA_RUSHWA_UPENDELEO_WA_KAZI = 4;
+
+N32 UTAWALA_RUSHWA_NODI_UPEO = 12;
+
+muundo UtawalaRushwaNodi {
+    N8* kitambulisho_cha_mtu;
+    D64 ushiriki;
+    D64 ushawishi;
+    N8* kikundi_0;
+    N8* kikundi_1;
+    N8* kikundi_2;
+    N8* kikundi_3;
+    N32 idadi_ya_vikundi;
+};
+
+muundo UtawalaRushwaInjini {
+    UtawalaRushwaNodi nodi_0; UtawalaRushwaNodi nodi_1; UtawalaRushwaNodi nodi_2;
+    UtawalaRushwaNodi nodi_3; UtawalaRushwaNodi nodi_4; UtawalaRushwaNodi nodi_5;
+    UtawalaRushwaNodi nodi_6; UtawalaRushwaNodi nodi_7; UtawalaRushwaNodi nodi_8;
+    UtawalaRushwaNodi nodi_9; UtawalaRushwaNodi nodi_10; UtawalaRushwaNodi nodi_11;
+    N32 idadi_ya_nodi;
+
+    D64 kielezo_cha_kimfumo;
+    D64 bajeti_ya_kivuli;
+    D64 ufanisi_wa_ukaguzi;
+};
+
+UtawalaRushwaNodi* utawala_rushwa_pata_nodi(UtawalaRushwaInjini* e, N32 idx) {
+    kama (idx == 0) { rudisha &e->nodi_0; }
+    kama (idx == 1) { rudisha &e->nodi_1; }
+    kama (idx == 2) { rudisha &e->nodi_2; }
+    kama (idx == 3) { rudisha &e->nodi_3; }
+    kama (idx == 4) { rudisha &e->nodi_4; }
+    kama (idx == 5) { rudisha &e->nodi_5; }
+    kama (idx == 6) { rudisha &e->nodi_6; }
+    kama (idx == 7) { rudisha &e->nodi_7; }
+    kama (idx == 8) { rudisha &e->nodi_8; }
+    kama (idx == 9) { rudisha &e->nodi_9; }
+    kama (idx == 10) { rudisha &e->nodi_10; }
+    rudisha &e->nodi_11;
+}
+
+UtawalaRushwaInjini* utawala_rushwa_injini_unda() {
+    UtawalaRushwaInjini* e = tenga(ukubwa(UtawalaRushwaInjini));
+    e->idadi_ya_nodi = 0;
+    e->kielezo_cha_kimfumo = 0.0;
+    e->bajeti_ya_kivuli = 0.0;
+    e->ufanisi_wa_ukaguzi = 0.5;
+    rudisha e;
+}
+
+W0 utawala_rushwa_injini_uharibu(UtawalaRushwaInjini* e) {
+    achilia e;
+}
+
+CivMatokeo utawala_rushwa_ongeza_ushiriki(UtawalaRushwaInjini* e, N8* kitambulisho_cha_mtu, D64 kiasi) {
+    CivMatokeo m;
+    kama (e == 0 || kitambulisho_cha_mtu == 0) {
+        m.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        m.ujumbe = "Kielekezi tupu";
+        rudisha m;
+    }
+
+    N32 i = 0;
+    wakati (i < e->idadi_ya_nodi) {
+        UtawalaRushwaNodi* n = utawala_rushwa_pata_nodi(e, i);
+        kama (linganisha_mfuatano(n->kitambulisho_cha_mtu, kitambulisho_cha_mtu) == 0) {
+            n->ushiriki = finya_d64(n->ushiriki + kiasi, 0.0, 1.0);
+            m.hitilafu = CIV_SAWA;
+            m.ujumbe = 0;
+            rudisha m;
+        }
+        i = i + 1;
+    }
+
+    kama (e->idadi_ya_nodi >= UTAWALA_RUSHWA_NODI_UPEO) {
+        m.hitilafu = CIV_HITILAFU_KUMBUKUMBU_IMEISHA;
+        m.ujumbe = "Kikomo cha nodi kimefikiwa";
+        rudisha m;
+    }
+
+    UtawalaRushwaNodi* n = utawala_rushwa_pata_nodi(e, e->idadi_ya_nodi);
+    n->kitambulisho_cha_mtu = kitambulisho_cha_mtu;
+    n->ushiriki = finya_d64(kiasi, 0.0, 1.0);
+    n->ushawishi = 1.0;
+    n->idadi_ya_vikundi = 0;
+    e->idadi_ya_nodi = e->idadi_ya_nodi + 1;
+
+    m.hitilafu = CIV_SAWA;
+    m.ujumbe = 0;
+    rudisha m;
+}
+
+D64 utawala_rushwa_hesabu_uvujaji(UtawalaRushwaInjini* e, D64 bajeti_jumla) {
+    kama (e == 0) { rudisha 0.0; }
+    D64 uvujaji = 0.0;
+    N32 i = 0;
+    wakati (i < e->idadi_ya_nodi) {
+        UtawalaRushwaNodi* n = utawala_rushwa_pata_nodi(e, i);
+        uvujaji = uvujaji + n->ushiriki * n->ushawishi * 0.01;
+        i = i + 1;
+    }
+    rudisha bajeti_jumla * finya_d64(uvujaji + e->kielezo_cha_kimfumo * 0.05, 0.0, 0.8);
+}
+
+CivMatokeo utawala_rushwa_fanya_ukaguzi(UtawalaRushwaInjini* e, D64 ukubwa) {
+    CivMatokeo m;
+    kama (e == 0) {
+        m.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        m.ujumbe = "Injini tupu";
+        rudisha m;
+    }
+
+    D64 nguvu_ya_kugundua = ukubwa * e->ufanisi_wa_ukaguzi;
+
+    N32 i = 0;
+    wakati (i < e->idadi_ya_nodi) {
+        UtawalaRushwaNodi* n = utawala_rushwa_pata_nodi(e, i);
+        kama (n->ushiriki > (1.0 - nguvu_ya_kugundua)) {
+            n->ushiriki = n->ushiriki * (1.0 - ukubwa);
+            andika("Ukaguzi umegundua rushwa kwenye nodi %s\n", n->kitambulisho_cha_mtu, 0,0,0,0,0);
+        }
+        i = i + 1;
+    }
+
+    m.hitilafu = CIV_SAWA;
+    m.ujumbe = 0;
+    rudisha m;
+}
+
+N32 utawala_rushwa_mtu_amevurugika(UtawalaRushwaInjini* e, N8* kitambulisho_cha_mtu) {
+    kama (e == 0 || kitambulisho_cha_mtu == 0) { rudisha 0; }
+    N32 i = 0;
+    wakati (i < e->idadi_ya_nodi) {
+        UtawalaRushwaNodi* n = utawala_rushwa_pata_nodi(e, i);
+        kama (linganisha_mfuatano(n->kitambulisho_cha_mtu, kitambulisho_cha_mtu) == 0) {
+            kama (n->ushiriki > 0.3) { rudisha 1; }
+            rudisha 0;
+        }
+        i = i + 1;
+    }
+    rudisha 0;
+}
