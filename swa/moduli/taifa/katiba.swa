@@ -1,0 +1,174 @@
+// katiba.swa — tafsiri ya src/core/constitution.c (na .h) kwenda
+// Swa. Katiba ya kila taifa -- kanuni zinazoamua vitendo vyote vya
+// mchezo (ruhusa/marufuku).
+//
+// Kiambishi: taifa_katiba_ — angalia ../../KANUNI-MAJINA.md. MUHIMU:
+// hii ni tofauti kabisa na utawala_katiba_ (governance/legal/
+// constitution.c, tayari imekamilika kwenye
+// swa/moduli/utawala/legal/katiba.swa) -- ile ni kuhusu matawi ya
+// serikali/taasisi, hii ni kuhusu RUHUSA ZA VITENDO VYA MCHEZAJI
+// (ajira, makazi, elimu, n.k.) kwa kila taifa. Migongano ya jina
+// ilikaguliwa moja kwa moja kwenye vichwa vya C (constitution.h
+// mbili tofauti, saraka tofauti) kabla ya kuandika.
+//
+// rules[CIV_RULE_COUNT] (safu ya muundo, field ya muundo, nyanja 16)
+// imegawanywa kuwa vigezo 16 vya TaifaKanuni vilivyopachikwa
+// (kanuni_0..kanuni_15, si vielekezi -- muundo uliopachikwa moja kwa
+// moja ndani ya muundo mwingine, mtindo ulioothibitishwa kwenye
+// rushwa.swa/vurugu.swa). "description" (maandishi
+// yaliyohesabiwa kwa snprintf) haikuletwa kama field -- inahesabiwa
+// papo kwa hapo na kazi ya taifa_katiba_maelezo badala yake.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 TAIFA_RUHUSA_MARUFUKU = 0;
+N32 TAIFA_RUHUSA_VIKWAZO = 1;
+N32 TAIFA_RUHUSA_INARUHUSIWA = 2;
+N32 TAIFA_RUHUSA_HAKI_ILIYOLINDWA = 3;
+
+N32 TAIFA_KANUNI_AJIRA = 0;
+N32 TAIFA_KANUNI_MAKAZI = 1;
+N32 TAIFA_KANUNI_ELIMU = 2;
+N32 TAIFA_KANUNI_CHAMA_CHA_SIASA = 3;
+N32 TAIFA_KANUNI_KUGOMBEA_URAIS = 4;
+N32 TAIFA_KANUNI_BIASHARA = 5;
+N32 TAIFA_KANUNI_MATUMIZI_YA_SARAFU = 6;
+N32 TAIFA_KANUNI_UHURU_WA_KUSEMA = 7;
+N32 TAIFA_KANUNI_MKUTANO = 8;
+N32 TAIFA_KANUNI_DINI = 9;
+N32 TAIFA_KANUNI_UTUMISHI_WA_KIJESHI = 10;
+N32 TAIFA_KANUNI_KODI = 11;
+N32 TAIFA_KANUNI_AFYA = 12;
+N32 TAIFA_KANUNI_BENKI = 13;
+N32 TAIFA_KANUNI_USAFIRI = 14;
+N32 TAIFA_KANUNI_KUPIGA_KURA = 15;
+N32 TAIFA_KANUNI_IDADI = 16;
+
+muundo TaifaKanuni {
+    N32 kiwango;
+    D64 kiwango_cha_kodi;
+    D64 umri_wa_chini;
+    D64 gharama;
+};
+
+muundo TaifaKatiba {
+    N8* jina;
+    N8* taifa_id;
+    N32 mwaka_wa_kuridhiwa;
+
+    TaifaKanuni kanuni_0; TaifaKanuni kanuni_1; TaifaKanuni kanuni_2;
+    TaifaKanuni kanuni_3; TaifaKanuni kanuni_4; TaifaKanuni kanuni_5;
+    TaifaKanuni kanuni_6; TaifaKanuni kanuni_7; TaifaKanuni kanuni_8;
+    TaifaKanuni kanuni_9; TaifaKanuni kanuni_10; TaifaKanuni kanuni_11;
+    TaifaKanuni kanuni_12; TaifaKanuni kanuni_13; TaifaKanuni kanuni_14;
+    TaifaKanuni kanuni_15;
+
+    D64 kizingiti_cha_marekebisho;
+    N32 inaweza_kusimamishwa;
+};
+
+N8* taifa_katiba_jina_la_kanuni(N32 kategoria) {
+    kama (kategoria == TAIFA_KANUNI_AJIRA) { rudisha "Ajira"; }
+    kama (kategoria == TAIFA_KANUNI_MAKAZI) { rudisha "Makazi"; }
+    kama (kategoria == TAIFA_KANUNI_ELIMU) { rudisha "Elimu"; }
+    kama (kategoria == TAIFA_KANUNI_CHAMA_CHA_SIASA) { rudisha "Chama cha Siasa"; }
+    kama (kategoria == TAIFA_KANUNI_KUGOMBEA_URAIS) { rudisha "Kugombea Urais"; }
+    kama (kategoria == TAIFA_KANUNI_BIASHARA) { rudisha "Biashara"; }
+    kama (kategoria == TAIFA_KANUNI_MATUMIZI_YA_SARAFU) { rudisha "Matumizi ya Sarafu"; }
+    kama (kategoria == TAIFA_KANUNI_UHURU_WA_KUSEMA) { rudisha "Uhuru wa Kusema"; }
+    kama (kategoria == TAIFA_KANUNI_MKUTANO) { rudisha "Mkutano"; }
+    kama (kategoria == TAIFA_KANUNI_DINI) { rudisha "Dini"; }
+    kama (kategoria == TAIFA_KANUNI_UTUMISHI_WA_KIJESHI) { rudisha "Utumishi wa Kijeshi"; }
+    kama (kategoria == TAIFA_KANUNI_KODI) { rudisha "Kodi"; }
+    kama (kategoria == TAIFA_KANUNI_AFYA) { rudisha "Afya"; }
+    kama (kategoria == TAIFA_KANUNI_BENKI) { rudisha "Benki"; }
+    kama (kategoria == TAIFA_KANUNI_USAFIRI) { rudisha "Usafiri"; }
+    kama (kategoria == TAIFA_KANUNI_KUPIGA_KURA) { rudisha "Kupiga Kura"; }
+    rudisha "Haijulikani";
+}
+
+N8* taifa_katiba_jina_la_ruhusa(N32 kiwango) {
+    kama (kiwango == TAIFA_RUHUSA_MARUFUKU) { rudisha "Marufuku"; }
+    kama (kiwango == TAIFA_RUHUSA_VIKWAZO) { rudisha "Vikwazo"; }
+    kama (kiwango == TAIFA_RUHUSA_INARUHUSIWA) { rudisha "Inaruhusiwa"; }
+    kama (kiwango == TAIFA_RUHUSA_HAKI_ILIYOLINDWA) { rudisha "Haki Iliyolindwa"; }
+    rudisha "Haijulikani";
+}
+
+TaifaKanuni* taifa_katiba_pata_kanuni(TaifaKatiba* k, N32 kategoria) {
+    kama (kategoria == 0) { rudisha &k->kanuni_0; }
+    kama (kategoria == 1) { rudisha &k->kanuni_1; }
+    kama (kategoria == 2) { rudisha &k->kanuni_2; }
+    kama (kategoria == 3) { rudisha &k->kanuni_3; }
+    kama (kategoria == 4) { rudisha &k->kanuni_4; }
+    kama (kategoria == 5) { rudisha &k->kanuni_5; }
+    kama (kategoria == 6) { rudisha &k->kanuni_6; }
+    kama (kategoria == 7) { rudisha &k->kanuni_7; }
+    kama (kategoria == 8) { rudisha &k->kanuni_8; }
+    kama (kategoria == 9) { rudisha &k->kanuni_9; }
+    kama (kategoria == 10) { rudisha &k->kanuni_10; }
+    kama (kategoria == 11) { rudisha &k->kanuni_11; }
+    kama (kategoria == 12) { rudisha &k->kanuni_12; }
+    kama (kategoria == 13) { rudisha &k->kanuni_13; }
+    kama (kategoria == 14) { rudisha &k->kanuni_14; }
+    rudisha &k->kanuni_15;
+}
+
+W0 taifa_katiba_anzisha(TaifaKatiba* k, N8* taifa_id) {
+    k->jina = "Katiba ya Taifa";
+    k->taifa_id = taifa_id;
+    k->mwaka_wa_kuridhiwa = 0;
+    k->kizingiti_cha_marekebisho = 0.60;
+    k->inaweza_kusimamishwa = 0;
+
+    N32 i = 0;
+    wakati (i < TAIFA_KANUNI_IDADI) {
+        TaifaKanuni* r = taifa_katiba_pata_kanuni(k, i);
+        r->kiwango = TAIFA_RUHUSA_INARUHUSIWA;
+        r->kiwango_cha_kodi = 0.15;
+        r->umri_wa_chini = 18.0;
+        r->gharama = 0.0;
+        i = i + 1;
+    }
+
+    k->kanuni_4.umri_wa_chini = 25.0;
+    k->kanuni_5.kiwango = TAIFA_RUHUSA_VIKWAZO;
+    k->kanuni_5.gharama = 500.0;
+    k->kanuni_10.kiwango = TAIFA_RUHUSA_VIKWAZO;
+    k->kanuni_6.kiwango = TAIFA_RUHUSA_INARUHUSIWA;
+    k->kanuni_15.kiwango = TAIFA_RUHUSA_HAKI_ILIYOLINDWA;
+}
+
+TaifaKatiba* taifa_katiba_unda(N8* taifa_id) {
+    TaifaKatiba* k = tenga(ukubwa(TaifaKatiba));
+    taifa_katiba_anzisha(k, taifa_id);
+    rudisha k;
+}
+
+W0 taifa_katiba_uharibu(TaifaKatiba* k) {
+    achilia k;
+}
+
+N32 taifa_katiba_kagua(TaifaKatiba* k, N32 kategoria, D64 umri_wa_mhusika, D64 mali_ya_mhusika) {
+    kama (k == 0 || kategoria >= TAIFA_KANUNI_IDADI) { rudisha 0; }
+    TaifaKanuni* r = taifa_katiba_pata_kanuni(k, kategoria);
+    kama (r->kiwango == TAIFA_RUHUSA_MARUFUKU) { rudisha 0; }
+    kama (r->kiwango == TAIFA_RUHUSA_HAKI_ILIYOLINDWA) { rudisha 1; }
+    kama (umri_wa_mhusika < r->umri_wa_chini) { rudisha 0; }
+    kama (r->kiwango == TAIFA_RUHUSA_VIKWAZO && r->gharama > 0.0 && mali_ya_mhusika < r->gharama) {
+        rudisha 0;
+    }
+    rudisha 1;
+}
+
+N32 taifa_katiba_pata_kiwango(TaifaKatiba* k, N32 kategoria) {
+    kama (k == 0 || kategoria >= TAIFA_KANUNI_IDADI) { rudisha TAIFA_RUHUSA_MARUFUKU; }
+    TaifaKanuni* r = taifa_katiba_pata_kanuni(k, kategoria);
+    rudisha r->kiwango;
+}
+
+W0 taifa_katiba_rekebisha(TaifaKatiba* k, N32 kategoria, N32 kiwango_kipya) {
+    kama (k == 0 || kategoria >= TAIFA_KANUNI_IDADI) { rudisha; }
+    TaifaKanuni* r = taifa_katiba_pata_kanuni(k, kategoria);
+    r->kiwango = kiwango_kipya;
+}

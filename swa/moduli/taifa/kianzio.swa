@@ -1,0 +1,231 @@
+// kianzio.swa — tafsiri ya src/core/faction.c (na .h) kwenda Swa.
+// Aina 8 za awali za taifa (starting archetypes) -- nafasi za
+// kuanzia kwenye vipimo endelevu, si nyongeza za kudumu za mchezo.
+//
+// Kiambishi: taifa_kianzio_ — angalia ../../KANUNI-MAJINA.md. MUHIMU:
+// hii ni TOFAUTI KABISA na siasa_kikundi_ (politics/faction_system.c,
+// imezuiwa na #182(b)) -- ile ni kuhusu miungano ya kisiasa NDANI ya
+// taifa moja (mfano vyama), hii ni kuhusu VIGEZO VYA KUANZIA vya
+// taifa lenyewe (aina 8 za ustaarabu za kuchagua mwanzoni mwa
+// mchezo, kama katika michezo ya mkakati mkuu). civ_icon_id_t
+// imekuwa N32 tupu (nambari ya ikoni, safu ya UI bado haijaandikwa).
+// sector_weights[8] (safu ya ndani ya float, field ya muundo)
+// imegawanywa kuwa vigezo 8 vyenye majina (uzito_0..uzito_7).
+// s_factions[8] (safu ya kudumu ya C) imekuwa kazi 8 tofauti
+// zinazounda na kurudisha muundo mpya kila zikiitwa, mtindo
+// ulioothibitishwa kwenye jukumu.swa.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+N32 TAIFA_KIANZIO_IKONI_TAJI = 0;
+N32 TAIFA_KIANZIO_IKONI_SARAFU = 1;
+N32 TAIFA_KIANZIO_IKONI_HEKALU = 2;
+N32 TAIFA_KIANZIO_IKONI_BENDERA = 3;
+N32 TAIFA_KIANZIO_IKONI_CHUPA = 4;
+N32 TAIFA_KIANZIO_IKONI_UPANGA = 5;
+N32 TAIFA_KIANZIO_IKONI_NGANO = 6;
+N32 TAIFA_KIANZIO_IKONI_PETE_YA_MTI = 7;
+
+muundo TaifaKianzioHali {
+    N32 kiwango_cha_teknolojia;
+    N32 kiwango_cha_kijeshi;
+    N32 kiwango_cha_uchumi;
+    N32 kiwango_cha_utamaduni;
+    N32 kiwango_cha_uthabiti;
+    N32 kiwango_cha_idadi_ya_watu;
+
+    D64 uzito_0; D64 uzito_1; D64 uzito_2; D64 uzito_3;
+    D64 uzito_4; D64 uzito_5; D64 uzito_6; D64 uzito_7;
+
+    D64 nguvu_ya_utendaji;
+    D64 nguvu_ya_kutunga_sheria;
+    D64 nguvu_ya_mahakama;
+
+    N8* mazingira_yanayopendelewa;
+    N32 latitudo_inayopendelewa;
+
+    N32 makazi_ya_kuanzia;
+    D64 eneo_la_kuanzia_km2;
+};
+
+muundo TaifaKianzio {
+    N8* id;
+    N8* jina;
+    N8* maelezo;
+    N32 rangi;
+    N32 rangi_ya_pili;
+    N32 ikoni;
+    TaifaKianzioHali kuanzia;
+};
+
+TaifaKianzio* taifa_kianzio_himaya() {
+    TaifaKianzio* f = tenga(ukubwa(TaifaKianzio));
+    f->id = "himaya"; f->jina = "Himaya ya Kifalme";
+    f->maelezo = "Nchi kuu iliyojengwa kwa kuunganisha ardhi jirani. Mamlaka kubwa ya utendaji, mila ya kijeshi, lakini muungano wa ndani bado unaendelea.";
+    f->rangi = 13382656; f->rangi_ya_pili = 16733252; f->ikoni = TAIFA_KIANZIO_IKONI_TAJI;
+    f->kuanzia.kiwango_cha_teknolojia = 180; f->kuanzia.kiwango_cha_kijeshi = 340;
+    f->kuanzia.kiwango_cha_uchumi = 220; f->kuanzia.kiwango_cha_utamaduni = 140;
+    f->kuanzia.kiwango_cha_uthabiti = -50; f->kuanzia.kiwango_cha_idadi_ya_watu = 280;
+    f->kuanzia.uzito_0 = 0.18; f->kuanzia.uzito_1 = 0.15; f->kuanzia.uzito_2 = 0.22;
+    f->kuanzia.uzito_3 = 0.14; f->kuanzia.uzito_4 = 0.08; f->kuanzia.uzito_5 = 0.10;
+    f->kuanzia.uzito_6 = 0.05; f->kuanzia.uzito_7 = 0.08;
+    f->kuanzia.nguvu_ya_utendaji = 0.80; f->kuanzia.nguvu_ya_kutunga_sheria = 0.15;
+    f->kuanzia.nguvu_ya_mahakama = 0.05;
+    f->kuanzia.mazingira_yanayopendelewa = "Nyanda"; f->kuanzia.latitudo_inayopendelewa = 35;
+    f->kuanzia.makazi_ya_kuanzia = 3; f->kuanzia.eneo_la_kuanzia_km2 = 3.0;
+    rudisha f;
+}
+
+TaifaKianzio* taifa_kianzio_muungano_wa_biashara() {
+    TaifaKianzio* f = tenga(ukubwa(TaifaKianzio));
+    f->id = "biashara"; f->jina = "Muungano wa Kibiashara";
+    f->maelezo = "Mtandao wa bandari za pwani zilizounganishwa na biashara badala ya ardhi. Utajiri unapita kupitia masoko, lakini nguvu ya kijeshi imesambaa na ni ya ulinzi.";
+    f->rangi = 14329344; f->rangi_ya_pili = 16766720; f->ikoni = TAIFA_KIANZIO_IKONI_SARAFU;
+    f->kuanzia.kiwango_cha_teknolojia = 200; f->kuanzia.kiwango_cha_kijeshi = 120;
+    f->kuanzia.kiwango_cha_uchumi = 380; f->kuanzia.kiwango_cha_utamaduni = 220;
+    f->kuanzia.kiwango_cha_uthabiti = 40; f->kuanzia.kiwango_cha_idadi_ya_watu = 180;
+    f->kuanzia.uzito_0 = 0.08; f->kuanzia.uzito_1 = 0.05; f->kuanzia.uzito_2 = 0.12;
+    f->kuanzia.uzito_3 = 0.22; f->kuanzia.uzito_4 = 0.18; f->kuanzia.uzito_5 = 0.25;
+    f->kuanzia.uzito_6 = 0.06; f->kuanzia.uzito_7 = 0.04;
+    f->kuanzia.nguvu_ya_utendaji = 0.35; f->kuanzia.nguvu_ya_kutunga_sheria = 0.55;
+    f->kuanzia.nguvu_ya_mahakama = 0.10;
+    f->kuanzia.mazingira_yanayopendelewa = "Pwani"; f->kuanzia.latitudo_inayopendelewa = 25;
+    f->kuanzia.makazi_ya_kuanzia = 4; f->kuanzia.eneo_la_kuanzia_km2 = 2.0;
+    rudisha f;
+}
+
+TaifaKianzio* taifa_kianzio_utawala_wa_kidini() {
+    TaifaKianzio* f = tenga(ukubwa(TaifaKianzio));
+    f->id = "kidini"; f->jina = "Utawala wa Kidini";
+    f->maelezo = "Imani na fundisho huunda msingi wa sheria na utambulisho. Umoja wa kiutamaduni ni mkubwa, lakini uzito wa mila unaathiri kasi ya uvumbuzi.";
+    f->rangi = 9109196; f->rangi_ya_pili = 13390847; f->ikoni = TAIFA_KIANZIO_IKONI_HEKALU;
+    f->kuanzia.kiwango_cha_teknolojia = 80; f->kuanzia.kiwango_cha_kijeshi = 160;
+    f->kuanzia.kiwango_cha_uchumi = 180; f->kuanzia.kiwango_cha_utamaduni = 420;
+    f->kuanzia.kiwango_cha_uthabiti = 180; f->kuanzia.kiwango_cha_idadi_ya_watu = 240;
+    f->kuanzia.uzito_0 = 0.22; f->kuanzia.uzito_1 = 0.08; f->kuanzia.uzito_2 = 0.14;
+    f->kuanzia.uzito_3 = 0.12; f->kuanzia.uzito_4 = 0.06; f->kuanzia.uzito_5 = 0.05;
+    f->kuanzia.uzito_6 = 0.04; f->kuanzia.uzito_7 = 0.29;
+    f->kuanzia.nguvu_ya_utendaji = 0.70; f->kuanzia.nguvu_ya_kutunga_sheria = 0.10;
+    f->kuanzia.nguvu_ya_mahakama = 0.20;
+    f->kuanzia.mazingira_yanayopendelewa = "Bonde la Mto"; f->kuanzia.latitudo_inayopendelewa = 30;
+    f->kuanzia.makazi_ya_kuanzia = 2; f->kuanzia.eneo_la_kuanzia_km2 = 2.5;
+    rudisha f;
+}
+
+TaifaKianzio* taifa_kianzio_shirikisho_la_kidemokrasia() {
+    TaifaKianzio* f = tenga(ukubwa(TaifaKianzio));
+    f->id = "kidemokrasia"; f->jina = "Shirikisho la Kidemokrasia";
+    f->maelezo = "Mamlaka yamesambazwa kwa upana kupitia taasisi za uwakilishi. Maamuzi ni ya polepole lakini yanafurahia uhalali mpana. Mchango wa kiutamaduni ni mkubwa.";
+    f->rangi = 2263295; f->rangi_ya_pili = 6737151; f->ikoni = TAIFA_KIANZIO_IKONI_BENDERA;
+    f->kuanzia.kiwango_cha_teknolojia = 260; f->kuanzia.kiwango_cha_kijeshi = 100;
+    f->kuanzia.kiwango_cha_uchumi = 240; f->kuanzia.kiwango_cha_utamaduni = 340;
+    f->kuanzia.kiwango_cha_uthabiti = 220; f->kuanzia.kiwango_cha_idadi_ya_watu = 220;
+    f->kuanzia.uzito_0 = 0.14; f->kuanzia.uzito_1 = 0.06; f->kuanzia.uzito_2 = 0.16;
+    f->kuanzia.uzito_3 = 0.20; f->kuanzia.uzito_4 = 0.12; f->kuanzia.uzito_5 = 0.14;
+    f->kuanzia.uzito_6 = 0.10; f->kuanzia.uzito_7 = 0.08;
+    f->kuanzia.nguvu_ya_utendaji = 0.25; f->kuanzia.nguvu_ya_kutunga_sheria = 0.55;
+    f->kuanzia.nguvu_ya_mahakama = 0.20;
+    f->kuanzia.mazingira_yanayopendelewa = "Mabonde Yenye Rutuba"; f->kuanzia.latitudo_inayopendelewa = 40;
+    f->kuanzia.makazi_ya_kuanzia = 3; f->kuanzia.eneo_la_kuanzia_km2 = 2.0;
+    rudisha f;
+}
+
+TaifaKianzio* taifa_kianzio_muungano_wa_kiteknolojia() {
+    TaifaKianzio* f = tenga(ukubwa(TaifaKianzio));
+    f->id = "kiteknolojia"; f->jina = "Muungano wa Kiteknolojia";
+    f->maelezo = "Utawala wa wataalamu. Taasisi za utafiti zina uzito wa kisiasa. Uzalishaji wa kisayansi hauna kifani, lakini watu wamejikita katika vituo vya utafiti.";
+    f->rangi = 43724; f->rangi_ya_pili = 4587007; f->ikoni = TAIFA_KIANZIO_IKONI_CHUPA;
+    f->kuanzia.kiwango_cha_teknolojia = 480; f->kuanzia.kiwango_cha_kijeshi = 90;
+    f->kuanzia.kiwango_cha_uchumi = 260; f->kuanzia.kiwango_cha_utamaduni = 180;
+    f->kuanzia.kiwango_cha_uthabiti = 60; f->kuanzia.kiwango_cha_idadi_ya_watu = 120;
+    f->kuanzia.uzito_0 = 0.06; f->kuanzia.uzito_1 = 0.08; f->kuanzia.uzito_2 = 0.20;
+    f->kuanzia.uzito_3 = 0.16; f->kuanzia.uzito_4 = 0.08; f->kuanzia.uzito_5 = 0.06;
+    f->kuanzia.uzito_6 = 0.30; f->kuanzia.uzito_7 = 0.06;
+    f->kuanzia.nguvu_ya_utendaji = 0.45; f->kuanzia.nguvu_ya_kutunga_sheria = 0.30;
+    f->kuanzia.nguvu_ya_mahakama = 0.25;
+    f->kuanzia.mazingira_yanayopendelewa = "Milima"; f->kuanzia.latitudo_inayopendelewa = 45;
+    f->kuanzia.makazi_ya_kuanzia = 1; f->kuanzia.eneo_la_kuanzia_km2 = 2.0;
+    rudisha f;
+}
+
+TaifaKianzio* taifa_kianzio_jeshi_la_kuhamahama() {
+    TaifaKianzio* f = tenga(ukubwa(TaifaKianzio));
+    f->id = "kijeshi"; f->jina = "Jeshi la Kuhamahama";
+    f->maelezo = "Jamii ya kijeshi inayosonga, iliyopangwa kwenye muundo wa amri. Udhibiti wa haraka wa ardhi kupitia nguvu, lakini miundombinu ya uchumi inafuata polepole nyuma.";
+    f->rangi = 13369344; f->rangi_ya_pili = 16724787; f->ikoni = TAIFA_KIANZIO_IKONI_UPANGA;
+    f->kuanzia.kiwango_cha_teknolojia = 60; f->kuanzia.kiwango_cha_kijeshi = 460;
+    f->kuanzia.kiwango_cha_uchumi = 100; f->kuanzia.kiwango_cha_utamaduni = 100;
+    f->kuanzia.kiwango_cha_uthabiti = -80; f->kuanzia.kiwango_cha_idadi_ya_watu = 320;
+    f->kuanzia.uzito_0 = 0.10; f->kuanzia.uzito_1 = 0.20; f->kuanzia.uzito_2 = 0.30;
+    f->kuanzia.uzito_3 = 0.08; f->kuanzia.uzito_4 = 0.02; f->kuanzia.uzito_5 = 0.05;
+    f->kuanzia.uzito_6 = 0.02; f->kuanzia.uzito_7 = 0.23;
+    f->kuanzia.nguvu_ya_utendaji = 0.90; f->kuanzia.nguvu_ya_kutunga_sheria = 0.05;
+    f->kuanzia.nguvu_ya_mahakama = 0.05;
+    f->kuanzia.mazingira_yanayopendelewa = "Nyika"; f->kuanzia.latitudo_inayopendelewa = 45;
+    f->kuanzia.makazi_ya_kuanzia = 5; f->kuanzia.eneo_la_kuanzia_km2 = 4.0;
+    rudisha f;
+}
+
+TaifaKianzio* taifa_kianzio_umoja_wa_kilimo() {
+    TaifaKianzio* f = tenga(ukubwa(TaifaKianzio));
+    f->id = "kilimo"; f->jina = "Umoja wa Kilimo";
+    f->maelezo = "Ardhi na kazi ndio msingi wa jamii. Idadi ya watu imesambaa katika maeneo yenye rutuba. Ukuaji thabiti unatoka kwenye udongo, si upanga.";
+    f->rangi = 2262528; f->rangi_ya_pili = 4562756; f->ikoni = TAIFA_KIANZIO_IKONI_NGANO;
+    f->kuanzia.kiwango_cha_teknolojia = 140; f->kuanzia.kiwango_cha_kijeshi = 80;
+    f->kuanzia.kiwango_cha_uchumi = 200; f->kuanzia.kiwango_cha_utamaduni = 200;
+    f->kuanzia.kiwango_cha_uthabiti = 100; f->kuanzia.kiwango_cha_idadi_ya_watu = 400;
+    f->kuanzia.uzito_0 = 0.35; f->kuanzia.uzito_1 = 0.12; f->kuanzia.uzito_2 = 0.10;
+    f->kuanzia.uzito_3 = 0.10; f->kuanzia.uzito_4 = 0.04; f->kuanzia.uzito_5 = 0.06;
+    f->kuanzia.uzito_6 = 0.04; f->kuanzia.uzito_7 = 0.19;
+    f->kuanzia.nguvu_ya_utendaji = 0.30; f->kuanzia.nguvu_ya_kutunga_sheria = 0.45;
+    f->kuanzia.nguvu_ya_mahakama = 0.25;
+    f->kuanzia.mazingira_yanayopendelewa = "Nyasi"; f->kuanzia.latitudo_inayopendelewa = 35;
+    f->kuanzia.makazi_ya_kuanzia = 4; f->kuanzia.eneo_la_kuanzia_km2 = 2.5;
+    rudisha f;
+}
+
+TaifaKianzio* taifa_kianzio_walinzi_wa_pori() {
+    TaifaKianzio* f = tenga(ukubwa(TaifaKianzio));
+    f->id = "walinzi"; f->jina = "Walinzi wa Pori";
+    f->maelezo = "Kuishi kwa usawa na ulimwengu wa asili. Uelewa wa kina wa ardhi hutoa faida kwenye maeneo magumu, lakini uzalishaji wa viwanda umepunguzwa kwa makusudi.";
+    f->rangi = 2263108; f->rangi_ya_pili = 6737800; f->ikoni = TAIFA_KIANZIO_IKONI_PETE_YA_MTI;
+    f->kuanzia.kiwango_cha_teknolojia = 160; f->kuanzia.kiwango_cha_kijeshi = 110;
+    f->kuanzia.kiwango_cha_uchumi = 140; f->kuanzia.kiwango_cha_utamaduni = 360;
+    f->kuanzia.kiwango_cha_uthabiti = 160; f->kuanzia.kiwango_cha_idadi_ya_watu = 160;
+    f->kuanzia.uzito_0 = 0.20; f->kuanzia.uzito_1 = 0.18; f->kuanzia.uzito_2 = 0.06;
+    f->kuanzia.uzito_3 = 0.14; f->kuanzia.uzito_4 = 0.02; f->kuanzia.uzito_5 = 0.08;
+    f->kuanzia.uzito_6 = 0.10; f->kuanzia.uzito_7 = 0.22;
+    f->kuanzia.nguvu_ya_utendaji = 0.20; f->kuanzia.nguvu_ya_kutunga_sheria = 0.50;
+    f->kuanzia.nguvu_ya_mahakama = 0.30;
+    f->kuanzia.mazingira_yanayopendelewa = "Msitu"; f->kuanzia.latitudo_inayopendelewa = 20;
+    f->kuanzia.makazi_ya_kuanzia = 2; f->kuanzia.eneo_la_kuanzia_km2 = 3.0;
+    rudisha f;
+}
+
+TaifaKianzio* taifa_kianzio_pata_kwa_faharisi(N32 idx) {
+    kama (idx == 0) { rudisha taifa_kianzio_himaya(); }
+    kama (idx == 1) { rudisha taifa_kianzio_muungano_wa_biashara(); }
+    kama (idx == 2) { rudisha taifa_kianzio_utawala_wa_kidini(); }
+    kama (idx == 3) { rudisha taifa_kianzio_shirikisho_la_kidemokrasia(); }
+    kama (idx == 4) { rudisha taifa_kianzio_muungano_wa_kiteknolojia(); }
+    kama (idx == 5) { rudisha taifa_kianzio_jeshi_la_kuhamahama(); }
+    kama (idx == 6) { rudisha taifa_kianzio_umoja_wa_kilimo(); }
+    kama (idx == 7) { rudisha taifa_kianzio_walinzi_wa_pori(); }
+    rudisha 0;
+}
+
+N32 taifa_kianzio_idadi() {
+    rudisha 8;
+}
+
+TaifaKianzio* taifa_kianzio_pata_kwa_id(N8* id) {
+    N32 i = 0;
+    wakati (i < 8) {
+        TaifaKianzio* f = taifa_kianzio_pata_kwa_faharisi(i);
+        kama (linganisha_mfuatano(f->id, id) == 0) { rudisha f; }
+        achilia f;
+        i = i + 1;
+    }
+    rudisha 0;
+}
