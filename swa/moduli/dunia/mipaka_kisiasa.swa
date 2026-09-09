@@ -1,0 +1,133 @@
+// mipaka_kisiasa.swa — tafsiri ya src/core/world/political_borders.c
+// (na .h) kwenda Swa. Mipaka halisi ya kisiasa kutoka data ya
+// Natural Earth admin-0.
+//
+// Kiambishi: dunia_mipaka_kisiasa_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - civ_political_borders_load() (kisomaji cha faili la binary)
+//     HAIJALETWA -- angalia maelezo yaleyale kwenye mataifa_data.swa.
+//     dunia_mipaka_kisiasa_ongeza_taifa() inatumika badala yake.
+//   - HALIJATUMIA "static civ_border_data_t *s_borders" (hali ya
+//     kimataifa iliyofichwa/singleton) -- moduli ZOTE nyingine za
+//     mradi huu zinatumia mfumo wa "instance" (mtumiaji anashikilia
+//     na kupitisha kielekezi chake mwenyewe), si global ya kificho.
+//     Muundo wa DuniaMipakaKisiasa unapitishwa waziwazi kwenye kila
+//     kazi badala ya kutegemea hali ya kimataifa isiyoonekana.
+//   - names[]/colors[] (safu mbili tofauti zinazokua) zimeunganishwa
+//     kuwa muundo mmoja DuniaTaifaMpaka (jina+rangi) ndani ya safu
+//     MOJA ya N64* ya vielekezi (#185).
+//   - tile_country[] (safu ya int16_t yenye ukubwa width*height)
+//     imekuwa N32* ya kudumu (si D64*, kwa hiyo #181 haihusiki) --
+//     salama kufahirishwa moja kwa moja.
+//   - civ_political_borders_apply() sasa inachukua DuniaRamani*
+//     (kutoka ramani.swa) kama parameter badala ya kutegemea aina
+//     ya civ_map_t isiyojulikana na moduli hii.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/dunia/ramani.swa }
+
+muundo DuniaTaifaMpaka {
+    N8* jina;
+    N32 rangi;
+};
+
+muundo DuniaMipakaKisiasa {
+    N64* mataifa;
+    N32 idadi;
+    N32 uwezo;
+    N32* taifa_la_kipande;
+    N32 upana_wa_ramani;
+    N32 urefu_wa_ramani;
+};
+
+DuniaTaifaMpaka* dunia_mipaka_kisiasa_pata_taifa(DuniaMipakaKisiasa* b, N32 faharisi) {
+    rudisha b->mataifa[faharisi];
+}
+
+DuniaMipakaKisiasa* dunia_mipaka_kisiasa_unda(N32 upana_wa_ramani, N32 urefu_wa_ramani) {
+    DuniaMipakaKisiasa* b = tenga(ukubwa(DuniaMipakaKisiasa));
+    b->idadi = 0;
+    b->uwezo = 32;
+    b->mataifa = tenga(ukubwa(N64) * b->uwezo);
+    b->upana_wa_ramani = upana_wa_ramani;
+    b->urefu_wa_ramani = urefu_wa_ramani;
+
+    N32 jumla_ya_vipande = upana_wa_ramani * urefu_wa_ramani;
+    b->taifa_la_kipande = tenga(ukubwa(N32) * jumla_ya_vipande);
+    N32 i = 0;
+    wakati (i < jumla_ya_vipande) {
+        b->taifa_la_kipande[i] = 0 - 1;
+        i = i + 1;
+    }
+    rudisha b;
+}
+
+W0 dunia_mipaka_kisiasa_uharibu(DuniaMipakaKisiasa* b) {
+    achilia b->mataifa;
+    achilia b->taifa_la_kipande;
+    achilia b;
+}
+
+N32 dunia_mipaka_kisiasa_ongeza_taifa(DuniaMipakaKisiasa* b, N8* jina, N32 rangi) {
+    kama (b->idadi >= b->uwezo) {
+        b->uwezo = b->uwezo * 2;
+        b->mataifa = badili(b->mataifa, ukubwa(N64) * b->uwezo);
+    }
+    DuniaTaifaMpaka* t = tenga(ukubwa(DuniaTaifaMpaka));
+    t->jina = jina;
+    t->rangi = rangi;
+    N32 kitambulisho = b->idadi;
+    b->mataifa[b->idadi] = t;
+    b->idadi = b->idadi + 1;
+    rudisha kitambulisho;
+}
+
+W0 dunia_mipaka_kisiasa_weka_kipande(DuniaMipakaKisiasa* b, N32 x, N32 y, N32 taifa_cid) {
+    kama (x < 0 || x >= b->upana_wa_ramani || y < 0 || y >= b->urefu_wa_ramani) { rudisha; }
+    N32 faharisi = y * b->upana_wa_ramani + x;
+    b->taifa_la_kipande[faharisi] = taifa_cid;
+}
+
+W0 dunia_mipaka_kisiasa_tumia_kwenye_ramani(DuniaMipakaKisiasa* b, DuniaRamani* ramani) {
+    kama (b == 0 || ramani == 0) { rudisha; }
+    N32 y = 0;
+    wakati (y < ramani->urefu) {
+        N32 x = 0;
+        wakati (x < ramani->upana) {
+            N32 faharisi = y * b->upana_wa_ramani + x;
+            N32 cid = b->taifa_la_kipande[faharisi];
+            kama (cid >= 0 && cid < b->idadi) {
+                DuniaTaifaMpaka* t = dunia_mipaka_kisiasa_pata_taifa(b, cid);
+                DuniaRamaniKipande* kipande = dunia_ramani_pata_kipande(ramani, x, y);
+                kama (kipande != 0 && kipande->matumizi_ya_ardhi != MAZINGIRA_MATUMIZI_MAJI) {
+                    kipande->mmiliki_id = t->jina;
+                    kipande->rangi_ya_kisiasa = t->rangi;
+                }
+            }
+            x = x + 1;
+        }
+        y = y + 1;
+    }
+}
+
+N8* dunia_mipaka_kisiasa_jina_la_taifa(DuniaMipakaKisiasa* b, N32 cid) {
+    kama (b == 0 || cid < 0 || cid >= b->idadi) { rudisha 0; }
+    rudisha dunia_mipaka_kisiasa_pata_taifa(b, cid)->jina;
+}
+
+N32 dunia_mipaka_kisiasa_rangi_ya_taifa(DuniaMipakaKisiasa* b, N32 cid) {
+    kama (b == 0 || cid < 0 || cid >= b->idadi) { rudisha 16776960; }
+    rudisha dunia_mipaka_kisiasa_pata_taifa(b, cid)->rangi;
+}
+
+N32 dunia_mipaka_kisiasa_taifa_la_kipande(DuniaMipakaKisiasa* b, N32 x, N32 y) {
+    kama (b == 0 || x < 0 || y < 0 || x >= b->upana_wa_ramani) { rudisha 0 - 1; }
+    N32 faharisi = y * b->upana_wa_ramani + x;
+    rudisha b->taifa_la_kipande[faharisi];
+}
+
+N32 dunia_mipaka_kisiasa_idadi_ya_mataifa(DuniaMipakaKisiasa* b) {
+    rudisha b->idadi;
+}
