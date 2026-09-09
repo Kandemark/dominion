@@ -1,0 +1,233 @@
+// eneo.swa — tafsiri ya src/core/world/territory.c (na .h) kwenda
+// Swa. Mfumo wa eneo unaobadilika (unaotegemea poligoni, si vipande
+// vya ramani).
+//
+// Kiambishi: dunia_eneo_ — angalia ../../KANUNI-MAJINA.md.
+// husisha la "environment/geography.h" kwenye chanzo cha C
+// halikutumika popote kwenye mwili wa territory.c -- halikuletwa.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - boundary_points[] (safu inayokua ya nukta) na regions[] (safu
+//     inayokua ya mikoa) zimekuwa N64* za vielekezi (#185, angalia
+//     dini.swa) badala ya safu za THAMANI -- hii inaepuka kabisa
+//     unakili wa muundo kwa thamani (`manager->regions[n] = *region`)
+//     kilichokuwepo kwenye C: kielekezi kinahifadhiwa moja kwa moja.
+//   - time_t acquisition_time haikuletwa (haihitajiki kwa mantiki ya
+//     eneo, ni kumbukumbu tu).
+
+husisha { msingi/msingi_civ.swa }
+
+muundo DuniaEneoNukta {
+    D64 x;
+    D64 y;
+};
+
+muundo DuniaEneoMkoa {
+    N8* taifa_id;
+    N64* sehemu_za_mpaka;
+    N32 idadi_ya_sehemu;
+    N32 uwezo_wa_sehemu;
+    D64 eneo;
+    D64 katikati_lat;
+    D64 katikati_lon;
+    D64 nguvu_ya_udhibiti;
+};
+
+muundo DuniaEneoMsimamizi {
+    N64* mikoa;
+    N32 idadi;
+    N32 uwezo;
+};
+
+DuniaEneoNukta* dunia_eneo_mkoa_pata_nukta(DuniaEneoMkoa* mkoa, N32 faharisi) {
+    rudisha mkoa->sehemu_za_mpaka[faharisi];
+}
+
+DuniaEneoMkoa* dunia_eneo_msimamizi_pata_mkoa(DuniaEneoMsimamizi* m, N32 faharisi) {
+    rudisha m->mikoa[faharisi];
+}
+
+DuniaEneoMsimamizi* dunia_eneo_msimamizi_unda() {
+    DuniaEneoMsimamizi* m = tenga(ukubwa(DuniaEneoMsimamizi));
+    m->uwezo = 32;
+    m->idadi = 0;
+    m->mikoa = tenga(ukubwa(N64) * m->uwezo);
+    rudisha m;
+}
+
+W0 dunia_eneo_msimamizi_uharibu(DuniaEneoMsimamizi* m) {
+    achilia m->mikoa;
+    achilia m;
+}
+
+DuniaEneoMkoa* dunia_eneo_mkoa_unda(N8* taifa_id) {
+    kama (taifa_id == 0) { rudisha 0; }
+    DuniaEneoMkoa* mkoa = tenga(ukubwa(DuniaEneoMkoa));
+    mkoa->taifa_id = taifa_id;
+    mkoa->nguvu_ya_udhibiti = 1.0;
+    mkoa->eneo = 0.0;
+    mkoa->katikati_lat = 0.0;
+    mkoa->katikati_lon = 0.0;
+    mkoa->uwezo_wa_sehemu = 32;
+    mkoa->idadi_ya_sehemu = 0;
+    mkoa->sehemu_za_mpaka = tenga(ukubwa(N64) * mkoa->uwezo_wa_sehemu);
+    rudisha mkoa;
+}
+
+W0 dunia_eneo_mkoa_uharibu(DuniaEneoMkoa* mkoa) {
+    kama (mkoa == 0) { rudisha; }
+    achilia mkoa->sehemu_za_mpaka;
+    achilia mkoa;
+}
+
+CivMatokeo dunia_eneo_mkoa_ongeza_nukta(DuniaEneoMkoa* mkoa, D64 x, D64 y) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (mkoa == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    kama (mkoa->idadi_ya_sehemu >= mkoa->uwezo_wa_sehemu) {
+        mkoa->uwezo_wa_sehemu = mkoa->uwezo_wa_sehemu * 2;
+        mkoa->sehemu_za_mpaka = badili(mkoa->sehemu_za_mpaka, ukubwa(N64) * mkoa->uwezo_wa_sehemu);
+    }
+
+    DuniaEneoNukta* nukta = tenga(ukubwa(DuniaEneoNukta));
+    nukta->x = x;
+    nukta->y = y;
+    mkoa->sehemu_za_mpaka[mkoa->idadi_ya_sehemu] = nukta;
+    mkoa->idadi_ya_sehemu = mkoa->idadi_ya_sehemu + 1;
+    rudisha r;
+}
+
+CivMatokeo dunia_eneo_mkoa_hesabu_eneo(DuniaEneoMkoa* mkoa) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (mkoa == 0 || mkoa->idadi_ya_sehemu < 3) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        rudisha r;
+    }
+
+    D64 eneo = 0.0;
+    N32 i = 0;
+    wakati (i < mkoa->idadi_ya_sehemu) {
+        N32 j = i + 1;
+        kama (j >= mkoa->idadi_ya_sehemu) { j = 0; }
+        DuniaEneoNukta* ni = dunia_eneo_mkoa_pata_nukta(mkoa, i);
+        DuniaEneoNukta* nj = dunia_eneo_mkoa_pata_nukta(mkoa, j);
+        eneo = eneo + ni->x * nj->y;
+        eneo = eneo - nj->x * ni->y;
+        i = i + 1;
+    }
+    kama (eneo < 0.0) { eneo = 0.0 - eneo; }
+    mkoa->eneo = eneo / 2.0;
+    rudisha r;
+}
+
+CivMatokeo dunia_eneo_mkoa_hesabu_katikati(DuniaEneoMkoa* mkoa) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (mkoa == 0 || mkoa->idadi_ya_sehemu == 0) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        rudisha r;
+    }
+
+    D64 cx = 0.0;
+    D64 cy = 0.0;
+    N32 i = 0;
+    wakati (i < mkoa->idadi_ya_sehemu) {
+        DuniaEneoNukta* n = dunia_eneo_mkoa_pata_nukta(mkoa, i);
+        cx = cx + n->x;
+        cy = cy + n->y;
+        i = i + 1;
+    }
+    D64 idadi_d = mkoa->idadi_ya_sehemu;
+    mkoa->katikati_lat = cx / idadi_d;
+    mkoa->katikati_lon = cy / idadi_d;
+    rudisha r;
+}
+
+N32 dunia_eneo_mkoa_ina_nukta(DuniaEneoMkoa* mkoa, D64 x, D64 y) {
+    kama (mkoa == 0 || mkoa->idadi_ya_sehemu < 3) { rudisha 0; }
+
+    N32 ndani = 0;
+    N32 i = 0;
+    N32 j = mkoa->idadi_ya_sehemu - 1;
+    wakati (i < mkoa->idadi_ya_sehemu) {
+        DuniaEneoNukta* ni = dunia_eneo_mkoa_pata_nukta(mkoa, i);
+        DuniaEneoNukta* nj = dunia_eneo_mkoa_pata_nukta(mkoa, j);
+
+        N32 sharti_1 = (ni->y > y);
+        N32 sharti_2 = (nj->y > y);
+        N32 tofauti_ya_y = 0;
+        kama ((sharti_1 != 0 && sharti_2 == 0) || (sharti_1 == 0 && sharti_2 != 0)) { tofauti_ya_y = 1; }
+
+        kama (tofauti_ya_y != 0) {
+            D64 x_pembeni = (nj->x - ni->x) * (y - ni->y) / (nj->y - ni->y) + ni->x;
+            kama (x < x_pembeni) {
+                N32 ndani_mpya = 0;
+                kama (ndani == 0) { ndani_mpya = 1; }
+                ndani = ndani_mpya;
+            }
+        }
+
+        j = i;
+        i = i + 1;
+    }
+    rudisha ndani;
+}
+
+CivMatokeo dunia_eneo_msimamizi_ongeza_mkoa(DuniaEneoMsimamizi* m, DuniaEneoMkoa* mkoa) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0 || mkoa == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    kama (m->idadi >= m->uwezo) {
+        m->uwezo = m->uwezo * 2;
+        m->mikoa = badili(m->mikoa, ukubwa(N64) * m->uwezo);
+    }
+
+    dunia_eneo_mkoa_hesabu_eneo(mkoa);
+    dunia_eneo_mkoa_hesabu_katikati(mkoa);
+
+    m->mikoa[m->idadi] = mkoa;
+    m->idadi = m->idadi + 1;
+    rudisha r;
+}
+
+DuniaEneoMkoa* dunia_eneo_msimamizi_tafuta_mkoa_kwenye(DuniaEneoMsimamizi* m, D64 x, D64 y) {
+    kama (m == 0) { rudisha 0; }
+    N32 i = 0;
+    wakati (i < m->idadi) {
+        DuniaEneoMkoa* mkoa = dunia_eneo_msimamizi_pata_mkoa(m, i);
+        kama (dunia_eneo_mkoa_ina_nukta(mkoa, x, y) != 0) { rudisha mkoa; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+CivMatokeo dunia_eneo_msimamizi_sasisha(DuniaEneoMsimamizi* m, D64 tofauti_ya_muda) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    N32 i = 0;
+    wakati (i < m->idadi) {
+        DuniaEneoMkoa* mkoa = dunia_eneo_msimamizi_pata_mkoa(m, i);
+        mkoa->nguvu_ya_udhibiti = finya_d64(mkoa->nguvu_ya_udhibiti, 0.0, 1.0);
+        i = i + 1;
+    }
+    rudisha r;
+}
