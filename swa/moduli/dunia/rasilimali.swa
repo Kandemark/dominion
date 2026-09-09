@@ -1,0 +1,175 @@
+// rasilimali.swa — tafsiri ya src/core/world/resource_map.c (na .h)
+// kwenda Swa. Uwepo wa rasilimali kwa kila kipande cha ramani —
+// aina 20 za madini, nishati, na malighafi.
+//
+// Kiambishi: dunia_rasilimali_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - civ_resource_map_load() (kisomaji cha data/resources.bin)
+//     HAIJALETWA — angalia maelezo yaleyale kwenye mataifa_data.swa
+//     kuhusu kwa nini kisomaji cha faili la binary kimeachwa kwa
+//     wimbi lijalo. dunia_rasilimali_ongeza_amana() inatumika
+//     badala yake kuongeza amana moja moja.
+//   - deposits[CIV_RESOURCE_COUNT] (safu ya vielekezi 20, kila
+//     kimoja kikielekeza safu ya ndani inayokua ya amana) imekuwa
+//     SAFU MOJA TU BAPA (flat) ya amana zote, kila moja ikiwa na
+//     nyanja ya "aina" -- rahisi zaidi kuliko safu 20 tofauti
+//     zinazokua, na ina tabia ileile ya utafutaji (linear scan
+//     iliyochujwa kwa aina+eneo, sawa na C asili). Safu bapa
+//     inatumia mtindo wa N64* wa vielekezi (#185, angalia dini.swa).
+//   - deposit_count[CIV_RESOURCE_COUNT] halihitajiki tena (safu bapa
+//     ina "idadi" moja tu ya jumla).
+//   - civ_resource_type_name() imekuwa mnyororo wa kama/sivyo
+//     unaorudisha herufi, si safu ya vielekezi vya mfuatano (safu ya
+//     N8* kama field ya muundo ingekuwa na hatari ileile ya #185/
+//     #186 -- kazi ya moja kwa moja inaepuka kabisa).
+
+husisha { msingi/msingi_civ.swa }
+
+N32 DUNIA_RASILIMALI_MAFUTA = 0;
+N32 DUNIA_RASILIMALI_GESI_ASILIA = 1;
+N32 DUNIA_RASILIMALI_MAKAA = 2;
+N32 DUNIA_RASILIMALI_CHUMA = 3;
+N32 DUNIA_RASILIMALI_SHABA = 4;
+N32 DUNIA_RASILIMALI_BAUXITE = 5;
+N32 DUNIA_RASILIMALI_DHAHABU = 6;
+N32 DUNIA_RASILIMALI_FEDHA = 7;
+N32 DUNIA_RASILIMALI_URANIUM = 8;
+N32 DUNIA_RASILIMALI_ALMASI = 9;
+N32 DUNIA_RASILIMALI_PHOSPHATI = 10;
+N32 DUNIA_RASILIMALI_ARDHI_ADIMU = 11;
+N32 DUNIA_RASILIMALI_LITHIUM = 12;
+N32 DUNIA_RASILIMALI_COBALT = 13;
+N32 DUNIA_RASILIMALI_BATI = 14;
+N32 DUNIA_RASILIMALI_ZINC = 15;
+N32 DUNIA_RASILIMALI_RISASI = 16;
+N32 DUNIA_RASILIMALI_NIKELI = 17;
+N32 DUNIA_RASILIMALI_CHROMITE = 18;
+N32 DUNIA_RASILIMALI_MANGANESE = 19;
+N32 DUNIA_RASILIMALI_IDADI_YA_AINA = 20;
+
+muundo DuniaRasilimaliAmana {
+    N32 x;
+    N32 y;
+    N32 aina;
+    N32 kiasi;
+    N32 ubora;
+};
+
+muundo DuniaRasilimaliRamani {
+    N64* amana;
+    N32 idadi;
+    N32 uwezo;
+    N32 upana;
+    N32 urefu;
+};
+
+DuniaRasilimaliAmana* dunia_rasilimali_pata_amana(DuniaRasilimaliRamani* rm, N32 faharisi) {
+    rudisha rm->amana[faharisi];
+}
+
+DuniaRasilimaliRamani* dunia_rasilimali_ramani_unda(N32 upana, N32 urefu) {
+    DuniaRasilimaliRamani* rm = tenga(ukubwa(DuniaRasilimaliRamani));
+    rm->upana = upana;
+    rm->urefu = urefu;
+    rm->idadi = 0;
+    rm->uwezo = 64;
+    rm->amana = tenga(ukubwa(N64) * rm->uwezo);
+    rudisha rm;
+}
+
+W0 dunia_rasilimali_ramani_uharibu(DuniaRasilimaliRamani* rm) {
+    achilia rm->amana;
+    achilia rm;
+}
+
+W0 dunia_rasilimali_ongeza_amana(DuniaRasilimaliRamani* rm, N32 x, N32 y, N32 aina,
+                                   N32 kiasi, N32 ubora) {
+    kama (rm->idadi >= rm->uwezo) {
+        rm->uwezo = rm->uwezo * 2;
+        rm->amana = badili(rm->amana, ukubwa(N64) * rm->uwezo);
+    }
+    DuniaRasilimaliAmana* a = tenga(ukubwa(DuniaRasilimaliAmana));
+    a->x = x;
+    a->y = y;
+    a->aina = aina;
+    a->kiasi = kiasi;
+    a->ubora = ubora;
+    rm->amana[rm->idadi] = a;
+    rm->idadi = rm->idadi + 1;
+}
+
+DuniaRasilimaliAmana* dunia_rasilimali_tafuta_kipande(DuniaRasilimaliRamani* rm, N32 x, N32 y, N32 aina) {
+    kama (rm == 0 || x < 0 || y < 0 || x >= rm->upana || y >= rm->urefu) { rudisha 0; }
+    N32 i = 0;
+    wakati (i < rm->idadi) {
+        DuniaRasilimaliAmana* a = dunia_rasilimali_pata_amana(rm, i);
+        kama (a->x == x && a->y == y && a->aina == aina) { rudisha a; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+N32 dunia_rasilimali_ina_aina(DuniaRasilimaliRamani* rm, N32 x, N32 y, N32 aina) {
+    kama (dunia_rasilimali_tafuta_kipande(rm, x, y, aina) != 0) { rudisha 1; }
+    rudisha 0;
+}
+
+N32 dunia_rasilimali_pata_kiasi(DuniaRasilimaliRamani* rm, N32 x, N32 y, N32 aina) {
+    DuniaRasilimaliAmana* a = dunia_rasilimali_tafuta_kipande(rm, x, y, aina);
+    kama (a == 0) { rudisha 0; }
+    rudisha a->kiasi;
+}
+
+N32 dunia_rasilimali_pata_ubora(DuniaRasilimaliRamani* rm, N32 x, N32 y, N32 aina) {
+    DuniaRasilimaliAmana* a = dunia_rasilimali_tafuta_kipande(rm, x, y, aina);
+    kama (a == 0) { rudisha 0; }
+    rudisha a->ubora;
+}
+
+N32 dunia_rasilimali_jumla_kwenye_kipande(DuniaRasilimaliRamani* rm, N32 x, N32 y) {
+    kama (rm == 0) { rudisha 0; }
+    N32 jumla = 0;
+    N32 i = 0;
+    wakati (i < rm->idadi) {
+        DuniaRasilimaliAmana* a = dunia_rasilimali_pata_amana(rm, i);
+        kama (a->x == x && a->y == y) { jumla = jumla + a->kiasi; }
+        i = i + 1;
+    }
+    rudisha jumla;
+}
+
+N32 dunia_rasilimali_idadi_ya_aina_kwenye_kipande(DuniaRasilimaliRamani* rm, N32 x, N32 y) {
+    kama (rm == 0) { rudisha 0; }
+    N32 aina = 0;
+    N32 idadi = 0;
+    wakati (aina < DUNIA_RASILIMALI_IDADI_YA_AINA) {
+        kama (dunia_rasilimali_ina_aina(rm, x, y, aina) != 0) { idadi = idadi + 1; }
+        aina = aina + 1;
+    }
+    rudisha idadi;
+}
+
+N8* dunia_rasilimali_jina_la_aina(N32 aina) {
+    kama (aina == DUNIA_RASILIMALI_MAFUTA) { rudisha "Mafuta"; }
+    kama (aina == DUNIA_RASILIMALI_GESI_ASILIA) { rudisha "Gesi Asilia"; }
+    kama (aina == DUNIA_RASILIMALI_MAKAA) { rudisha "Makaa"; }
+    kama (aina == DUNIA_RASILIMALI_CHUMA) { rudisha "Chuma"; }
+    kama (aina == DUNIA_RASILIMALI_SHABA) { rudisha "Shaba"; }
+    kama (aina == DUNIA_RASILIMALI_BAUXITE) { rudisha "Bauxite"; }
+    kama (aina == DUNIA_RASILIMALI_DHAHABU) { rudisha "Dhahabu"; }
+    kama (aina == DUNIA_RASILIMALI_FEDHA) { rudisha "Fedha"; }
+    kama (aina == DUNIA_RASILIMALI_URANIUM) { rudisha "Uranium"; }
+    kama (aina == DUNIA_RASILIMALI_ALMASI) { rudisha "Almasi"; }
+    kama (aina == DUNIA_RASILIMALI_PHOSPHATI) { rudisha "Phosphati"; }
+    kama (aina == DUNIA_RASILIMALI_ARDHI_ADIMU) { rudisha "Ardhi Adimu"; }
+    kama (aina == DUNIA_RASILIMALI_LITHIUM) { rudisha "Lithium"; }
+    kama (aina == DUNIA_RASILIMALI_COBALT) { rudisha "Cobalt"; }
+    kama (aina == DUNIA_RASILIMALI_BATI) { rudisha "Bati"; }
+    kama (aina == DUNIA_RASILIMALI_ZINC) { rudisha "Zinc"; }
+    kama (aina == DUNIA_RASILIMALI_RISASI) { rudisha "Risasi"; }
+    kama (aina == DUNIA_RASILIMALI_NIKELI) { rudisha "Nikeli"; }
+    kama (aina == DUNIA_RASILIMALI_CHROMITE) { rudisha "Chromite"; }
+    kama (aina == DUNIA_RASILIMALI_MANGANESE) { rudisha "Manganese"; }
+    rudisha "Haijulikani";
+}
