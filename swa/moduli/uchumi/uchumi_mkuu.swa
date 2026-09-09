@@ -1,0 +1,155 @@
+// uchumi_mkuu.swa — tafsiri ya src/core/economy/macro_economy.c (na
+// .h) kwenda Swa. Uigaji wa uchumi mkuu — pato la taifa, sekta,
+// mfumuko wa bei, na ukuaji.
+//
+// Kiambishi: uchumi_mkuu_ — angalia ../../KANUNI-MAJINA.md.
+// Utegemezi wa geography.h wa C (bado haujaandikwa kwa Swa, na huenda
+// ukazuiliwa na ukosefu wa kazi za D64 transcendental, #183)
+// umeondolewa -- badala ya kupitisha kielekezi cha geography, kazi ya
+// sasisha inapokea eneo la kilimo (D64) moja kwa moja kama hoja.
+// reports[] (historia inayokua ya C) HAIKULETWA — .h inatoa tu
+// get_report inayorudisha ripoti YA MWISHO, kwa hiyo tunahifadhi
+// ripoti moja tu ya mwisho, si historia kamili.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 UCHUMI_MKUU_HISIA_YA_KUSHUKA = 0;
+N32 UCHUMI_MKUU_HISIA_YA_KAWAIDA = 1;
+N32 UCHUMI_MKUU_HISIA_YA_KUPANDA = 2;
+
+muundo UchumiMkuuSekta {
+    D64 pato;
+    D64 uzalishaji;
+    D64 kiwango_cha_ukuaji;
+};
+
+muundo UchumiMkuuRipoti {
+    D64 pato_la_taifa;
+    D64 pato_kwa_kila_mtu;
+    D64 kiwango_cha_ukosefu_wa_kazi;
+    D64 kiwango_cha_mfumuko;
+    D64 kiwango_cha_ukuaji;
+    D64 pato_la_kilimo;
+    D64 pato_la_viwanda;
+    D64 pato_la_huduma;
+    N32 hisia;
+};
+
+muundo UchumiMkuuMfumo {
+    D64 kiwango_cha_kodi;
+    D64 matumizi_ya_serikali;
+    D64 pato_la_msingi;
+    D64 ukosefu_wa_kazi_wa_msingi;
+    D64 mfumuko_wa_msingi;
+
+    UchumiMkuuSekta kilimo;
+    UchumiMkuuSekta viwanda;
+    UchumiMkuuSekta huduma;
+
+    N32 hisia;
+    D64 mtikisiko_wa_soko;
+
+    UchumiMkuuRipoti ripoti_ya_mwisho;
+};
+
+UchumiMkuuMfumo* uchumi_mkuu_unda() {
+    UchumiMkuuMfumo* soko = tenga(ukubwa(UchumiMkuuMfumo));
+    soko->kiwango_cha_kodi = 0.2;
+    soko->matumizi_ya_serikali = 0.3;
+    soko->pato_la_msingi = 1000000.0;
+    soko->ukosefu_wa_kazi_wa_msingi = 0.05;
+    soko->mfumuko_wa_msingi = 0.02;
+    soko->hisia = UCHUMI_MKUU_HISIA_YA_KAWAIDA;
+    soko->mtikisiko_wa_soko = 0.1;
+    rudisha soko;
+}
+
+W0 uchumi_mkuu_uharibu(UchumiMkuuMfumo* soko) {
+    achilia soko;
+}
+
+UchumiMkuuRipoti uchumi_mkuu_sasisha(UchumiMkuuMfumo* soko, D64 muda, D64 idadi_ya_watu,
+                                        D64 ardhi_ya_kilimo, D64 kiwango_cha_teknolojia) {
+    UchumiMkuuRipoti ripoti;
+    ripoti.pato_la_taifa = 0.0;
+    ripoti.pato_kwa_kila_mtu = 0.0;
+    ripoti.kiwango_cha_ukosefu_wa_kazi = 0.0;
+    ripoti.kiwango_cha_mfumuko = 0.0;
+    ripoti.kiwango_cha_ukuaji = 0.0;
+    ripoti.pato_la_kilimo = 0.0;
+    ripoti.pato_la_viwanda = 0.0;
+    ripoti.pato_la_huduma = 0.0;
+    ripoti.hisia = UCHUMI_MKUU_HISIA_YA_KAWAIDA;
+
+    D64 kizidishi_cha_teknolojia = 1.0 + kiwango_cha_teknolojia * 0.15;
+
+    D64 ardhi = ardhi_ya_kilimo;
+    kama (ardhi < 1.0) { ardhi = 100.0; }
+    soko->kilimo.uzalishaji = 1.0 * kizidishi_cha_teknolojia;
+    soko->kilimo.pato = ardhi * soko->kilimo.uzalishaji * 50.0;
+
+    D64 nguvukazi_ya_viwanda = idadi_ya_watu * 0.2;
+    soko->viwanda.uzalishaji = 1.2 * kizidishi_cha_teknolojia * kizidishi_cha_teknolojia;
+    soko->viwanda.pato = nguvukazi_ya_viwanda * soko->viwanda.uzalishaji * 10.0;
+
+    D64 nguvukazi_ya_huduma = idadi_ya_watu * 0.4;
+    soko->huduma.uzalishaji = 0.8 * kizidishi_cha_teknolojia;
+    soko->huduma.pato = nguvukazi_ya_huduma * soko->huduma.uzalishaji * 8.0;
+
+    ripoti.pato_la_kilimo = soko->kilimo.pato;
+    ripoti.pato_la_viwanda = soko->viwanda.pato;
+    ripoti.pato_la_huduma = soko->huduma.pato;
+
+    D64 pato_ghafi = ripoti.pato_la_kilimo + ripoti.pato_la_viwanda + ripoti.pato_la_huduma;
+
+    D64 athari_ya_kodi = 1.0 - soko->kiwango_cha_kodi * 0.5;
+    D64 athari_ya_matumizi = 1.0 + soko->matumizi_ya_serikali * 0.3;
+
+    ripoti.pato_la_taifa = pato_ghafi * athari_ya_kodi * athari_ya_matumizi;
+    kama (idadi_ya_watu > 0.0) { ripoti.pato_kwa_kila_mtu = ripoti.pato_la_taifa / idadi_ya_watu; }
+
+    D64 kigezo_cha_ukosefu = (1.0 - kiwango_cha_teknolojia * 0.1) + (soko->kiwango_cha_kodi * 0.2);
+    ripoti.kiwango_cha_ukosefu_wa_kazi = finya_d64(
+        soko->ukosefu_wa_kazi_wa_msingi * kigezo_cha_ukosefu, 0.0, 1.0);
+
+    D64 kigezo_cha_mfumuko = 1.0 + (soko->matumizi_ya_serikali - 0.3) * 0.5;
+    ripoti.kiwango_cha_mfumuko = finya_d64(
+        soko->mfumuko_wa_msingi * kigezo_cha_mfumuko, -0.1, 0.5);
+
+    ripoti.kiwango_cha_ukuaji = (kiwango_cha_teknolojia * 0.02)
+        - (ripoti.kiwango_cha_ukosefu_wa_kazi * 0.01)
+        + (ripoti.kiwango_cha_mfumuko * 0.005);
+    ripoti.kiwango_cha_ukuaji = finya_d64(ripoti.kiwango_cha_ukuaji, -0.1, 0.15);
+
+    kama (ripoti.kiwango_cha_ukuaji > 0.03) { ripoti.hisia = UCHUMI_MKUU_HISIA_YA_KUPANDA; }
+    sivyo { kama (ripoti.kiwango_cha_ukuaji < (-0.01)) { ripoti.hisia = UCHUMI_MKUU_HISIA_YA_KUSHUKA; }
+    sivyo { ripoti.hisia = UCHUMI_MKUU_HISIA_YA_KAWAIDA; } }
+
+    soko->hisia = ripoti.hisia;
+    // MUHIMU: kunakili shamba kwa shamba badala ya kunakili muundo
+    // mzima kwa mkupuo (soko->ripoti_ya_mwisho = ripoti;) -- hii
+    // haijawahi kujaribiwa hapo awali kwenye kikao hiki, kwa hiyo
+    // tunaepuka hatari isiyojulikana na kutumia mtindo ulioothibitishwa.
+    soko->ripoti_ya_mwisho.pato_la_taifa = ripoti.pato_la_taifa;
+    soko->ripoti_ya_mwisho.pato_kwa_kila_mtu = ripoti.pato_kwa_kila_mtu;
+    soko->ripoti_ya_mwisho.kiwango_cha_ukosefu_wa_kazi = ripoti.kiwango_cha_ukosefu_wa_kazi;
+    soko->ripoti_ya_mwisho.kiwango_cha_mfumuko = ripoti.kiwango_cha_mfumuko;
+    soko->ripoti_ya_mwisho.kiwango_cha_ukuaji = ripoti.kiwango_cha_ukuaji;
+    soko->ripoti_ya_mwisho.pato_la_kilimo = ripoti.pato_la_kilimo;
+    soko->ripoti_ya_mwisho.pato_la_viwanda = ripoti.pato_la_viwanda;
+    soko->ripoti_ya_mwisho.pato_la_huduma = ripoti.pato_la_huduma;
+    soko->ripoti_ya_mwisho.hisia = ripoti.hisia;
+    rudisha ripoti;
+}
+
+UchumiMkuuRipoti uchumi_mkuu_pata_ripoti(UchumiMkuuMfumo* soko) {
+    rudisha soko->ripoti_ya_mwisho;
+}
+
+W0 uchumi_mkuu_weka_kiwango_cha_kodi(UchumiMkuuMfumo* soko, D64 kiwango) {
+    soko->kiwango_cha_kodi = finya_d64(kiwango, 0.0, 1.0);
+}
+
+W0 uchumi_mkuu_weka_matumizi_ya_serikali(UchumiMkuuMfumo* soko, D64 matumizi) {
+    soko->matumizi_ya_serikali = finya_d64(matumizi, 0.0, 1.0);
+}

@@ -1,0 +1,119 @@
+// biashara_nje.swa — tafsiri ya src/core/economy/international_trade.c
+// (na .h) kwenda Swa. Biashara ya kimataifa — njia, ushuru wa forodha,
+// mikataba ya biashara.
+//
+// Kiambishi: biashara_nje_ — angalia ../../KANUNI-MAJINA.md.
+// routes[] (safu inayokua ya C) imekuwa BIASHARA_NJE_NJIA_IDADI=8
+// vigezo vyenye majina + kazi ya kupata. currency_manager (kielekezi
+// cha marejeo, hakiitwi kokote ndani ya faili hili la C) na
+// established_date (time_t, haihitajiki kwa mantiki) HAVIKULETWA.
+// id ya njia (iliyoundwa na snprintf + time() kwenye C) imekuwa
+// nafasi/index ya njia (N32) badala ya mfuatano.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 BIASHARA_NJE_NJIA_IDADI = 8;
+
+muundo BiasharaNjeNjia {
+    N8* taifa_chanzo;
+    N8* taifa_lengwa;
+    N8* aina_ya_rasilimali;
+    D64 kiasi;
+    D64 thamani_kwa_kipimo;
+    D64 kiwango_cha_ushuru;
+    N32 inafanya_kazi;
+};
+
+muundo BiasharaNjeMfumo {
+    BiasharaNjeNjia n_0; BiasharaNjeNjia n_1; BiasharaNjeNjia n_2; BiasharaNjeNjia n_3;
+    BiasharaNjeNjia n_4; BiasharaNjeNjia n_5; BiasharaNjeNjia n_6; BiasharaNjeNjia n_7;
+
+    N32 idadi_ya_njia;
+};
+
+BiasharaNjeNjia* biashara_nje_pata_njia(BiasharaNjeMfumo* m, N32 idx) {
+    kama (idx == 0) { rudisha &m->n_0; }
+    kama (idx == 1) { rudisha &m->n_1; }
+    kama (idx == 2) { rudisha &m->n_2; }
+    kama (idx == 3) { rudisha &m->n_3; }
+    kama (idx == 4) { rudisha &m->n_4; }
+    kama (idx == 5) { rudisha &m->n_5; }
+    kama (idx == 6) { rudisha &m->n_6; }
+    rudisha &m->n_7;
+}
+
+BiasharaNjeMfumo* biashara_nje_unda() {
+    BiasharaNjeMfumo* m = tenga(ukubwa(BiasharaNjeMfumo));
+    m->idadi_ya_njia = 0;
+    rudisha m;
+}
+
+W0 biashara_nje_uharibu(BiasharaNjeMfumo* m) {
+    achilia m;
+}
+
+CivMatokeo biashara_nje_anzisha_njia(BiasharaNjeMfumo* m, N8* chanzo, N8* lengwa,
+                                       N8* rasilimali, D64 kiasi) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (chanzo == 0 || lengwa == 0) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        r.ujumbe = "hoja batili";
+        rudisha r;
+    }
+    kama (m->idadi_ya_njia >= BIASHARA_NJE_NJIA_IDADI) {
+        r.hitilafu = CIV_HITILAFU_KUMBUKUMBU_IMEISHA;
+        r.ujumbe = "njia za biashara zimejaa";
+        rudisha r;
+    }
+
+    BiasharaNjeNjia* njia = biashara_nje_pata_njia(m, m->idadi_ya_njia);
+    njia->taifa_chanzo = chanzo;
+    njia->taifa_lengwa = lengwa;
+    njia->aina_ya_rasilimali = rasilimali;
+    njia->kiasi = kiasi;
+    njia->thamani_kwa_kipimo = 10.0;
+    njia->kiwango_cha_ushuru = 0.05;
+    njia->inafanya_kazi = 1;
+    m->idadi_ya_njia = m->idadi_ya_njia + 1;
+
+    r.ujumbe = "njia ya biashara imeanzishwa";
+    rudisha r;
+}
+
+CivMatokeo biashara_nje_ghairi_njia(BiasharaNjeMfumo* m, N32 nafasi_ya_njia) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (nafasi_ya_njia >= m->idadi_ya_njia) {
+        r.hitilafu = CIV_HITILAFU_HAIJAPATIKANA;
+        r.ujumbe = "njia haikupatikana";
+        rudisha r;
+    }
+    BiasharaNjeNjia* njia = biashara_nje_pata_njia(m, nafasi_ya_njia);
+    njia->inafanya_kazi = 0;
+    r.ujumbe = "njia ya biashara imeghairiwa";
+    rudisha r;
+}
+
+W0 biashara_nje_sasisha(BiasharaNjeMfumo* m, D64 muda) {
+    N32 i = 0;
+    wakati (i < m->idadi_ya_njia) {
+        BiasharaNjeNjia* njia = biashara_nje_pata_njia(m, i);
+        kama (njia->inafanya_kazi != 0) {
+            N32 kura = civ_nasibu_chini_ya(100);
+            N32 kura_hasi = kura - 50;
+            D64 kura_hasi_d = kura_hasi;
+            D64 mtikisiko = kura_hasi_d / 1000.0;
+            njia->thamani_kwa_kipimo = njia->thamani_kwa_kipimo * (1.0 + mtikisiko);
+            kama (njia->thamani_kwa_kipimo < 1.0) { njia->thamani_kwa_kipimo = 1.0; }
+        }
+        i = i + 1;
+    }
+}
+
+D64 biashara_nje_hesabu_mapato(BiasharaNjeNjia* njia) {
+    kama (njia->inafanya_kazi == 0) { rudisha 0.0; }
+    rudisha njia->kiasi * njia->thamani_kwa_kipimo * (1.0 - njia->kiwango_cha_ushuru);
+}
