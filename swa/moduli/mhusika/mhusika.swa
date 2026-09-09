@@ -1,0 +1,338 @@
+// mhusika.swa — tafsiri ya src/core/character.c (na .h) kwenda Swa.
+// Mchezaji kama mtu ndani ya dunia iliyoigwa, si taifa lenyewe.
+//
+// Kiambishi: mhusika_ — angalia ../../KANUNI-MAJINA.md.
+// civ_icon_id_t (uwakilishi wa picha) imekuwa N32 tupu (nambari ya
+// ikoni pekee, bila uwasilishaji wa picha halisi -- hiyo ni sehemu
+// ya safu ya UI ambayo bado haijaandikwa). skills[10] (safu ya
+// ndani, field ya muundo) imegawanywa kuwa vigezo 10 vyenye majina
+// (ujuzi_0..ujuzi_9). Jedwali la 2D la C (s_bg_skills[8][10])
+// limekuwa kazi moja yenye mnyororo wa kama/sivyo uliopachikwa
+// (bg kisha ujuzi). rand()%N imekuwa civ_nasibu_chini_ya(N).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+N32 MHUSIKA_ASILI_MKULIMA = 0;
+N32 MHUSIKA_ASILI_MFANYABIASHARA = 1;
+N32 MHUSIKA_ASILI_KIJESHI = 2;
+N32 MHUSIKA_ASILI_KIUTUMISHI = 3;
+N32 MHUSIKA_ASILI_KITAALUMA = 4;
+N32 MHUSIKA_ASILI_KIFUNDI = 5;
+N32 MHUSIKA_ASILI_KIHAMAJI = 6;
+N32 MHUSIKA_ASILI_KIUNGWANA = 7;
+N32 MHUSIKA_ASILI_IDADI = 8;
+
+N32 MHUSIKA_UJUZI_BIASHARA = 0;
+N32 MHUSIKA_UJUZI_MAPIGANO = 1;
+N32 MHUSIKA_UJUZI_UONGOZI = 2;
+N32 MHUSIKA_UJUZI_USOMI = 3;
+N32 MHUSIKA_UJUZI_UFUNDI = 4;
+N32 MHUSIKA_UJUZI_DIPLOMASIA = 5;
+N32 MHUSIKA_UJUZI_USIMAMIZI_WA_RASILIMALI = 6;
+N32 MHUSIKA_UJUZI_KUISHI_PORINI = 7;
+N32 MHUSIKA_UJUZI_HILA = 8;
+N32 MHUSIKA_UJUZI_UTAWALA = 9;
+N32 MHUSIKA_UJUZI_IDADI = 10;
+
+muundo Mhusika {
+    N8* jina;
+    N8* mahali_pa_kuzaliwa;
+    D64 latitudo_ya_kuzaliwa;
+    D64 longitudo_ya_kuzaliwa;
+    N32 asili;
+    N8* jukumu_la_sasa;
+    N8* mahali_pa_sasa;
+
+    N32 ujuzi_0; N32 ujuzi_1; N32 ujuzi_2; N32 ujuzi_3; N32 ujuzi_4;
+    N32 ujuzi_5; N32 ujuzi_6; N32 ujuzi_7; N32 ujuzi_8; N32 ujuzi_9;
+
+    D64 mali_binafsi;
+    D64 ardhi_inayomilikiwa;
+    D64 sifa;
+    D64 ushawishi_wa_kisiasa;
+
+    N8* nafasi_ya_kisiasa;
+
+    N32 kiwango_cha_makazi;
+    D64 gharama_ya_makazi;
+    N32 kiwango_cha_elimu;
+    D64 deni_la_elimu;
+    D64 afya;
+    D64 gharama_ya_afya;
+    D64 akiba_ya_benki;
+    D64 salio_la_mkopo;
+    D64 kiwango_cha_riba_ya_mkopo;
+    N32 cheo_cha_kazi;
+    D64 mshahara_wa_kila_mwezi;
+    D64 matumizi_ya_kila_mwezi;
+    N32 idadi_ya_uhusiano;
+    N8* jina_la_mpenzi;
+    N32 ana_mpenzi;
+
+    N8* mlinzi_id;
+    N8* mpinzani_id;
+};
+
+N8* mhusika_jina_la_asili(N32 bg) {
+    kama (bg == MHUSIKA_ASILI_MKULIMA) { rudisha "Mkulima"; }
+    kama (bg == MHUSIKA_ASILI_MFANYABIASHARA) { rudisha "Mfanyabiashara"; }
+    kama (bg == MHUSIKA_ASILI_KIJESHI) { rudisha "Kijeshi"; }
+    kama (bg == MHUSIKA_ASILI_KIUTUMISHI) { rudisha "Kiutumishi"; }
+    kama (bg == MHUSIKA_ASILI_KITAALUMA) { rudisha "Kitaaluma"; }
+    kama (bg == MHUSIKA_ASILI_KIFUNDI) { rudisha "Kifundi"; }
+    kama (bg == MHUSIKA_ASILI_KIHAMAJI) { rudisha "Kihamaji"; }
+    kama (bg == MHUSIKA_ASILI_KIUNGWANA) { rudisha "Kiungwana"; }
+    rudisha "Haijulikani";
+}
+
+N8* mhusika_maelezo_ya_asili(N32 bg) {
+    kama (bg == MHUSIKA_ASILI_MKULIMA) {
+        rudisha "Ulizaliwa kwenye ardhi. Familia yako imelima udongo kwa vizazi. Unajua mizunguko ya majira, thamani ya kazi, na njaa inayosukuma watu kuchukua hatua.";
+    }
+    kama (bg == MHUSIKA_ASILI_MFANYABIASHARA) {
+        rudisha "Ulizaliwa sokoni. Familia yako inafanya biashara kati ya mikoa. Unaelewa fedha, majadiliano, na mitandao inayosogeza utajiri.";
+    }
+    kama (bg == MHUSIKA_ASILI_KIJESHI) {
+        rudisha "Ulizaliwa kwa upanga. Familia yako imehudumu jeshini kwa vizazi. Nidhamu, mbinu, na uzito wa amri viko kwenye damu yako.";
+    }
+    kama (bg == MHUSIKA_ASILI_KIUTUMISHI) {
+        rudisha "Ulizaliwa kwa daftari. Familia yako inahudumu utaratibu wa utawala. Unaelewa jinsi mifumo inavyofanya kazi na jinsi urasimu unavyoshikilia mamlaka.";
+    }
+    kama (bg == MHUSIKA_ASILI_KITAALUMA) {
+        rudisha "Ulizaliwa kwenye maktaba. Familia yako inathamini maarifa kuliko yote. Ulikua miongoni mwa maandiko, mijadala, na utafutaji wa uelewa.";
+    }
+    kama (bg == MHUSIKA_ASILI_KIFUNDI) {
+        rudisha "Ulizaliwa kwenye karakana. Familia yako inajenga vitu -- zana, majengo, bidhaa. Unaelewa malighafi, taratibu, na fahari ya uumbaji.";
+    }
+    kama (bg == MHUSIKA_ASILI_KIHAMAJI) {
+        rudisha "Ulizaliwa barabarani. Familia yako inafuata majira, mifugo, upepo wa biashara. Unajua ardhi, kuishi, na uhuru wa kutembea.";
+    }
+    kama (bg == MHUSIKA_ASILI_KIUNGWANA) {
+        rudisha "Ulizaliwa kwenye jumba. Familia yako inamiliki ardhi, cheo, na ushawishi. Ulikua na ufikiaji wa madaraka -- na matarajio yanayokuja nayo.";
+    }
+    rudisha "";
+}
+
+N32 mhusika_ikoni_ya_asili(N32 bg) {
+    rudisha bg;
+}
+
+N8* mhusika_jina_la_ujuzi(N32 ujuzi) {
+    kama (ujuzi == MHUSIKA_UJUZI_BIASHARA) { rudisha "Biashara"; }
+    kama (ujuzi == MHUSIKA_UJUZI_MAPIGANO) { rudisha "Mapigano"; }
+    kama (ujuzi == MHUSIKA_UJUZI_UONGOZI) { rudisha "Uongozi"; }
+    kama (ujuzi == MHUSIKA_UJUZI_USOMI) { rudisha "Usomi"; }
+    kama (ujuzi == MHUSIKA_UJUZI_UFUNDI) { rudisha "Ufundi"; }
+    kama (ujuzi == MHUSIKA_UJUZI_DIPLOMASIA) { rudisha "Diplomasia"; }
+    kama (ujuzi == MHUSIKA_UJUZI_USIMAMIZI_WA_RASILIMALI) { rudisha "Usimamizi wa Rasilimali"; }
+    kama (ujuzi == MHUSIKA_UJUZI_KUISHI_PORINI) { rudisha "Kuishi Porini"; }
+    kama (ujuzi == MHUSIKA_UJUZI_HILA) { rudisha "Hila"; }
+    kama (ujuzi == MHUSIKA_UJUZI_UTAWALA) { rudisha "Utawala"; }
+    rudisha "Haijulikani";
+}
+
+N32 mhusika_ujuzi_wa_awali(N32 bg, N32 ujuzi) {
+    kama (bg == MHUSIKA_ASILI_MKULIMA) {
+        kama (ujuzi == 0) { rudisha 40; } kama (ujuzi == 1) { rudisha 50; }
+        kama (ujuzi == 2) { rudisha 20; } kama (ujuzi == 3) { rudisha 10; }
+        kama (ujuzi == 4) { rudisha 60; } kama (ujuzi == 5) { rudisha 20; }
+        kama (ujuzi == 6) { rudisha 80; } kama (ujuzi == 7) { rudisha 70; }
+        kama (ujuzi == 8) { rudisha 10; } rudisha 10;
+    }
+    kama (bg == MHUSIKA_ASILI_MFANYABIASHARA) {
+        kama (ujuzi == 0) { rudisha 100; } kama (ujuzi == 1) { rudisha 20; }
+        kama (ujuzi == 2) { rudisha 30; } kama (ujuzi == 3) { rudisha 40; }
+        kama (ujuzi == 4) { rudisha 30; } kama (ujuzi == 5) { rudisha 70; }
+        kama (ujuzi == 6) { rudisha 50; } kama (ujuzi == 7) { rudisha 30; }
+        kama (ujuzi == 8) { rudisha 50; } rudisha 40;
+    }
+    kama (bg == MHUSIKA_ASILI_KIJESHI) {
+        kama (ujuzi == 0) { rudisha 20; } kama (ujuzi == 1) { rudisha 100; }
+        kama (ujuzi == 2) { rudisha 80; } kama (ujuzi == 3) { rudisha 20; }
+        kama (ujuzi == 4) { rudisha 30; } kama (ujuzi == 5) { rudisha 30; }
+        kama (ujuzi == 6) { rudisha 40; } kama (ujuzi == 7) { rudisha 60; }
+        kama (ujuzi == 8) { rudisha 30; } rudisha 30;
+    }
+    kama (bg == MHUSIKA_ASILI_KIUTUMISHI) {
+        kama (ujuzi == 0) { rudisha 40; } kama (ujuzi == 1) { rudisha 10; }
+        kama (ujuzi == 2) { rudisha 30; } kama (ujuzi == 3) { rudisha 60; }
+        kama (ujuzi == 4) { rudisha 20; } kama (ujuzi == 5) { rudisha 50; }
+        kama (ujuzi == 6) { rudisha 70; } kama (ujuzi == 7) { rudisha 10; }
+        kama (ujuzi == 8) { rudisha 70; } rudisha 90;
+    }
+    kama (bg == MHUSIKA_ASILI_KITAALUMA) {
+        kama (ujuzi == 0) { rudisha 20; } kama (ujuzi == 1) { rudisha 10; }
+        kama (ujuzi == 2) { rudisha 20; } kama (ujuzi == 3) { rudisha 100; }
+        kama (ujuzi == 4) { rudisha 30; } kama (ujuzi == 5) { rudisha 40; }
+        kama (ujuzi == 6) { rudisha 30; } kama (ujuzi == 7) { rudisha 20; }
+        kama (ujuzi == 8) { rudisha 30; } rudisha 40;
+    }
+    kama (bg == MHUSIKA_ASILI_KIFUNDI) {
+        kama (ujuzi == 0) { rudisha 60; } kama (ujuzi == 1) { rudisha 30; }
+        kama (ujuzi == 2) { rudisha 20; } kama (ujuzi == 3) { rudisha 30; }
+        kama (ujuzi == 4) { rudisha 100; } kama (ujuzi == 5) { rudisha 30; }
+        kama (ujuzi == 6) { rudisha 50; } kama (ujuzi == 7) { rudisha 30; }
+        kama (ujuzi == 8) { rudisha 20; } rudisha 20;
+    }
+    kama (bg == MHUSIKA_ASILI_KIHAMAJI) {
+        kama (ujuzi == 0) { rudisha 50; } kama (ujuzi == 1) { rudisha 70; }
+        kama (ujuzi == 2) { rudisha 40; } kama (ujuzi == 3) { rudisha 20; }
+        kama (ujuzi == 4) { rudisha 40; } kama (ujuzi == 5) { rudisha 40; }
+        kama (ujuzi == 6) { rudisha 30; } kama (ujuzi == 7) { rudisha 100; }
+        kama (ujuzi == 8) { rudisha 30; } rudisha 10;
+    }
+    kama (ujuzi == 0) { rudisha 60; } kama (ujuzi == 1) { rudisha 40; }
+    kama (ujuzi == 2) { rudisha 70; } kama (ujuzi == 3) { rudisha 50; }
+    kama (ujuzi == 4) { rudisha 20; } kama (ujuzi == 5) { rudisha 80; }
+    kama (ujuzi == 6) { rudisha 60; } kama (ujuzi == 7) { rudisha 20; }
+    kama (ujuzi == 8) { rudisha 60; } rudisha 60;
+}
+
+D64 mhusika_mali_ya_awali(N32 bg) {
+    kama (bg == MHUSIKA_ASILI_MKULIMA) { rudisha 20.0; }
+    kama (bg == MHUSIKA_ASILI_MFANYABIASHARA) { rudisha 200.0; }
+    kama (bg == MHUSIKA_ASILI_KIJESHI) { rudisha 60.0; }
+    kama (bg == MHUSIKA_ASILI_KIUTUMISHI) { rudisha 80.0; }
+    kama (bg == MHUSIKA_ASILI_KITAALUMA) { rudisha 40.0; }
+    kama (bg == MHUSIKA_ASILI_KIFUNDI) { rudisha 100.0; }
+    kama (bg == MHUSIKA_ASILI_KIHAMAJI) { rudisha 30.0; }
+    rudisha 400.0;
+}
+
+Mhusika* mhusika_unda(N8* jina) {
+    Mhusika* c = tenga(ukubwa(Mhusika));
+    c->jina = jina;
+    c->mahali_pa_kuzaliwa = "";
+    c->latitudo_ya_kuzaliwa = 0.0;
+    c->longitudo_ya_kuzaliwa = 0.0;
+    c->asili = 0;
+    c->jukumu_la_sasa = "Raia wa Kawaida";
+    c->mahali_pa_sasa = "";
+    c->ujuzi_0 = 0; c->ujuzi_1 = 0; c->ujuzi_2 = 0; c->ujuzi_3 = 0; c->ujuzi_4 = 0;
+    c->ujuzi_5 = 0; c->ujuzi_6 = 0; c->ujuzi_7 = 0; c->ujuzi_8 = 0; c->ujuzi_9 = 0;
+    c->mali_binafsi = 50.0;
+    c->ardhi_inayomilikiwa = 0.0;
+    c->sifa = 10.0;
+    c->ushawishi_wa_kisiasa = 0.0;
+    c->nafasi_ya_kisiasa = "";
+    c->kiwango_cha_makazi = 0;
+    c->gharama_ya_makazi = 0.0;
+    c->kiwango_cha_elimu = 0;
+    c->deni_la_elimu = 0.0;
+    c->afya = 0.0;
+    c->gharama_ya_afya = 0.0;
+    c->akiba_ya_benki = 0.0;
+    c->salio_la_mkopo = 0.0;
+    c->kiwango_cha_riba_ya_mkopo = 0.0;
+    c->cheo_cha_kazi = 0;
+    c->mshahara_wa_kila_mwezi = 0.0;
+    c->matumizi_ya_kila_mwezi = 0.0;
+    c->idadi_ya_uhusiano = 0;
+    c->jina_la_mpenzi = "";
+    c->ana_mpenzi = 0;
+    c->mlinzi_id = "";
+    c->mpinzani_id = "";
+    rudisha c;
+}
+
+W0 mhusika_uharibu(Mhusika* c) {
+    achilia c;
+}
+
+W0 mhusika_weka_asili(Mhusika* c, N32 bg) {
+    kama (c == 0 || bg >= MHUSIKA_ASILI_IDADI) { rudisha; }
+    c->asili = bg;
+    c->ujuzi_0 = mhusika_ujuzi_wa_awali(bg, 0);
+    c->ujuzi_1 = mhusika_ujuzi_wa_awali(bg, 1);
+    c->ujuzi_2 = mhusika_ujuzi_wa_awali(bg, 2);
+    c->ujuzi_3 = mhusika_ujuzi_wa_awali(bg, 3);
+    c->ujuzi_4 = mhusika_ujuzi_wa_awali(bg, 4);
+    c->ujuzi_5 = mhusika_ujuzi_wa_awali(bg, 5);
+    c->ujuzi_6 = mhusika_ujuzi_wa_awali(bg, 6);
+    c->ujuzi_7 = mhusika_ujuzi_wa_awali(bg, 7);
+    c->ujuzi_8 = mhusika_ujuzi_wa_awali(bg, 8);
+    c->ujuzi_9 = mhusika_ujuzi_wa_awali(bg, 9);
+
+    c->mali_binafsi = mhusika_mali_ya_awali(bg);
+
+    c->sifa = 10.0;
+    kama (bg == MHUSIKA_ASILI_KIUNGWANA) { c->sifa = 40.0; }
+    sivyo { kama (bg == MHUSIKA_ASILI_MFANYABIASHARA) { c->sifa = 25.0; } }
+
+    c->ushawishi_wa_kisiasa = 0.0;
+    kama (bg == MHUSIKA_ASILI_KIUNGWANA || bg == MHUSIKA_ASILI_KIUTUMISHI) {
+        c->ushawishi_wa_kisiasa = 25.0;
+    }
+
+    c->kiwango_cha_makazi = 2;
+    kama (bg == MHUSIKA_ASILI_KIUNGWANA) { c->kiwango_cha_makazi = 3; }
+    sivyo { kama (bg == MHUSIKA_ASILI_KIHAMAJI) { c->kiwango_cha_makazi = 1; } }
+
+    c->gharama_ya_makazi = 10.0;
+    kama (c->kiwango_cha_makazi == 3) { c->gharama_ya_makazi = 0.0; }
+    sivyo { kama (c->kiwango_cha_makazi == 2) { c->gharama_ya_makazi = 50.0; } }
+
+    c->kiwango_cha_elimu = 2;
+    kama (bg == MHUSIKA_ASILI_KITAALUMA) { c->kiwango_cha_elimu = 4; }
+    sivyo { kama (bg == MHUSIKA_ASILI_KIUTUMISHI) { c->kiwango_cha_elimu = 3; } }
+
+    N32 nasibu_ya_afya = civ_nasibu_chini_ya(20);
+    D64 nasibu_ya_afya_d = nasibu_ya_afya;
+    c->afya = 80.0 + nasibu_ya_afya_d;
+    c->gharama_ya_afya = 10.0;
+    c->akiba_ya_benki = c->mali_binafsi * 0.5;
+
+    c->mshahara_wa_kila_mwezi = 80.0;
+    kama (bg == MHUSIKA_ASILI_MFANYABIASHARA) { c->mshahara_wa_kila_mwezi = 200.0; }
+    sivyo { kama (bg == MHUSIKA_ASILI_KIUNGWANA) { c->mshahara_wa_kila_mwezi = 300.0; } }
+
+    c->matumizi_ya_kila_mwezi = c->gharama_ya_makazi + c->gharama_ya_afya + 20.0;
+
+    N32 nasibu_ya_uhusiano = civ_nasibu_chini_ya(5);
+    c->idadi_ya_uhusiano = 2 + nasibu_ya_uhusiano;
+
+    c->cheo_cha_kazi = 1;
+    kama (bg == MHUSIKA_ASILI_KIUNGWANA || bg == MHUSIKA_ASILI_MFANYABIASHARA) {
+        c->cheo_cha_kazi = 2;
+    }
+}
+
+N8* mhusika_kichwa_cha_kudumu(Mhusika* c) {
+    kama (c == 0) { rudisha ""; }
+
+    N32 ujuzi_bora = 0;
+    N32 thamani_bora = 0;
+    kama (c->ujuzi_0 > thamani_bora) { thamani_bora = c->ujuzi_0; ujuzi_bora = 0; }
+    kama (c->ujuzi_1 > thamani_bora) { thamani_bora = c->ujuzi_1; ujuzi_bora = 1; }
+    kama (c->ujuzi_2 > thamani_bora) { thamani_bora = c->ujuzi_2; ujuzi_bora = 2; }
+    kama (c->ujuzi_3 > thamani_bora) { thamani_bora = c->ujuzi_3; ujuzi_bora = 3; }
+    kama (c->ujuzi_4 > thamani_bora) { thamani_bora = c->ujuzi_4; ujuzi_bora = 4; }
+    kama (c->ujuzi_5 > thamani_bora) { thamani_bora = c->ujuzi_5; ujuzi_bora = 5; }
+    kama (c->ujuzi_6 > thamani_bora) { thamani_bora = c->ujuzi_6; ujuzi_bora = 6; }
+    kama (c->ujuzi_7 > thamani_bora) { thamani_bora = c->ujuzi_7; ujuzi_bora = 7; }
+    kama (c->ujuzi_8 > thamani_bora) { thamani_bora = c->ujuzi_8; ujuzi_bora = 8; }
+    kama (c->ujuzi_9 > thamani_bora) { thamani_bora = c->ujuzi_9; ujuzi_bora = 9; }
+
+    N8* utajiri = "Anayehangaika";
+    kama (c->mali_binafsi > 5000.0) { utajiri = "Tajiri"; }
+    sivyo { kama (c->mali_binafsi > 1000.0) { utajiri = "Mstarehe"; }
+    sivyo { kama (c->mali_binafsi > 100.0) { utajiri = "Mfanyakazi"; } } }
+
+    N8* jukumu_la_maelezo = mhusika_jina_la_ujuzi(ujuzi_bora);
+    kama (c->ushawishi_wa_kisiasa > 30.0) { jukumu_la_maelezo = "Kiongozi wa Kisiasa"; }
+
+    N8* kichwa = tenga(256);
+    kama (c->ushawishi_wa_kisiasa > 20.0) {
+        N8* nusu = tenga(128);
+        unganisha_mfuatano(nusu, utajiri, " Mwenye Ushawishi");
+        unganisha_mfuatano(kichwa, nusu, " ");
+        N8* jina_kamili = tenga(256);
+        unganisha_mfuatano(jina_kamili, kichwa, jukumu_la_maelezo);
+        rudisha jina_kamili;
+    }
+    unganisha_mfuatano(kichwa, utajiri, " ");
+    N8* jina_kamili2 = tenga(256);
+    unganisha_mfuatano(jina_kamili2, kichwa, jukumu_la_maelezo);
+    rudisha jina_kamili2;
+}

@@ -1,0 +1,306 @@
+// jukumu.swa — tafsiri ya src/core/role.c (na .h) kwenda Swa. Kila
+// raia ana jukumu; jukumu linaeleza vitendo vinavyoruhusiwa,
+// skrini za dashibodi, na uhusiano wa bosi/mfanyakazi.
+//
+// Kiambishi: jukumu_ — angalia ../../KANUNI-MAJINA.md.
+// permitted_actions (uint64_t bitmask, C) imekuwa N32 -- kitendo cha
+// mwisho kinachotumika ni bit 26 (CIV_ACT_VIEW_DIPLOMACY), ndani ya
+// mipaka ya N32 (bits 0-31), hivyo hakuna hasara. Uendeshaji wa
+// bitwise (| na &) umejaribiwa moja kwa moja na kuthibitishwa
+// kufanya kazi sahihi kwenye Swa. nav_screens[12] (safu ya ndani ya
+// int, field ya muundo) imegawanywa kuwa vigezo 12 vyenye majina
+// (skrini_0..skrini_11) -- safu za ndani za muundo hazichanganuliwi
+// kabisa. Majukumu 6 yaliyoainishwa awali (private_citizen,
+// cabinet_economics, cabinet_defense, diplomat, legislator,
+// head_of_state) yamekuwa kazi 6 tofauti zinazounda na kurudisha
+// muundo mpya kwenye rundo kila zikiitwa (badala ya const globals za
+// C) -- hakuna hifadhi ya "singleton" ya kudumu, urahisi kuliko
+// usahihi wa utendaji, mtindo uliothibitishwa kikao hiki.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 JUKUMU_TAZAMA_DASHIBODI    = 1;
+N32 JUKUMU_FANYA_BIASHARA      = 2;
+N32 JUKUMU_TANDAO              = 4;
+N32 JUKUMU_JIUNGE_CHAMA        = 8;
+N32 JUKUMU_OMBA_NAFASI         = 16;
+N32 JUKUMU_ANZISHA_BIASHARA    = 32;
+N32 JUKUMU_PINGA                = 64;
+N32 JUKUMU_PIGA_KURA           = 128;
+N32 JUKUMU_JIUZULU              = 256;
+N32 JUKUMU_TAZAMA_BAJETI       = 512;
+N32 JUKUMU_GAWA_BAJETI         = 1024;
+N32 JUKUMU_PENDEKEZA_SERA      = 2048;
+N32 JUKUMU_AJIRI_WAFANYAKAZI   = 4096;
+N32 JUKUMU_FUKUZA_WAFANYAKAZI  = 8192;
+N32 JUKUMU_PELEKA_JESHI        = 16384;
+N32 JUKUMU_JADILIANA_MKATABA   = 32768;
+N32 JUKUMU_TANGAZA_VITA        = 65536;
+N32 JUKUMU_PITISHA_SHERIA      = 131072;
+N32 JUKUMU_TOA_HUKUMU          = 262144;
+N32 JUKUMU_TEUA_AFISA          = 524288;
+N32 JUKUMU_ONDOA_MADARAKANI    = 1048576;
+N32 JUKUMU_TAZAMA_UJASUSI      = 2097152;
+N32 JUKUMU_TAZAMA_HABARI       = 4194304;
+N32 JUKUMU_TAZAMA_UCHUMI       = 8388608;
+N32 JUKUMU_TAZAMA_JESHI        = 16777216;
+N32 JUKUMU_TAZAMA_UTAWALA      = 33554432;
+N32 JUKUMU_TAZAMA_DIPLOMASIA   = 67108864;
+
+N32 JUKUMU_SKRINI_DASHIBODI     = 0;
+N32 JUKUMU_SKRINI_KAZI          = 1;
+N32 JUKUMU_SKRINI_FEDHA         = 2;
+N32 JUKUMU_SKRINI_MAKAZI        = 3;
+N32 JUKUMU_SKRINI_ELIMU         = 4;
+N32 JUKUMU_SKRINI_TANDAO        = 5;
+N32 JUKUMU_SKRINI_SIASA         = 6;
+N32 JUKUMU_SKRINI_AFYA          = 7;
+N32 JUKUMU_SKRINI_BAJETI        = 8;
+N32 JUKUMU_SKRINI_SERA          = 9;
+N32 JUKUMU_SKRINI_RIPOTI        = 10;
+N32 JUKUMU_SKRINI_WAFANYAKAZI   = 11;
+N32 JUKUMU_SKRINI_MAJESHI       = 12;
+N32 JUKUMU_SKRINI_UPELEKAJI     = 13;
+N32 JUKUMU_SKRINI_UJASUSI       = 14;
+N32 JUKUMU_SKRINI_HABARI        = 15;
+N32 JUKUMU_SKRINI_UCHUMI        = 16;
+N32 JUKUMU_SKRINI_UTAWALA       = 17;
+N32 JUKUMU_SKRINI_KATIBA        = 18;
+N32 JUKUMU_SKRINI_RAMANI        = 19;
+N32 JUKUMU_SKRINI_DIPLOMASIA    = 20;
+N32 JUKUMU_SKRINI_JESHI         = 21;
+N32 JUKUMU_SKRINI_HAKUNA        = -1;
+
+muundo JukumuAinisho {
+    N8* jina;
+    N8* wigo;
+    N32 matendo_yanayoruhusiwa;
+    N32 skrini_0; N32 skrini_1; N32 skrini_2; N32 skrini_3;
+    N32 skrini_4; N32 skrini_5; N32 skrini_6; N32 skrini_7;
+    N32 skrini_8; N32 skrini_9; N32 skrini_10; N32 skrini_11;
+    N32 idadi_ya_skrini;
+    N8* cheo_cha_bosi;
+    N8* idara;
+    N32 ngazi_ya_uongozi;
+};
+
+muundo JukumuLaMchezaji {
+    N8* jina_la_jukumu;
+    N8* taifa_id;
+    N8* jina_la_bosi;
+    N8* jina_la_chama;
+    D64 imani_ya_bosi;
+    D64 uwiano_na_chama;
+    D64 kibali_cha_umma;
+    N32 matendo_yanayoruhusiwa;
+    N32 skrini_0; N32 skrini_1; N32 skrini_2; N32 skrini_3;
+    N32 skrini_4; N32 skrini_5; N32 skrini_6; N32 skrini_7;
+    N32 skrini_8; N32 skrini_9; N32 skrini_10; N32 skrini_11;
+    N32 idadi_ya_skrini;
+    N32 ni_jukumu_la_serikali;
+};
+
+N8* jukumu_lebo_ya_skrini(N32 skrini) {
+    kama (skrini == JUKUMU_SKRINI_DASHIBODI) { rudisha "Dashibodi"; }
+    kama (skrini == JUKUMU_SKRINI_KAZI) { rudisha "Kazi"; }
+    kama (skrini == JUKUMU_SKRINI_FEDHA) { rudisha "Fedha"; }
+    kama (skrini == JUKUMU_SKRINI_MAKAZI) { rudisha "Makazi"; }
+    kama (skrini == JUKUMU_SKRINI_ELIMU) { rudisha "Elimu"; }
+    kama (skrini == JUKUMU_SKRINI_TANDAO) { rudisha "Tandao"; }
+    kama (skrini == JUKUMU_SKRINI_SIASA) { rudisha "Siasa"; }
+    kama (skrini == JUKUMU_SKRINI_AFYA) { rudisha "Afya"; }
+    kama (skrini == JUKUMU_SKRINI_BAJETI) { rudisha "Bajeti"; }
+    kama (skrini == JUKUMU_SKRINI_SERA) { rudisha "Sera"; }
+    kama (skrini == JUKUMU_SKRINI_RIPOTI) { rudisha "Ripoti"; }
+    kama (skrini == JUKUMU_SKRINI_WAFANYAKAZI) { rudisha "Wafanyakazi"; }
+    kama (skrini == JUKUMU_SKRINI_MAJESHI) { rudisha "Majeshi"; }
+    kama (skrini == JUKUMU_SKRINI_UPELEKAJI) { rudisha "Upelekaji"; }
+    kama (skrini == JUKUMU_SKRINI_UJASUSI) { rudisha "Ujasusi"; }
+    kama (skrini == JUKUMU_SKRINI_HABARI) { rudisha "Habari"; }
+    kama (skrini == JUKUMU_SKRINI_UCHUMI) { rudisha "Uchumi"; }
+    kama (skrini == JUKUMU_SKRINI_UTAWALA) { rudisha "Utawala"; }
+    kama (skrini == JUKUMU_SKRINI_KATIBA) { rudisha "Katiba"; }
+    kama (skrini == JUKUMU_SKRINI_RAMANI) { rudisha "Ramani"; }
+    kama (skrini == JUKUMU_SKRINI_DIPLOMASIA) { rudisha "Diplomasia"; }
+    kama (skrini == JUKUMU_SKRINI_JESHI) { rudisha "Jeshi"; }
+    rudisha "Haijulikani";
+}
+
+JukumuAinisho* jukumu_raia_binafsi() {
+    JukumuAinisho* r = tenga(ukubwa(JukumuAinisho));
+    r->jina = "Raia wa Kawaida";
+    r->wigo = "Mambo binafsi, kazi, na jamii ya karibu";
+    r->matendo_yanayoruhusiwa = JUKUMU_TAZAMA_DASHIBODI | JUKUMU_FANYA_BIASHARA
+        | JUKUMU_TANDAO | JUKUMU_JIUNGE_CHAMA | JUKUMU_OMBA_NAFASI
+        | JUKUMU_ANZISHA_BIASHARA | JUKUMU_PINGA | JUKUMU_PIGA_KURA
+        | JUKUMU_JIUZULU | JUKUMU_TAZAMA_HABARI | JUKUMU_TAZAMA_UCHUMI;
+    r->skrini_0 = JUKUMU_SKRINI_DASHIBODI; r->skrini_1 = JUKUMU_SKRINI_RAMANI;
+    r->skrini_2 = JUKUMU_SKRINI_KAZI; r->skrini_3 = JUKUMU_SKRINI_FEDHA;
+    r->skrini_4 = JUKUMU_SKRINI_MAKAZI; r->skrini_5 = JUKUMU_SKRINI_ELIMU;
+    r->skrini_6 = JUKUMU_SKRINI_TANDAO; r->skrini_7 = JUKUMU_SKRINI_SIASA;
+    r->skrini_8 = JUKUMU_SKRINI_AFYA; r->skrini_9 = JUKUMU_SKRINI_KATIBA;
+    r->skrini_10 = JUKUMU_SKRINI_HABARI; r->skrini_11 = JUKUMU_SKRINI_UCHUMI;
+    r->idadi_ya_skrini = 12;
+    r->cheo_cha_bosi = "";
+    r->idara = "Jamii ya Kiraia";
+    r->ngazi_ya_uongozi = 99;
+    rudisha r;
+}
+
+JukumuAinisho* jukumu_waziri_uchumi() {
+    JukumuAinisho* r = tenga(ukubwa(JukumuAinisho));
+    r->jina = "Katibu wa Baraza la Mawaziri wa Uchumi";
+    r->wigo = "Sera ya uchumi wa taifa, bajeti, biashara, na udhibiti wa sekta";
+    r->matendo_yanayoruhusiwa = JUKUMU_TAZAMA_DASHIBODI | JUKUMU_TAZAMA_BAJETI
+        | JUKUMU_GAWA_BAJETI | JUKUMU_PENDEKEZA_SERA | JUKUMU_AJIRI_WAFANYAKAZI
+        | JUKUMU_FUKUZA_WAFANYAKAZI | JUKUMU_TANDAO | JUKUMU_JIUZULU
+        | JUKUMU_TAZAMA_HABARI | JUKUMU_TAZAMA_UCHUMI | JUKUMU_TAZAMA_UTAWALA;
+    r->skrini_0 = JUKUMU_SKRINI_DASHIBODI; r->skrini_1 = JUKUMU_SKRINI_BAJETI;
+    r->skrini_2 = JUKUMU_SKRINI_SERA; r->skrini_3 = JUKUMU_SKRINI_WAFANYAKAZI;
+    r->skrini_4 = JUKUMU_SKRINI_RIPOTI; r->skrini_5 = JUKUMU_SKRINI_HABARI;
+    r->skrini_6 = JUKUMU_SKRINI_HAKUNA; r->skrini_7 = JUKUMU_SKRINI_HAKUNA;
+    r->skrini_8 = JUKUMU_SKRINI_HAKUNA; r->skrini_9 = JUKUMU_SKRINI_HAKUNA;
+    r->skrini_10 = JUKUMU_SKRINI_HAKUNA; r->skrini_11 = JUKUMU_SKRINI_HAKUNA;
+    r->idadi_ya_skrini = 6;
+    r->cheo_cha_bosi = "Mkuu wa Serikali";
+    r->idara = "Wizara ya Uchumi";
+    r->ngazi_ya_uongozi = 2;
+    rudisha r;
+}
+
+JukumuAinisho* jukumu_waziri_ulinzi() {
+    JukumuAinisho* r = tenga(ukubwa(JukumuAinisho));
+    r->jina = "Waziri wa Ulinzi";
+    r->wigo = "Usalama wa taifa na operesheni za kijeshi";
+    r->matendo_yanayoruhusiwa = JUKUMU_TAZAMA_DASHIBODI | JUKUMU_PELEKA_JESHI
+        | JUKUMU_PENDEKEZA_SERA | JUKUMU_AJIRI_WAFANYAKAZI | JUKUMU_FUKUZA_WAFANYAKAZI
+        | JUKUMU_JIUZULU | JUKUMU_TAZAMA_HABARI | JUKUMU_TAZAMA_UJASUSI
+        | JUKUMU_TAZAMA_JESHI | JUKUMU_TAZAMA_BAJETI;
+    r->skrini_0 = JUKUMU_SKRINI_DASHIBODI; r->skrini_1 = JUKUMU_SKRINI_MAJESHI;
+    r->skrini_2 = JUKUMU_SKRINI_UPELEKAJI; r->skrini_3 = JUKUMU_SKRINI_UJASUSI;
+    r->skrini_4 = JUKUMU_SKRINI_BAJETI; r->skrini_5 = JUKUMU_SKRINI_HABARI;
+    r->skrini_6 = JUKUMU_SKRINI_HAKUNA; r->skrini_7 = JUKUMU_SKRINI_HAKUNA;
+    r->skrini_8 = JUKUMU_SKRINI_HAKUNA; r->skrini_9 = JUKUMU_SKRINI_HAKUNA;
+    r->skrini_10 = JUKUMU_SKRINI_HAKUNA; r->skrini_11 = JUKUMU_SKRINI_HAKUNA;
+    r->idadi_ya_skrini = 6;
+    r->cheo_cha_bosi = "Mkuu wa Serikali";
+    r->idara = "Wizara ya Ulinzi";
+    r->ngazi_ya_uongozi = 2;
+    rudisha r;
+}
+
+JukumuAinisho* jukumu_balozi() {
+    JukumuAinisho* r = tenga(ukubwa(JukumuAinisho));
+    r->jina = "Balozi";
+    r->wigo = "Uhusiano wa kigeni na majadiliano ya mikataba";
+    r->matendo_yanayoruhusiwa = JUKUMU_TAZAMA_DASHIBODI | JUKUMU_JADILIANA_MKATABA
+        | JUKUMU_TANDAO | JUKUMU_JIUZULU | JUKUMU_TAZAMA_HABARI
+        | JUKUMU_TAZAMA_DIPLOMASIA | JUKUMU_PENDEKEZA_SERA;
+    r->skrini_0 = JUKUMU_SKRINI_DASHIBODI; r->skrini_1 = JUKUMU_SKRINI_DIPLOMASIA;
+    r->skrini_2 = JUKUMU_SKRINI_RIPOTI; r->skrini_3 = JUKUMU_SKRINI_TANDAO;
+    r->skrini_4 = JUKUMU_SKRINI_HABARI; r->skrini_5 = JUKUMU_SKRINI_HAKUNA;
+    r->skrini_6 = JUKUMU_SKRINI_HAKUNA; r->skrini_7 = JUKUMU_SKRINI_HAKUNA;
+    r->skrini_8 = JUKUMU_SKRINI_HAKUNA; r->skrini_9 = JUKUMU_SKRINI_HAKUNA;
+    r->skrini_10 = JUKUMU_SKRINI_HAKUNA; r->skrini_11 = JUKUMU_SKRINI_HAKUNA;
+    r->idadi_ya_skrini = 5;
+    r->cheo_cha_bosi = "Waziri wa Mambo ya Nje";
+    r->idara = "Wizara ya Mambo ya Nje";
+    r->ngazi_ya_uongozi = 3;
+    rudisha r;
+}
+
+JukumuAinisho* jukumu_mbunge() {
+    JukumuAinisho* r = tenga(ukubwa(JukumuAinisho));
+    r->jina = "Mbunge";
+    r->wigo = "Utungaji wa sheria na usimamizi";
+    r->matendo_yanayoruhusiwa = JUKUMU_TAZAMA_DASHIBODI | JUKUMU_PITISHA_SHERIA
+        | JUKUMU_PIGA_KURA | JUKUMU_PENDEKEZA_SERA | JUKUMU_TANDAO
+        | JUKUMU_JIUZULU | JUKUMU_TAZAMA_HABARI | JUKUMU_TAZAMA_UTAWALA
+        | JUKUMU_TAZAMA_BAJETI | JUKUMU_ONDOA_MADARAKANI;
+    r->skrini_0 = JUKUMU_SKRINI_DASHIBODI; r->skrini_1 = JUKUMU_SKRINI_SERA;
+    r->skrini_2 = JUKUMU_SKRINI_UTAWALA; r->skrini_3 = JUKUMU_SKRINI_SIASA;
+    r->skrini_4 = JUKUMU_SKRINI_BAJETI; r->skrini_5 = JUKUMU_SKRINI_HABARI;
+    r->skrini_6 = JUKUMU_SKRINI_HAKUNA; r->skrini_7 = JUKUMU_SKRINI_HAKUNA;
+    r->skrini_8 = JUKUMU_SKRINI_HAKUNA; r->skrini_9 = JUKUMU_SKRINI_HAKUNA;
+    r->skrini_10 = JUKUMU_SKRINI_HAKUNA; r->skrini_11 = JUKUMU_SKRINI_HAKUNA;
+    r->idadi_ya_skrini = 6;
+    r->cheo_cha_bosi = "Spika";
+    r->idara = "Bunge";
+    r->ngazi_ya_uongozi = 2;
+    rudisha r;
+}
+
+JukumuAinisho* jukumu_mkuu_wa_nchi() {
+    JukumuAinisho* r = tenga(ukubwa(JukumuAinisho));
+    r->jina = "Mkuu wa Nchi";
+    r->wigo = "Mamlaka kuu ya utendaji";
+    r->matendo_yanayoruhusiwa = JUKUMU_TAZAMA_DASHIBODI | JUKUMU_GAWA_BAJETI
+        | JUKUMU_PENDEKEZA_SERA | JUKUMU_AJIRI_WAFANYAKAZI | JUKUMU_FUKUZA_WAFANYAKAZI
+        | JUKUMU_PELEKA_JESHI | JUKUMU_JADILIANA_MKATABA | JUKUMU_TANGAZA_VITA
+        | JUKUMU_PITISHA_SHERIA | JUKUMU_TEUA_AFISA | JUKUMU_ONDOA_MADARAKANI
+        | JUKUMU_JIUZULU | JUKUMU_TAZAMA_UJASUSI | JUKUMU_TAZAMA_HABARI
+        | JUKUMU_TAZAMA_UCHUMI | JUKUMU_TAZAMA_JESHI | JUKUMU_TAZAMA_UTAWALA
+        | JUKUMU_TANDAO;
+    r->skrini_0 = JUKUMU_SKRINI_DASHIBODI; r->skrini_1 = JUKUMU_SKRINI_UCHUMI;
+    r->skrini_2 = JUKUMU_SKRINI_JESHI; r->skrini_3 = JUKUMU_SKRINI_DIPLOMASIA;
+    r->skrini_4 = JUKUMU_SKRINI_UTAWALA; r->skrini_5 = JUKUMU_SKRINI_UJASUSI;
+    r->skrini_6 = JUKUMU_SKRINI_WAFANYAKAZI; r->skrini_7 = JUKUMU_SKRINI_HABARI;
+    r->skrini_8 = JUKUMU_SKRINI_HAKUNA; r->skrini_9 = JUKUMU_SKRINI_HAKUNA;
+    r->skrini_10 = JUKUMU_SKRINI_HAKUNA; r->skrini_11 = JUKUMU_SKRINI_HAKUNA;
+    r->idadi_ya_skrini = 8;
+    r->cheo_cha_bosi = "";
+    r->idara = "Ofisi ya Utendaji";
+    r->ngazi_ya_uongozi = 0;
+    rudisha r;
+}
+
+W0 jukumu_anzisha(JukumuLaMchezaji* r) {
+    r->jina_la_jukumu = "";
+    r->taifa_id = "";
+    r->jina_la_bosi = "";
+    r->jina_la_chama = "";
+    r->imani_ya_bosi = 0.0;
+    r->uwiano_na_chama = 0.0;
+    r->kibali_cha_umma = 0.0;
+    r->matendo_yanayoruhusiwa = 0;
+    r->skrini_0 = JUKUMU_SKRINI_HAKUNA; r->skrini_1 = JUKUMU_SKRINI_HAKUNA;
+    r->skrini_2 = JUKUMU_SKRINI_HAKUNA; r->skrini_3 = JUKUMU_SKRINI_HAKUNA;
+    r->skrini_4 = JUKUMU_SKRINI_HAKUNA; r->skrini_5 = JUKUMU_SKRINI_HAKUNA;
+    r->skrini_6 = JUKUMU_SKRINI_HAKUNA; r->skrini_7 = JUKUMU_SKRINI_HAKUNA;
+    r->skrini_8 = JUKUMU_SKRINI_HAKUNA; r->skrini_9 = JUKUMU_SKRINI_HAKUNA;
+    r->skrini_10 = JUKUMU_SKRINI_HAKUNA; r->skrini_11 = JUKUMU_SKRINI_HAKUNA;
+    r->idadi_ya_skrini = 0;
+    r->ni_jukumu_la_serikali = 0;
+}
+
+W0 jukumu_weka(JukumuLaMchezaji* r, JukumuAinisho* ainisho, N8* taifa_id) {
+    kama (r == 0 || ainisho == 0) { rudisha; }
+    r->jina_la_jukumu = ainisho->jina;
+    r->taifa_id = taifa_id;
+    r->matendo_yanayoruhusiwa = ainisho->matendo_yanayoruhusiwa;
+    r->idadi_ya_skrini = ainisho->idadi_ya_skrini;
+    r->skrini_0 = ainisho->skrini_0; r->skrini_1 = ainisho->skrini_1;
+    r->skrini_2 = ainisho->skrini_2; r->skrini_3 = ainisho->skrini_3;
+    r->skrini_4 = ainisho->skrini_4; r->skrini_5 = ainisho->skrini_5;
+    r->skrini_6 = ainisho->skrini_6; r->skrini_7 = ainisho->skrini_7;
+    r->skrini_8 = ainisho->skrini_8; r->skrini_9 = ainisho->skrini_9;
+    r->skrini_10 = ainisho->skrini_10; r->skrini_11 = ainisho->skrini_11;
+    N32 ngazi = ainisho->ngazi_ya_uongozi;
+    kama (ngazi < 10) { r->ni_jukumu_la_serikali = 1; } sivyo { r->ni_jukumu_la_serikali = 0; }
+    r->imani_ya_bosi = 0.5;
+    r->uwiano_na_chama = 0.5;
+    r->kibali_cha_umma = 0.5;
+}
+
+W0 jukumu_weka_bosi(JukumuLaMchezaji* r, N8* jina, D64 imani_ya_awali) {
+    kama (r == 0) { rudisha; }
+    r->jina_la_bosi = jina;
+    r->imani_ya_bosi = imani_ya_awali;
+}
+
+N32 jukumu_linaweza(JukumuLaMchezaji* r, N32 kitendo) {
+    kama (r == 0) { rudisha 0; }
+    N32 matokeo = r->matendo_yanayoruhusiwa & kitendo;
+    kama (matokeo != 0) { rudisha 1; }
+    rudisha 0;
+}
