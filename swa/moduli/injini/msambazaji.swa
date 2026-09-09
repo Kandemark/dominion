@@ -1,0 +1,126 @@
+// msambazaji.swa — tafsiri ya src/core/simulation_engine/event_dispatcher.c
+// (na .h) kwenda Swa. Msambazaji wa matukio kwa ushughulikiaji wenye
+// ufanisi (aina ya tukio ni mfuatano, si N32 enum -- tofauti na
+// matukio/tukio.swa).
+//
+// Kiambishi: injini_msambazaji_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - Safu tatu zinazoshabihiana za C (handlers[]/event_types[]/
+//     user_data[], zote zikikua pamoja) zimekuwa safu tatu za N64
+//     (anwani za rundo) -- mtindo ulioothibitishwa (dini.swa/#185).
+//   - Vielekezi vya kazi (civ_event_handler_t) vimehifadhiwa/
+//     kuitwa kama N64, kama ilivyothibitishwa kwenye matukio/
+//     tukio.swa.
+//   - civ_event_dispatcher_unregister (memmove ya kuondoa kipengele
+//     kimoja na kusogeza vilivyobaki) imeandikwa kama kitanzi cha
+//     kunakili badala ya memmove moja kwa moja.
+//   - event_data (void*) imekuwa N64 (thamani/anwani ghafi ya
+//     mtumiaji, sio ikitolewa maana maalum na moduli hii).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+muundo InjiniMsambazaji {
+    N64* aina_za_tukio;
+    N64* vishughulikia;
+    N64* data_za_mtumiaji;
+    N32 idadi_ya_vishughulikia;
+    N32 uwezo_wa_vishughulikia;
+};
+
+InjiniMsambazaji* injini_msambazaji_unda() {
+    InjiniMsambazaji* ed = tenga(ukubwa(InjiniMsambazaji));
+    ed->uwezo_wa_vishughulikia = 32;
+    ed->idadi_ya_vishughulikia = 0;
+    ed->aina_za_tukio = tenga(ukubwa(N64) * ed->uwezo_wa_vishughulikia);
+    ed->vishughulikia = tenga(ukubwa(N64) * ed->uwezo_wa_vishughulikia);
+    ed->data_za_mtumiaji = tenga(ukubwa(N64) * ed->uwezo_wa_vishughulikia);
+    rudisha ed;
+}
+
+W0 injini_msambazaji_uharibu(InjiniMsambazaji* ed) {
+    N32 i = 0;
+    wakati (i < ed->idadi_ya_vishughulikia) {
+        N8* jina = ed->aina_za_tukio[i];
+        achilia jina;
+        i = i + 1;
+    }
+    achilia ed->aina_za_tukio;
+    achilia ed->vishughulikia;
+    achilia ed->data_za_mtumiaji;
+    achilia ed;
+}
+
+CivMatokeo injini_msambazaji_sajili(InjiniMsambazaji* ed, N8* aina_ya_tukio, N64 kishughulikia, N64 data_ya_mtumiaji) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (ed == 0 || aina_ya_tukio == 0 || kishughulikia == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    kama (ed->idadi_ya_vishughulikia >= ed->uwezo_wa_vishughulikia) {
+        ed->uwezo_wa_vishughulikia = ed->uwezo_wa_vishughulikia * 2;
+        ed->aina_za_tukio = badili(ed->aina_za_tukio, ukubwa(N64) * ed->uwezo_wa_vishughulikia);
+        ed->vishughulikia = badili(ed->vishughulikia, ukubwa(N64) * ed->uwezo_wa_vishughulikia);
+        ed->data_za_mtumiaji = badili(ed->data_za_mtumiaji, ukubwa(N64) * ed->uwezo_wa_vishughulikia);
+    }
+
+    N64 urefu = urefu_wa_mfuatano(aina_ya_tukio) + 1;
+    N8* nakala = tenga(urefu + 8);
+    nakili_mfuatano(nakala, aina_ya_tukio);
+
+    ed->aina_za_tukio[ed->idadi_ya_vishughulikia] = nakala;
+    ed->vishughulikia[ed->idadi_ya_vishughulikia] = kishughulikia;
+    ed->data_za_mtumiaji[ed->idadi_ya_vishughulikia] = data_ya_mtumiaji;
+    ed->idadi_ya_vishughulikia = ed->idadi_ya_vishughulikia + 1;
+
+    rudisha r;
+}
+
+W0 injini_msambazaji_ondoa(InjiniMsambazaji* ed, N8* aina_ya_tukio) {
+    kama (ed == 0 || aina_ya_tukio == 0) { rudisha; }
+
+    N32 i = 0;
+    wakati (i < ed->idadi_ya_vishughulikia) {
+        N8* jina = ed->aina_za_tukio[i];
+        kama (linganisha_mfuatano(jina, aina_ya_tukio) == 0) {
+            achilia jina;
+            N32 j = i;
+            wakati (j < ed->idadi_ya_vishughulikia - 1) {
+                ed->aina_za_tukio[j] = ed->aina_za_tukio[j + 1];
+                ed->vishughulikia[j] = ed->vishughulikia[j + 1];
+                ed->data_za_mtumiaji[j] = ed->data_za_mtumiaji[j + 1];
+                j = j + 1;
+            }
+            ed->idadi_ya_vishughulikia = ed->idadi_ya_vishughulikia - 1;
+            rudisha;
+        }
+        i = i + 1;
+    }
+}
+
+CivMatokeo injini_msambazaji_sambaza(InjiniMsambazaji* ed, N8* aina_ya_tukio, N64 data_ya_tukio) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (ed == 0 || aina_ya_tukio == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    N32 i = 0;
+    wakati (i < ed->idadi_ya_vishughulikia) {
+        N8* jina = ed->aina_za_tukio[i];
+        kama (linganisha_mfuatano(jina, aina_ya_tukio) == 0) {
+            N64 kis = ed->vishughulikia[i];
+            kis(aina_ya_tukio, data_ya_tukio, ed->data_za_mtumiaji[i]);
+        }
+        i = i + 1;
+    }
+
+    rudisha r;
+}
