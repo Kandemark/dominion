@@ -24,6 +24,22 @@ ina kiambishi chake cha lazima, tangu kazi ya kwanza.
 | `world/`        | `dunia_`        |
 | `simulation_engine/` | `injini_`  |
 
+## Kiambishi maalum kwa faili za `src/core/` (ngazi ya juu, si saraka ndogo)
+
+Baadhi ya faili za `src/core/` ziko ngazi ya juu (si ndani ya saraka
+ndogo ya moduli) na zinahitaji viambishi vyao maalum, tofauti na
+ramani ya juu (ambayo ni kwa saraka ndogo pekee):
+
+| Faili ya C (`src/core/*.c`) | Kiambishi cha Swa | Muhimu |
+|---|---|---|
+| `role.c` | `jukumu_` | |
+| `character.c` | `mhusika_` | |
+| `knowledge_system.c` | `maarifa_` | |
+| `constitution.c` | `taifa_katiba_` | TOFAUTI na `utawala_katiba_` (governance/legal/constitution.c) -- majina mawili ya faili ya C yanayofanana lakini mifumo tofauti kabisa (ruhusa za vitendo vya mchezaji dhidi ya matawi/taasisi za serikali) |
+| `faction.c` | `taifa_kianzio_` | TOFAUTI na `siasa_kikundi_` (politics/faction_system.c, imezuiwa na #182(b)) -- hii ni aina za awali za taifa (archetypes), si miungano ya kisiasa |
+| `npc_engine.c` | `wakala_` | |
+| `time_engine.c` | `injini_saa_` | Sehemu YA SAA KUU pekee imetafsiriwa (mwaka/siku/zamu) -- mfumo wa kalenda nyingi/enzi umeachwa, angalia maelezo kwenye `swa/moduli/injini/saa_kuu.swa` |
+
 Msingi wa pamoja (`include/common.h`) hauna kiambishi cha moduli —
 unatumia `civ_` (kutoka jina la asili la mradi, "Civilization
 simulation") kwa sababu kila faili litahusisha hili, na hakuna hatari

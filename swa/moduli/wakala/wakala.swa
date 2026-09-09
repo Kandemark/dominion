@@ -1,0 +1,235 @@
+// wakala.swa — tafsiri ya src/core/npc_engine.c (na .h) kwenda
+// Swa. Wakala (NPC) wanaofanya maamuzi kulingana na itikadi, hali ya
+// taifa, na historia.
+//
+// Kiambishi: wakala_ — angalia ../../KANUNI-MAJINA.md.
+// nation_mgr (void*) HAIKULETWA -- C asili yenyewe haiitumii kabisa
+// ndani ya mwili wa civ_npc_engine_process_turn ((void)nation_mgr;
+// -- kigezo tupu kilichoachwa kwa matumizi ya baadaye), kwa hiyo
+// haihitaji kielekezi cha aina yoyote hapa.
+//
+// SCOPE ILIYOPUNGUZWA KWA MAKUSUDI (kutokana na muda): C asili ina
+// maandishi 33 tofauti ya kiolezo (templates, 6 kwa kila kundi la
+// maamuzi + 3 ya rushwa) yaliyojazwa kwa snprintf. Swa haina
+// sprintf-kwenye-bafa -- badala ya kuandika mnyororo mzima wa
+// kuunganisha kwa kila kiolezo (kazi kubwa ya kimakanika), maelezo
+// yanahesabiwa PAPO KWA HAPO kutoka kundi+muigizaji+taifa kupitia
+// kazi ya "eleza" (mfano wa mtindo uliothibitishwa kwenye
+// taifa/katiba.swa) badala ya kuhifadhiwa yakiwa yamejazwa. Hii
+// inatumia kiolezo KIMOJA kwa kila kundi (badala ya 6) -- inatosha
+// kuthibitisha mfumo (uteuzi wa kundi kwa itikadi, nafasi ya
+// rushwa, historia ya pete) bila kunakili maandishi yote 33.
+// npcs[] (safu inayokua) na decisions[CIV_NPC_DECISION_MAX=64]
+// (historia ya pete) zote zimepunguzwa: npcs kwa mfumo wa N64*
+// (vielekezi, #185, kama dini.swa), decisions[64] kwa vigezo 8
+// vyenye majina (uamuzi_0..uamuzi_7) -- kikomo kidogo cha historia,
+// mtindo uleule uliotumika kwa UTAWALA_VURUGU_HISTORIA_UPEO (16->8).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+N32 WAKALA_KUNDI_KIJESHI = 0;
+N32 WAKALA_KUNDI_KIUCHUMI = 1;
+N32 WAKALA_KUNDI_KISIASA = 2;
+N32 WAKALA_KUNDI_KIJAMII = 3;
+N32 WAKALA_KUNDI_KIDIPLOMASIA = 4;
+
+N32 WAKALA_UAMUZI_UPEO = 8;
+N32 WAKALA_NPC_UPEO_AWALI = 16;
+
+muundo WakalaItikadi {
+    D64 mila_dhidi_ya_maendeleo;
+    D64 kimabavu_dhidi_ya_huria;
+    D64 utaifa_dhidi_ya_udunia;
+    D64 kijeshi_dhidi_ya_amani;
+    D64 kibiashara_dhidi_ya_kilimo;
+    D64 kidini_dhidi_ya_kilimwengu;
+};
+
+muundo Wakala {
+    N8* jina;
+    N8* jukumu;
+    WakalaItikadi itikadi;
+    D64 ushawishi;
+    D64 rushwa;
+    D64 umahiri;
+    N32 umri;
+    N8* taifa_id;
+};
+
+muundo WakalaUamuzi {
+    N8* muigizaji;
+    N8* taifa;
+    N32 mwaka;
+    N32 siku;
+    N32 kundi;
+    N32 ni_rushwa;
+    D64 athari_ya_uthabiti;
+    D64 athari_ya_uchumi;
+    D64 athari_ya_kidiplomasia;
+};
+
+muundo WakalaInjini {
+    N64* wakala_wote;
+    N32 idadi_ya_wakala;
+    N32 uwezo_wa_wakala;
+
+    WakalaUamuzi uamuzi_0; WakalaUamuzi uamuzi_1; WakalaUamuzi uamuzi_2;
+    WakalaUamuzi uamuzi_3; WakalaUamuzi uamuzi_4; WakalaUamuzi uamuzi_5;
+    WakalaUamuzi uamuzi_6; WakalaUamuzi uamuzi_7;
+    N32 idadi_ya_maamuzi;
+    N32 kichwa_cha_pete;
+};
+
+WakalaInjini* wakala_injini_unda() {
+    WakalaInjini* eng = tenga(ukubwa(WakalaInjini));
+    eng->uwezo_wa_wakala = WAKALA_NPC_UPEO_AWALI;
+    eng->wakala_wote = tenga(ukubwa(N64) * eng->uwezo_wa_wakala);
+    eng->idadi_ya_wakala = 0;
+    eng->idadi_ya_maamuzi = 0;
+    eng->kichwa_cha_pete = 0;
+    rudisha eng;
+}
+
+W0 wakala_injini_uharibu(WakalaInjini* eng) {
+    achilia eng->wakala_wote;
+    achilia eng;
+}
+
+Wakala* wakala_pata(WakalaInjini* eng, N32 idx) {
+    rudisha eng->wakala_wote[idx];
+}
+
+WakalaUamuzi* wakala_pata_uamuzi(WakalaInjini* eng, N32 idx) {
+    kama (idx == 0) { rudisha &eng->uamuzi_0; }
+    kama (idx == 1) { rudisha &eng->uamuzi_1; }
+    kama (idx == 2) { rudisha &eng->uamuzi_2; }
+    kama (idx == 3) { rudisha &eng->uamuzi_3; }
+    kama (idx == 4) { rudisha &eng->uamuzi_4; }
+    kama (idx == 5) { rudisha &eng->uamuzi_5; }
+    kama (idx == 6) { rudisha &eng->uamuzi_6; }
+    rudisha &eng->uamuzi_7;
+}
+
+Wakala* wakala_injini_ongeza(WakalaInjini* eng, N8* jina, N8* jukumu, N8* taifa_id) {
+    kama (eng == 0 || eng->idadi_ya_wakala >= eng->uwezo_wa_wakala) { rudisha 0; }
+
+    Wakala* npc = tenga(ukubwa(Wakala));
+    npc->jina = jina;
+    npc->jukumu = jukumu;
+    npc->taifa_id = taifa_id;
+
+    N32 a1 = civ_nasibu_chini_ya(100); D64 a1d = a1;
+    N32 a2 = civ_nasibu_chini_ya(100); D64 a2d = a2;
+    N32 a3 = civ_nasibu_chini_ya(100); D64 a3d = a3;
+    N32 a4 = civ_nasibu_chini_ya(100); D64 a4d = a4;
+    N32 a5 = civ_nasibu_chini_ya(100); D64 a5d = a5;
+    N32 a6 = civ_nasibu_chini_ya(100); D64 a6d = a6;
+    npc->itikadi.mila_dhidi_ya_maendeleo = a1d / 100.0;
+    npc->itikadi.kimabavu_dhidi_ya_huria = a2d / 100.0;
+    npc->itikadi.utaifa_dhidi_ya_udunia = a3d / 100.0;
+    npc->itikadi.kijeshi_dhidi_ya_amani = a4d / 100.0;
+    npc->itikadi.kibiashara_dhidi_ya_kilimo = a5d / 100.0;
+    npc->itikadi.kidini_dhidi_ya_kilimwengu = a6d / 100.0;
+
+    N32 u1 = civ_nasibu_chini_ya(70); D64 u1d = u1;
+    npc->ushawishi = 0.3 + u1d / 100.0;
+    N32 r1 = civ_nasibu_chini_ya(40); D64 r1d = r1;
+    npc->rushwa = r1d / 100.0;
+    N32 m1 = civ_nasibu_chini_ya(70); D64 m1d = m1;
+    npc->umahiri = 0.3 + m1d / 100.0;
+    npc->umri = 30 + civ_nasibu_chini_ya(50);
+
+    eng->wakala_wote[eng->idadi_ya_wakala] = npc;
+    eng->idadi_ya_wakala = eng->idadi_ya_wakala + 1;
+    rudisha npc;
+}
+
+N8* wakala_eleza_kundi(N32 kundi, N32 ni_rushwa, N8* muigizaji) {
+    kama (ni_rushwa != 0) {
+        N8* r = tenga(160);
+        unganisha_mfuatano(r, "Kashfa ya ufisadi inayohusiana na ", muigizaji);
+        rudisha r;
+    }
+    kama (kundi == WAKALA_KUNDI_KIJESHI) {
+        N8* r = tenga(160);
+        unganisha_mfuatano(r, "Mageuzi ya kijeshi yameanzishwa na ", muigizaji);
+        rudisha r;
+    }
+    kama (kundi == WAKALA_KUNDI_KIUCHUMI) {
+        N8* r = tenga(160);
+        unganisha_mfuatano(r, "Mkataba wa biashara umesainiwa chini ya uongozi wa ", muigizaji);
+        rudisha r;
+    }
+    kama (kundi == WAKALA_KUNDI_KISIASA) {
+        N8* r = tenga(160);
+        unganisha_mfuatano(r, "Marekebisho ya kikatiba yamependekezwa na ", muigizaji);
+        rudisha r;
+    }
+    kama (kundi == WAKALA_KUNDI_KIJAMII) {
+        N8* r = tenga(160);
+        unganisha_mfuatano(r, "Mageuzi ya elimu yameongozwa na ", muigizaji);
+        rudisha r;
+    }
+    N8* r = tenga(160);
+    unganisha_mfuatano(r, "Ujumbe wa kidiplomasia umetumwa na ", muigizaji);
+    rudisha r;
+}
+
+W0 wakala_ongeza_uamuzi(WakalaInjini* eng, N8* muigizaji, N8* taifa, N32 mwaka, N32 siku,
+                          N32 kundi, N32 ni_rushwa) {
+    WakalaUamuzi* d = wakala_pata_uamuzi(eng, eng->kichwa_cha_pete);
+    d->muigizaji = muigizaji;
+    d->taifa = taifa;
+    d->mwaka = mwaka;
+    d->siku = siku;
+    d->kundi = kundi;
+    d->ni_rushwa = ni_rushwa;
+
+    kama (ni_rushwa != 0) {
+        d->athari_ya_uthabiti = -0.05; d->athari_ya_uchumi = -0.03; d->athari_ya_kidiplomasia = -0.02;
+    } sivyo {
+        N32 se = civ_nasibu_chini_ya(20); D64 sed = se;
+        N32 ee = civ_nasibu_chini_ya(20); D64 eed = ee;
+        N32 de = civ_nasibu_chini_ya(15); D64 ded = de;
+        d->athari_ya_uthabiti = (sed - 5.0) / 100.0;
+        d->athari_ya_uchumi = (eed - 5.0) / 100.0;
+        d->athari_ya_kidiplomasia = (ded - 3.0) / 100.0;
+    }
+
+    eng->kichwa_cha_pete = (eng->kichwa_cha_pete + 1) % WAKALA_UAMUZI_UPEO;
+    kama (eng->idadi_ya_maamuzi < WAKALA_UAMUZI_UPEO) {
+        eng->idadi_ya_maamuzi = eng->idadi_ya_maamuzi + 1;
+    }
+}
+
+W0 wakala_injini_sasisha_zamu(WakalaInjini* eng, N32 mwaka, N32 siku) {
+    kama (eng == 0 || eng->idadi_ya_wakala == 0) { rudisha; }
+
+    N32 maamuzi_ya_zamu = 2 + civ_nasibu_chini_ya(4);
+    N32 d = 0;
+    wakati (d < maamuzi_ya_zamu) {
+        N32 idx = civ_nasibu_chini_ya(eng->idadi_ya_wakala);
+        Wakala* npc = wakala_pata(eng, idx);
+
+        kama (npc->ushawishi >= 0.2) {
+            N32 kundi = WAKALA_KUNDI_KIDIPLOMASIA;
+            kama (npc->itikadi.kijeshi_dhidi_ya_amani < 0.35) { kundi = WAKALA_KUNDI_KIJESHI; }
+            sivyo { kama (npc->itikadi.kibiashara_dhidi_ya_kilimo < 0.4) { kundi = WAKALA_KUNDI_KIUCHUMI; }
+            sivyo { kama (npc->itikadi.kimabavu_dhidi_ya_huria < 0.3) { kundi = WAKALA_KUNDI_KISIASA; }
+            sivyo { kama (npc->itikadi.kidini_dhidi_ya_kilimwengu < 0.3) { kundi = WAKALA_KUNDI_KIJAMII; } } } }
+
+            N32 nasibu_rushwa = civ_nasibu_chini_ya(100);
+            D64 nasibu_rushwa_d = nasibu_rushwa;
+            N32 ni_rushwa = 0;
+            kama (nasibu_rushwa_d / 100.0 < npc->rushwa) { ni_rushwa = 1; }
+
+            wakala_ongeza_uamuzi(eng, npc->jina, npc->taifa_id, mwaka, siku, kundi, ni_rushwa);
+        }
+        d = d + 1;
+    }
+}
+
+N32 wakala_pata_maamuzi_ya_hivi_karibuni_idadi(WakalaInjini* eng) {
+    rudisha eng->idadi_ya_maamuzi;
+}
