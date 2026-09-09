@@ -1,0 +1,180 @@
+// muda.swa — tafsiri ya src/core/simulation_engine/time_manager.c (na
+// .h) kwenda Swa. Usimamizi wa muda wa mchezo — kalenda, misimu, na
+// kasi ya mchezo.
+//
+// Kiambishi: injini_muda_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - scale_multipliers[6] (safu ya ndani ya muundo) imegawanywa
+//     kuwa vigezo 6 vyenye majina + kazi ya kupata.
+//   - time(NULL)/difftime (saa ya ukuta) HAIKULETWA: badala ya
+//     civ_time_manager_update kujipimia muda halisi wenyewe,
+//     injini_muda_sasisha inapokea muda_halisi (sekunde zilizopita
+//     tangu wito wa mwisho) kama hoja kutoka kwa mwitaji -- sawa na
+//     kanuni ya "_sasisha inapokea muda kama hoja" inayotumika kwenye
+//     moduli zote za mradi huu.
+//   - listeners (orodha-kiungo ya wasikilizaji + kielekezi cha kazi
+//     ya callback) HAIKULETWA: struct civ_time_listener* next ni
+//     kielekezi cha muundo kinachoelekeza kwenye AINA YAKE YENYEWE
+//     -- mfano wa moja kwa moja wa #186 (field ya muundo yenye aina
+//     ya kielekezi kwenda muundo mwingine ulioundwa na mtumiaji
+//     haihifadhi thamani sahihi). Arifa za "siku/mwezi/mwaka" (zilizo
+//     tegemea wasikilizaji kwenye C) zinaweza kuangaliwa na mwitaji
+//     moja kwa moja kwa kulinganisha injini_muda_kalenda_siku kabla
+//     na baada ya wito wa sasisha.
+//   - civ_time_manager_to_json/from_json (uchapaji/usomaji wa JSON)
+//     HAVIKULETWA -- hakuna maktaba ya JSON, na from_json ya C
+//     yenyewe ni "reinitialize tu" (haijatekelezwa kikamilifu).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+N32 INJINI_MUDA_KASI_IMESIMAMA = 0;
+N32 INJINI_MUDA_KASI_TAratibu = 1;
+N32 INJINI_MUDA_KASI_KAWAIDA = 2;
+N32 INJINI_MUDA_KASI_HARAKA = 3;
+N32 INJINI_MUDA_KASI_HARAKA_SANA = 4;
+N32 INJINI_MUDA_KASI_YA_JUU = 5;
+
+N32 INJINI_MUDA_MSIMU_BARIDI = 0;
+N32 INJINI_MUDA_MSIMU_MASIKA = 1;
+N32 INJINI_MUDA_MSIMU_JOTO = 2;
+N32 INJINI_MUDA_MSIMU_VULI = 3;
+
+muundo InjiniMudaKalenda {
+    N32 mwaka;
+    N32 mwezi;
+    N32 siku;
+    N64 jumla_ya_siku;
+    N32 msimu;
+};
+
+muundo InjiniMudaMfumo {
+    InjiniMudaKalenda kalenda;
+    N32 kasi_ya_wakati;
+    D64 kasi_ya_mchezo;
+    D64 muda_uliopita_hivi_karibuni;
+    D64 muda_uliokusanywa;
+
+    D64 kizidishi_0; D64 kizidishi_1; D64 kizidishi_2;
+    D64 kizidishi_3; D64 kizidishi_4; D64 kizidishi_5;
+};
+
+N32 injini_muda_msimu_kutoka_mwezi(N32 mwezi) {
+    kama (mwezi >= 1 && mwezi <= 2) { rudisha INJINI_MUDA_MSIMU_BARIDI; }
+    kama (mwezi >= 3 && mwezi <= 5) { rudisha INJINI_MUDA_MSIMU_MASIKA; }
+    kama (mwezi >= 6 && mwezi <= 8) { rudisha INJINI_MUDA_MSIMU_JOTO; }
+    kama (mwezi >= 9 && mwezi <= 11) { rudisha INJINI_MUDA_MSIMU_VULI; }
+    rudisha INJINI_MUDA_MSIMU_BARIDI;
+}
+
+D64 injini_muda_pata_kizidishi(InjiniMudaMfumo* tm, N32 kasi) {
+    kama (kasi == 0) { rudisha tm->kizidishi_0; }
+    kama (kasi == 1) { rudisha tm->kizidishi_1; }
+    kama (kasi == 2) { rudisha tm->kizidishi_2; }
+    kama (kasi == 3) { rudisha tm->kizidishi_3; }
+    kama (kasi == 4) { rudisha tm->kizidishi_4; }
+    rudisha tm->kizidishi_5;
+}
+
+InjiniMudaMfumo* injini_muda_unda() {
+    InjiniMudaMfumo* tm = tenga(ukubwa(InjiniMudaMfumo));
+    tm->kalenda.mwaka = 1;
+    tm->kalenda.mwezi = 1;
+    tm->kalenda.siku = 1;
+    tm->kalenda.jumla_ya_siku = 0;
+    tm->kalenda.msimu = INJINI_MUDA_MSIMU_MASIKA;
+
+    tm->kasi_ya_wakati = INJINI_MUDA_KASI_KAWAIDA;
+    tm->kasi_ya_mchezo = 1.0;
+    tm->muda_uliopita_hivi_karibuni = 0.0;
+    tm->muda_uliokusanywa = 0.0;
+
+    tm->kizidishi_0 = 0.0;
+    tm->kizidishi_1 = 1.0;
+    tm->kizidishi_2 = 2.0;
+    tm->kizidishi_3 = 10.0;
+    tm->kizidishi_4 = 100.0;
+    tm->kizidishi_5 = 1000.0;
+    rudisha tm;
+}
+
+W0 injini_muda_uharibu(InjiniMudaMfumo* tm) {
+    achilia tm;
+}
+
+W0 injini_muda_kalenda_songa_siku(InjiniMudaKalenda* kal) {
+    kal->siku = kal->siku + 1;
+    kal->jumla_ya_siku = kal->jumla_ya_siku + 1;
+
+    kama (kal->siku > 30) {
+        kal->siku = 1;
+        kal->mwezi = kal->mwezi + 1;
+        kama (kal->mwezi > 12) {
+            kal->mwezi = 1;
+            kal->mwaka = kal->mwaka + 1;
+        }
+    }
+    kal->msimu = injini_muda_msimu_kutoka_mwezi(kal->mwezi);
+}
+
+D64 injini_muda_sasisha(InjiniMudaMfumo* tm, D64 muda_halisi) {
+    kama (tm->kasi_ya_wakati == INJINI_MUDA_KASI_IMESIMAMA) {
+        tm->muda_uliopita_hivi_karibuni = 0.0;
+        rudisha 0.0;
+    }
+
+    D64 kizidishi = injini_muda_pata_kizidishi(tm, tm->kasi_ya_wakati) * tm->kasi_ya_mchezo;
+    tm->muda_uliopita_hivi_karibuni = muda_halisi * kizidishi;
+    tm->muda_uliokusanywa = tm->muda_uliokusanywa + tm->muda_uliopita_hivi_karibuni;
+
+    N32 siku_za_kusonga = tm->muda_uliokusanywa;
+    kama (siku_za_kusonga > 0) {
+        N32 i = 0;
+        wakati (i < siku_za_kusonga) {
+            injini_muda_kalenda_songa_siku(&tm->kalenda);
+            i = i + 1;
+        }
+        D64 siku_za_kusonga_d = siku_za_kusonga;
+        tm->muda_uliokusanywa = tm->muda_uliokusanywa - siku_za_kusonga_d;
+    }
+
+    rudisha tm->muda_uliopita_hivi_karibuni;
+}
+
+W0 injini_muda_weka_kasi_ya_wakati(InjiniMudaMfumo* tm, N32 kasi) {
+    kama (kasi >= 0 && kasi < 6) { tm->kasi_ya_wakati = kasi; }
+}
+
+W0 injini_muda_rekebisha_kasi(InjiniMudaMfumo* tm, D64 kizidishi) {
+    tm->kasi_ya_mchezo = finya_d64(kizidishi, 0.1, 10.0);
+}
+
+N32 injini_muda_kalenda_pata_msimu(InjiniMudaKalenda* kal) {
+    rudisha injini_muda_msimu_kutoka_mwezi(kal->mwezi);
+}
+
+W0 injini_muda_kalenda_tarehe_kama_mfuatano(InjiniMudaKalenda* kal, N8* bafa) {
+    N8* jina_la_msimu = "Baridi";
+    kama (kal->msimu == INJINI_MUDA_MSIMU_MASIKA) { jina_la_msimu = "Masika"; }
+    sivyo { kama (kal->msimu == INJINI_MUDA_MSIMU_JOTO) { jina_la_msimu = "Joto"; }
+    sivyo { kama (kal->msimu == INJINI_MUDA_MSIMU_VULI) { jina_la_msimu = "Vuli"; } } }
+
+    N8* nambari_ya_siku = tenga(16);
+    N8* nambari_ya_mwezi = tenga(16);
+    N8* nambari_ya_mwaka = tenga(16);
+    nambari_kwa_mfuatano(kal->siku, nambari_ya_siku);
+    nambari_kwa_mfuatano(kal->mwezi, nambari_ya_mwezi);
+    nambari_kwa_mfuatano(kal->mwaka, nambari_ya_mwaka);
+
+    N8* p1 = tenga(64); unganisha_mfuatano(p1, jina_la_msimu, ", Siku ");
+    N8* p2 = tenga(80); unganisha_mfuatano(p2, p1, nambari_ya_siku);
+    N8* p3 = tenga(96); unganisha_mfuatano(p3, p2, ", Mwezi ");
+    N8* p4 = tenga(112); unganisha_mfuatano(p4, p3, nambari_ya_mwezi);
+    N8* p5 = tenga(128); unganisha_mfuatano(p5, p4, ", Mwaka ");
+    unganisha_mfuatano(bafa, p5, nambari_ya_mwaka);
+
+    achilia nambari_ya_siku; achilia nambari_ya_mwezi; achilia nambari_ya_mwaka;
+    achilia p1; achilia p2; achilia p3; achilia p4; achilia p5;
+}
