@@ -1,0 +1,141 @@
+// mbinu.swa (ndani ya moduli/akili/) — tafsiri ya src/core/ai/tactical_ai.c
+// (na .h) kwenda Swa. Akili ya mbinu za muda mfupi (majibu ya haraka).
+//
+// Kiambishi: akili_mbinu_ — angalia msingi.swa kwa maelezo ya
+// viambishi vidogo vya ai/.
+//
+// MUHIMU: civ_tactical_ai_t.base_ai ni kielekezi (AkiliMsingi*)
+// kwenye muundo mwingine ulioundwa na mtumiaji -- field ya aina hiyo
+// HAIHIFADHI THAMANI SAHIHI (lugha-swa/swa#186, mdudu mpya
+// ulioripotiwa wakati wa kuandika hii). Suluhisho: field imekuwa
+// N64 (anwani ghafi) badala ya AkiliMsingi*, ikisomwa/kuandikwa
+// kupitia kazi za kupata/kuweka -- mtindo uleule wa #185 (N64* kwa
+// safu) lakini kwa FIELD MOJA badala ya safu. Imethibitishwa
+// kufanya kazi sahihi kwenye jaribio la faili hili.
+//
+// civ_tactical_ai_react ya asili huondoa vitendo vya zamani kwa
+// kulinganisha timestamp na reaction_time -- kwa kuwa timestamp
+// hazikuletwa (si muhimu kwa mantiki ya uigaji), uondoaji huo
+// umeachwa; itikia sasa inasasisha tu akili ya msingi.
+
+husisha { msingi/msingi_civ.swa }
+husisha { moduli/akili/msingi.swa }
+
+muundo AkiliMbinuKitendo {
+    N8* aina_ya_kitendo;
+    N8* lengo;
+    D64 uharaka;
+    D64 gharama;
+    D64 faida_inayotarajiwa;
+};
+
+muundo AkiliMbinu {
+    N64 msingi_anwani;
+    N64* vitendo;
+    N32 idadi_ya_vitendo;
+    N32 uwezo_wa_vitendo;
+    D64 muda_wa_mwitikio;
+    D64 kizingiti_cha_uamuzi;
+};
+
+AkiliMsingi* akili_mbinu_pata_msingi(AkiliMbinu* t) {
+    rudisha t->msingi_anwani;
+}
+
+AkiliMbinuKitendo* akili_mbinu_pata_kitendo(AkiliMbinu* t, N32 idx) {
+    rudisha t->vitendo[idx];
+}
+
+AkiliMbinu* akili_mbinu_unda(N8* kitambulisho, N8* jina) {
+    AkiliMbinu* t = tenga(ukubwa(AkiliMbinu));
+    AkiliMsingi* msingi = akili_msingi_unda(kitambulisho, jina);
+    t->msingi_anwani = msingi;
+
+    t->muda_wa_mwitikio = 1.0;
+    t->kizingiti_cha_uamuzi = 0.3;
+    t->uwezo_wa_vitendo = 32;
+    t->idadi_ya_vitendo = 0;
+    t->vitendo = tenga(ukubwa(N64) * t->uwezo_wa_vitendo);
+
+    rudisha t;
+}
+
+W0 akili_mbinu_uharibu(AkiliMbinu* t) {
+    AkiliMsingi* msingi = akili_mbinu_pata_msingi(t);
+    kama (msingi != 0) { akili_msingi_uharibu(msingi); }
+    achilia t->vitendo;
+    achilia t;
+}
+
+CivMatokeo akili_mbinu_itikia(AkiliMbinu* t, D64 muda) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (t == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    AkiliMsingi* msingi = akili_mbinu_pata_msingi(t);
+    kama (msingi != 0) {
+        akili_msingi_fikiri(msingi, muda);
+    }
+
+    rudisha r;
+}
+
+CivMatokeo akili_mbinu_ongeza_kitendo(AkiliMbinu* t, N8* aina_ya_kitendo, N8* lengo, D64 uharaka) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (t == 0 || aina_ya_kitendo == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    D64 uharaka_kilichofinywa = finya_d64(uharaka, 0.0, 1.0);
+
+    kama (t->idadi_ya_vitendo >= t->uwezo_wa_vitendo) {
+        t->uwezo_wa_vitendo = t->uwezo_wa_vitendo * 2;
+        t->vitendo = badili(t->vitendo, ukubwa(N64) * t->uwezo_wa_vitendo);
+    }
+
+    AkiliMbinuKitendo* kitendo = tenga(ukubwa(AkiliMbinuKitendo));
+    kitendo->aina_ya_kitendo = aina_ya_kitendo;
+    kitendo->lengo = lengo;
+    kitendo->uharaka = uharaka_kilichofinywa;
+    kitendo->gharama = 0.0;
+    kitendo->faida_inayotarajiwa = uharaka_kilichofinywa;
+
+    t->vitendo[t->idadi_ya_vitendo] = kitendo;
+    t->idadi_ya_vitendo = t->idadi_ya_vitendo + 1;
+
+    rudisha r;
+}
+
+D64 akili_mbinu_hesabu_manufaa(AkiliMbinuKitendo* kitendo) {
+    kama (kitendo == 0) { rudisha 0.0; }
+    rudisha (kitendo->faida_inayotarajiwa - kitendo->gharama) * kitendo->uharaka;
+}
+
+AkiliMbinuKitendo* akili_mbinu_kitendo_bora(AkiliMbinu* t) {
+    kama (t == 0 || t->idadi_ya_vitendo == 0) { rudisha 0; }
+
+    AkiliMbinuKitendo* bora = 0;
+    D64 manufaa_bora = -1.0;
+
+    N32 i = 0;
+    wakati (i < t->idadi_ya_vitendo) {
+        AkiliMbinuKitendo* huyu = akili_mbinu_pata_kitendo(t, i);
+        D64 manufaa = akili_mbinu_hesabu_manufaa(huyu);
+        kama (manufaa > manufaa_bora && huyu->uharaka >= t->kizingiti_cha_uamuzi) {
+            manufaa_bora = manufaa;
+            bora = huyu;
+        }
+        i = i + 1;
+    }
+
+    rudisha bora;
+}

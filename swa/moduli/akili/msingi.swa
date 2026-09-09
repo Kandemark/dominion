@@ -1,0 +1,135 @@
+// msingi.swa (ndani ya moduli/akili/) — tafsiri ya src/core/ai/base_ai.c
+// (na .h) kwenda Swa. Wakala wa msingi wa akili bandia — utu, kufikiri,
+// na maamuzi.
+//
+// Kiambishi: akili_msingi_ (angalia ../../KANUNI-MAJINA.md — ai/ ina
+// viambishi vidogo kadhaa: akili_msingi_, akili_mfumo_, akili_mbinu_,
+// akili_mkakati_, kuepuka mgongano wa majina kati ya faili nne).
+// timestamp/creation_time/last_think (time_t) HAVIKULETWA -- si
+// muhimu kwa mantiki ya uigaji.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+muundo AkiliUtu {
+    D64 ukali;
+    D64 upanuzi;
+    D64 diplomasia;
+    D64 lengo_la_utafiti;
+    D64 lengo_la_uchumi;
+};
+
+muundo AkiliUamuzi {
+    N8* aina_ya_kitendo;
+    N8* lengo;
+    D64 kipaumbele;
+    D64 uhakika;
+};
+
+muundo AkiliMsingi {
+    N8* kitambulisho;
+    N8* jina;
+    AkiliUtu utu;
+    N64* maamuzi;
+    N32 idadi_ya_maamuzi;
+    N32 uwezo_wa_maamuzi;
+    D64 akili_kiwango;
+    D64 uwezo_wa_kubadilika;
+};
+
+AkiliMsingi* akili_msingi_unda(N8* kitambulisho, N8* jina) {
+    kama (kitambulisho == 0 || jina == 0) { rudisha 0; }
+
+    AkiliMsingi* ai = tenga(ukubwa(AkiliMsingi));
+    ai->kitambulisho = kitambulisho;
+    ai->jina = jina;
+
+    ai->utu.ukali = 0.5;
+    ai->utu.upanuzi = 0.5;
+    ai->utu.diplomasia = 0.5;
+    ai->utu.lengo_la_utafiti = 0.5;
+    ai->utu.lengo_la_uchumi = 0.5;
+
+    ai->akili_kiwango = 0.5;
+    ai->uwezo_wa_kubadilika = 0.5;
+    ai->uwezo_wa_maamuzi = 32;
+    ai->idadi_ya_maamuzi = 0;
+    ai->maamuzi = tenga(ukubwa(N64) * ai->uwezo_wa_maamuzi);
+
+    rudisha ai;
+}
+
+W0 akili_msingi_uharibu(AkiliMsingi* ai) {
+    achilia ai->maamuzi;
+    achilia ai;
+}
+
+AkiliUamuzi* akili_msingi_pata_uamuzi(AkiliMsingi* ai, N32 idx) {
+    rudisha ai->maamuzi[idx];
+}
+
+CivMatokeo akili_msingi_fikiri(AkiliMsingi* ai, D64 muda) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (ai == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    ai->idadi_ya_maamuzi = 0;
+    rudisha r;
+}
+
+CivMatokeo akili_msingi_amua(AkiliMsingi* ai, N8* aina_ya_kitendo, N8* lengo, D64 kipaumbele) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (ai == 0 || aina_ya_kitendo == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    D64 kipaumbele_kilichofinywa = finya_d64(kipaumbele, 0.0, 1.0);
+
+    kama (ai->idadi_ya_maamuzi >= ai->uwezo_wa_maamuzi) {
+        ai->uwezo_wa_maamuzi = ai->uwezo_wa_maamuzi * 2;
+        ai->maamuzi = badili(ai->maamuzi, ukubwa(N64) * ai->uwezo_wa_maamuzi);
+    }
+
+    AkiliUamuzi* uamuzi = tenga(ukubwa(AkiliUamuzi));
+    uamuzi->aina_ya_kitendo = aina_ya_kitendo;
+    uamuzi->lengo = lengo;
+    uamuzi->kipaumbele = kipaumbele_kilichofinywa;
+    uamuzi->uhakika = ai->akili_kiwango;
+
+    ai->maamuzi[ai->idadi_ya_maamuzi] = uamuzi;
+    ai->idadi_ya_maamuzi = ai->idadi_ya_maamuzi + 1;
+
+    rudisha r;
+}
+
+AkiliUamuzi* akili_msingi_uamuzi_bora(AkiliMsingi* ai) {
+    kama (ai == 0 || ai->idadi_ya_maamuzi == 0) { rudisha 0; }
+
+    AkiliUamuzi* bora = akili_msingi_pata_uamuzi(ai, 0);
+    N32 i = 1;
+    wakati (i < ai->idadi_ya_maamuzi) {
+        AkiliUamuzi* huyu = akili_msingi_pata_uamuzi(ai, i);
+        kama (huyu->kipaumbele > bora->kipaumbele) { bora = huyu; }
+        i = i + 1;
+    }
+
+    rudisha bora;
+}
+
+W0 akili_msingi_weka_utu(AkiliMsingi* ai, AkiliUtu* utu) {
+    kama (ai == 0 || utu == 0) { rudisha; }
+    ai->utu.ukali = utu->ukali;
+    ai->utu.upanuzi = utu->upanuzi;
+    ai->utu.diplomasia = utu->diplomasia;
+    ai->utu.lengo_la_utafiti = utu->lengo_la_utafiti;
+    ai->utu.lengo_la_uchumi = utu->lengo_la_uchumi;
+}
