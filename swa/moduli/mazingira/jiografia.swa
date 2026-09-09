@@ -1,0 +1,156 @@
+// jiografia.swa — tafsiri ya src/core/environment/geography.c (na .h)
+// kwenda Swa. Jiografia na matumizi ya ardhi.
+//
+// Kiambishi: mazingira_jiografia_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - land_patches[] (safu inayokua ya muundo, kwa mkupuo/*patch)
+//     imekuwa safu ya N64 (anwani za MazingiraKipande* kwenye rundo),
+//     si safu ya thamani -- inaepuka #182(b), mtindo ulioothibitishwa
+//     (angalia dini.swa/#185).
+//   - civ_geography_calculate_distance (fomula ya Haversine) HAIKULETWA:
+//     inahitaji sin/cos/atan2 -- msingi_civ.swa ina civ_kielelezi (exp)
+//     na civ_mzizi (sqrt) tu, si trigonometry kamili (lugha-swa/swa#183
+//     bado). Itaongezwa pindi hesabu.swa itakapopata kazi hizo.
+//   - region_name (char[STRING_MEDIUM_LEN], nakala ya ndani) imekuwa
+//     N8* isiyohifadhi nakala, sawa na moduli nyingine za kikao hiki.
+//   - civ_geography_add_land_patch (hoja 7 kwenye C: geo + patch
+//     struct ikitolewa kwa nyanja 4 za D64 + 2 N32) ingekuwa mfano wa
+//     #184 -- hoja zake zimefungwa kwenye MazingiraKipandeHoja.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+N32 MAZINGIRA_MATUMIZI_MSITU = 0;
+N32 MAZINGIRA_MATUMIZI_KILIMO = 1;
+N32 MAZINGIRA_MATUMIZI_MJINI = 2;
+N32 MAZINGIRA_MATUMIZI_ARDHIOEVU = 3;
+N32 MAZINGIRA_MATUMIZI_NYASI = 4;
+N32 MAZINGIRA_MATUMIZI_JANGWA = 5;
+N32 MAZINGIRA_MATUMIZI_MAJI = 6;
+N32 MAZINGIRA_MATUMIZI_TUNDRA = 7;
+
+N32 MAZINGIRA_ARDHI_MLIMA = 0;
+N32 MAZINGIRA_ARDHI_KILIMA = 1;
+N32 MAZINGIRA_ARDHI_TAMBARARE = 2;
+N32 MAZINGIRA_ARDHI_BONDE = 3;
+N32 MAZINGIRA_ARDHI_UWANDA_JUU = 4;
+N32 MAZINGIRA_ARDHI_PWANI = 5;
+
+muundo MazingiraKuratibu {
+    D64 latitudo;
+    D64 longitudo;
+};
+
+muundo MazingiraKipande {
+    D64 latitudo;
+    D64 longitudo;
+    D64 eneo;
+    D64 mwinuko;
+    N32 matumizi_ya_ardhi;
+    N32 aina_ya_ardhi;
+    D64 ubora_wa_udongo;
+    D64 ufunikaji_wa_mimea;
+};
+
+// MazingiraKipandeHoja: hufunga hoja 6 za mazingira_jiografia_ongeza_kipande
+// (lat/lon/eneo/mwinuko/matumizi_ya_ardhi/aina_ya_ardhi -- jumla ya
+// vigezo ingekuwa 7 na 4 D64, mfano halisi wa #184) kwenye muundo
+// mmoja, kupitishwa kama kielekezi -- angalia nguvukazi.swa kwa
+// maelezo kamili ya mdudu huu.
+muundo MazingiraKipandeHoja {
+    D64 latitudo;
+    D64 longitudo;
+    D64 eneo;
+    D64 mwinuko;
+    N32 matumizi_ya_ardhi;
+    N32 aina_ya_ardhi;
+};
+
+muundo MazingiraJiografia {
+    N8* jina_la_mkoa;
+    D64 mpaka_kusini_mag_lat;
+    D64 mpaka_kusini_mag_lon;
+    D64 mpaka_kaskazini_mash_lat;
+    D64 mpaka_kaskazini_mash_lon;
+    N64* vipande;
+    N32 idadi_ya_vipande;
+    N32 uwezo_wa_vipande;
+};
+
+MazingiraJiografia* mazingira_jiografia_unda(N8* jina_la_mkoa, D64 kusini_mag_lat,
+                                               D64 kusini_mag_lon, D64 kaskazini_mash_lat,
+                                               D64 kaskazini_mash_lon) {
+    MazingiraJiografia* geo = tenga(ukubwa(MazingiraJiografia));
+    geo->jina_la_mkoa = jina_la_mkoa;
+    geo->mpaka_kusini_mag_lat = kusini_mag_lat;
+    geo->mpaka_kusini_mag_lon = kusini_mag_lon;
+    geo->mpaka_kaskazini_mash_lat = kaskazini_mash_lat;
+    geo->mpaka_kaskazini_mash_lon = kaskazini_mash_lon;
+    geo->uwezo_wa_vipande = 100;
+    geo->idadi_ya_vipande = 0;
+    geo->vipande = tenga(ukubwa(N64) * geo->uwezo_wa_vipande);
+    rudisha geo;
+}
+
+W0 mazingira_jiografia_uharibu(MazingiraJiografia* geo) {
+    N32 i = 0;
+    wakati (i < geo->idadi_ya_vipande) {
+        MazingiraKipande* k = geo->vipande[i];
+        achilia k;
+        i = i + 1;
+    }
+    achilia geo->vipande;
+    achilia geo;
+}
+
+N32 mazingira_jiografia_ndani_ya_mipaka(MazingiraJiografia* geo, D64 lat, D64 lon) {
+    kama (lat < geo->mpaka_kusini_mag_lat || lat > geo->mpaka_kaskazini_mash_lat) { rudisha 0; }
+    kama (lon < geo->mpaka_kusini_mag_lon || lon > geo->mpaka_kaskazini_mash_lon) { rudisha 0; }
+    rudisha 1;
+}
+
+CivMatokeo mazingira_jiografia_ongeza_kipande(MazingiraJiografia* geo, MazingiraKipandeHoja* hoja) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (mazingira_jiografia_ndani_ya_mipaka(geo, hoja->latitudo, hoja->longitudo) == 0) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        r.ujumbe = "Kipande kiko nje ya mipaka ya mkoa";
+        rudisha r;
+    }
+
+    kama (geo->idadi_ya_vipande >= geo->uwezo_wa_vipande) {
+        geo->uwezo_wa_vipande = geo->uwezo_wa_vipande * 2;
+        geo->vipande = badili(geo->vipande, ukubwa(N64) * geo->uwezo_wa_vipande);
+    }
+
+    MazingiraKipande* k = tenga(ukubwa(MazingiraKipande));
+    k->latitudo = hoja->latitudo;
+    k->longitudo = hoja->longitudo;
+    k->eneo = hoja->eneo;
+    k->mwinuko = hoja->mwinuko;
+    k->matumizi_ya_ardhi = hoja->matumizi_ya_ardhi;
+    k->aina_ya_ardhi = hoja->aina_ya_ardhi;
+    k->ubora_wa_udongo = 0.5;
+    k->ufunikaji_wa_mimea = 0.5;
+
+    geo->vipande[geo->idadi_ya_vipande] = k;
+    geo->idadi_ya_vipande = geo->idadi_ya_vipande + 1;
+
+    rudisha r;
+}
+
+D64 mazingira_jiografia_eneo_la_kilimo(MazingiraJiografia* geo) {
+    D64 jumla = 0.0;
+    N32 i = 0;
+    wakati (i < geo->idadi_ya_vipande) {
+        MazingiraKipande* k = geo->vipande[i];
+        kama (k->matumizi_ya_ardhi == MAZINGIRA_MATUMIZI_KILIMO) {
+            jumla = jumla + k->eneo;
+        }
+        i = i + 1;
+    }
+    rudisha jumla;
+}

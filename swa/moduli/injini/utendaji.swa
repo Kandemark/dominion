@@ -1,0 +1,118 @@
+// utendaji.swa — tafsiri ya src/core/simulation_engine/performance_optimizer.c
+// (na .h) kwenda Swa. Ufuatiliaji wa utendaji na uboreshaji.
+//
+// Kiambishi: injini_utendaji_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - metrics[] (safu inayokua ya muundo) imekuwa safu ya N64
+//     (anwani za InjiniKipimo* zilizotengwa kwenye rundo), si safu
+//     ya thamani za muundo -- inaepuka #182(b) na kutumia mtindo
+//     ulioothibitishwa (angalia dini.swa kuhusu #185).
+//   - clock()/CLOCKS_PER_SEC (saa ya C) haikuletwa -- muda wa
+//     utekelezaji unapaswa kupitishwa na mwitaji (kutoka chanzo
+//     chochote cha kupima muda mwitaji anachochagua), si kupimwa
+//     humu ndani.
+//   - civ_performance_optimizer_generate_report (inayorudisha
+//     mfuatano uliotengwa) haikuletwa -- kuripoti kunaweza
+//     kufanywa na mwitaji kwa kupitia vipimo moja kwa moja.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+muundo InjiniKipimo {
+    N8* jina;
+    D64 muda_wa_utekelezaji;
+    N64 idadi_ya_wito;
+    D64 matumizi_ya_kumbukumbu;
+    D64 muda_wa_wastani;
+    D64 muda_wa_chini;
+    D64 muda_wa_juu;
+};
+
+muundo InjiniUtendaji {
+    N64* vipimo;
+    N32 idadi_ya_vipimo;
+    N32 uwezo_wa_vipimo;
+    N32 ufuatiliaji_umewashwa;
+    D64 kizingiti_cha_uboreshaji;
+    N64 jumla_ya_wito;
+    D64 jumla_ya_muda_wa_utekelezaji;
+};
+
+InjiniUtendaji* injini_utendaji_unda() {
+    InjiniUtendaji* po = tenga(ukubwa(InjiniUtendaji));
+    po->uwezo_wa_vipimo = 16;
+    po->idadi_ya_vipimo = 0;
+    po->vipimo = tenga(ukubwa(N64) * po->uwezo_wa_vipimo);
+    po->ufuatiliaji_umewashwa = 0;
+    po->kizingiti_cha_uboreshaji = 16.0;
+    po->jumla_ya_wito = 0;
+    po->jumla_ya_muda_wa_utekelezaji = 0.0;
+    rudisha po;
+}
+
+W0 injini_utendaji_uharibu(InjiniUtendaji* po) {
+    achilia po->vipimo;
+    achilia po;
+}
+
+W0 injini_utendaji_washa_ufuatiliaji(InjiniUtendaji* po, N32 imewashwa) {
+    po->ufuatiliaji_umewashwa = imewashwa;
+}
+
+InjiniKipimo* injini_utendaji_pata_kipimo(InjiniUtendaji* po, N8* jina) {
+    N32 i = 0;
+    wakati (i < po->idadi_ya_vipimo) {
+        InjiniKipimo* k = po->vipimo[i];
+        kama (linganisha_mfuatano(k->jina, jina) == 0) { rudisha k; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+W0 injini_utendaji_rekodi_kipimo(InjiniUtendaji* po, N8* jina, D64 muda_wa_utekelezaji,
+                                    D64 mabadiliko_ya_kumbukumbu) {
+    kama (po->ufuatiliaji_umewashwa == 0) { rudisha; }
+
+    InjiniKipimo* k = injini_utendaji_pata_kipimo(po, jina);
+    kama (k == 0) {
+        kama (po->idadi_ya_vipimo >= po->uwezo_wa_vipimo) {
+            po->uwezo_wa_vipimo = po->uwezo_wa_vipimo * 2;
+            po->vipimo = badili(po->vipimo, ukubwa(N64) * po->uwezo_wa_vipimo);
+        }
+        k = tenga(ukubwa(InjiniKipimo));
+        k->jina = jina;
+        k->muda_wa_utekelezaji = 0.0;
+        k->idadi_ya_wito = 0;
+        k->matumizi_ya_kumbukumbu = 0.0;
+        k->muda_wa_wastani = 0.0;
+        k->muda_wa_chini = muda_wa_utekelezaji;
+        k->muda_wa_juu = muda_wa_utekelezaji;
+        po->vipimo[po->idadi_ya_vipimo] = k;
+        po->idadi_ya_vipimo = po->idadi_ya_vipimo + 1;
+    }
+
+    k->muda_wa_utekelezaji = k->muda_wa_utekelezaji + muda_wa_utekelezaji;
+    k->idadi_ya_wito = k->idadi_ya_wito + 1;
+    k->matumizi_ya_kumbukumbu = k->matumizi_ya_kumbukumbu + mabadiliko_ya_kumbukumbu;
+    D64 idadi_d = k->idadi_ya_wito;
+    k->muda_wa_wastani = k->muda_wa_utekelezaji / idadi_d;
+    kama (muda_wa_utekelezaji < k->muda_wa_chini) { k->muda_wa_chini = muda_wa_utekelezaji; }
+    kama (muda_wa_utekelezaji > k->muda_wa_juu) { k->muda_wa_juu = muda_wa_utekelezaji; }
+
+    po->jumla_ya_wito = po->jumla_ya_wito + 1;
+    po->jumla_ya_muda_wa_utekelezaji = po->jumla_ya_muda_wa_utekelezaji + muda_wa_utekelezaji;
+}
+
+W0 injini_utendaji_weka_upya(InjiniUtendaji* po) {
+    N32 i = 0;
+    wakati (i < po->idadi_ya_vipimo) {
+        InjiniKipimo* k = po->vipimo[i];
+        achilia k;
+        i = i + 1;
+    }
+    po->idadi_ya_vipimo = 0;
+    po->jumla_ya_wito = 0;
+    po->jumla_ya_muda_wa_utekelezaji = 0.0;
+}

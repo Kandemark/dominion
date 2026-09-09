@@ -22,6 +22,7 @@ ina kiambishi chake cha lazima, tangu kazi ya kwanza.
 | `events/`       | `matukio_`      |
 | `environment/`  | `mazingira_`    |
 | `world/`        | `dunia_`        |
+| `simulation_engine/` | `injini_`  |
 
 Msingi wa pamoja (`include/common.h`) hauna kiambishi cha moduli —
 unatumia `civ_` (kutoka jina la asili la mradi, "Civilization

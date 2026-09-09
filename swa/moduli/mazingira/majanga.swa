@@ -1,0 +1,130 @@
+// majanga.swa — tafsiri ya src/core/environment/disaster_system.c (na
+// .h) kwenda Swa. Majanga ya kimazingira (tetemeko, mafuriko,
+// ukame, moto wa nyika, kimbunga, tauni, volkano).
+//
+// Kiambishi: mazingira_majanga_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - active_disasters[] (safu inayokua ya muundo) imekuwa safu ya
+//     N64 (anwani za MazingiraJangaTukio* kwenye rundo), mtindo
+//     ulioothibitishwa (dini.swa/#185), inaepuka #182(b).
+//   - time_t start_time / time(NULL) (saa ya ukuta, hakuna kwenye
+//     Swa safi) imekuwa mkusanyiko wa muda (D64) unaoongezwa kwa
+//     kila mwito wa _sasisha na hoja yake ya muda -- sawa na moduli
+//     nyingine zote za mradi huu (vita.swa, maendeleo.swa).
+//   - rand() % N imekuwa civ_nasibu_chini_ya(N).
+//   - snprintf ya id/jina (yenye timestamp) imekuwa faharisi/aina
+//     pekee, bila mfuatano ulioundwa.
+//   - geography (kielekezi cha marejeo, hauitwi kwenye mantiki
+//     halisi ya C) haukuletwa.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+N32 MAZINGIRA_JANGA_TETEMEKO = 0;
+N32 MAZINGIRA_JANGA_MAFURIKO = 1;
+N32 MAZINGIRA_JANGA_UKAME = 2;
+N32 MAZINGIRA_JANGA_MOTO_WA_NYIKA = 3;
+N32 MAZINGIRA_JANGA_KIMBUNGA = 4;
+N32 MAZINGIRA_JANGA_TAUNI = 5;
+N32 MAZINGIRA_JANGA_VOLKANO = 6;
+N32 MAZINGIRA_JANGA_IDADI_YA_AINA = 7;
+
+muundo MazingiraJangaTukio {
+    N32 aina;
+    D64 latitudo;
+    D64 longitudo;
+    D64 eneo_la_athari;
+    D64 ukali;
+    D64 muda_uliopita;
+    D64 muda_wa_kudumu;
+    N32 linafanya_kazi;
+};
+
+muundo MazingiraMajangaMfumo {
+    N64* majanga_yanayofanya_kazi;
+    N32 idadi_ya_majanga;
+    N32 uwezo_wa_majanga;
+};
+
+MazingiraMajangaMfumo* mazingira_majanga_unda() {
+    MazingiraMajangaMfumo* m = tenga(ukubwa(MazingiraMajangaMfumo));
+    m->uwezo_wa_majanga = 4;
+    m->idadi_ya_majanga = 0;
+    m->majanga_yanayofanya_kazi = tenga(ukubwa(N64) * m->uwezo_wa_majanga);
+    rudisha m;
+}
+
+W0 mazingira_majanga_uharibu(MazingiraMajangaMfumo* m) {
+    N32 i = 0;
+    wakati (i < m->idadi_ya_majanga) {
+        MazingiraJangaTukio* t = m->majanga_yanayofanya_kazi[i];
+        achilia t;
+        i = i + 1;
+    }
+    achilia m->majanga_yanayofanya_kazi;
+    achilia m;
+}
+
+CivMatokeo mazingira_majanga_sababisha(MazingiraMajangaMfumo* m, N32 aina, D64 lat, D64 lon, D64 ukali) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (m->idadi_ya_majanga >= m->uwezo_wa_majanga) {
+        m->uwezo_wa_majanga = m->uwezo_wa_majanga * 2;
+        m->majanga_yanayofanya_kazi = badili(m->majanga_yanayofanya_kazi, ukubwa(N64) * m->uwezo_wa_majanga);
+    }
+
+    MazingiraJangaTukio* t = tenga(ukubwa(MazingiraJangaTukio));
+    t->aina = aina;
+    t->latitudo = lat;
+    t->longitudo = lon;
+    t->eneo_la_athari = 50.0 * ukali;
+    t->ukali = ukali;
+    t->muda_uliopita = 0.0;
+    t->muda_wa_kudumu = 24.0 * 7.0 * ukali;
+    t->linafanya_kazi = 1;
+
+    m->majanga_yanayofanya_kazi[m->idadi_ya_majanga] = t;
+    m->idadi_ya_majanga = m->idadi_ya_majanga + 1;
+
+    r.ujumbe = "Janga limesababishwa";
+    rudisha r;
+}
+
+W0 mazingira_majanga_sasisha(MazingiraMajangaMfumo* m, D64 muda) {
+    N32 i = 0;
+    wakati (i < m->idadi_ya_majanga) {
+        MazingiraJangaTukio* t = m->majanga_yanayofanya_kazi[i];
+        kama (t->linafanya_kazi != 0) {
+            t->muda_uliopita = t->muda_uliopita + muda;
+            kama (t->muda_uliopita > t->muda_wa_kudumu) {
+                t->linafanya_kazi = 0;
+            }
+        }
+        i = i + 1;
+    }
+
+    N32 kura = civ_nasibu_chini_ya(10000);
+    kama (kura < 5) {
+        N32 aina = civ_nasibu_chini_ya(MAZINGIRA_JANGA_IDADI_YA_AINA);
+        N32 lat_n = civ_nasibu_chini_ya(100);
+        N32 lon_n = civ_nasibu_chini_ya(100);
+        N32 ukali_n = civ_nasibu_chini_ya(100);
+        D64 lat_d = lat_n;
+        D64 lon_d = lon_n;
+        D64 ukali_d = ukali_n;
+        ukali_d = ukali_d / 100.0;
+        mazingira_majanga_sababisha(m, aina, lat_d, lon_d, ukali_d);
+    }
+}
+
+D64 mazingira_majanga_hesabu_uharibifu(MazingiraJangaTukio* t, D64 lat_lengwa, D64 lon_lengwa) {
+    kama (t->linafanya_kazi == 0) { rudisha 0.0; }
+    D64 dx = t->latitudo - lat_lengwa;
+    D64 dy = t->longitudo - lon_lengwa;
+    D64 umbali = civ_mzizi(dx * dx + dy * dy);
+    kama (umbali > t->eneo_la_athari) { rudisha 0.0; }
+    rudisha t->ukali * (1.0 - (umbali / t->eneo_la_athari));
+}
