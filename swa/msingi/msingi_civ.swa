@@ -227,3 +227,18 @@ D64 civ_kuinua(D64 x, D64 y) {
     kama (x <= 0.0) { rudisha 0.0; }
     rudisha civ_kielelezi(y * civ_logasili(x));
 }
+
+// civ_muda_sasa: sekunde tangu 1970-01-01 (Unix epoch), kwa
+// clock_gettime(CLOCK_REALTIME=0, ...) moja kwa moja (syscall 228 kwenye
+// x86-64 Linux) badala ya time() ya libc -- inaendana na msururu wa
+// sifuri-libc wa mradi (angalia faili.swa, ambayo tayari inatumia
+// wito_wa_mfumo moja kwa moja kwa open/read/write/close/unlink).
+// struct timespec { long tv_sec; long tv_nsec; } -- N64 mbili,
+// tv_sec ndiyo ya kwanza.
+N64 civ_muda_sasa() {
+    N64* muda_buf = tenga(ukubwa(N64) * 2);
+    wito_wa_mfumo(228, 0, muda_buf, 0, 0, 0, 0);
+    N64 sekunde = muda_buf[0];
+    achilia muda_buf;
+    rudisha sekunde;
+}
