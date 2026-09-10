@@ -1,0 +1,169 @@
+// kuenea.swa — tafsiri ya src/core/culture/cultural_diffusion.c
+// (na .h) kwenda Swa. Kuenea kwa tabia za kiutamaduni kati ya
+// vitambulisho.
+//
+// Kiambishi: utamaduni_kuenea_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - source_id/target_id/trait_name (char[N]) kwenye tukio la
+//     kuenea zimekuwa N8* — hazihifadhi nakala, sawa na muundo
+//     uliothibitishwa kwenye kitambulisho.swa.
+//   - timestamp (time_t) imeachwa — haitumiki kwenye mantiki.
+//   - events[] (safu inayokua) inatumia muundo wa N64* (angalia
+//     maelezo kwenye kitambulisho.swa kuhusu lugha-swa/swa#185).
+//   - expf() imebadilishwa na civ_kielelezi (mfululizo wa Taylor,
+//     angalia msingi_civ.swa) — hesabu.swa ya Swa haina kazi za
+//     kielelezi bado (lugha-swa/swa#183). Imethibitishwa kwa usahihi
+//     wa desimali 4-5 dhidi ya thamani halisi za e^x.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { moduli/utamaduni/kitambulisho.swa }
+
+muundo UtamaduniKueneaTukio {
+    N8* chanzo_id;
+    N8* lengwa_id;
+    N8* jina_sifa;
+    D64 ukubwa;    // intensity
+    D64 umbali;    // distance
+};
+
+muundo UtamaduniKuenea {
+    N64* matukio;         // N64* ya vielekezi vya UtamaduniKueneaTukio*
+    N32 idadi_ya_matukio;
+    N32 uwezo_wa_matukio;
+
+    D64 kiwango_cha_msingi_cha_kuenea;   // base_diffusion_rate
+    D64 uozo_wa_umbali;                  // distance_decay
+    D64 kipengele_cha_upinzani;          // resistance_factor
+
+    D64 heshima_ya_nguvu_laini;          // soft_power_prestige
+    D64 kizingiti_cha_utawala;           // dominance_threshold
+};
+
+UtamaduniKuenea* utamaduni_kuenea_unda() {
+    UtamaduniKuenea* d = tenga(ukubwa(UtamaduniKuenea));
+    d->kiwango_cha_msingi_cha_kuenea = 0.01;
+    d->uozo_wa_umbali = 0.1;
+    d->kipengele_cha_upinzani = 0.5;
+    d->heshima_ya_nguvu_laini = 0.1;
+    d->kizingiti_cha_utawala = 0.7;
+    d->uwezo_wa_matukio = 100;
+    d->idadi_ya_matukio = 0;
+    d->matukio = tenga(ukubwa(N64) * d->uwezo_wa_matukio);
+    rudisha d;
+}
+
+UtamaduniKueneaTukio* utamaduni_kuenea_pata_tukio(UtamaduniKuenea* d, N32 idx) {
+    rudisha d->matukio[idx];
+}
+
+D64 utamaduni_kuenea_hesabu_kiwango(UtamaduniKuenea* d, D64 nguvu_ya_chanzo,
+                                      D64 upinzani_wa_lengwa, D64 umbali) {
+    D64 kipengele_cha_umbali = civ_kielelezi((0.0 - d->uozo_wa_umbali) * umbali);
+    D64 kipengele_cha_upinzani_halisi = 1.0 - (upinzani_wa_lengwa * d->kipengele_cha_upinzani);
+    rudisha d->kiwango_cha_msingi_cha_kuenea * nguvu_ya_chanzo
+        * kipengele_cha_upinzani_halisi * kipengele_cha_umbali;
+}
+
+W0 utamaduni_kuenea_chakata(UtamaduniKuenea* d, UtamaduniKitambulishoMfumo* m, D64 muda) {
+    N32 i = 0;
+    wakati (i < m->idadi) {
+        N32 j = i + 1;
+        wakati (j < m->idadi) {
+            UtamaduniKitambulisho* chanzo = utamaduni_kitambulisho_mfumo_pata(m, i);
+            UtamaduniKitambulisho* lengwa = utamaduni_kitambulisho_mfumo_pata(m, j);
+
+            D64 umbali = chanzo->eneo_la_ushawishi - lengwa->eneo_la_ushawishi;
+            kama (umbali < 0.0) { umbali = 0.0 - umbali; }
+
+            N32 k = 0;
+            wakati (k < chanzo->idadi_ya_sifa) {
+                UtamaduniSifa* sifa_ya_chanzo = utamaduni_kitambulisho_pata_sifa(chanzo, k);
+                N8* jina_sifa = sifa_ya_chanzo->jina;
+                D64 nguvu_ya_chanzo = sifa_ya_chanzo->nguvu;
+
+                N32 imepatikana = 0;
+                N32 l = 0;
+                wakati (l < lengwa->idadi_ya_sifa && imepatikana == 0) {
+                    UtamaduniSifa* sifa_ya_lengwa = utamaduni_kitambulisho_pata_sifa(lengwa, l);
+                    kama (linganisha_mfuatano(sifa_ya_lengwa->jina, jina_sifa) == 0) {
+                        imepatikana = 1;
+                        D64 kiwango = utamaduni_kuenea_hesabu_kiwango(d, nguvu_ya_chanzo,
+                            1.0 - lengwa->mshikamano, umbali);
+                        sifa_ya_lengwa->nguvu = finya_d64(
+                            sifa_ya_lengwa->nguvu + kiwango * muda, 0.0, 1.0);
+                    }
+                    l = l + 1;
+                }
+
+                kama (imepatikana == 0 && nguvu_ya_chanzo > 0.3) {
+                    utamaduni_kitambulisho_ongeza_sifa(lengwa, jina_sifa, nguvu_ya_chanzo * 0.1);
+                }
+
+                k = k + 1;
+            }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+}
+
+N32 utamaduni_kuenea_eneza_sifa(UtamaduniKuenea* d, UtamaduniKitambulisho* chanzo,
+                                  UtamaduniKitambulisho* lengwa, N8* jina_sifa, D64 umbali) {
+    D64 nguvu_ya_chanzo = 0.0;
+    N32 i = 0;
+    wakati (i < chanzo->idadi_ya_sifa) {
+        UtamaduniSifa* s = utamaduni_kitambulisho_pata_sifa(chanzo, i);
+        kama (linganisha_mfuatano(s->jina, jina_sifa) == 0) {
+            nguvu_ya_chanzo = s->nguvu;
+            i = chanzo->idadi_ya_sifa;
+        }
+        i = i + 1;
+    }
+
+    kama (nguvu_ya_chanzo <= 0.0) {
+        rudisha CIV_HITILAFU_HAIJAPATIKANA;
+    }
+
+    D64 kiwango = utamaduni_kuenea_hesabu_kiwango(d, nguvu_ya_chanzo, 1.0 - lengwa->mshikamano, umbali);
+
+    N32 imepatikana = 0;
+    i = 0;
+    wakati (i < lengwa->idadi_ya_sifa && imepatikana == 0) {
+        UtamaduniSifa* s = utamaduni_kitambulisho_pata_sifa(lengwa, i);
+        kama (linganisha_mfuatano(s->jina, jina_sifa) == 0) {
+            imepatikana = 1;
+            s->nguvu = finya_d64(s->nguvu + kiwango, 0.0, 1.0);
+        }
+        i = i + 1;
+    }
+
+    kama (imepatikana == 0) {
+        utamaduni_kitambulisho_ongeza_sifa(lengwa, jina_sifa, kiwango);
+    }
+
+    kama (d->idadi_ya_matukio < d->uwezo_wa_matukio) {
+        UtamaduniKueneaTukio* tukio = tenga(ukubwa(UtamaduniKueneaTukio));
+        tukio->chanzo_id = chanzo->kitambulisho;
+        tukio->lengwa_id = lengwa->kitambulisho;
+        tukio->jina_sifa = jina_sifa;
+        tukio->ukubwa = kiwango;
+        tukio->umbali = umbali;
+        d->matukio[d->idadi_ya_matukio] = tukio;
+        d->idadi_ya_matukio = d->idadi_ya_matukio + 1;
+    }
+
+    rudisha CIV_SAWA;
+}
+
+D64 utamaduni_kuenea_hesabu_shinikizo(UtamaduniKuenea* d, UtamaduniKitambulisho* chanzo,
+                                        UtamaduniKitambulisho* lengwa) {
+    D64 pengo_la_nguvu = d->heshima_ya_nguvu_laini - lengwa->mshikamano;
+
+    kama (d->heshima_ya_nguvu_laini > d->kizingiti_cha_utawala) {
+        rudisha finya_d64(pengo_la_nguvu * 2.0, 0.0, 1.0);
+    }
+    rudisha 0.0;
+}

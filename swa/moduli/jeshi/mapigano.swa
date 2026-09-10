@@ -1,0 +1,207 @@
+// mapigano.swa — tafsiri ya src/core/military/combat.c (na .h)
+// kwenda Swa. Mfumo wa mapigano — vita kati ya mataifa na kati ya
+// vitengo viwili.
+//
+// Kiambishi: mapigano_ (angalia ../../KANUNI-MAJINA.md — military/
+// ina viambishi kadhaa vidogo: jeshi_ kwa vitengo, mapigano_ kwa
+// mapigano, ushindi_ kwa ushindi, ili kuepuka mgongano wa majina
+// ndani ya faili tofauti za moduli hiyo hiyo).
+// terrain_types[]/weather_types[] (safu za mfuatano zisizotumika
+// popote kwenye mantiki halisi ya C -- zimetangazwa lakini kamwe
+// hazisomwi) HAZIKULETWA. combat_history (safu ya thamani, kikomo
+// 100, HAIKUI kamwe kwenye C) imekuwa safu ya N64* ya anwani.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/jeshi/kitengo.swa }
+
+N32 MAPIGANO_HISTORIA_UPEO = 100;
+
+muundo MapiganoMatokeo {
+    N8* mshindi;
+    N32 majeruhi_mshambuliaji;
+    N32 majeruhi_mtetezi;
+    N32 mateka;
+    N32 eneo_limepatikana;
+    N32 muda;
+};
+
+muundo MapiganoMfumo {
+    N64* historia;
+    N32 idadi_ya_historia;
+    N32 uwezo_wa_historia;
+};
+
+D64 mapigano_kizidishi_cha_ardhi(N8* ardhi) {
+    kama (ardhi == 0) { rudisha 1.0; }
+    kama (linganisha_mfuatano(ardhi, "plains") == 0) { rudisha 1.0; }
+    kama (linganisha_mfuatano(ardhi, "forest") == 0) { rudisha 0.8; }
+    kama (linganisha_mfuatano(ardhi, "mountains") == 0) { rudisha 0.6; }
+    kama (linganisha_mfuatano(ardhi, "urban") == 0) { rudisha 0.7; }
+    kama (linganisha_mfuatano(ardhi, "river") == 0) { rudisha 0.75; }
+    kama (linganisha_mfuatano(ardhi, "fortified") == 0) { rudisha 0.5; }
+    rudisha 1.0;
+}
+
+D64 mapigano_kizidishi_cha_hali_ya_hewa(N8* hewa) {
+    kama (hewa == 0) { rudisha 1.0; }
+    kama (linganisha_mfuatano(hewa, "clear") == 0) { rudisha 1.0; }
+    kama (linganisha_mfuatano(hewa, "rain") == 0) { rudisha 0.9; }
+    kama (linganisha_mfuatano(hewa, "fog") == 0) { rudisha 0.8; }
+    kama (linganisha_mfuatano(hewa, "snow") == 0) { rudisha 0.7; }
+    kama (linganisha_mfuatano(hewa, "storm") == 0) { rudisha 0.6; }
+    rudisha 1.0;
+}
+
+MapiganoMfumo* mapigano_mfumo_unda() {
+    MapiganoMfumo* cs = tenga(ukubwa(MapiganoMfumo));
+    cs->uwezo_wa_historia = MAPIGANO_HISTORIA_UPEO;
+    cs->idadi_ya_historia = 0;
+    cs->historia = tenga(ukubwa(N64) * cs->uwezo_wa_historia);
+    rudisha cs;
+}
+
+W0 mapigano_mfumo_uharibu(MapiganoMfumo* cs) {
+    achilia cs->historia;
+    achilia cs;
+}
+
+D64 mapigano_ufanisi(MapiganoMfumo* cs, D64 nguvu_ya_msingi, N8* ardhi, N8* hewa) {
+    kama (cs == 0) { rudisha 0.0; }
+    D64 kizidishi_cha_ardhi = mapigano_kizidishi_cha_ardhi(ardhi);
+    D64 kizidishi_cha_hewa = mapigano_kizidishi_cha_hali_ya_hewa(hewa);
+    rudisha nguvu_ya_msingi * kizidishi_cha_ardhi * kizidishi_cha_hewa;
+}
+
+MapiganoMatokeo mapigano_simulisha_vita(MapiganoMfumo* cs, N8* taifa_mshambuliaji,
+                                          N8* taifa_mtetezi, N8* aina_ya_ardhi) {
+    MapiganoMatokeo r;
+    r.mshindi = 0;
+    r.majeruhi_mshambuliaji = 0;
+    r.majeruhi_mtetezi = 0;
+    r.mateka = 0;
+    r.eneo_limepatikana = 0;
+    r.muda = 0;
+
+    kama (cs == 0 || taifa_mshambuliaji == 0 || taifa_mtetezi == 0) { rudisha r; }
+
+    D64 nguvu_ya_mshambuliaji = 1000.0;
+    D64 nguvu_ya_mtetezi = 800.0;
+
+    D64 kizidishi_cha_ardhi = mapigano_kizidishi_cha_ardhi(aina_ya_ardhi);
+    nguvu_ya_mshambuliaji = nguvu_ya_mshambuliaji * kizidishi_cha_ardhi;
+    nguvu_ya_mtetezi = nguvu_ya_mtetezi * kizidishi_cha_ardhi * 1.1;
+
+    N32 raundi = 0;
+    D64 majeruhi_mshambuliaji_d = 0.0;
+    D64 majeruhi_mtetezi_d = 0.0;
+
+    wakati (raundi < 20 && nguvu_ya_mshambuliaji > 0.0 && nguvu_ya_mtetezi > 0.0) {
+        raundi = raundi + 1;
+
+        D64 uharibifu_wa_mshambuliaji = nguvu_ya_mshambuliaji * 0.1;
+        D64 uharibifu_wa_mtetezi = nguvu_ya_mtetezi * 0.08;
+
+        nguvu_ya_mtetezi = nguvu_ya_mtetezi - uharibifu_wa_mshambuliaji;
+        kama (nguvu_ya_mtetezi < 0.0) { nguvu_ya_mtetezi = 0.0; }
+        nguvu_ya_mshambuliaji = nguvu_ya_mshambuliaji - uharibifu_wa_mtetezi;
+        kama (nguvu_ya_mshambuliaji < 0.0) { nguvu_ya_mshambuliaji = 0.0; }
+
+        majeruhi_mtetezi_d = majeruhi_mtetezi_d + uharibifu_wa_mshambuliaji;
+        majeruhi_mshambuliaji_d = majeruhi_mshambuliaji_d + uharibifu_wa_mtetezi;
+    }
+
+    N32 mshambuliaji_ameshinda = 0;
+    kama (nguvu_ya_mshambuliaji > nguvu_ya_mtetezi) { mshambuliaji_ameshinda = 1; }
+
+    kama (mshambuliaji_ameshinda != 0) { r.mshindi = taifa_mshambuliaji; }
+    sivyo { r.mshindi = taifa_mtetezi; }
+
+    r.majeruhi_mshambuliaji = majeruhi_mshambuliaji_d;
+    r.majeruhi_mtetezi = majeruhi_mtetezi_d;
+
+    kama (mshambuliaji_ameshinda != 0) {
+        D64 mateka_d = majeruhi_mtetezi_d * 0.2;
+        r.mateka = mateka_d;
+    } sivyo {
+        D64 mateka_d = majeruhi_mshambuliaji_d * 0.1;
+        r.mateka = mateka_d;
+    }
+    r.eneo_limepatikana = mshambuliaji_ameshinda;
+    r.muda = raundi;
+
+    kama (cs->idadi_ya_historia < cs->uwezo_wa_historia) {
+        MapiganoMatokeo* nakala = tenga(ukubwa(MapiganoMatokeo));
+        nakala->mshindi = r.mshindi;
+        nakala->majeruhi_mshambuliaji = r.majeruhi_mshambuliaji;
+        nakala->majeruhi_mtetezi = r.majeruhi_mtetezi;
+        nakala->mateka = r.mateka;
+        nakala->eneo_limepatikana = r.eneo_limepatikana;
+        nakala->muda = r.muda;
+        cs->historia[cs->idadi_ya_historia] = nakala;
+        cs->idadi_ya_historia = cs->idadi_ya_historia + 1;
+    }
+
+    rudisha r;
+}
+
+MapiganoMatokeo mapigano_kitengo_dhidi_ya_kitengo(JeshiKitengo* mshambuliaji,
+                                                    JeshiKitengo* mtetezi, N8* ardhi) {
+    MapiganoMatokeo r;
+    r.mshindi = 0;
+    r.majeruhi_mshambuliaji = 0;
+    r.majeruhi_mtetezi = 0;
+    r.mateka = 0;
+    r.eneo_limepatikana = 0;
+    r.muda = 0;
+
+    kama (mshambuliaji == 0 || mtetezi == 0) { rudisha r; }
+
+    D64 kizidishi_cha_ardhi = mapigano_kizidishi_cha_ardhi(ardhi);
+
+    D64 ufanisi_wa_mshambuliaji = mshambuliaji->nguvu_ya_vita * (mshambuliaji->morali + 0.5)
+        * kizidishi_cha_ardhi;
+    D64 ufanisi_wa_mtetezi = mtetezi->nguvu_ya_vita * (mtetezi->morali + 0.5)
+        * kizidishi_cha_ardhi * 1.2;
+
+    N32 kura_mshambuliaji = civ_nasibu_chini_ya(10) + 5;
+    N32 kura_mtetezi = civ_nasibu_chini_ya(10) + 5;
+    D64 kura_mshambuliaji_d = kura_mshambuliaji;
+    D64 kura_mtetezi_d = kura_mtetezi;
+
+    D64 uharibifu_wa_mshambuliaji_d = ufanisi_wa_mtetezi * 0.2 * kura_mshambuliaji_d / 10.0;
+    D64 uharibifu_wa_mtetezi_d = ufanisi_wa_mshambuliaji * 0.2 * kura_mtetezi_d / 10.0;
+    N32 uharibifu_wa_mshambuliaji = uharibifu_wa_mshambuliaji_d;
+    N32 uharibifu_wa_mtetezi = uharibifu_wa_mtetezi_d;
+
+    N32 nguvu_mpya_mshambuliaji = mshambuliaji->nguvu_ya_sasa - uharibifu_wa_mshambuliaji;
+    kama (nguvu_mpya_mshambuliaji < 0) { nguvu_mpya_mshambuliaji = 0; }
+    mshambuliaji->nguvu_ya_sasa = nguvu_mpya_mshambuliaji;
+
+    N32 nguvu_mpya_mtetezi = mtetezi->nguvu_ya_sasa - uharibifu_wa_mtetezi;
+    kama (nguvu_mpya_mtetezi < 0) { nguvu_mpya_mtetezi = 0; }
+    mtetezi->nguvu_ya_sasa = nguvu_mpya_mtetezi;
+
+    D64 morali_mpya_mshambuliaji = mshambuliaji->morali - 0.05;
+    kama (morali_mpya_mshambuliaji < 0.1) { morali_mpya_mshambuliaji = 0.1; }
+    mshambuliaji->morali = morali_mpya_mshambuliaji;
+
+    D64 morali_mpya_mtetezi = mtetezi->morali - 0.05;
+    kama (morali_mpya_mtetezi < 0.1) { morali_mpya_mtetezi = 0.1; }
+    mtetezi->morali = morali_mpya_mtetezi;
+
+    D64 uharibifu_wa_mtetezi_d2 = uharibifu_wa_mtetezi;
+    D64 uharibifu_wa_mshambuliaji_d2 = uharibifu_wa_mshambuliaji;
+    mshambuliaji->uzoefu = mshambuliaji->uzoefu + uharibifu_wa_mtetezi_d2 * 0.5;
+    mtetezi->uzoefu = mtetezi->uzoefu + uharibifu_wa_mshambuliaji_d2 * 0.5;
+
+    jeshi_kitengo_pandisha_ngazi(mshambuliaji);
+    jeshi_kitengo_pandisha_ngazi(mtetezi);
+
+    r.majeruhi_mshambuliaji = uharibifu_wa_mshambuliaji;
+    r.majeruhi_mtetezi = uharibifu_wa_mtetezi;
+    kama (mshambuliaji->nguvu_ya_sasa > mtetezi->nguvu_ya_sasa) { r.mshindi = "Mshambuliaji"; }
+    sivyo { r.mshindi = "Mtetezi"; }
+
+    rudisha r;
+}

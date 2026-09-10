@@ -1,0 +1,219 @@
+// teknolojia.swa — tafsiri ya src/core/technology/innovation_system.c
+// (na innovation_system.h) kwenda Swa.
+//
+// Kiambishi: teknolojia_ (na TEKNOLOJIA_ kwa viambatanisho vya
+// ulimwengu) — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - civ_tech_domain_t (enum) imekuwa viambatanisho vya N32.
+//   - civ_tech_domain_state_t.name (char[64] ndani ya struct) —
+//     Swa haiungi mkono safu zenye ukubwa uliobainishwa ndani ya
+//     muundo (nilijaribu moja kwa moja, hukataliwa na mkusanyaji;
+//     si hatari ya usalama, ni pengo la kipengele tu, halijaripotiwa
+//     kando kwa sababu si la dharura). Majina hayahifadhiwi kwenye
+//     muundo kabisa; teknolojia_jina_la_nyanja() inayarudisha moja
+//     kwa moja kutoka kwa nyanja index.
+//   - D64* (kielekezi kwenda desimali) HAIFANYI KAZI KABISA kwa sasa
+//     — nimeripoti lugha-swa/swa#181 (hata *kielekezi bila fahirisi
+//     inashindwa). Kwa hiyo mgao na kasi_ya_ukuaji, ambazo zingekuwa
+//     D64* [12] kama kiwango/cheo_duniani ni N32* [12], zimefunguliwa
+//     mkono kama sehemu 12 tofauti (mgao_0..mgao_11, kasi_0..kasi_11)
+//     zenye kazi za get/set zinazoficha hilo. Hii ni suluhisho la
+//     muda hadi #181 itakaporekebishwa — mara itakaporekebishwa,
+//     zibadilishwe ziwe D64* [12] kama zilivyokusudiwa awali.
+
+husisha { maktaba/kumbukumbu.swa }
+
+// ---------- Nyanja za teknolojia (badala ya civ_tech_domain_t) ----------
+N32 TEKNOLOJIA_UANDISHI = 0;
+N32 TEKNOLOJIA_UHANDISI = 1;
+N32 TEKNOLOJIA_KILIMO = 2;
+N32 TEKNOLOJIA_SAYANSI_YA_JESHI = 3;
+N32 TEKNOLOJIA_UGANGA = 4;
+N32 TEKNOLOJIA_ELIMUNYOTA = 5;
+N32 TEKNOLOJIA_UYEYUSHAJI_VYUMA = 6;
+N32 TEKNOLOJIA_URAMANI = 7;
+N32 TEKNOLOJIA_UJENZI = 8;
+N32 TEKNOLOJIA_FALSAFA = 9;
+N32 TEKNOLOJIA_BIASHARA = 10;
+N32 TEKNOLOJIA_NADHARIA_YA_UTAWALA = 11;
+N32 TEKNOLOJIA_IDADI_YA_NYANJA = 12;
+
+muundo TeknolojiaMfumo {
+    D64 bajeti_jumla;
+    N32* kiwango;          // hali ya sasa kwa nyanja (inaweza kuwa hasi)
+    N32* cheo_duniani;      // nafasi miongoni mwa mataifa yote
+    N32* wastani_duniani;   // wastani wa dunia kwa nyanja hii
+    N32 kiwango_jumla;      // wastani wenye uzito kati ya nyanja zote
+    N32 cheo_jumla;         // cheo cha jumla
+
+    // Suluhisho la muda kwa #181 (D64* haifanyi kazi) — angalia
+    // maelezo ya juu. mgao_N = sehemu ya bajeti kwa nyanja N (0..1).
+    D64 mgao_0;  D64 mgao_1;  D64 mgao_2;  D64 mgao_3;
+    D64 mgao_4;  D64 mgao_5;  D64 mgao_6;  D64 mgao_7;
+    D64 mgao_8;  D64 mgao_9;  D64 mgao_10; D64 mgao_11;
+
+    // kasi_N = kasi ya ukuaji ya sasa kwa nyanja N (kwa zamu).
+    D64 kasi_0;  D64 kasi_1;  D64 kasi_2;  D64 kasi_3;
+    D64 kasi_4;  D64 kasi_5;  D64 kasi_6;  D64 kasi_7;
+    D64 kasi_8;  D64 kasi_9;  D64 kasi_10; D64 kasi_11;
+};
+
+N8* teknolojia_jina_la_nyanja(N32 nyanja) {
+    kama (nyanja == TEKNOLOJIA_UANDISHI) { rudisha "Uandishi na Kumbukumbu"; }
+    kama (nyanja == TEKNOLOJIA_UHANDISI) { rudisha "Uhandisi na Ujenzi"; }
+    kama (nyanja == TEKNOLOJIA_KILIMO) { rudisha "Kilimo na Ufugaji"; }
+    kama (nyanja == TEKNOLOJIA_SAYANSI_YA_JESHI) { rudisha "Sayansi ya Jeshi"; }
+    kama (nyanja == TEKNOLOJIA_UGANGA) { rudisha "Uganga na Uponyaji"; }
+    kama (nyanja == TEKNOLOJIA_ELIMUNYOTA) { rudisha "Elimunyota na Hesabu"; }
+    kama (nyanja == TEKNOLOJIA_UYEYUSHAJI_VYUMA) { rudisha "Uyeyushaji wa Vyuma"; }
+    kama (nyanja == TEKNOLOJIA_URAMANI) { rudisha "Uramani na Uelekezi"; }
+    kama (nyanja == TEKNOLOJIA_UJENZI) { rudisha "Usanifu na Upangaji"; }
+    kama (nyanja == TEKNOLOJIA_FALSAFA) { rudisha "Falsafa na Maadili"; }
+    kama (nyanja == TEKNOLOJIA_BIASHARA) { rudisha "Biashara na Sarafu"; }
+    kama (nyanja == TEKNOLOJIA_NADHARIA_YA_UTAWALA) { rudisha "Nadharia ya Utawala"; }
+    rudisha "Haijulikani";
+}
+
+// ---------- Get/set za mgao_N (suluhisho la muda kwa #181) ----------
+D64 teknolojia_mgao_pata(TeknolojiaMfumo* m, N32 nyanja) {
+    kama (nyanja == 0) { rudisha m->mgao_0; }
+    kama (nyanja == 1) { rudisha m->mgao_1; }
+    kama (nyanja == 2) { rudisha m->mgao_2; }
+    kama (nyanja == 3) { rudisha m->mgao_3; }
+    kama (nyanja == 4) { rudisha m->mgao_4; }
+    kama (nyanja == 5) { rudisha m->mgao_5; }
+    kama (nyanja == 6) { rudisha m->mgao_6; }
+    kama (nyanja == 7) { rudisha m->mgao_7; }
+    kama (nyanja == 8) { rudisha m->mgao_8; }
+    kama (nyanja == 9) { rudisha m->mgao_9; }
+    kama (nyanja == 10) { rudisha m->mgao_10; }
+    kama (nyanja == 11) { rudisha m->mgao_11; }
+    rudisha 0.0;
+}
+
+W0 teknolojia_mgao_weka_ndani(TeknolojiaMfumo* m, N32 nyanja, D64 thamani) {
+    kama (nyanja == 0) { m->mgao_0 = thamani; rudisha; }
+    kama (nyanja == 1) { m->mgao_1 = thamani; rudisha; }
+    kama (nyanja == 2) { m->mgao_2 = thamani; rudisha; }
+    kama (nyanja == 3) { m->mgao_3 = thamani; rudisha; }
+    kama (nyanja == 4) { m->mgao_4 = thamani; rudisha; }
+    kama (nyanja == 5) { m->mgao_5 = thamani; rudisha; }
+    kama (nyanja == 6) { m->mgao_6 = thamani; rudisha; }
+    kama (nyanja == 7) { m->mgao_7 = thamani; rudisha; }
+    kama (nyanja == 8) { m->mgao_8 = thamani; rudisha; }
+    kama (nyanja == 9) { m->mgao_9 = thamani; rudisha; }
+    kama (nyanja == 10) { m->mgao_10 = thamani; rudisha; }
+    kama (nyanja == 11) { m->mgao_11 = thamani; rudisha; }
+}
+
+W0 teknolojia_kasi_weka_ndani(TeknolojiaMfumo* m, N32 nyanja, D64 thamani) {
+    kama (nyanja == 0) { m->kasi_0 = thamani; rudisha; }
+    kama (nyanja == 1) { m->kasi_1 = thamani; rudisha; }
+    kama (nyanja == 2) { m->kasi_2 = thamani; rudisha; }
+    kama (nyanja == 3) { m->kasi_3 = thamani; rudisha; }
+    kama (nyanja == 4) { m->kasi_4 = thamani; rudisha; }
+    kama (nyanja == 5) { m->kasi_5 = thamani; rudisha; }
+    kama (nyanja == 6) { m->kasi_6 = thamani; rudisha; }
+    kama (nyanja == 7) { m->kasi_7 = thamani; rudisha; }
+    kama (nyanja == 8) { m->kasi_8 = thamani; rudisha; }
+    kama (nyanja == 9) { m->kasi_9 = thamani; rudisha; }
+    kama (nyanja == 10) { m->kasi_10 = thamani; rudisha; }
+    kama (nyanja == 11) { m->kasi_11 = thamani; rudisha; }
+}
+
+TeknolojiaMfumo teknolojia_unda() {
+    TeknolojiaMfumo m;
+    m.kiwango = tenga(ukubwa(N32) * TEKNOLOJIA_IDADI_YA_NYANJA);
+    m.cheo_duniani = tenga(ukubwa(N32) * TEKNOLOJIA_IDADI_YA_NYANJA);
+    m.wastani_duniani = tenga(ukubwa(N32) * TEKNOLOJIA_IDADI_YA_NYANJA);
+
+    D64 mgao_awali = 1.0 / TEKNOLOJIA_IDADI_YA_NYANJA;
+    N32 i = 0;
+    wakati (i < TEKNOLOJIA_IDADI_YA_NYANJA) {
+        m.kiwango[i] = 0;
+        m.cheo_duniani[i] = 0;
+        m.wastani_duniani[i] = 0;
+        teknolojia_mgao_weka_ndani(&m, i, mgao_awali);
+        teknolojia_kasi_weka_ndani(&m, i, 0.0);
+        i = i + 1;
+    }
+    m.bajeti_jumla = 0.0;
+    m.kiwango_jumla = 0;
+    m.cheo_jumla = 0;
+    rudisha m;
+}
+
+W0 teknolojia_uharibu(TeknolojiaMfumo* m) {
+    achilia m->kiwango;
+    achilia m->cheo_duniani;
+    achilia m->wastani_duniani;
+}
+
+W0 teknolojia_anzisha_nyanja(TeknolojiaMfumo* m, N32* viwango_vya_awali) {
+    N32 i = 0;
+    wakati (i < TEKNOLOJIA_IDADI_YA_NYANJA) {
+        m->kiwango[i] = viwango_vya_awali[i];
+        i = i + 1;
+    }
+}
+
+W0 teknolojia_weka_bajeti(TeknolojiaMfumo* m, D64 bajeti) {
+    kama (bajeti < 0.0) { bajeti = 0.0; }
+    m->bajeti_jumla = bajeti;
+}
+
+W0 teknolojia_weka_mgao(TeknolojiaMfumo* m, N32 nyanja, D64 sehemu) {
+    kama (nyanja >= TEKNOLOJIA_IDADI_YA_NYANJA) { rudisha; }
+    kama (sehemu < 0.0) { sehemu = 0.0; }
+    kama (sehemu > 1.0) { sehemu = 1.0; }
+    teknolojia_mgao_weka_ndani(m, nyanja, sehemu);
+}
+
+N32 teknolojia_pata_kiwango(TeknolojiaMfumo* m, N32 nyanja) {
+    kama (nyanja >= TEKNOLOJIA_IDADI_YA_NYANJA) { rudisha 0; }
+    rudisha m->kiwango[nyanja];
+}
+
+W0 teknolojia_sasisha(TeknolojiaMfumo* m, D64 dt) {
+    D64 jumla_uzito = 0.0;
+    D64 jumla_iliyopimwa = 0.0;
+    N32 i = 0;
+    wakati (i < TEKNOLOJIA_IDADI_YA_NYANJA) {
+        D64 mgao_wa_i = teknolojia_mgao_pata(m, i);
+        D64 sehemu_ya_bajeti = m->bajeti_jumla * mgao_wa_i;
+
+        // thamani kamili ya kiwango[i], kwa D64
+        D64 kiwango_halisi = m->kiwango[i];
+        D64 hasi_au_chanya = kiwango_halisi;
+        kama (hasi_au_chanya < 0.0) { hasi_au_chanya = 0.0 - hasi_au_chanya; }
+
+        D64 kupungua = 1.0 / (1.0 + hasi_au_chanya / 500.0);
+        D64 ukuaji = sehemu_ya_bajeti * kupungua * 0.1 * dt;
+        teknolojia_kasi_weka_ndani(m, i, ukuaji);
+
+        N32 ongezeko = ukuaji;
+        m->kiwango[i] = m->kiwango[i] + ongezeko;
+
+        jumla_iliyopimwa = jumla_iliyopimwa + kiwango_halisi * mgao_wa_i;
+        jumla_uzito = jumla_uzito + mgao_wa_i;
+
+        i = i + 1;
+    }
+
+    kama (jumla_uzito > 0.0) {
+        m->kiwango_jumla = jumla_iliyopimwa / jumla_uzito;
+    } sivyo {
+        m->kiwango_jumla = jumla_iliyopimwa;
+    }
+
+    // Cheo — kiini tu, ulinganisho halisi dhidi ya mataifa mengine
+    // utaongezwa moduli ya akili_bandia_ itakapowepo.
+    m->cheo_jumla = 1;
+    i = 0;
+    wakati (i < TEKNOLOJIA_IDADI_YA_NYANJA) {
+        m->wastani_duniani[i] = 200;
+        m->cheo_duniani[i] = 1;
+        i = i + 1;
+    }
+}

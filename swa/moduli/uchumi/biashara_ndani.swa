@@ -1,0 +1,92 @@
+// biashara_ndani.swa — tafsiri ya src/core/economy/domestic_trade.c
+// (na .h) kwenda Swa. Biashara ya ndani, mtiririko wa bidhaa kati ya
+// maeneo, na muunganiko wa soko.
+//
+// Kiambishi: biashara_ndani_ — angalia ../../KANUNI-MAJINA.md.
+// routes[] (safu inayokua ya C) imekuwa BIASHARA_NDANI_NJIA_IDADI=8
+// vigezo vyenye majina + kazi ya kupata (hakuna kazi ya "ongeza njia"
+// kwenye .h ya C — njia zinabaki tupu/hazifanyi kazi kwa chaguo-msingi,
+// sawa na tabia ya awali kwa faili hili peke yake).
+
+husisha { msingi/msingi_civ.swa }
+
+N32 BIASHARA_NDANI_NJIA_IDADI = 8;
+
+muundo BiasharaNdaniNjia {
+    N8* eneo_kutoka;
+    N8* eneo_kwenda;
+    N8* bidhaa;
+    D64 ujazo_wa_mtiririko;
+    D64 gharama_ya_usafiri;
+    D64 tofauti_ya_bei;
+    N32 inafanya_kazi;
+};
+
+muundo BiasharaNdaniMfumo {
+    BiasharaNdaniNjia njia_0; BiasharaNdaniNjia njia_1;
+    BiasharaNdaniNjia njia_2; BiasharaNdaniNjia njia_3;
+    BiasharaNdaniNjia njia_4; BiasharaNdaniNjia njia_5;
+    BiasharaNdaniNjia njia_6; BiasharaNdaniNjia njia_7;
+
+    N32 idadi_ya_njia;
+    D64 muunganiko_wa_soko;
+    D64 ushuru_wa_ndani_sawa;
+    D64 ujazo_jumla_wa_ndani;
+};
+
+BiasharaNdaniNjia* biashara_ndani_pata_njia(BiasharaNdaniMfumo* d, N32 idx) {
+    kama (idx == 0) { rudisha &d->njia_0; }
+    kama (idx == 1) { rudisha &d->njia_1; }
+    kama (idx == 2) { rudisha &d->njia_2; }
+    kama (idx == 3) { rudisha &d->njia_3; }
+    kama (idx == 4) { rudisha &d->njia_4; }
+    kama (idx == 5) { rudisha &d->njia_5; }
+    kama (idx == 6) { rudisha &d->njia_6; }
+    rudisha &d->njia_7;
+}
+
+BiasharaNdaniMfumo* biashara_ndani_unda() {
+    BiasharaNdaniMfumo* d = tenga(ukubwa(BiasharaNdaniMfumo));
+    d->idadi_ya_njia = 0;
+    d->muunganiko_wa_soko = 0.50;
+    d->ushuru_wa_ndani_sawa = 0.12;
+    d->ujazo_jumla_wa_ndani = 0.0;
+    rudisha d;
+}
+
+W0 biashara_ndani_uharibu(BiasharaNdaniMfumo* d) {
+    achilia d;
+}
+
+W0 biashara_ndani_sasisha(BiasharaNdaniMfumo* d, D64 muda, D64 ubora_wa_miundombinu,
+                            D64 idadi_ya_watu, D64 ukubwa_wa_jiografia) {
+    d->muunganiko_wa_soko = d->muunganiko_wa_soko
+        + (ubora_wa_miundombinu - d->muunganiko_wa_soko) * 0.08;
+
+    d->ushuru_wa_ndani_sawa = (1.0 - ubora_wa_miundombinu) * 0.3
+        + (ukubwa_wa_jiografia / 50000.0) * 0.05;
+    kama (d->ushuru_wa_ndani_sawa > 0.50) { d->ushuru_wa_ndani_sawa = 0.50; }
+
+    d->ujazo_jumla_wa_ndani = idadi_ya_watu * d->muunganiko_wa_soko * 0.5;
+
+    N32 i = 0;
+    wakati (i < BIASHARA_NDANI_NJIA_IDADI) {
+        BiasharaNdaniNjia* r = biashara_ndani_pata_njia(d, i);
+        kama (r->inafanya_kazi != 0) {
+            r->gharama_ya_usafiri = d->ushuru_wa_ndani_sawa * 0.5;
+            r->tofauti_ya_bei = r->tofauti_ya_bei * (1.0 - d->muunganiko_wa_soko * 0.1);
+            D64 pambizo_safi = r->tofauti_ya_bei - r->gharama_ya_usafiri;
+            kama (pambizo_safi > 0.0) { r->ujazo_wa_mtiririko = pambizo_safi * 100.0; }
+            sivyo { r->ujazo_wa_mtiririko = 0.0; }
+        }
+        i = i + 1;
+    }
+}
+
+D64 biashara_ndani_bei_katika_eneo(BiasharaNdaniMfumo* d) {
+    rudisha 1.0 + (1.0 - d->muunganiko_wa_soko) * 0.3;
+}
+
+D64 biashara_ndani_ufanisi(BiasharaNdaniMfumo* d) {
+    rudisha d->muunganiko_wa_soko;
+}

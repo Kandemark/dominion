@@ -1,0 +1,171 @@
+// maajabu.swa — tafsiri ya src/core/world/wonders.c (na .h) kwenda
+// Swa. Maajabu ya dunia na Kazi Kuu.
+//
+// Kiambishi: dunia_maajabu_ — angalia ../../KANUNI-MAJINA.md.
+// wonders[CIV_WONDER_COUNT] (safu ya muundo, aina 6) imegawanywa
+// kuwa vigezo 6 vyenye majina + kazi ya kupata (mtindo uleule
+// uliothibitishwa kwenye sera.swa/teknolojia.swa).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+N32 DUNIA_MAAJABU_PIRAMIDI = 0;
+N32 DUNIA_MAAJABU_MAKTABA_KUU = 1;
+N32 DUNIA_MAAJABU_KOLOSO = 2;
+N32 DUNIA_MAAJABU_BUSTANI_ZINAZONING_INIA = 3;
+N32 DUNIA_MAAJABU_ORAKULI = 4;
+N32 DUNIA_MAAJABU_MNARA_WA_TAA = 5;
+N32 DUNIA_MAAJABU_IDADI = 6;
+
+muundo DuniaAjabuAthari {
+    D64 kizidishi_cha_sayansi;
+    D64 kizidishi_cha_utamaduni;
+    D64 kizidishi_cha_uzalishaji;
+    D64 kizidishi_cha_dhahabu;
+    D64 nyongeza_ya_nguvu_ya_kijeshi;
+};
+
+muundo DuniaAjabu {
+    N32 aina;
+    N8* jina;
+    N8* maelezo;
+    D64 gharama_ya_uzalishaji;
+    N8* teknolojia_inayohitajika_id;
+    N32 inahitaji_pwani;
+    DuniaAjabuAthari athari;
+    N32 imejengwa;
+    N8* mjenzi_id;
+};
+
+muundo DuniaAjabuMsimamizi {
+    DuniaAjabu ajabu_0; DuniaAjabu ajabu_1; DuniaAjabu ajabu_2;
+    DuniaAjabu ajabu_3; DuniaAjabu ajabu_4; DuniaAjabu ajabu_5;
+};
+
+DuniaAjabu* dunia_maajabu_pata(DuniaAjabuMsimamizi* m, N32 aina) {
+    kama (aina == 0) { rudisha &m->ajabu_0; }
+    kama (aina == 1) { rudisha &m->ajabu_1; }
+    kama (aina == 2) { rudisha &m->ajabu_2; }
+    kama (aina == 3) { rudisha &m->ajabu_3; }
+    kama (aina == 4) { rudisha &m->ajabu_4; }
+    rudisha &m->ajabu_5;
+}
+
+W0 dunia_maajabu_anzisha(DuniaAjabuMsimamizi* m) {
+    DuniaAjabu* p = dunia_maajabu_pata(m, DUNIA_MAAJABU_PIRAMIDI);
+    p->aina = DUNIA_MAAJABU_PIRAMIDI;
+    p->jina = "Piramidi";
+    p->maelezo = "Makumbusho makubwa ya mawe yanayoongeza ufanisi wa wafanyakazi.";
+    p->gharama_ya_uzalishaji = 200.0;
+    p->teknolojia_inayohitajika_id = "ufundi_wa_mawe";
+    p->inahitaji_pwani = 0;
+    p->athari.kizidishi_cha_uzalishaji = 0.15;
+    p->imejengwa = 0;
+    p->mjenzi_id = 0;
+
+    DuniaAjabu* mk = dunia_maajabu_pata(m, DUNIA_MAAJABU_MAKTABA_KUU);
+    mk->aina = DUNIA_MAAJABU_MAKTABA_KUU;
+    mk->jina = "Maktaba Kuu";
+    mk->maelezo = "Hifadhi ya maarifa yote ya dunia.";
+    mk->gharama_ya_uzalishaji = 250.0;
+    mk->teknolojia_inayohitajika_id = "uandishi";
+    mk->inahitaji_pwani = 0;
+    mk->athari.kizidishi_cha_sayansi = 0.20;
+    mk->imejengwa = 0;
+    mk->mjenzi_id = 0;
+
+    DuniaAjabu* k = dunia_maajabu_pata(m, DUNIA_MAAJABU_KOLOSO);
+    k->aina = DUNIA_MAAJABU_KOLOSO;
+    k->jina = "Koloso";
+    k->maelezo = "Sanamu kubwa ya shaba inayolinda bandari.";
+    k->gharama_ya_uzalishaji = 180.0;
+    k->teknolojia_inayohitajika_id = "kazi_za_shaba";
+    k->inahitaji_pwani = 1;
+    k->athari.kizidishi_cha_dhahabu = 0.25;
+    k->imejengwa = 0;
+    k->mjenzi_id = 0;
+
+    DuniaAjabu* bz = dunia_maajabu_pata(m, DUNIA_MAAJABU_BUSTANI_ZINAZONING_INIA);
+    bz->aina = DUNIA_MAAJABU_BUSTANI_ZINAZONING_INIA;
+    bz->jina = "Bustani Zinazoning'inia";
+    bz->maelezo = "Bustani za ngazi zenye kupendeza katikati ya jiji.";
+    bz->gharama_ya_uzalishaji = 220.0;
+    bz->teknolojia_inayohitajika_id = "umwagiliaji";
+    bz->inahitaji_pwani = 0;
+    bz->athari.kizidishi_cha_uzalishaji = 0.10;
+    bz->imejengwa = 0;
+    bz->mjenzi_id = 0;
+
+    DuniaAjabu* o = dunia_maajabu_pata(m, DUNIA_MAAJABU_ORAKULI);
+    o->aina = DUNIA_MAAJABU_ORAKULI;
+    o->jina = "Orakuli";
+    o->maelezo = "";
+    o->gharama_ya_uzalishaji = 0.0;
+    o->teknolojia_inayohitajika_id = 0;
+    o->inahitaji_pwani = 0;
+    o->imejengwa = 0;
+    o->mjenzi_id = 0;
+
+    DuniaAjabu* mt = dunia_maajabu_pata(m, DUNIA_MAAJABU_MNARA_WA_TAA);
+    mt->aina = DUNIA_MAAJABU_MNARA_WA_TAA;
+    mt->jina = "Mnara wa Taa";
+    mt->maelezo = "";
+    mt->gharama_ya_uzalishaji = 0.0;
+    mt->teknolojia_inayohitajika_id = 0;
+    mt->inahitaji_pwani = 0;
+    mt->imejengwa = 0;
+    mt->mjenzi_id = 0;
+}
+
+DuniaAjabuMsimamizi* dunia_maajabu_msimamizi_unda() {
+    DuniaAjabuMsimamizi* m = tenga(ukubwa(DuniaAjabuMsimamizi));
+    dunia_maajabu_anzisha(m);
+    rudisha m;
+}
+
+W0 dunia_maajabu_msimamizi_uharibu(DuniaAjabuMsimamizi* m) {
+    achilia m;
+}
+
+N32 dunia_maajabu_yanaweza_kujengwa(DuniaAjabuMsimamizi* m, N32 aina, N8* teknolojia_id,
+                                      N32 ni_pwani) {
+    kama (m == 0 || aina >= DUNIA_MAAJABU_IDADI) { rudisha 0; }
+    DuniaAjabu* w = dunia_maajabu_pata(m, aina);
+    kama (w->imejengwa != 0) { rudisha 0; }
+    kama (teknolojia_id != 0 && w->teknolojia_inayohitajika_id != 0
+        && linganisha_mfuatano(w->teknolojia_inayohitajika_id, teknolojia_id) != 0) { rudisha 0; }
+    kama (w->inahitaji_pwani != 0 && ni_pwani == 0) { rudisha 0; }
+    rudisha 1;
+}
+
+W0 dunia_maajabu_weka_limejengwa(DuniaAjabuMsimamizi* m, N32 aina, N8* mjenzi_id) {
+    kama (m == 0 || aina >= DUNIA_MAAJABU_IDADI) { rudisha; }
+    DuniaAjabu* w = dunia_maajabu_pata(m, aina);
+    w->imejengwa = 1;
+    kama (mjenzi_id != 0) { w->mjenzi_id = mjenzi_id; }
+}
+
+DuniaAjabuAthari dunia_maajabu_hesabu_athari_za_jumla(DuniaAjabuMsimamizi* m, N8* mmiliki_id) {
+    DuniaAjabuAthari jumla;
+    jumla.kizidishi_cha_sayansi = 0.0;
+    jumla.kizidishi_cha_utamaduni = 0.0;
+    jumla.kizidishi_cha_uzalishaji = 0.0;
+    jumla.kizidishi_cha_dhahabu = 0.0;
+    jumla.nyongeza_ya_nguvu_ya_kijeshi = 0.0;
+    kama (m == 0 || mmiliki_id == 0) { rudisha jumla; }
+
+    N32 i = 0;
+    wakati (i < DUNIA_MAAJABU_IDADI) {
+        DuniaAjabu* w = dunia_maajabu_pata(m, i);
+        kama (w->imejengwa != 0 && w->mjenzi_id != 0
+            && linganisha_mfuatano(w->mjenzi_id, mmiliki_id) == 0) {
+            jumla.kizidishi_cha_sayansi = jumla.kizidishi_cha_sayansi + w->athari.kizidishi_cha_sayansi;
+            jumla.kizidishi_cha_utamaduni = jumla.kizidishi_cha_utamaduni + w->athari.kizidishi_cha_utamaduni;
+            jumla.kizidishi_cha_uzalishaji = jumla.kizidishi_cha_uzalishaji + w->athari.kizidishi_cha_uzalishaji;
+            jumla.kizidishi_cha_dhahabu = jumla.kizidishi_cha_dhahabu + w->athari.kizidishi_cha_dhahabu;
+            jumla.nyongeza_ya_nguvu_ya_kijeshi = jumla.nyongeza_ya_nguvu_ya_kijeshi + w->athari.nyongeza_ya_nguvu_ya_kijeshi;
+        }
+        i = i + 1;
+    }
+    rudisha jumla;
+}

@@ -1,0 +1,243 @@
+// vurugu.swa — tafsiri ya src/core/governance/political/political_violence.c
+// (na .h) kwenda Swa. Vurugu za kisiasa — mapinduzi, mauaji ya
+// kisiasa, vita vya wenyewe kwa wenyewe, mauaji ya kimbari.
+//
+// Kiambishi: utawala_vurugu_ — angalia ../../../KANUNI-MAJINA.md.
+// history[] (kikomo 16 asili) imepunguzwa kuwa kikomo cha matukio 8.
+//
+// MUHIMU: civ_political_violence_update ya asili ina JUMLA YA VIGEZO
+// 12 (pv/dt/militarization/centralization/legitimacy/stability/
+// corruption/representation/power_consolidation/
+// constitution_suspended/faction_count/cohesion), 10 kati yao D64 —
+// hii ingekuwa mfano mkubwa zaidi wa mdudu #184 kuwahi kuonekana kwenye
+// mradi huu. Vigezo vyote vya D64/N32 vya "mazingira" vimefungwa
+// kwenye muundo mpya UtawalaVuruguMazingira, hivyo
+// utawala_vurugu_sasisha ina vigezo 3 tu (pv, dt, mazingira*).
+
+husisha { msingi/msingi_civ.swa }
+
+N32 UTAWALA_VURUGU_JARIBIO_LA_MAPINDUZI = 0;
+N32 UTAWALA_VURUGU_MAUAJI_YA_KISIASA = 1;
+N32 UTAWALA_VURUGU_VITA_VYA_WENYEWE_KWA_WENYEWE = 2;
+N32 UTAWALA_VURUGU_UTAKASO = 3;
+N32 UTAWALA_VURUGU_UASI = 4;
+
+N32 UTAWALA_VURUGU_HISTORIA_UPEO = 8;
+
+// UtawalaVuruguAthari: hufunga ukubwa+uharibifu wa tukio moja — sawa
+// na UtawalaVuruguMazingira, inazuia utawala_vurugu_ongeza_tukio
+// isifikie vigezo 7 (ilikuwa nayo hasa: pv/aina/ukubwa/
+// uharibifu_wa_uthabiti/uharibifu_wa_uhalali/waliokufa/maelezo, 3
+// D64 — mfano halisi wa #184 uliogunduliwa wakati wa kuandika hii).
+muundo UtawalaVuruguAthari {
+    D64 ukubwa;
+    D64 uharibifu_wa_uthabiti;
+    D64 uharibifu_wa_uhalali;
+};
+
+muundo UtawalaVuruguMazingira {
+    D64 uwanajeshi;
+    D64 uwiano_wa_udhibiti_mkuu;
+    D64 uhalali;
+    D64 uthabiti;
+    D64 rushwa;
+    D64 uwakilishi;
+    D64 uunganishaji_wa_nguvu;
+    N32 katiba_imesimamishwa;
+    D64 idadi_ya_vikundi;
+    D64 mshikamano;
+};
+
+muundo UtawalaVuruguTukio {
+    N32 aina;
+    N32 lilitokea;
+    D64 ukubwa;
+    D64 uharibifu_wa_uthabiti;
+    D64 uharibifu_wa_uhalali;
+    N32 waliokufa;
+    N32 zamu_tangu_tukio;
+    N8* maelezo;
+};
+
+muundo UtawalaVurugu {
+    UtawalaVuruguTukio historia_0; UtawalaVuruguTukio historia_1;
+    UtawalaVuruguTukio historia_2; UtawalaVuruguTukio historia_3;
+    UtawalaVuruguTukio historia_4; UtawalaVuruguTukio historia_5;
+    UtawalaVuruguTukio historia_6; UtawalaVuruguTukio historia_7;
+    N32 idadi_ya_historia;
+
+    D64 hatari_ya_mapinduzi;
+    D64 hatari_ya_mauaji_ya_kisiasa;
+    D64 hatari_ya_vita_vya_wenyewe_kwa_wenyewe;
+    D64 hatari_ya_uasi;
+    D64 ukandamizaji_wa_kisiasa;
+    N32 waliokufa_jumla;
+    N32 mapinduzi_yaliyojaribiwa;
+    N32 mapinduzi_yaliyofaulu;
+};
+
+UtawalaVuruguTukio* utawala_vurugu_pata_historia(UtawalaVurugu* pv, N32 idx) {
+    kama (idx == 0) { rudisha &pv->historia_0; }
+    kama (idx == 1) { rudisha &pv->historia_1; }
+    kama (idx == 2) { rudisha &pv->historia_2; }
+    kama (idx == 3) { rudisha &pv->historia_3; }
+    kama (idx == 4) { rudisha &pv->historia_4; }
+    kama (idx == 5) { rudisha &pv->historia_5; }
+    kama (idx == 6) { rudisha &pv->historia_6; }
+    rudisha &pv->historia_7;
+}
+
+UtawalaVurugu* utawala_vurugu_unda() {
+    UtawalaVurugu* pv = tenga(ukubwa(UtawalaVurugu));
+    pv->idadi_ya_historia = 0;
+    pv->hatari_ya_mapinduzi = 0.0;
+    pv->hatari_ya_mauaji_ya_kisiasa = 0.0;
+    pv->hatari_ya_vita_vya_wenyewe_kwa_wenyewe = 0.0;
+    pv->hatari_ya_uasi = 0.0;
+    pv->ukandamizaji_wa_kisiasa = 0.0;
+    pv->waliokufa_jumla = 0;
+    pv->mapinduzi_yaliyojaribiwa = 0;
+    pv->mapinduzi_yaliyofaulu = 0;
+    rudisha pv;
+}
+
+W0 utawala_vurugu_uharibu(UtawalaVurugu* pv) {
+    achilia pv;
+}
+
+N32 utawala_vurugu_mapinduzi_yanawezekana(UtawalaVurugu* pv) {
+    kama (pv == 0) { rudisha 0; }
+    kama (pv->hatari_ya_mapinduzi > 0.30) { rudisha 1; }
+    rudisha 0;
+}
+
+N32 utawala_vurugu_vita_vinawezekana(UtawalaVurugu* pv) {
+    kama (pv == 0) { rudisha 0; }
+    kama (pv->hatari_ya_vita_vya_wenyewe_kwa_wenyewe > 0.40) { rudisha 1; }
+    rudisha 0;
+}
+
+D64 utawala_vurugu_kielezo_cha_kutokuwa_thabiti(UtawalaVurugu* pv) {
+    kama (pv == 0) { rudisha 0.0; }
+    rudisha (pv->hatari_ya_mapinduzi + pv->hatari_ya_mauaji_ya_kisiasa
+        + pv->hatari_ya_vita_vya_wenyewe_kwa_wenyewe + pv->hatari_ya_uasi) / 4.0;
+}
+
+W0 utawala_vurugu_ongeza_tukio(UtawalaVurugu* pv, N32 aina, UtawalaVuruguAthari* athari,
+                                 N32 waliokufa, N8* maelezo) {
+    kama (pv == 0 || pv->idadi_ya_historia >= UTAWALA_VURUGU_HISTORIA_UPEO) { rudisha; }
+    UtawalaVuruguTukio* e = utawala_vurugu_pata_historia(pv, pv->idadi_ya_historia);
+    e->aina = aina;
+    e->lilitokea = 1;
+    e->ukubwa = athari->ukubwa;
+    e->uharibifu_wa_uthabiti = athari->uharibifu_wa_uthabiti;
+    e->uharibifu_wa_uhalali = athari->uharibifu_wa_uhalali;
+    e->waliokufa = waliokufa;
+    e->zamu_tangu_tukio = 0;
+    e->maelezo = maelezo;
+    pv->idadi_ya_historia = pv->idadi_ya_historia + 1;
+    pv->waliokufa_jumla = pv->waliokufa_jumla + waliokufa;
+}
+
+W0 utawala_vurugu_jaribu_mapinduzi(UtawalaVurugu* pv) {
+    kama (pv == 0) { rudisha; }
+    pv->mapinduzi_yaliyojaribiwa = pv->mapinduzi_yaliyojaribiwa + 1;
+    D64 nafasi_ya_mafanikio = pv->hatari_ya_mapinduzi * 0.7 + (1.0 - pv->ukandamizaji_wa_kisiasa) * 0.3;
+    N32 kura = civ_nasibu_chini_ya(1000);
+    D64 kura_d = kura;
+    D64 uwezekano = kura_d / 1000.0;
+    N32 mauaji_ziada = civ_nasibu_chini_ya(500);
+    UtawalaVuruguAthari* athari = tenga(ukubwa(UtawalaVuruguAthari));
+    kama (uwezekano < nafasi_ya_mafanikio) {
+        pv->mapinduzi_yaliyofaulu = pv->mapinduzi_yaliyofaulu + 1;
+        athari->ukubwa = 0.80; athari->uharibifu_wa_uthabiti = 0.30; athari->uharibifu_wa_uhalali = 0.25;
+        utawala_vurugu_ongeza_tukio(pv, UTAWALA_VURUGU_JARIBIO_LA_MAPINDUZI, athari,
+            200 + mauaji_ziada, "Mapinduzi ya kijeshi yamefaulu - serikali imepinduliwa");
+    } sivyo {
+        athari->ukubwa = 0.50; athari->uharibifu_wa_uthabiti = 0.15; athari->uharibifu_wa_uhalali = 0.10;
+        utawala_vurugu_ongeza_tukio(pv, UTAWALA_VURUGU_JARIBIO_LA_MAPINDUZI, athari,
+            50 + mauaji_ziada, "Jaribio la mapinduzi limeshindwa - wapangaji wamekamatwa");
+    }
+    achilia athari;
+}
+
+W0 utawala_vurugu_sababisha_mauaji_ya_kisiasa(UtawalaVurugu* pv) {
+    kama (pv == 0) { rudisha; }
+    N32 waliokufa = 1 + civ_nasibu_chini_ya(10);
+    UtawalaVuruguAthari* athari = tenga(ukubwa(UtawalaVuruguAthari));
+    athari->ukubwa = 0.70; athari->uharibifu_wa_uthabiti = 0.20; athari->uharibifu_wa_uhalali = 0.15;
+    utawala_vurugu_ongeza_tukio(pv, UTAWALA_VURUGU_MAUAJI_YA_KISIASA, athari,
+        waliokufa, "Mauaji ya kisiasa - uongozi katika mgogoro");
+    achilia athari;
+}
+
+W0 utawala_vurugu_sababisha_vita_vya_wenyewe_kwa_wenyewe(UtawalaVurugu* pv) {
+    kama (pv == 0) { rudisha; }
+    N32 waliokufa = 1000 + civ_nasibu_chini_ya(10000);
+    UtawalaVuruguAthari* athari = tenga(ukubwa(UtawalaVuruguAthari));
+    athari->ukubwa = 0.95; athari->uharibifu_wa_uthabiti = 0.50; athari->uharibifu_wa_uhalali = 0.40;
+    utawala_vurugu_ongeza_tukio(pv, UTAWALA_VURUGU_VITA_VYA_WENYEWE_KWA_WENYEWE, athari,
+        waliokufa, "Vita vya wenyewe kwa wenyewe vimezuka - taifa limegawanyika");
+    achilia athari;
+}
+
+W0 utawala_vurugu_sababisha_utakaso(UtawalaVurugu* pv, N32 idadi_ya_watu_lengwa) {
+    kama (pv == 0) { rudisha; }
+    D64 idadi_d = idadi_ya_watu_lengwa;
+    D64 waliokufa_d = idadi_d * 0.01 * pv->ukandamizaji_wa_kisiasa;
+    N32 waliokufa = waliokufa_d;
+    kama (waliokufa < 10) { waliokufa = 10; }
+    UtawalaVuruguAthari* athari = tenga(ukubwa(UtawalaVuruguAthari));
+    athari->ukubwa = 0.85; athari->uharibifu_wa_uthabiti = 0.10; athari->uharibifu_wa_uhalali = 0.30;
+    utawala_vurugu_ongeza_tukio(pv, UTAWALA_VURUGU_UTAKASO, athari,
+        waliokufa, "Utakaso wa kisiasa - upinzani umeondolewa");
+    achilia athari;
+    pv->ukandamizaji_wa_kisiasa = pv->ukandamizaji_wa_kisiasa + 0.10;
+    kama (pv->ukandamizaji_wa_kisiasa > 1.0) { pv->ukandamizaji_wa_kisiasa = 1.0; }
+}
+
+W0 utawala_vurugu_sasisha(UtawalaVurugu* pv, D64 muda, UtawalaVuruguMazingira* m) {
+    kama (pv == 0 || m == 0) { rudisha; }
+
+    pv->hatari_ya_mapinduzi = m->uwanajeshi * 0.35 + (1.0 - m->uhalali) * 0.35
+        + m->uwiano_wa_udhibiti_mkuu * 0.20 - m->uwakilishi * 0.10;
+    pv->hatari_ya_mapinduzi = finya_d64(pv->hatari_ya_mapinduzi, 0.0, 1.0);
+
+    pv->hatari_ya_mauaji_ya_kisiasa = m->rushwa * 0.35 + (m->idadi_ya_vikundi / 10.0) * 0.25
+        + (1.0 - m->uthabiti) * 0.25 + m->uunganishaji_wa_nguvu * 0.15;
+    kama (pv->hatari_ya_mauaji_ya_kisiasa > 1.0) { pv->hatari_ya_mauaji_ya_kisiasa = 1.0; }
+
+    D64 nyongeza_vikundi = 0.0;
+    kama (m->idadi_ya_vikundi > 4.0) { nyongeza_vikundi = 0.20; }
+    pv->hatari_ya_vita_vya_wenyewe_kwa_wenyewe = (1.0 - m->mshikamano) * 0.40
+        + m->uwiano_wa_udhibiti_mkuu * 0.25 + nyongeza_vikundi + (1.0 - m->uthabiti) * 0.15;
+    pv->hatari_ya_vita_vya_wenyewe_kwa_wenyewe = finya_d64(pv->hatari_ya_vita_vya_wenyewe_kwa_wenyewe, 0.0, 1.0);
+
+    D64 nyongeza_katiba = 0.0;
+    kama (m->katiba_imesimamishwa != 0) { nyongeza_katiba = 0.25; }
+    pv->hatari_ya_uasi = (1.0 - m->uhalali) * 0.35 + nyongeza_katiba
+        + pv->ukandamizaji_wa_kisiasa * 0.20 - m->uwakilishi * 0.15;
+    kama (pv->hatari_ya_uasi < 0.0) { pv->hatari_ya_uasi = 0.0; }
+
+    D64 lengo_la_ukandamizaji = m->uunganishaji_wa_nguvu * 0.50 + nyongeza_katiba * (1.20)
+        + m->uwiano_wa_udhibiti_mkuu * 0.20;
+    pv->ukandamizaji_wa_kisiasa = pv->ukandamizaji_wa_kisiasa
+        + (lengo_la_ukandamizaji - pv->ukandamizaji_wa_kisiasa) * 0.05 * muda;
+
+    N32 kura = civ_nasibu_chini_ya(1000);
+    D64 kura_d = kura;
+    D64 zoezi = kura_d / 1000.0;
+
+    kama (zoezi < pv->hatari_ya_mapinduzi * 0.01 && utawala_vurugu_mapinduzi_yanawezekana(pv) != 0) {
+        utawala_vurugu_jaribu_mapinduzi(pv);
+    }
+    kama (zoezi < pv->hatari_ya_mauaji_ya_kisiasa * 0.005) {
+        utawala_vurugu_sababisha_mauaji_ya_kisiasa(pv);
+    }
+    kama (zoezi < pv->hatari_ya_vita_vya_wenyewe_kwa_wenyewe * 0.002) {
+        utawala_vurugu_sababisha_vita_vya_wenyewe_kwa_wenyewe(pv);
+    }
+    kama (zoezi < pv->hatari_ya_uasi * 0.008) {
+        utawala_vurugu_sababisha_utakaso(pv, 5000);
+    }
+}

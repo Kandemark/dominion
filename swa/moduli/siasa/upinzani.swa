@@ -1,0 +1,109 @@
+// upinzani.swa — tafsiri ya src/core/politics/political_rivalry.c
+// (na political_rivalry.h) kwenda Swa.
+//
+// Kiambishi: siasa_upinzani_ (upinzani = opposition/rivalry) —
+// angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - civ_opposition_action_t na civ_suppression_level_t (enum)
+//     zimekuwa viambatanisho vya N32.
+//   - switch imekuwa mfululizo wa kama/sivyo (Swa ina chagua/hali
+//     lakini sintaksia yake bado haijathibitishwa kwenye kazi hii).
+//   - bool imekuwa N32 (0/1) — Swa haina B1 inayotumika kwa kawaida.
+//   - rand() ya libc imebadilishwa na civ_nasibu_chini_ya() kutoka
+//     msingi_civ.swa — mzalishaji wa nasibu ulioandikwa kwa Swa
+//     safi, sio libc.
+//   - civ_result_t yenye ujumbe (kama "COUP_SUCCESS") imehifadhiwa
+//     kama CivMatokeo (tayari imefafanuliwa kwenye msingi_civ.swa).
+//   - Muundo huu HAUNA safu ya miundo (hakuna "orodha ya wapinzani")
+//     — kila SiasaMpinzani ni thamani moja inayopitishwa kwa
+//     kielekezi, si kipengele cha safu. Kwa hiyo haijaathiriwa na
+//     lugha-swa/swa#182 (ambayo ni mahususi kwa safu za miundo).
+
+husisha { msingi/msingi_civ.swa }
+
+// ---------- Kitendo cha upinzani (badala ya civ_opposition_action_t) ----------
+N32 SIASA_UPINZANI_HISANI = 0;
+N32 SIASA_UPINZANI_PROPAGANDA = 1;
+N32 SIASA_UPINZANI_JARIBIO_LA_MAPINDUZI = 2;
+N32 SIASA_UPINZANI_MAANDAMANO = 3;
+N32 SIASA_UPINZANI_MAKUBALIANO = 4;
+
+// ---------- Kiwango cha ukandamizaji (badala ya civ_suppression_level_t) ----------
+N32 SIASA_UKANDAMIZAJI_UVUMILIVU = 0;
+N32 SIASA_UKANDAMIZAJI_UPELELEZI = 1;
+N32 SIASA_UKANDAMIZAJI_KUKAMATWA = 2;
+N32 SIASA_UKANDAMIZAJI_KUONDOLEWA = 3;
+
+muundo SiasaMpinzani {
+    N8* jina;
+    D64 umaarufu;         // 0.0 hadi 1.0
+    D64 ushawishi;         // rasilimali za nguvu
+    D64 msimamo_mkali;     // tabia ya kutumia jeuri
+    N32 anafanya_kazi;     // 1 = hai, 0 = hapana
+};
+
+W0 siasa_upinzani_anzisha_mpinzani(SiasaMpinzani* mpinzani, N8* jina) {
+    mpinzani->jina = jina;
+    mpinzani->umaarufu = 0.4;
+    mpinzani->ushawishi = 100.0;
+    mpinzani->msimamo_mkali = 0.1;
+    mpinzani->anafanya_kazi = 1;
+}
+
+CivMatokeo siasa_upinzani_fanya_kitendo(SiasaMpinzani* mchezaji, N32 kitendo) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (kitendo == SIASA_UPINZANI_HISANI) {
+        mchezaji->umaarufu = mchezaji->umaarufu + 0.05;
+        mchezaji->ushawishi = mchezaji->ushawishi - 20.0;
+        civ_log(CIV_LOG_TAARIFA, "Amefanya kazi za hisani. Umaarufu umeongezeka.\n", 0, 0, 0, 0, 0, 0);
+    } sivyo { kama (kitendo == SIASA_UPINZANI_PROPAGANDA) {
+        mchezaji->umaarufu = mchezaji->umaarufu + 0.02;
+        mchezaji->msimamo_mkali = mchezaji->msimamo_mkali + 0.05;
+        civ_log(CIV_LOG_TAARIFA, "Amesambaza propaganda. Msimamo mkali unapanda.\n", 0, 0, 0, 0, 0, 0);
+    } sivyo { kama (kitendo == SIASA_UPINZANI_JARIBIO_LA_MAPINDUZI) {
+        kama (mchezaji->umaarufu > 0.7 && mchezaji->ushawishi > 500.0) {
+            civ_log(CIV_LOG_ONYO, "MAPINDUZI YAMEANZA!\n", 0, 0, 0, 0, 0, 0);
+            r.hitilafu = CIV_SAWA;
+            r.ujumbe = "MAPINDUZI_YAMEFANIKIWA";
+            rudisha r;
+        } sivyo {
+            civ_log(CIV_LOG_HITILAFU, "Mapinduzi yameshindwa kwa uungwaji mkono mdogo.\n", 0, 0, 0, 0, 0, 0);
+            mchezaji->umaarufu = 0.0;
+            r.hitilafu = CIV_HITILAFU_HALI_MBAYA;
+            r.ujumbe = "MAPINDUZI_YAMESHINDWA";
+            rudisha r;
+        }
+    } } }
+
+    mchezaji->umaarufu = finya_d64(mchezaji->umaarufu, 0.0, 1.0);
+    rudisha r;
+}
+
+CivMatokeo siasa_upinzani_weka_ukandamizaji(N32 kiwango, SiasaMpinzani* lengwa) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    // civ_log haikubaliki hapa: hoja zake za N64 haziruhusu kielekezi
+    // (jina ni N8*) — mkaguzi hukataa. andika() inakubali kwa uhuru
+    // zaidi (ni externi), hivyo tumia moja kwa moja.
+    andika("Kiongozi ameweka ukandamizaji wa kiwango %d kwa %s\n",
+           kiwango, lengwa->jina, 0, 0, 0, 0);
+
+    kama (kiwango == SIASA_UKANDAMIZAJI_UPELELEZI) {
+        lengwa->ushawishi = lengwa->ushawishi * 0.9;
+    } sivyo { kama (kiwango == SIASA_UKANDAMIZAJI_KUKAMATWA) {
+        lengwa->ushawishi = lengwa->ushawishi * 0.5;
+        N32 nasibu = civ_nasibu_chini_ya(100);
+        kama (nasibu > 30) { lengwa->anafanya_kazi = 1; } sivyo { lengwa->anafanya_kazi = 0; }
+    } sivyo { kama (kiwango == SIASA_UKANDAMIZAJI_KUONDOLEWA) {
+        lengwa->anafanya_kazi = 0;
+        andika("%s ameondolewa kwenye maisha ya kisiasa.\n", lengwa->jina, 0, 0, 0, 0, 0);
+    } } }
+
+    rudisha r;
+}

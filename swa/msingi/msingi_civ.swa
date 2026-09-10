@@ -1,0 +1,244 @@
+// msingi_civ.swa — tafsiri ya include/common.h (C) kwenda Swa.
+//
+// Kiambishi: civ_ (jina la asili la mradi). Faili hili linahusishwa
+// na kila moduli ya Dominion — angalia ../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - Hakuna enum wala macro kwenye Swa — misimbo ya hitilafu ni
+//     viambatanisho vya N32 vya ulimwengu, na macros za
+//     CIV_SUCCESS/CIV_FAILED/MIN/MAX/CLAMP zimekuwa kazi za kawaida.
+//   - achilia ni neno muhimu la lugha (si jina la kazi linaloweza
+//     kuandikwa) — hakuna kazi ya "civ_free" hapa; wito wa moja kwa
+//     moja wa achilia unafanyika mahali kielekezi kinapoachwa.
+//   - civ_log haitumii hoja zisizo na kikomo (Swa haina hilo) —
+//     inafuata muundo uleule wa andika()/andika_stderr(): kigezo
+//     kimoja cha muundo + nafasi sita za hoja za N64.
+
+husisha { maktaba/kumbukumbu.swa }
+
+// ---------- Toleo ----------
+N32 CIV_TOLEO_KUU = 0;
+N32 CIV_TOLEO_KATI = 1;
+N32 CIV_TOLEO_NDOGO = 0;
+
+// ---------- Viwango vya urefu wa mfuatano ----------
+N32 CIV_MFUATANO_UREFU_MKUBWA = 256;
+N32 CIV_MFUATANO_UREFU_KATI = 128;
+N32 CIV_MFUATANO_UREFU_MDOGO = 64;
+
+// ---------- Misimbo ya hitilafu (badala ya civ_error_t enum) ----------
+N32 CIV_SAWA = 0;
+N32 CIV_HITILAFU_KIELEKEZI_TUPU = -1;
+N32 CIV_HITILAFU_KUMBUKUMBU_IMEISHA = -2;
+N32 CIV_HITILAFU_HOJA_MBAYA = -3;
+N32 CIV_HITILAFU_HAIJAPATIKANA = -4;
+N32 CIV_HITILAFU_HALI_MBAYA = -5;
+N32 CIV_HITILAFU_IO = -6;
+N32 CIV_HITILAFU_DATA_MBAYA = -7;
+N32 CIV_HITILAFU_UANZISHAJI_UMESHINDWA = -8;
+
+// ---------- Viwango vya kumbukumbu (logging) ----------
+N32 CIV_LOG_UTATUZI = 0;
+N32 CIV_LOG_TAARIFA = 1;
+N32 CIV_LOG_ONYO = 2;
+N32 CIV_LOG_HITILAFU = 3;
+N32 CIV_LOG_MBAYA_KABISA = 4;
+
+// ---------- Matokeo ya operesheni (badala ya civ_result_t) ----------
+muundo CivMatokeo {
+    N32 hitilafu;
+    N8* ujumbe;
+};
+
+N32 kiwango_cha_chini(N32 a, N32 b) {
+    kama (a < b) { rudisha a; }
+    rudisha b;
+}
+
+N32 kiwango_cha_juu(N32 a, N32 b) {
+    kama (a > b) { rudisha a; }
+    rudisha b;
+}
+
+N32 finya(N32 thamani, N32 chini, N32 juu) {
+    rudisha kiwango_cha_juu(chini, kiwango_cha_chini(juu, thamani));
+}
+
+D64 kiwango_cha_chini_d64(D64 a, D64 b) {
+    kama (a < b) { rudisha a; }
+    rudisha b;
+}
+
+D64 kiwango_cha_juu_d64(D64 a, D64 b) {
+    kama (a > b) { rudisha a; }
+    rudisha b;
+}
+
+D64 finya_d64(D64 thamani, D64 chini, D64 juu) {
+    rudisha kiwango_cha_juu_d64(chini, kiwango_cha_chini_d64(juu, thamani));
+}
+
+N32 civ_mafanikio(CivMatokeo m) {
+    kama (m.hitilafu == CIV_SAWA) { rudisha 1; }
+    rudisha 0;
+}
+
+N32 civ_imeshindwa(CivMatokeo m) {
+    kama (m.hitilafu == CIV_SAWA) { rudisha 0; }
+    rudisha 1;
+}
+
+// civ_log: nafasi sita za N64 kama andika() — zisizotumika ni 0.
+// MUHIMU: tofauti na andika()/andika_stderr() (externi, hoja
+// huru), civ_log ni kazi ya kawaida ya Swa yenye vigezo vya N64
+// vilivyokaguliwa kikamilifu — kupitisha kielekezi (N8*, kama
+// jina la mtu) kwenye nafasi hizi ni kosa la aina wakati wa
+// kukusanya. Ukihitaji kuandika kielekezi kwenye ujumbe wa log,
+// tumia andika()/andika_stderr() moja kwa moja badala ya civ_log.
+W0 civ_log(N32 kiwango, N8* umbizo, N64 a1, N64 a2, N64 a3, N64 a4, N64 a5, N64 a6) {
+    kama (kiwango >= CIV_LOG_HITILAFU) {
+        andika_stderr(umbizo, a1, a2, a3, a4, a5, a6);
+    } sivyo {
+        andika(umbizo, a1, a2, a3, a4, a5, a6);
+    }
+}
+
+// civ_thibitisha: badala ya CIV_ASSERT — daima inafanya kazi (hakuna
+// tofauti ya DEBUG/release kwenye Swa kwa sasa). Sharti likishindwa,
+// inaandika ujumbe na kutoka kwa msimbo 1 (syscall 60 = exit).
+W0 civ_thibitisha(N32 sharti, N8* ujumbe) {
+    kama (sharti == 0) {
+        andika_stderr(ujumbe, 0, 0, 0, 0, 0, 0);
+        wito_wa_mfumo(60, 1, 0, 0, 0, 0, 0);
+    }
+}
+
+// ---------- Nasibu (badala ya rand()/srand() ya libc) ----------
+// LCG rahisi (viwango vya Numerical Recipes) — si ya kificho, ni
+// kwa ajili ya uigaji tu. Hali ya ulimwengu moja, kama rand() ya C
+// (hakuna hali ya kila-nyuzi bado — Swa haina nyuzi kwa sasa).
+N32 civ_nasibu_hali = 88172645;
+
+W0 civ_nasibu_panda(N32 mbegu) {
+    kama (mbegu == 0) { mbegu = 1; }
+    civ_nasibu_hali = mbegu;
+}
+
+N32 civ_nasibu() {
+    civ_nasibu_hali = civ_nasibu_hali * 1103515245 + 12345;
+    N32 v = civ_nasibu_hali % 32768;
+    kama (v < 0) { v = 0 - v; }
+    rudisha v;
+}
+
+// [0, kikomo) — sawa na rand() % kikomo ya C.
+N32 civ_nasibu_chini_ya(N32 kikomo) {
+    kama (kikomo <= 0) { rudisha 0; }
+    rudisha civ_nasibu() % kikomo;
+}
+
+// ---------- Hesabu za kielelezi (badala ya expf/exp ya libc) ----------
+// hesabu.swa ya lugha ya Swa haina kazi za D64 transcendental bado
+// (lugha-swa/swa#183, ombi la kipengele). civ_kielelezi ni ukadiriaji
+// wa mfululizo wa Taylor (maneno 30) — sahihi vya kutosha kwa
+// mahitaji ya uigaji (mfano: kiwango cha kuenea kwa utamaduni,
+// ambapo x ni kawaida kati ya -10 na 0). Si sahihi kabisa kwa x kubwa
+// sana chanya (mfululizo hausambamki haraka), lakini hakuna matumizi
+// kama hayo kwenye Dominion.
+D64 civ_kielelezi(D64 x) {
+    D64 jumla = 1.0;
+    D64 neno = 1.0;
+    N32 n = 1;
+    wakati (n <= 30) {
+        D64 n_d = n;
+        neno = neno * x / n_d;
+        jumla = jumla + neno;
+        n = n + 1;
+    }
+    rudisha jumla;
+}
+
+// civ_mzizi: mzizi wa mraba (badala ya sqrt ya libc, lugha-swa/swa#183)
+// kwa mbinu ya Newton (marudio 25 — inasambamka haraka sana kwa
+// thamani zisizo hasi). x hasi hurudisha 0.0 (hakuna mzizi halisi).
+D64 civ_mzizi(D64 x) {
+    kama (x <= 0.0) { rudisha 0.0; }
+    D64 kisio = x;
+    kama (kisio < 1.0) { kisio = 1.0; }
+    N32 n = 0;
+    wakati (n < 25) {
+        kisio = 0.5 * (kisio + x / kisio);
+        n = n + 1;
+    }
+    rudisha kisio;
+}
+
+// civ_logasili: logarithm ya asili (ln, badala ya log() ya libc,
+// lugha-swa/swa#183). MUHIMU: civ_kielelezi (exp) kupitia mfululizo
+// wa Taylor haisambamki vizuri kwa x kubwa, kwa hiyo Newton juu ya
+// exp() haingekuwa sahihi kwa maadili makubwa (mfano maarifa
+// yanayokua bila kikomo). Badala yake: upunguzaji wa masafa (range
+// reduction) -- x inagawanywa/kuzidishwa mara kwa mara kwa 2 hadi
+// iwe kati ya 0.5 na 2.0 (idadi ya hatua = k, chanya au hasi),
+// kisha mfululizo wa atanh (unaosambamka haraka kwa hoja ndogo)
+// unatumika: ln(x_iliyopunguzwa) = 2*atanh((x-1)/(x+1)). Hatimaye
+// ln(x_asili) = ln(x_iliyopunguzwa) + k * ln(2). x<=0.0 hurudisha
+// 0.0 (hakuna logarithm halisi, sawa na muundo wa civ_mzizi).
+D64 civ_logasili(D64 x) {
+    kama (x <= 0.0) { rudisha 0.0; }
+
+    // MUHIMU: maneno ya D64 yenye tarakimu nyingi (>~10 baada ya nukta)
+    // huchanganuliwa vibaya KIMYA KIMYA (lugha-swa/swa#188) --
+    // 0.6931471805 (tarakimu 10) ni ndani ya kikomo salama.
+    D64 LN2 = 0.6931471805;
+    N32 k = 0;
+    D64 xr = x;
+    wakati (xr > 2.0) {
+        xr = xr / 2.0;
+        k = k + 1;
+    }
+    wakati (xr < 0.5) {
+        xr = xr * 2.0;
+        k = k - 1;
+    }
+
+    D64 z = (xr - 1.0) / (xr + 1.0);
+    D64 z2 = z * z;
+    D64 jumla = 0.0;
+    D64 neno = z;
+    N32 i = 1;
+    wakati (i <= 40) {
+        D64 i_d = i;
+        jumla = jumla + neno / i_d;
+        neno = neno * z2;
+        i = i + 2;
+    }
+
+    D64 k_d = k;
+    rudisha 2.0 * jumla + k_d * LN2;
+}
+
+// civ_kuinua: x kwa nguvu ya y (badala ya pow() ya libc,
+// lugha-swa/swa#183), kwa x > 0 pekee (kesi pekee inayohitajika
+// kwenye Dominion hadi sasa -- mfano (1.0 + kiwango)^kipeo ambapo
+// msingi daima ni >= 1.0). x^y = exp(y * ln(x)). x <= 0.0 hurudisha
+// 0.0.
+D64 civ_kuinua(D64 x, D64 y) {
+    kama (x <= 0.0) { rudisha 0.0; }
+    rudisha civ_kielelezi(y * civ_logasili(x));
+}
+
+// civ_muda_sasa: sekunde tangu 1970-01-01 (Unix epoch), kwa
+// clock_gettime(CLOCK_REALTIME=0, ...) moja kwa moja (syscall 228 kwenye
+// x86-64 Linux) badala ya time() ya libc -- inaendana na msururu wa
+// sifuri-libc wa mradi (angalia faili.swa, ambayo tayari inatumia
+// wito_wa_mfumo moja kwa moja kwa open/read/write/close/unlink).
+// struct timespec { long tv_sec; long tv_nsec; } -- N64 mbili,
+// tv_sec ndiyo ya kwanza.
+N64 civ_muda_sasa() {
+    N64* muda_buf = tenga(ukubwa(N64) * 2);
+    wito_wa_mfumo(228, 0, muda_buf, 0, 0, 0, 0);
+    N64 sekunde = muda_buf[0];
+    achilia muda_buf;
+    rudisha sekunde;
+}

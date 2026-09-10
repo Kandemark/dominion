@@ -1,0 +1,132 @@
+// makazi.swa — tafsiri ya src/core/economy/housing.c (na .h) kwenda
+// Swa. Soko la mali isiyohamishika, ujenzi, ukuaji wa miji, na
+// uwezekano wa kumudu makazi.
+//
+// Kiambishi: makazi_ — angalia ../../KANUNI-MAJINA.md.
+// Tofauti: ternary (`? :`) za C zimekuwa kama/sivyo — hazijajaribiwa
+// kwenye Swa, hivyo hazikutumika kwa kimakusudi.
+
+husisha { msingi/msingi_civ.swa }
+
+muundo MakaziMfumo {
+    N32 vitengo_jumla;
+    N32 vitengo_vilivyokaliwa;
+    N32 vitengo_wazi;
+    N32 vinavyojengwa;
+    D64 bei_ya_wastani;
+    D64 kodi_ya_wastani;
+    D64 uwiano_wa_bei_kwa_mapato;
+    D64 kiwango_cha_umiliki_wa_nyumba;
+    D64 ukuaji_wa_miji;
+    D64 kiwango_cha_ujenzi;
+    D64 kiwango_cha_ubomoaji;
+    N32 mgogoro_wa_makazi;   // 0/1
+};
+
+MakaziMfumo* makazi_unda() {
+    MakaziMfumo* h = tenga(ukubwa(MakaziMfumo));
+    h->vitengo_jumla = 10000;
+    h->vitengo_vilivyokaliwa = 9200;
+    h->vitengo_wazi = h->vitengo_jumla - h->vitengo_vilivyokaliwa;
+    h->vinavyojengwa = 0;
+    h->bei_ya_wastani = 250000.0;
+    h->kodi_ya_wastani = 1200.0;
+    h->uwiano_wa_bei_kwa_mapato = 5.5;
+    h->kiwango_cha_umiliki_wa_nyumba = 0.65;
+    h->ukuaji_wa_miji = 0.55;
+    h->kiwango_cha_ujenzi = 50.0;
+    h->kiwango_cha_ubomoaji = 0.0;
+    h->mgogoro_wa_makazi = 0;
+    rudisha h;
+}
+
+W0 makazi_uharibu(MakaziMfumo* h) {
+    achilia h;
+}
+
+W0 makazi_sasisha(MakaziMfumo* h, D64 muda, N32 idadi_ya_watu, D64 mapato_ya_wastani,
+                    D64 kiwango_cha_riba, D64 kiashiria_cha_gharama_ya_ujenzi) {
+    N32 vitengo_vinavyohitajika = idadi_ya_watu / 3;
+    N32 uhaba = vitengo_vinavyohitajika - h->vitengo_jumla;
+
+    D64 mahitaji_ya_ujenzi = 0.0;
+    kama (uhaba > 0) {
+        D64 uhaba_d = uhaba;
+        mahitaji_ya_ujenzi = uhaba_d * 0.1;
+    }
+    mahitaji_ya_ujenzi = mahitaji_ya_ujenzi * (1.0 - kiwango_cha_riba * 2.0);
+    mahitaji_ya_ujenzi = mahitaji_ya_ujenzi / (kiashiria_cha_gharama_ya_ujenzi + 0.5);
+    kama (mahitaji_ya_ujenzi < 0.0) { mahitaji_ya_ujenzi = 0.0; }
+
+    h->kiwango_cha_ujenzi = mahitaji_ya_ujenzi;
+    N32 vinavyojengwa_n = mahitaji_ya_ujenzi;
+    h->vinavyojengwa = vinavyojengwa_n;
+
+    D64 jumla_d = h->vitengo_jumla;
+    h->kiwango_cha_ubomoaji = jumla_d * 0.02;
+    N32 kubomolewa_n = h->kiwango_cha_ubomoaji;
+    h->vitengo_jumla = h->vitengo_jumla + vinavyojengwa_n - kubomolewa_n;
+    kama (h->vitengo_jumla < 100) { h->vitengo_jumla = 100; }
+
+    kama (vitengo_vinavyohitajika < h->vitengo_jumla) {
+        h->vitengo_vilivyokaliwa = vitengo_vinavyohitajika;
+    } sivyo {
+        h->vitengo_vilivyokaliwa = h->vitengo_jumla;
+    }
+    h->vitengo_wazi = h->vitengo_jumla - h->vitengo_vilivyokaliwa;
+
+    D64 kiwango_cha_uwazi = 0.0;
+    kama (h->vitengo_jumla > 0) {
+        D64 wazi_d = h->vitengo_wazi;
+        D64 jumla2_d = h->vitengo_jumla;
+        kiwango_cha_uwazi = wazi_d / jumla2_d;
+    }
+    D64 shinikizo_la_bei = 0.0;
+    kama (kiwango_cha_uwazi < 0.05) { shinikizo_la_bei = 0.05; }
+    sivyo { kama (kiwango_cha_uwazi > 0.15) { shinikizo_la_bei = 0.0 - 0.02; } }
+
+    h->bei_ya_wastani = h->bei_ya_wastani * (1.0 + shinikizo_la_bei + kiwango_cha_riba * 0.3);
+    h->kodi_ya_wastani = h->bei_ya_wastani * 0.005;
+
+    kama (mapato_ya_wastani > 0.0) {
+        h->uwiano_wa_bei_kwa_mapato = h->bei_ya_wastani / mapato_ya_wastani;
+    } sivyo {
+        h->uwiano_wa_bei_kwa_mapato = 10.0;
+    }
+
+    D64 uwezekano = 0.0;
+    kama (h->uwiano_wa_bei_kwa_mapato < 3.0) {
+        uwezekano = 1.0;
+    } sivyo { kama (h->uwiano_wa_bei_kwa_mapato > 8.0) {
+        uwezekano = 0.0;
+    } sivyo {
+        uwezekano = 1.0 - (h->uwiano_wa_bei_kwa_mapato - 3.0) / 5.0;
+    } }
+    h->kiwango_cha_umiliki_wa_nyumba = h->kiwango_cha_umiliki_wa_nyumba
+        + (uwezekano - h->kiwango_cha_umiliki_wa_nyumba) * 0.05;
+
+    h->ukuaji_wa_miji = h->ukuaji_wa_miji + 0.001;
+    kama (h->ukuaji_wa_miji > 0.95) { h->ukuaji_wa_miji = 0.95; }
+
+    kama (uwezekano < 0.3 && kiwango_cha_uwazi < 0.03) {
+        h->mgogoro_wa_makazi = 1;
+    } sivyo {
+        h->mgogoro_wa_makazi = 0;
+    }
+}
+
+D64 makazi_uwezekano_wa_kumudu(MakaziMfumo* h) {
+    kama (h->uwiano_wa_bei_kwa_mapato < 3.0) { rudisha 1.0; }
+    kama (h->uwiano_wa_bei_kwa_mapato > 10.0) { rudisha 0.0; }
+    rudisha 1.0 - (h->uwiano_wa_bei_kwa_mapato - 3.0) / 7.0;
+}
+
+N32 makazi_vitengo_vinavyohitajika(MakaziMfumo* h) {
+    N32 pengo = h->vitengo_jumla - h->vitengo_vilivyokaliwa;
+    kama (pengo < 0) { rudisha h->vitengo_vilivyokaliwa - h->vitengo_jumla; }
+    rudisha 0;
+}
+
+D64 makazi_mahitaji_ya_ujenzi(MakaziMfumo* h) {
+    rudisha h->kiwango_cha_ujenzi;
+}

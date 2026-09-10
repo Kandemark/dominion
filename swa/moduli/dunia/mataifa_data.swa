@@ -1,0 +1,131 @@
+// mataifa_data.swa — tafsiri ya src/core/world/nations_data.c (na .h)
+// kwenda Swa. Faharisi kuu ya mataifa ya dunia halisi (jina, misimbo
+// ya ISO, bara, idadi ya watu, GDP, kuratibu za mji mkuu).
+//
+// Kiambishi: dunia_mataifa_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - civ_nations_data_load() (kisomaji cha faili la binary
+//     data/nations.bin, chenye muundo maalum wa urefu-kisha-mfuatano
+//     kwa kila sehemu) HAIJALETWA kwa sasa. faili.swa ina
+//     faili_soma() ya kiwango cha byte inayoweza kuiwezesha hii,
+//     lakini kuunganisha byte nne kuwa N32 (little-endian) na
+//     kusoma mfuatano zenye urefu unaotangulia ni kazi ya kutosha
+//     kustahili kikao chake maalum, si sehemu ya wimbi hili la
+//     tafsiri ya moduli za dunia. Muundo wa data na kazi za kutafuta
+//     (get_by_id/iso/name) zimeletwa kikamilifu.
+//   - safu ya "nations" (inayokua, C: civ_nation_data_t*) imekuwa
+//     N64* ya vielekezi vya DuniaTaifaData (mtindo wa #185,
+//     angalia dini.swa).
+//   - float imekuwa D64 kila mahali (Swa haina float ya baiti 4).
+//   - Kwa kuwa hakuna _load(), API ina dunia_mataifa_ongeza() ya
+//     kuongeza taifa moja moja (mtumiaji/jaribio hupanga data),
+//     badala ya kupakia faili zima kwa wakati mmoja.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+N32 DUNIA_MATAIFA_JINA_UPEO = 64;
+
+muundo DuniaTaifaData {
+    N32 kitambulisho;
+    N8* iso_a3;
+    N8* iso_a2;
+    N8* jina;
+    N32 rangi_rgb;
+    N8* bara;
+    N8* mkoa;
+    N8* mkoa_mdogo;
+    N32 idadi_ya_watu_ukadiriaji;
+    N32 gdp_ukadiriaji_milioni;
+    D64 mji_mkuu_lon;
+    D64 mji_mkuu_lat;
+    D64 katikati_lon;
+    D64 katikati_lat;
+    D64 eneo_km2;
+};
+
+muundo DuniaMataifaData {
+    N64* mataifa;
+    N32 idadi;
+    N32 uwezo;
+};
+
+DuniaTaifaData* dunia_mataifa_pata_kwa_faharisi(DuniaMataifaData* nd, N32 faharisi) {
+    rudisha nd->mataifa[faharisi];
+}
+
+DuniaMataifaData* dunia_mataifa_data_unda() {
+    DuniaMataifaData* nd = tenga(ukubwa(DuniaMataifaData));
+    nd->uwezo = 256;
+    nd->idadi = 0;
+    nd->mataifa = tenga(ukubwa(N64) * nd->uwezo);
+    rudisha nd;
+}
+
+W0 dunia_mataifa_data_uharibu(DuniaMataifaData* nd) {
+    achilia nd->mataifa;
+    achilia nd;
+}
+
+DuniaTaifaData* dunia_mataifa_ongeza(DuniaMataifaData* nd, N32 kitambulisho, N8* iso_a3,
+                                       N8* iso_a2, N8* jina) {
+    kama (nd->idadi >= nd->uwezo) {
+        nd->uwezo = nd->uwezo * 2;
+        nd->mataifa = badili(nd->mataifa, ukubwa(N64) * nd->uwezo);
+    }
+
+    DuniaTaifaData* t = tenga(ukubwa(DuniaTaifaData));
+    t->kitambulisho = kitambulisho;
+    t->iso_a3 = iso_a3;
+    t->iso_a2 = iso_a2;
+    t->jina = jina;
+    t->rangi_rgb = 0;
+    t->bara = 0;
+    t->mkoa = 0;
+    t->mkoa_mdogo = 0;
+    t->idadi_ya_watu_ukadiriaji = 0;
+    t->gdp_ukadiriaji_milioni = 0;
+    t->mji_mkuu_lon = 0.0;
+    t->mji_mkuu_lat = 0.0;
+    t->katikati_lon = 0.0;
+    t->katikati_lat = 0.0;
+    t->eneo_km2 = 0.0;
+
+    nd->mataifa[nd->idadi] = t;
+    nd->idadi = nd->idadi + 1;
+    rudisha t;
+}
+
+DuniaTaifaData* dunia_mataifa_pata_kwa_kitambulisho(DuniaMataifaData* nd, N32 kitambulisho) {
+    kama (nd == 0) { rudisha 0; }
+    N32 i = 0;
+    wakati (i < nd->idadi) {
+        DuniaTaifaData* t = dunia_mataifa_pata_kwa_faharisi(nd, i);
+        kama (t->kitambulisho == kitambulisho) { rudisha t; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+DuniaTaifaData* dunia_mataifa_pata_kwa_iso(DuniaMataifaData* nd, N8* iso_a3) {
+    kama (nd == 0 || iso_a3 == 0) { rudisha 0; }
+    N32 i = 0;
+    wakati (i < nd->idadi) {
+        DuniaTaifaData* t = dunia_mataifa_pata_kwa_faharisi(nd, i);
+        kama (linganisha_mfuatano(t->iso_a3, iso_a3) == 0) { rudisha t; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+DuniaTaifaData* dunia_mataifa_pata_kwa_jina(DuniaMataifaData* nd, N8* jina) {
+    kama (nd == 0 || jina == 0) { rudisha 0; }
+    N32 i = 0;
+    wakati (i < nd->idadi) {
+        DuniaTaifaData* t = dunia_mataifa_pata_kwa_faharisi(nd, i);
+        kama (linganisha_mfuatano(t->jina, jina) == 0) { rudisha t; }
+        i = i + 1;
+    }
+    rudisha 0;
+}

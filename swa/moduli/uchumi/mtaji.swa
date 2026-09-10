@@ -1,0 +1,159 @@
+// mtaji.swa — tafsiri ya src/core/economy/capital_assets.c (na .h)
+// kwenda Swa. Mitambo, magari, majengo, uchakavu, na uwekezaji.
+//
+// Kiambishi: mtaji_ — angalia ../../KANUNI-MAJINA.md.
+// pools[CIV_CAPITAL_TYPE_COUNT] (nyanja 5) imegawanywa kuwa vigezo
+// 5 vyenye majina + kazi ya kupata. init_val[]/dep_rate[]/alloc[]
+// (safu za ndani za D64) zimekuwa kama/sivyo (D64 array haifanyi
+// kazi, #181).
+
+husisha { msingi/msingi_civ.swa }
+
+N32 MTAJI_MITAMBO = 0;
+N32 MTAJI_MAGARI = 1;
+N32 MTAJI_MAJENGO = 2;
+N32 MTAJI_TEKNOLOJIA = 3;
+N32 MTAJI_KIAKILI = 4;
+N32 MTAJI_IDADI = 5;
+
+muundo MtajiBwawa {
+    N32 aina;
+    D64 thamani_jumla;
+    D64 kiwango_cha_uchakavu;
+    D64 kiwango_cha_uwekezaji;
+    D64 matumizi;
+    D64 umri_wa_wastani_miaka;
+};
+
+muundo MtajiMfumo {
+    MtajiBwawa bwawa_0; MtajiBwawa bwawa_1; MtajiBwawa bwawa_2;
+    MtajiBwawa bwawa_3; MtajiBwawa bwawa_4;
+
+    D64 hisa_jumla_ya_mtaji;
+    D64 mtaji_kwa_kila_mfanyakazi;
+    D64 uwiano_wa_uwekezaji;
+    D64 mzigo_wa_uchakavu;
+    D64 kizidishi_cha_uzalishaji;
+};
+
+MtajiBwawa* mtaji_pata_bwawa(MtajiMfumo* c, N32 aina) {
+    kama (aina == 0) { rudisha &c->bwawa_0; }
+    kama (aina == 1) { rudisha &c->bwawa_1; }
+    kama (aina == 2) { rudisha &c->bwawa_2; }
+    kama (aina == 3) { rudisha &c->bwawa_3; }
+    rudisha &c->bwawa_4;
+}
+
+D64 mtaji_thamani_ya_awali(N32 aina) {
+    kama (aina == MTAJI_MITAMBO) { rudisha 200000.0; }
+    kama (aina == MTAJI_MAGARI) { rudisha 100000.0; }
+    kama (aina == MTAJI_MAJENGO) { rudisha 500000.0; }
+    kama (aina == MTAJI_TEKNOLOJIA) { rudisha 50000.0; }
+    rudisha 30000.0;
+}
+
+D64 mtaji_kiwango_cha_uchakavu_cha_awali(N32 aina) {
+    kama (aina == MTAJI_MITAMBO) { rudisha 0.08; }
+    kama (aina == MTAJI_MAGARI) { rudisha 0.12; }
+    kama (aina == MTAJI_MAJENGO) { rudisha 0.03; }
+    kama (aina == MTAJI_TEKNOLOJIA) { rudisha 0.15; }
+    rudisha 0.05;
+}
+
+D64 mtaji_mgao_wa_uwekezaji(N32 aina) {
+    kama (aina == MTAJI_MITAMBO) { rudisha 0.30; }
+    kama (aina == MTAJI_MAGARI) { rudisha 0.15; }
+    kama (aina == MTAJI_MAJENGO) { rudisha 0.30; }
+    kama (aina == MTAJI_TEKNOLOJIA) { rudisha 0.15; }
+    rudisha 0.10;
+}
+
+MtajiMfumo* mtaji_unda() {
+    MtajiMfumo* c = tenga(ukubwa(MtajiMfumo));
+    N32 i = 0;
+    wakati (i < MTAJI_IDADI) {
+        MtajiBwawa* p = mtaji_pata_bwawa(c, i);
+        p->aina = i;
+        p->thamani_jumla = mtaji_thamani_ya_awali(i);
+        p->kiwango_cha_uchakavu = mtaji_kiwango_cha_uchakavu_cha_awali(i);
+        p->kiwango_cha_uwekezaji = 0.0;
+        p->matumizi = 0.75;
+        p->umri_wa_wastani_miaka = 5.0;
+        i = i + 1;
+    }
+    c->hisa_jumla_ya_mtaji = 880000.0;
+    c->mtaji_kwa_kila_mfanyakazi = 0.0;
+    c->uwiano_wa_uwekezaji = 0.0;
+    c->mzigo_wa_uchakavu = 0.0;
+    c->kizidishi_cha_uzalishaji = 1.0;
+    rudisha c;
+}
+
+W0 mtaji_uharibu(MtajiMfumo* c) {
+    achilia c;
+}
+
+W0 mtaji_sasisha(MtajiMfumo* c, D64 muda, D64 pato, D64 kiwango_cha_akiba,
+                   D64 kiwango_cha_riba, D64 imani_ya_biashara) {
+    D64 kinachowekezwa = pato * kiwango_cha_akiba * imani_ya_biashara;
+    kama (pato > 0.0) {
+        c->uwiano_wa_uwekezaji = kinachowekezwa / pato;
+    } sivyo {
+        c->uwiano_wa_uwekezaji = 0.0;
+    }
+
+    c->hisa_jumla_ya_mtaji = 0.0;
+    c->mzigo_wa_uchakavu = 0.0;
+
+    N32 i = 0;
+    wakati (i < MTAJI_IDADI) {
+        MtajiBwawa* p = mtaji_pata_bwawa(c, i);
+
+        D64 uchakavu = p->thamani_jumla * p->kiwango_cha_uchakavu;
+        c->mzigo_wa_uchakavu = c->mzigo_wa_uchakavu + uchakavu;
+
+        D64 usikivu_wa_riba = 1.0 - kiwango_cha_riba * 1.5;
+        kama (usikivu_wa_riba < 0.1) { usikivu_wa_riba = 0.1; }
+        p->kiwango_cha_uwekezaji = kinachowekezwa * mtaji_mgao_wa_uwekezaji(i) * usikivu_wa_riba;
+
+        p->thamani_jumla = p->thamani_jumla - uchakavu;
+        p->thamani_jumla = p->thamani_jumla + p->kiwango_cha_uwekezaji;
+        kama (p->thamani_jumla < 0.0) { p->thamani_jumla = 0.0; }
+
+        p->matumizi = p->matumizi + (imani_ya_biashara - p->matumizi) * 0.15;
+
+        kama (p->thamani_jumla > 0.0) {
+            p->umri_wa_wastani_miaka = p->umri_wa_wastani_miaka
+                + (1.0 - p->kiwango_cha_uwekezaji / (p->thamani_jumla + 1.0)) * 0.1;
+        }
+
+        c->hisa_jumla_ya_mtaji = c->hisa_jumla_ya_mtaji + p->thamani_jumla;
+        i = i + 1;
+    }
+
+    c->mtaji_kwa_kila_mfanyakazi = 50000.0;
+    c->kizidishi_cha_uzalishaji = 1.0 + (c->hisa_jumla_ya_mtaji / (pato + 1.0)) * 0.3;
+}
+
+W0 mtaji_wekeza(MtajiMfumo* c, N32 aina, D64 kiasi) {
+    kama (aina >= MTAJI_IDADI || kiasi <= 0.0) { rudisha; }
+    MtajiBwawa* p = mtaji_pata_bwawa(c, aina);
+    p->thamani_jumla = p->thamani_jumla + kiasi;
+    p->umri_wa_wastani_miaka = p->umri_wa_wastani_miaka * 0.9;
+}
+
+D64 mtaji_faida_ya_mtaji(MtajiMfumo* c) {
+    kama (c->hisa_jumla_ya_mtaji <= 0.0) { rudisha 0.0; }
+    D64 faida_jumla = 0.0;
+    N32 i = 0;
+    wakati (i < MTAJI_IDADI) {
+        MtajiBwawa* p = mtaji_pata_bwawa(c, i);
+        faida_jumla = faida_jumla + p->thamani_jumla * p->matumizi * 0.15;
+        i = i + 1;
+    }
+    rudisha faida_jumla / c->hisa_jumla_ya_mtaji;
+}
+
+D64 mtaji_kuongeza_uzalishaji(MtajiMfumo* c) {
+    rudisha c->kizidishi_cha_uzalishaji;
+}

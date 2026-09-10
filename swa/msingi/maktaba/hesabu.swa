@@ -1,0 +1,137 @@
+// hesabu.swa — Shughuli za hisabati
+//
+// Inatoa kazi za msingi za kulinganisha nambari na kukokotoa
+// maadili kamili. Hizi ni muhimu kwa algorithms nyingi za msingi.
+
+// Rudisha nambari kubwa kati ya mbili (N32).
+N32 hesabu_kamili(N32 a, N32 b) {
+    kama (a > b) {
+        rudisha a;
+    }
+    rudisha b;
+}
+
+// Rudisha nambari ndogo kati ya mbili (N32).
+N32 hesabu_ndogo(N32 a, N32 b) {
+    kama (a < b) {
+        rudisha a;
+    }
+    rudisha b;
+}
+
+// Rudisha nambari kubwa kati ya mbili (N64).
+N64 hesabu_kubwa(N64 a, N64 b) {
+    kama (a > b) {
+        rudisha a;
+    }
+    rudisha b;
+}
+
+// Rudisha nambari ndogo kati ya mbili (N64).
+N64 hesabu_dogo(N64 a, N64 b) {
+    kama (a < b) {
+        rudisha a;
+    }
+    rudisha b;
+}
+
+// Thamani kamili ya N32.
+N32 neneo_n32(N32 n) {
+    kama (n < 0) {
+        rudisha 0 - n;
+    }
+    rudisha n;
+}
+
+// Thamani kamili ya N64.
+N64 neneo_n64(N64 n) {
+    kama (n < 0) {
+        rudisha 0 - n;
+    }
+    rudisha n;
+}
+
+// gcd — kigawanyo kikubwa cha pamoja (algorithm ya Euclid)
+N32 gcd_hesabu(N32 a, N32 b) {
+    a = neneo_n32(a);
+    b = neneo_n32(b);
+    wakati (b != 0) {
+        N32 t = a % b;
+        a = b;
+        b = t;
+    }
+    rudisha a;
+}
+
+// pow_kamili — kipeo cha nambari kamili (msingi ^ kipeo)
+N32 pow_kamili(N32 msingi, N32 kipeo) {
+    N32 r = 1;
+    N32 i = 0;
+    wakati (i < kipeo) { r = r * msingi; i = i + 1; }
+    rudisha r;
+}
+
+// isqrt — kipeuo cha pili kamili (njia ya Newton kwa nambari kamili)
+N32 isqrt_hesabu(N32 n) {
+    kama (n <= 1) { rudisha n; }
+    N32 x = n;
+    N32 y = (x + 1) / 2;
+    wakati (y < x) {
+        x = y;
+        y = (x + n / x) / 2;
+    }
+    rudisha x;
+}
+
+// fibonacci_hesabu — nambari ya Fibonacci kwa njia ya kujirudia
+N32 fibonacci_hesabu(N32 n) {
+    kama (n <= 1) { rudisha n; }
+    rudisha fibonacci_hesabu(n - 1) + fibonacci_hesabu(n - 2);
+}
+
+// kipengele_hesabu — n! (kipengele). Rudisha 0 kwa n < 0 au n > 12
+// (N32 inazidi kuanzia 13!).
+N32 kipengele_hesabu(N32 n) {
+    kama (n < 0 || n > 12) { rudisha 0; }
+    N32 r = 1;
+    N32 i = 2;
+    wakati (i <= n) { r = r * i; i = i + 1; }
+    rudisha r;
+}
+
+// ni_kuu_hesabu — angalia kama n ni namba kuu (1 = kuu, 0 = sivyo).
+// Inajaribu vigawanyo visivyo hata hadi kipeuo cha pili cha n.
+N32 ni_kuu_hesabu(N32 n) {
+    kama (n < 2) { rudisha 0; }
+    kama (n == 2 || n == 3) { rudisha 1; }
+    kama (n % 2 == 0) { rudisha 0; }
+    N32 i = 3;
+    wakati (i * i <= n) {
+        kama (n % i == 0) { rudisha 0; }
+        i = i + 2;
+    }
+    rudisha 1;
+}
+
+// lcm_hesabu — kigawo kidogo cha pamoja (LCM) cha a na b.
+N32 lcm_hesabu(N32 a, N32 b) {
+    kama (a == 0 || b == 0) { rudisha 0; }
+    N32 g = gcd_hesabu(a, b);
+    rudisha neneo_n32((a / g) * b);
+}
+
+// pow_mod_hesabu — (msingi^kipeo) % mod kwa njia ya kurudia mara mbili.
+// Kikomo: mod lazima iwe chini ya 32768 (ili (r*ms) isizidi N32).
+N32 pow_mod_hesabu(N32 msingi, N32 kipeo, N32 mod) {
+    kama (mod <= 1) { rudisha 0; }
+    N32 r = 1;
+    N32 ms = msingi % mod;
+    kama (ms < 0) { ms = ms + mod; }
+    N32 kp = kipeo;
+    wakati (kp > 0) {
+        kama (kp % 2 == 1) { r = (r * ms) % mod; }
+        ms = (ms * ms) % mod;
+        kp = kp / 2;
+    }
+    rudisha r;
+}

@@ -1,0 +1,80 @@
+// hadhi_kisheria.swa — tafsiri ya src/core/governance/legal/legal_status.c
+// (na .h) kwenda Swa. Hadhi ya kisheria ya taasisi (dini, itikadi,
+// chama) mbele ya serikali.
+//
+// Kiambishi: utawala_hadhi_ — angalia ../../../KANUNI-MAJINA.md.
+// edict_history[4][STRING_MEDIUM_LEN] (safu ya nyuzi 4 zenye
+// kikomo) imegawanywa kuwa vigezo 4 vyenye majina vya N8*
+// (kielekezi tu, bila nakala ya kina — sawa na mtindo wa 'jina'
+// kwenye upinzani.swa; Swa haina strncpy inayolingana).
+
+husisha { msingi/msingi_civ.swa }
+
+N32 UTAWALA_HADHI_TAIFA = 0;
+N32 UTAWALA_HADHI_INAVUMILIWA = 1;
+N32 UTAWALA_HADHI_INAKATISHWA = 2;
+N32 UTAWALA_HADHI_IMEPIGWA_MARUFUKU = 3;
+N32 UTAWALA_HADHI_UGAIDI = 4;
+
+muundo UtawalaHadhiKisheria {
+    N8* kitambulisho;
+    N32 ngazi;
+    D64 ukubwa_wa_udhalimu;
+    N8* amri_0;
+    N8* amri_1;
+    N8* amri_2;
+    N8* amri_3;
+    N32 idadi_ya_amri;
+};
+
+N8* utawala_hadhi_pata_amri(UtawalaHadhiKisheria* h, N32 idx) {
+    kama (idx == 0) { rudisha h->amri_0; }
+    kama (idx == 1) { rudisha h->amri_1; }
+    kama (idx == 2) { rudisha h->amri_2; }
+    rudisha h->amri_3;
+}
+
+W0 utawala_hadhi_weka_amri(UtawalaHadhiKisheria* h, N32 idx, N8* amri) {
+    kama (idx == 0) { h->amri_0 = amri; }
+    sivyo { kama (idx == 1) { h->amri_1 = amri; }
+    sivyo { kama (idx == 2) { h->amri_2 = amri; }
+    sivyo { h->amri_3 = amri; } } }
+}
+
+CivMatokeo utawala_hadhi_weka(UtawalaHadhiKisheria* h, N32 ngazi, N8* ujumbe_wa_amri) {
+    CivMatokeo r;
+    kama (h == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Hadhi tupu";
+        rudisha r;
+    }
+
+    h->ngazi = ngazi;
+
+    kama (ngazi == UTAWALA_HADHI_IMEPIGWA_MARUFUKU) {
+        h->ukubwa_wa_udhalimu = 0.5;
+    } sivyo { kama (ngazi == UTAWALA_HADHI_UGAIDI) {
+        h->ukubwa_wa_udhalimu = 1.0;
+    } sivyo {
+        h->ukubwa_wa_udhalimu = 0.0;
+    } }
+
+    kama (ujumbe_wa_amri != 0 && h->idadi_ya_amri < 4) {
+        utawala_hadhi_weka_amri(h, h->idadi_ya_amri, ujumbe_wa_amri);
+        h->idadi_ya_amri = h->idadi_ya_amri + 1;
+    }
+
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    rudisha r;
+}
+
+D64 utawala_hadhi_athari_ya_ghasia(UtawalaHadhiKisheria* h, D64 asilimia_ya_wafuasi) {
+    kama (h == 0) { rudisha 0.0; }
+
+    kama (h->ngazi >= UTAWALA_HADHI_INAKATISHWA) {
+        rudisha asilimia_ya_wafuasi * h->ukubwa_wa_udhalimu;
+    }
+
+    rudisha 0.0;
+}

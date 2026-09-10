@@ -1,0 +1,174 @@
+// tukio.swa — tafsiri ya src/core/events/event_manager.c (na .h)
+// kwenda Swa. Usimamizi wa matukio ya mchezo na wasikilizaji wake.
+//
+// Kiambishi: matukio_tukio_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - events[] na handlers (orodha-kiungo, kila kimoja kikiwa na
+//     kielekezi cha kazi ya callback) vyote vimekuwa safu ya N64
+//     (anwani za rundo), mtindo ulioothibitishwa (dini.swa/#185),
+//     inaepuka #182(b) na #186 (orodha-kiungo ya C ilitumia
+//     `struct civ_event_handler* next` -- kielekezi cha muundo
+//     kinachoelekeza aina yake yenyewe, mfano wa moja kwa moja wa
+//     #186).
+//   - Kielekezi cha kazi ya callback (`civ_event_handler_cb_t`)
+//     kimehifadhiwa kama N64 (anwani ya kazi), kikiitwa kupitia
+//     kigezo -- imethibitishwa kufanya kazi (angalia hati/
+//     vipimo-vya-lugha.md 4.3: "kielekezi cha kazi ni thamani ya
+//     baiti 8"). Kishughulikia lazima kirudishe W0 (si D64, si
+//     muundo) -- vinginevyo mkusanyaji unakataa/hukimbia kimakosa.
+//   - event_id (snprintf yenye "event_%zu") imekuwa faharisi (N32).
+//   - time_t timestamp/last_update (saa ya ukuta) imekuwa mkusanyiko
+//     wa muda (D64) unaoongezwa na hoja ya muda ya _sasisha, sawa na
+//     moduli nyingine za mradi huu.
+//   - data (void*, data maalum ya tukio) HAIKULETWA -- haitumiki
+//     mahali popote muhimu kwenye mantiki halisi ya C.
+//   - AINA_YOYOTE (-1 kwenye C, "wildcard" kishughulikia kinachopokea
+//     matukio yote) imehifadhiwa kama thamani maalum
+//     MATUKIO_TUKIO_AINA_YOYOTE.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+N32 MATUKIO_TUKIO_ASILI = 0;
+N32 MATUKIO_TUKIO_KISIASA = 1;
+N32 MATUKIO_TUKIO_KIUCHUMI = 2;
+N32 MATUKIO_TUKIO_KIJESHI = 3;
+N32 MATUKIO_TUKIO_KIJAMII = 4;
+N32 MATUKIO_TUKIO_AINA_YOYOTE = -1;
+
+muundo MatukioTukio {
+    N32 nambari_ya_tukio;
+    N32 aina;
+    N8* kichwa;
+    N8* maelezo;
+    D64 umuhimu;
+    D64 wakati_uliotokea;
+    N32 linafanya_kazi;
+};
+
+muundo MatukioKishughulikia {
+    N32 aina_ya_tukio;
+    N64 kishughulikia;
+    N64 data_ya_mtumiaji;
+};
+
+muundo MatukioTukioMfumo {
+    N64* matukio;
+    N32 idadi_ya_matukio;
+    N32 uwezo_wa_matukio;
+    N64* vishughulikia;
+    N32 idadi_ya_vishughulikia;
+    N32 uwezo_wa_vishughulikia;
+    D64 muda_wa_mwisho;
+};
+
+MatukioTukioMfumo* matukio_tukio_mfumo_unda() {
+    MatukioTukioMfumo* em = tenga(ukubwa(MatukioTukioMfumo));
+    em->uwezo_wa_matukio = 100;
+    em->idadi_ya_matukio = 0;
+    em->matukio = tenga(ukubwa(N64) * em->uwezo_wa_matukio);
+    em->uwezo_wa_vishughulikia = 8;
+    em->idadi_ya_vishughulikia = 0;
+    em->vishughulikia = tenga(ukubwa(N64) * em->uwezo_wa_vishughulikia);
+    em->muda_wa_mwisho = 0.0;
+    rudisha em;
+}
+
+W0 matukio_tukio_mfumo_uharibu(MatukioTukioMfumo* em) {
+    N32 i = 0;
+    wakati (i < em->idadi_ya_matukio) {
+        MatukioTukio* t = em->matukio[i];
+        achilia t;
+        i = i + 1;
+    }
+    achilia em->matukio;
+
+    i = 0;
+    wakati (i < em->idadi_ya_vishughulikia) {
+        MatukioKishughulikia* h = em->vishughulikia[i];
+        achilia h;
+        i = i + 1;
+    }
+    achilia em->vishughulikia;
+    achilia em;
+}
+
+CivMatokeo matukio_tukio_sajili_kishughulikia(MatukioTukioMfumo* em, N32 aina_ya_tukio, N64 kishughulikia, N64 data_ya_mtumiaji) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (em == 0 || kishughulikia == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    kama (em->idadi_ya_vishughulikia >= em->uwezo_wa_vishughulikia) {
+        em->uwezo_wa_vishughulikia = em->uwezo_wa_vishughulikia * 2;
+        em->vishughulikia = badili(em->vishughulikia, ukubwa(N64) * em->uwezo_wa_vishughulikia);
+    }
+
+    MatukioKishughulikia* h = tenga(ukubwa(MatukioKishughulikia));
+    h->aina_ya_tukio = aina_ya_tukio;
+    h->kishughulikia = kishughulikia;
+    h->data_ya_mtumiaji = data_ya_mtumiaji;
+
+    em->vishughulikia[em->idadi_ya_vishughulikia] = h;
+    em->idadi_ya_vishughulikia = em->idadi_ya_vishughulikia + 1;
+    rudisha r;
+}
+
+CivMatokeo matukio_tukio_toa(MatukioTukioMfumo* em, MatukioTukio* tukio) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (em == 0 || tukio == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    kama (em->idadi_ya_matukio >= em->uwezo_wa_matukio) {
+        em->uwezo_wa_matukio = em->uwezo_wa_matukio * 2;
+        em->matukio = badili(em->matukio, ukubwa(N64) * em->uwezo_wa_matukio);
+    }
+    em->matukio[em->idadi_ya_matukio] = tukio;
+    em->idadi_ya_matukio = em->idadi_ya_matukio + 1;
+
+    N32 i = 0;
+    wakati (i < em->idadi_ya_vishughulikia) {
+        MatukioKishughulikia* h = em->vishughulikia[i];
+        kama (h->aina_ya_tukio == tukio->aina || h->aina_ya_tukio == MATUKIO_TUKIO_AINA_YOYOTE) {
+            N64 kis = h->kishughulikia;
+            kis(tukio, h->data_ya_mtumiaji);
+        }
+        i = i + 1;
+    }
+
+    rudisha r;
+}
+
+CivMatokeo matukio_tukio_unda_na_toa(MatukioTukioMfumo* em, N32 aina, N8* kichwa, N8* maelezo, D64 umuhimu) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (em == 0 || kichwa == 0 || maelezo == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    MatukioTukio* tukio = tenga(ukubwa(MatukioTukio));
+    tukio->nambari_ya_tukio = em->idadi_ya_matukio;
+    tukio->aina = aina;
+    tukio->kichwa = kichwa;
+    tukio->maelezo = maelezo;
+    tukio->umuhimu = finya_d64(umuhimu, 0.0, 1.0);
+    tukio->wakati_uliotokea = em->muda_wa_mwisho;
+    tukio->linafanya_kazi = 1;
+
+    rudisha matukio_tukio_toa(em, tukio);
+}
+
+W0 matukio_tukio_sasisha(MatukioTukioMfumo* em, D64 muda) {
+    em->muda_wa_mwisho = em->muda_wa_mwisho + muda;
+}

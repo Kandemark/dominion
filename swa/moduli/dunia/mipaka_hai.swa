@@ -1,0 +1,148 @@
+// mipaka_hai.swa — tafsiri ya src/core/world/dynamic_borders.c (na .h)
+// kwenda Swa. Mipaka inayobadilika kati ya maeneo -- mvutano,
+// uimarishaji, na aina za mpaka.
+//
+// Kiambishi: dunia_mpaka_hai_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - civ_border_conflict_t/active_conflicts (muundo wa migogoro ya
+//     mpaka, wenye char** involved_parties) HAIJALETWA -- kazi 3 za
+//     umma zilizopo (create_segment/update/get_tension) hazigusi
+//     active_conflicts KABISA kwenye chanzo cha C (inatengwa tu
+//     kwenye init/destroy, haijawahi kuandikwa kokote) -- ni sehemu
+//     isiyotumika ya API ya sasa, imeachwa bila kupoteza tabia
+//     yoyote inayofikika.
+//   - civ_vec2_t (x,y) kama parameter YA THAMANI imegawanywa kuwa
+//     vigezo vinne vya D64 (start_x/y, end_x/y) vilivyofungwa
+//     kwenye DuniaMpakaHoja (angalia mdudu #184 -- kazi ingekuwa na
+//     vigezo 8, 4 kati yao D64).
+//   - safu inayokua ya border_segments imekuwa N64* ya vielekezi
+//     (mtindo wa #185, angalia dini.swa).
+//   - char id[] iliyoundwa na snprintf imekuwa faharisi (N32) badala
+//     ya mfuatano.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+N32 DUNIA_MPAKA_ASILIA = 0;
+N32 DUNIA_MPAKA_KISIASA = 1;
+N32 DUNIA_MPAKA_UNAOBISHANIWA = 2;
+N32 DUNIA_MPAKA_ULIOWEKWA_KIJESHI = 3;
+N32 DUNIA_MPAKA_WAZI = 4;
+N32 DUNIA_MPAKA_ULIOFUNGWA = 5;
+
+muundo DuniaMpakaHoja {
+    N8* eneo_a;
+    N8* eneo_b;
+    D64 mwanzo_x;
+    D64 mwanzo_y;
+    D64 mwisho_x;
+    D64 mwisho_y;
+    N32 aina;
+};
+
+muundo DuniaMpakaKipande {
+    N32 kitambulisho;
+    N8* eneo_a;
+    N8* eneo_b;
+    D64 mwanzo_x;
+    D64 mwanzo_y;
+    D64 mwisho_x;
+    D64 mwisho_y;
+    N32 aina;
+    D64 kiwango_cha_uimarishaji;
+    D64 kiwango_cha_mvutano;
+};
+
+muundo DuniaMipakaHai {
+    N64* vipande;
+    N32 idadi;
+    N32 uwezo;
+};
+
+DuniaMpakaKipande* dunia_mpaka_hai_pata_kipande(DuniaMipakaHai* db, N32 faharisi) {
+    rudisha db->vipande[faharisi];
+}
+
+DuniaMipakaHai* dunia_mpaka_hai_unda() {
+    DuniaMipakaHai* db = tenga(ukubwa(DuniaMipakaHai));
+    db->uwezo = 100;
+    db->idadi = 0;
+    db->vipande = tenga(ukubwa(N64) * db->uwezo);
+    rudisha db;
+}
+
+W0 dunia_mpaka_hai_uharibu(DuniaMipakaHai* db) {
+    achilia db->vipande;
+    achilia db;
+}
+
+CivMatokeo dunia_mpaka_hai_unda_kipande(DuniaMipakaHai* db, DuniaMpakaHoja* hoja) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (db == 0 || hoja == 0 || hoja->eneo_a == 0 || hoja->eneo_b == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "hoja batili";
+        rudisha r;
+    }
+
+    kama (db->idadi >= db->uwezo) {
+        db->uwezo = db->uwezo * 2;
+        db->vipande = badili(db->vipande, ukubwa(N64) * db->uwezo);
+    }
+
+    DuniaMpakaKipande* kipande = tenga(ukubwa(DuniaMpakaKipande));
+    kipande->kitambulisho = db->idadi + 1;
+    kipande->eneo_a = hoja->eneo_a;
+    kipande->eneo_b = hoja->eneo_b;
+    kipande->mwanzo_x = hoja->mwanzo_x;
+    kipande->mwanzo_y = hoja->mwanzo_y;
+    kipande->mwisho_x = hoja->mwisho_x;
+    kipande->mwisho_y = hoja->mwisho_y;
+    kipande->aina = hoja->aina;
+    kipande->kiwango_cha_uimarishaji = 0.0;
+    kipande->kiwango_cha_mvutano = 0.0;
+
+    db->vipande[db->idadi] = kipande;
+    db->idadi = db->idadi + 1;
+    rudisha r;
+}
+
+W0 dunia_mpaka_hai_sasisha(DuniaMipakaHai* db, D64 tofauti_ya_muda) {
+    kama (db == 0) { rudisha; }
+    N32 i = 0;
+    wakati (i < db->idadi) {
+        DuniaMpakaKipande* kipande = dunia_mpaka_hai_pata_kipande(db, i);
+
+        kipande->kiwango_cha_mvutano = kipande->kiwango_cha_mvutano - 0.01 * tofauti_ya_muda;
+        kama (kipande->kiwango_cha_mvutano < 0.0) { kipande->kiwango_cha_mvutano = 0.0; }
+
+        kama (kipande->aina == DUNIA_MPAKA_UNAOBISHANIWA) {
+            kipande->kiwango_cha_mvutano = kipande->kiwango_cha_mvutano + 0.05 * tofauti_ya_muda;
+            kama (kipande->kiwango_cha_mvutano > 1.0) { kipande->kiwango_cha_mvutano = 1.0; }
+        } sivyo { kama (kipande->aina == DUNIA_MPAKA_ASILIA) {
+            kipande->kiwango_cha_mvutano = kipande->kiwango_cha_mvutano - 0.02 * tofauti_ya_muda;
+            kama (kipande->kiwango_cha_mvutano < 0.0) { kipande->kiwango_cha_mvutano = 0.0; }
+        } }
+
+        i = i + 1;
+    }
+}
+
+D64 dunia_mpaka_hai_pata_mvutano(DuniaMipakaHai* db, N8* eneo_a, N8* eneo_b) {
+    kama (db == 0 || eneo_a == 0 || eneo_b == 0) { rudisha 0.0; }
+    N32 i = 0;
+    wakati (i < db->idadi) {
+        DuniaMpakaKipande* kipande = dunia_mpaka_hai_pata_kipande(db, i);
+        N32 sawa_moja_kwa_moja = (linganisha_mfuatano(kipande->eneo_a, eneo_a) == 0
+            && linganisha_mfuatano(kipande->eneo_b, eneo_b) == 0);
+        N32 sawa_kinyume = (linganisha_mfuatano(kipande->eneo_a, eneo_b) == 0
+            && linganisha_mfuatano(kipande->eneo_b, eneo_a) == 0);
+        kama (sawa_moja_kwa_moja != 0 || sawa_kinyume != 0) {
+            rudisha kipande->kiwango_cha_mvutano;
+        }
+        i = i + 1;
+    }
+    rudisha 0.0;
+}

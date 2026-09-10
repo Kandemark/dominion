@@ -1,0 +1,154 @@
+// miji_data.swa — tafsiri ya src/core/world/cities_data.c (na .h)
+// kwenda Swa. Miji ya dunia halisi (idadi ya watu > 100K) na
+// hoja za kutafuta kwa eneo/nchi.
+//
+// Kiambishi: dunia_miji_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - civ_cities_data_load() (kisomaji cha data/cities.bin) HAIJALETWA
+//     -- angalia maelezo yaleyale kwenye mataifa_data.swa.
+//     dunia_miji_ongeza() inatumika badala yake.
+//   - grid[32][32] (faharisi ya kiwango cha anga, safu ya safu
+//     zinazokua) HAIJALETWA -- ni uboreshaji wa KASI tu (spatial
+//     index), si tabia ya lazima: matokeo ya utafutaji ni sawa kabisa
+//     na "linear scan" juu ya orodha bapa ya miji, tofauti pekee ni
+//     kasi (O(n) badala ya O(seli za gridi)). Kwa idadi ya miji
+//     inayotarajiwa (maelfu, si mamilioni), hii haihitajiki bado.
+//   - Matokeo ya utafutaji (safu ya vielekezi + idadi) yamefungwa
+//     kwenye muundo DuniaMijiMatokeo, urudishwao kama kielekezi
+//     (badala ya "out parameter" ya faharisi + kurudisha safu tofauti
+//     -- Swa haina utata wa vielekezi vya kielekezi, #185).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+N32 DUNIA_MJI_NGAZI_MKUBWA_SANA = 0;   // pop > 10M
+N32 DUNIA_MJI_NGAZI_MKUBWA = 1;        // pop 1M-10M
+N32 DUNIA_MJI_NGAZI_WASTANI = 2;       // pop 100K-1M
+N32 DUNIA_MJI_NGAZI_MDOGO = 3;         // pop < 100K
+
+muundo DuniaMji {
+    N8* jina;
+    N8* iso_a2;
+    N32 kipande_x;
+    N32 kipande_y;
+    N32 idadi_ya_watu;
+    N32 ni_mji_mkuu;
+    N32 ngazi;
+};
+
+muundo DuniaMijiData {
+    N64* miji;
+    N32 idadi;
+    N32 uwezo;
+    N32 upana_wa_ramani;
+    N32 urefu_wa_ramani;
+};
+
+muundo DuniaMijiMatokeo {
+    N64* miji;
+    N32 idadi;
+};
+
+DuniaMji* dunia_miji_pata(DuniaMijiData* cd, N32 faharisi) {
+    rudisha cd->miji[faharisi];
+}
+
+DuniaMijiData* dunia_miji_data_unda(N32 upana_wa_ramani, N32 urefu_wa_ramani) {
+    DuniaMijiData* cd = tenga(ukubwa(DuniaMijiData));
+    cd->upana_wa_ramani = upana_wa_ramani;
+    cd->urefu_wa_ramani = urefu_wa_ramani;
+    cd->idadi = 0;
+    cd->uwezo = 256;
+    cd->miji = tenga(ukubwa(N64) * cd->uwezo);
+    rudisha cd;
+}
+
+W0 dunia_miji_data_uharibu(DuniaMijiData* cd) {
+    achilia cd->miji;
+    achilia cd;
+}
+
+W0 dunia_miji_ongeza(DuniaMijiData* cd, N8* jina, N8* iso_a2, N32 kipande_x, N32 kipande_y,
+                       N32 idadi_ya_watu, N32 ni_mji_mkuu, N32 ngazi) {
+    kama (cd->idadi >= cd->uwezo) {
+        cd->uwezo = cd->uwezo * 2;
+        cd->miji = badili(cd->miji, ukubwa(N64) * cd->uwezo);
+    }
+    DuniaMji* m = tenga(ukubwa(DuniaMji));
+    m->jina = jina;
+    m->iso_a2 = iso_a2;
+    m->kipande_x = kipande_x;
+    m->kipande_y = kipande_y;
+    m->idadi_ya_watu = idadi_ya_watu;
+    m->ni_mji_mkuu = ni_mji_mkuu;
+    m->ngazi = ngazi;
+    cd->miji[cd->idadi] = m;
+    cd->idadi = cd->idadi + 1;
+}
+
+DuniaMijiMatokeo* dunia_miji_tafuta_kwenye_kipande(DuniaMijiData* cd, N32 kipande_x, N32 kipande_y,
+                                                      N32 kipande_upana, N32 kipande_urefu,
+                                                      N32 ngazi_ya_chini) {
+    DuniaMijiMatokeo* matokeo = tenga(ukubwa(DuniaMijiMatokeo));
+    matokeo->idadi = 0;
+    matokeo->miji = 0;
+    kama (cd == 0 || kipande_upana <= 0 || kipande_urefu <= 0) { rudisha matokeo; }
+
+    N32 uwezo = 64;
+    matokeo->miji = tenga(ukubwa(N64) * uwezo);
+
+    N32 x_mwisho = kipande_x + kipande_upana;
+    N32 y_mwisho = kipande_y + kipande_urefu;
+
+    N32 i = 0;
+    wakati (i < cd->idadi) {
+        DuniaMji* m = dunia_miji_pata(cd, i);
+        N32 ruhusiwa = 1;
+        kama (m->ngazi > ngazi_ya_chini) { ruhusiwa = 0; }
+        kama (ruhusiwa != 0) {
+            N32 cx = m->kipande_x;
+            kama (cx < kipande_x) { cx = cx + cd->upana_wa_ramani; }
+            kama (cx >= kipande_x && cx < x_mwisho && m->kipande_y >= kipande_y && m->kipande_y < y_mwisho) {
+                kama (matokeo->idadi >= uwezo) {
+                    uwezo = uwezo * 2;
+                    matokeo->miji = badili(matokeo->miji, ukubwa(N64) * uwezo);
+                }
+                matokeo->miji[matokeo->idadi] = m;
+                matokeo->idadi = matokeo->idadi + 1;
+            }
+        }
+        i = i + 1;
+    }
+    rudisha matokeo;
+}
+
+DuniaMijiMatokeo* dunia_miji_kwa_nchi(DuniaMijiData* cd, N8* iso_a2) {
+    DuniaMijiMatokeo* matokeo = tenga(ukubwa(DuniaMijiMatokeo));
+    matokeo->idadi = 0;
+    matokeo->miji = 0;
+    kama (cd == 0 || iso_a2 == 0) { rudisha matokeo; }
+
+    N32 uwezo = 64;
+    matokeo->miji = tenga(ukubwa(N64) * uwezo);
+
+    N32 i = 0;
+    wakati (i < cd->idadi) {
+        DuniaMji* m = dunia_miji_pata(cd, i);
+        kama (m->iso_a2 != 0 && linganisha_mfuatano(m->iso_a2, iso_a2) == 0) {
+            kama (matokeo->idadi >= uwezo) {
+                uwezo = uwezo * 2;
+                matokeo->miji = badili(matokeo->miji, ukubwa(N64) * uwezo);
+            }
+            matokeo->miji[matokeo->idadi] = m;
+            matokeo->idadi = matokeo->idadi + 1;
+        }
+        i = i + 1;
+    }
+    rudisha matokeo;
+}
+
+W0 dunia_miji_matokeo_uharibu(DuniaMijiMatokeo* matokeo) {
+    kama (matokeo->miji != 0) { achilia matokeo->miji; }
+    achilia matokeo;
+}

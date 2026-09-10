@@ -1,0 +1,222 @@
+// nguvukazi.swa — tafsiri ya src/core/economy/labor_market.c (na .h)
+// kwenda Swa. Ajira, mishahara, ujuzi, na ushiriki wa nguvu kazi.
+//
+// Kiambishi: nguvukazi_ — angalia ../../KANUNI-MAJINA.md.
+// segments[CIV_LABOR_TIER_COUNT] (ngazi 4) imegawanywa kuwa vigezo
+// 4 vyenye majina. tier_dist[] (safu ya D64 ya ndani ya kazi,
+// iliyoandikwa KISHA kusomwa baada ya kuhalalishwa/normalize)
+// imekuwa vigezo 4 vya ndani vyenye majina badala ya safu.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 NGUVUKAZI_ISIYO_NA_UJUZI = 0;
+N32 NGUVUKAZI_YENYE_UJUZI = 1;
+N32 NGUVUKAZI_KITAALAMU = 2;
+N32 NGUVUKAZI_UONGOZI = 3;
+N32 NGUVUKAZI_IDADI_YA_NGAZI = 4;
+
+muundo NguvukaziSehemu {
+    N32 ngazi;
+    N32 wafanyakazi;
+    N32 walioajiriwa;
+    D64 mshahara_wa_wastani;
+    D64 ukuaji_wa_mshahara;
+    D64 kiwango_cha_ukosefu_wa_kazi;
+};
+
+// NguvukaziMazingira: hufunga viashiria vitatu vya D64 vinavyopitishwa
+// pamoja kwenye nguvukazi_sasisha/nguvukazi_sasisha_sehemu — kupunguza
+// jumla ya vigezo vya kazi hadi 6 au pungufu (angalia maelezo ya
+// mdudu hapo juu).
+muundo NguvukaziMazingira {
+    D64 kiwango_cha_teknolojia;
+    D64 kiwango_cha_elimu;
+    D64 imani_ya_biashara;
+};
+
+muundo NguvukaziMfumo {
+    NguvukaziSehemu sehemu_0; NguvukaziSehemu sehemu_1;
+    NguvukaziSehemu sehemu_2; NguvukaziSehemu sehemu_3;
+
+    N32 nguvukazi_jumla;
+    N32 walioajiriwa_jumla;
+    N32 wasio_na_ajira_jumla;
+    D64 ukosefu_wa_kazi_wa_jumla;
+    D64 ushiriki_wa_nguvukazi;
+    D64 mshahara_wa_wastani_wa_taifa;
+    D64 ukosefu_wa_usawa_wa_mshahara;
+    D64 mshahara_wa_chini;
+    D64 uzalishaji_kwa_mfanyakazi;
+};
+
+NguvukaziSehemu* nguvukazi_pata_sehemu(NguvukaziMfumo* l, N32 ngazi) {
+    kama (ngazi == 0) { rudisha &l->sehemu_0; }
+    kama (ngazi == 1) { rudisha &l->sehemu_1; }
+    kama (ngazi == 2) { rudisha &l->sehemu_2; }
+    rudisha &l->sehemu_3;
+}
+
+D64 nguvukazi_mshahara_wa_awali(N32 ngazi) {
+    kama (ngazi == NGUVUKAZI_ISIYO_NA_UJUZI) { rudisha 15000.0; }
+    kama (ngazi == NGUVUKAZI_YENYE_UJUZI) { rudisha 28000.0; }
+    kama (ngazi == NGUVUKAZI_KITAALAMU) { rudisha 55000.0; }
+    rudisha 120000.0;
+}
+
+NguvukaziMfumo* nguvukazi_unda() {
+    NguvukaziMfumo* l = tenga(ukubwa(NguvukaziMfumo));
+    l->ushiriki_wa_nguvukazi = 0.62;
+    l->mshahara_wa_wastani_wa_taifa = 30000.0;
+    l->ukosefu_wa_usawa_wa_mshahara = 0.38;
+    l->uzalishaji_kwa_mfanyakazi = 50000.0;
+    l->mshahara_wa_chini = 0.0;
+    l->nguvukazi_jumla = 0;
+    l->walioajiriwa_jumla = 0;
+    l->wasio_na_ajira_jumla = 0;
+    l->ukosefu_wa_kazi_wa_jumla = 0.0;
+
+    N32 i = 0;
+    wakati (i < NGUVUKAZI_IDADI_YA_NGAZI) {
+        NguvukaziSehemu* s = nguvukazi_pata_sehemu(l, i);
+        s->ngazi = i;
+        s->mshahara_wa_wastani = nguvukazi_mshahara_wa_awali(i);
+        D64 i_d = i;
+        s->kiwango_cha_ukosefu_wa_kazi = 0.06 - i_d * 0.015;
+        s->wafanyakazi = 0;
+        s->walioajiriwa = 0;
+        s->ukuaji_wa_mshahara = 0.0;
+        i = i + 1;
+    }
+    rudisha l;
+}
+
+W0 nguvukazi_uharibu(NguvukaziMfumo* l) {
+    achilia l;
+}
+
+// MUHIMU: chanzo halisi cha uharibifu kilichogunduliwa (SI vigezo
+// vingi vya ndani kama nilivyodhani awali, ni chanzo tofauti kabisa
+// kilichothibitishwa kwa jaribio dogo lililotengwa): KAZI YOYOTE
+// yenye JUMLA YA VIGEZO (parameters) SABA (7) AU ZAIDI, ambapo
+// angalau kimoja ni D64, IKIITWA KATIKA KITANZI, huharibu kigezo cha
+// mwitaji (mfano kaunta ya kitanzi) baada ya wito 1-2. Vigezo 6 au
+// pungufu — hata vyote D64, hata vyote N32, hata mchanganyiko —
+// HAVIONYESHI tatizo hili kabisa. Vigezo 7 vya N32 tupu (bila D64
+// yoyote) pia havionyeshi tatizo — inahitaji D64 moja au zaidi
+// pamoja na jumla ya saba. Nimeripoti hii kama tatizo jipya kwenye
+// lugha-swa/swa (tofauti na #182). Suluhisho la kudumu: kazi yoyote
+// yenye zaidi ya vigezo 6 lazima ipunguzwe kwa kufunga vigezo
+// vinavyohusiana kwenye muundo mmoja na kupitisha kielekezi chake
+// badala ya vigezo tofauti-tofauti — ndivyo ilivyofanyika hapa chini
+// (NguvukaziMazingira).
+
+D64 nguvukazi_usambazaji_ghafi(N32 ngazi, D64 kiwango_cha_elimu) {
+    kama (ngazi == 0) { rudisha 0.30 * (1.0 - kiwango_cha_elimu * 0.5); }
+    kama (ngazi == 1) { rudisha 0.40; }
+    kama (ngazi == 2) { rudisha 0.22 * (1.0 + kiwango_cha_elimu * 0.5); }
+    rudisha 0.08 * (1.0 + kiwango_cha_elimu * 0.3);
+}
+
+D64 nguvukazi_jumla_ya_usambazaji(D64 kiwango_cha_elimu) {
+    rudisha nguvukazi_usambazaji_ghafi(0, kiwango_cha_elimu)
+        + nguvukazi_usambazaji_ghafi(1, kiwango_cha_elimu)
+        + nguvukazi_usambazaji_ghafi(2, kiwango_cha_elimu)
+        + nguvukazi_usambazaji_ghafi(3, kiwango_cha_elimu);
+}
+
+W0 nguvukazi_sasisha_sehemu(NguvukaziMfumo* l, N32 ngazi, D64 wafanyakazi_d,
+                              D64 pato_kwa_mfanyakazi, NguvukaziMazingira* m) {
+    NguvukaziSehemu* s = nguvukazi_pata_sehemu(l, ngazi);
+
+    s->wafanyakazi = wafanyakazi_d;
+
+    D64 ngazi_d = ngazi;
+    D64 uondoaji_wa_teknolojia = m->kiwango_cha_teknolojia * 0.04;
+    kama (ngazi <= NGUVUKAZI_YENYE_UJUZI) {
+        uondoaji_wa_teknolojia = uondoaji_wa_teknolojia * (1.5 - ngazi_d * 0.5);
+    }
+    s->kiwango_cha_ukosefu_wa_kazi = (0.05 - ngazi_d * 0.015)
+        + (1.0 - m->imani_ya_biashara) * 0.05 + uondoaji_wa_teknolojia;
+    s->kiwango_cha_ukosefu_wa_kazi = finya_d64(s->kiwango_cha_ukosefu_wa_kazi, 0.01, 0.35);
+
+    D64 walioajiriwa_d = wafanyakazi_d * (1.0 - s->kiwango_cha_ukosefu_wa_kazi);
+    s->walioajiriwa = walioajiriwa_d;
+    l->walioajiriwa_jumla = l->walioajiriwa_jumla + s->walioajiriwa;
+    l->wasio_na_ajira_jumla = l->wasio_na_ajira_jumla + (s->wafanyakazi - s->walioajiriwa);
+
+    s->ukuaji_wa_mshahara = (pato_kwa_mfanyakazi / (s->mshahara_wa_wastani + 1.0) - 1.0) * 0.1
+        + (m->imani_ya_biashara - 0.5) * 0.1;
+    s->mshahara_wa_wastani = s->mshahara_wa_wastani * (1.0 + s->ukuaji_wa_mshahara);
+    kama (s->mshahara_wa_wastani < 5000.0) { s->mshahara_wa_wastani = 5000.0; }
+}
+
+W0 nguvukazi_hesabu_jumla(NguvukaziMfumo* l, D64 pato_kwa_mfanyakazi) {
+    kama (l->nguvukazi_jumla > 0) {
+        N32 wj = l->wasio_na_ajira_jumla;
+        D64 wj_d = wj;
+        D64 nk2_d = l->nguvukazi_jumla;
+        l->ukosefu_wa_kazi_wa_jumla = wj_d / nk2_d;
+    } sivyo {
+        l->ukosefu_wa_kazi_wa_jumla = 0.0;
+    }
+
+    l->mshahara_wa_wastani_wa_taifa = 0.0;
+    N32 i = 0;
+    wakati (i < NGUVUKAZI_IDADI_YA_NGAZI) {
+        NguvukaziSehemu* s = nguvukazi_pata_sehemu(l, i);
+        D64 wafanyakazi_d = s->wafanyakazi;
+        l->mshahara_wa_wastani_wa_taifa = l->mshahara_wa_wastani_wa_taifa
+            + s->mshahara_wa_wastani * wafanyakazi_d;
+        i = i + 1;
+    }
+    D64 nguvukazi_p1_d = l->nguvukazi_jumla + 1;
+    l->mshahara_wa_wastani_wa_taifa = l->mshahara_wa_wastani_wa_taifa / nguvukazi_p1_d;
+
+    l->uzalishaji_kwa_mfanyakazi = pato_kwa_mfanyakazi;
+}
+
+W0 nguvukazi_sasisha(NguvukaziMfumo* l, D64 muda, N32 idadi_ya_watu_jumla, D64 pato,
+                       NguvukaziMazingira* m) {
+    D64 idadi_d = idadi_ya_watu_jumla;
+    D64 nguvukazi_d = idadi_d * l->ushiriki_wa_nguvukazi;
+    l->nguvukazi_jumla = nguvukazi_d;
+
+    l->walioajiriwa_jumla = 0;
+    l->wasio_na_ajira_jumla = 0;
+
+    D64 pato_kwa_mfanyakazi = 50000.0;
+    kama (l->nguvukazi_jumla > 0) {
+        D64 nk_d = l->nguvukazi_jumla;
+        pato_kwa_mfanyakazi = pato / nk_d;
+    }
+
+    D64 jumla_ya_usambazaji = nguvukazi_jumla_ya_usambazaji(m->kiwango_cha_elimu);
+
+    N32 i = 0;
+    wakati (i < NGUVUKAZI_IDADI_YA_NGAZI) {
+        D64 usambazaji_wa_ngazi = 0.25;
+        kama (jumla_ya_usambazaji > 0.0) {
+            usambazaji_wa_ngazi = nguvukazi_usambazaji_ghafi(i, m->kiwango_cha_elimu) / jumla_ya_usambazaji;
+        }
+        D64 wafanyakazi_d = nguvukazi_d * usambazaji_wa_ngazi;
+        nguvukazi_sasisha_sehemu(l, i, wafanyakazi_d, pato_kwa_mfanyakazi, m);
+        i = i + 1;
+    }
+
+    nguvukazi_hesabu_jumla(l, pato_kwa_mfanyakazi);
+}
+
+D64 nguvukazi_mshahara_wa_ngazi(NguvukaziMfumo* l, N32 ngazi) {
+    kama (ngazi >= NGUVUKAZI_IDADI_YA_NGAZI) { rudisha 0.0; }
+    rudisha nguvukazi_pata_sehemu(l, ngazi)->mshahara_wa_wastani;
+}
+
+N32 nguvukazi_wafanyakazi_wanaopatikana(NguvukaziMfumo* l, N32 ngazi) {
+    kama (ngazi >= NGUVUKAZI_IDADI_YA_NGAZI) { rudisha 0; }
+    NguvukaziSehemu* s = nguvukazi_pata_sehemu(l, ngazi);
+    rudisha s->wafanyakazi - s->walioajiriwa;
+}
+
+D64 nguvukazi_shinikizo_la_mshahara(NguvukaziMfumo* l) {
+    rudisha (1.0 - l->ukosefu_wa_kazi_wa_jumla) * 2.0 - 1.0;
+}

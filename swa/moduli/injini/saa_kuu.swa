@@ -1,0 +1,62 @@
+// saa_kuu.swa — tafsiri YA SEHEMU ya src/core/time_engine.c (na .h)
+// kwenda Swa. Saa kuu ya dunia (global time) -- mwaka, siku, na
+// zamu.
+//
+// Kiambishi: injini_saa_ — angalia ../../KANUNI-MAJINA.md.
+//
+// SCOPE ILIYOPUNGUZWA KWA MAKUSUDI: C asili ina mfumo mzima wa
+// KALENDA NYINGI zinazoweza kuundwa (majina ya miezi/siku za wiki
+// zinazobadilika, enzi/eras, kalenda 16 zenye miezi 20 na siku za
+// wiki 10 kila moja) -- hii ni maandishi ya mapambo ya HUD/onyesho
+// (date formatting), SI mantiki ya uigaji inayoathiri mchezo. Kuiga
+// kikamilifu ingehitaji ~300+ za vigezo vilivyopachikwa kwa mkono
+// (miezi 12 x nyanja 2 x kalenda 4, siku za wiki 7 x kalenda 4,
+// enzi hadi 12 x nyanja 3 x kalenda 4) -- kazi kubwa ya kimakanika
+// isiyolingana na thamani yake (maandishi ya kuonyesha tu). SEHEMU
+// HII inatafsiri SAA KUU YENYEWE PEKEE (mwaka/siku/zamu wa
+// ulimwengu, unaotumika na kila mfumo mwingine) -- kazi za kalenda
+// maalum/enzi/uumbizaji wa tarehe (create_calendar, add_era,
+// set_era, format_date, format_hud, init_default_calendars)
+// ZIMEACHWA kwa kikao maalum cha baadaye kama mtumiaji atazihitaji.
+
+husisha { msingi/msingi_civ.swa }
+
+muundo InjiniSaaKuu {
+    N32 mwaka_wa_ulimwengu;
+    N32 siku_ya_ulimwengu;
+    N32 nambari_ya_zamu;
+    N32 zamu_kwa_mwaka;
+    D64 maendeleo_ya_siku;
+};
+
+InjiniSaaKuu* injini_saa_unda() {
+    InjiniSaaKuu* te = tenga(ukubwa(InjiniSaaKuu));
+    te->mwaka_wa_ulimwengu = 0;
+    te->siku_ya_ulimwengu = 0;
+    te->nambari_ya_zamu = 0;
+    te->zamu_kwa_mwaka = 12;
+    te->maendeleo_ya_siku = 0.0;
+    rudisha te;
+}
+
+W0 injini_saa_uharibu(InjiniSaaKuu* te) {
+    achilia te;
+}
+
+W0 injini_saa_songesha_zamu(InjiniSaaKuu* te) {
+    kama (te == 0) { rudisha; }
+    te->nambari_ya_zamu = te->nambari_ya_zamu + 1;
+    te->maendeleo_ya_siku = 0.0;
+
+    N32 siku_kwa_zamu = 365 / te->zamu_kwa_mwaka;
+    te->siku_ya_ulimwengu = te->siku_ya_ulimwengu + siku_kwa_zamu;
+
+    wakati (te->siku_ya_ulimwengu >= 365) {
+        te->siku_ya_ulimwengu = te->siku_ya_ulimwengu - 365;
+        te->mwaka_wa_ulimwengu = te->mwaka_wa_ulimwengu + 1;
+    }
+}
+
+N32 injini_saa_mwaka_wa_kalenda(InjiniSaaKuu* te, N32 mwaka_wa_enzi) {
+    rudisha te->mwaka_wa_ulimwengu - mwaka_wa_enzi;
+}

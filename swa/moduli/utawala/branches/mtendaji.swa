@@ -1,0 +1,242 @@
+// mtendaji.swa — tafsiri ya src/core/governance/branches/executive.c
+// (na .h) kwenda Swa. Tawi tendaji — kura ya turufu, amri, uteuzi.
+//
+// Kiambishi: utawala_mtendaji_ — angalia ../../../KANUNI-MAJINA.md.
+// actions[] (safu inayokua, action_capacity=8 awali, inaongezeka kwa
+// realloc) imebadilishwa kuwa kikomo kisichobadilika cha vitendo 8
+// (vigezo vyenye majina + kazi ya kupata) — mtindo uleule wa baraza.swa.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 UTAWALA_MTENDAJI_AMRI = 0;
+N32 UTAWALA_MTENDAJI_TANGAZO = 1;
+N32 UTAWALA_MTENDAJI_MAELEKEZO = 2;
+N32 UTAWALA_MTENDAJI_UTEUZI = 3;
+N32 UTAWALA_MTENDAJI_MSAMAHA = 4;
+
+N32 UTAWALA_MTENDAJI_RASIMU = 0;
+N32 UTAWALA_MTENDAJI_IMETOLEWA = 1;
+N32 UTAWALA_MTENDAJI_IMEPINGWA = 2;
+N32 UTAWALA_MTENDAJI_IMETHIBITISHWA = 3;
+N32 UTAWALA_MTENDAJI_IMEONDOLEWA = 4;
+N32 UTAWALA_MTENDAJI_IMEISHA_MUDA = 5;
+
+N32 UTAWALA_MTENDAJI_VITENDO_UPEO = 8;
+
+muundo UtawalaMtendajiKitendo {
+    N8* jina;
+    N32 aina;
+    N32 hali_ya_kitendo;
+    D64 gharama_ya_nguvu;
+    D64 ukubwa_wa_athari;
+    N32 zamu_zilizobaki;
+    N32 ni_wa_kudumu;
+};
+
+muundo UtawalaMtendaji {
+    UtawalaMtendajiKitendo kitendo_0; UtawalaMtendajiKitendo kitendo_1;
+    UtawalaMtendajiKitendo kitendo_2; UtawalaMtendajiKitendo kitendo_3;
+    UtawalaMtendajiKitendo kitendo_4; UtawalaMtendajiKitendo kitendo_5;
+    UtawalaMtendajiKitendo kitendo_6; UtawalaMtendajiKitendo kitendo_7;
+    N32 idadi_ya_vitendo;
+
+    N32 kura_za_turufu_zilizotolewa;
+    N32 kura_za_turufu_zilizopinduliwa;
+    N32 kura_za_turufu_zilizoshikiliwa;
+    D64 nguvu_ya_kura_ya_turufu;
+    N32 miswada_inayosubiri_saini;
+
+    D64 nguvu_ya_utendaji;
+    D64 mtaji_wa_kisiasa;
+    D64 nguvu_ya_amri;
+    D64 uunganishaji_wa_nguvu;
+    N32 katiba_imesimamishwa;
+    N32 zamu_zilizosimamishwa;
+    N32 uteuzi_uliofanywa;
+    N32 msamaha_uliotolewa;
+    N32 anaweza_kutoa_amri;
+};
+
+UtawalaMtendajiKitendo* utawala_mtendaji_pata_kitendo(UtawalaMtendaji* e, N32 idx) {
+    kama (idx == 0) { rudisha &e->kitendo_0; }
+    kama (idx == 1) { rudisha &e->kitendo_1; }
+    kama (idx == 2) { rudisha &e->kitendo_2; }
+    kama (idx == 3) { rudisha &e->kitendo_3; }
+    kama (idx == 4) { rudisha &e->kitendo_4; }
+    kama (idx == 5) { rudisha &e->kitendo_5; }
+    kama (idx == 6) { rudisha &e->kitendo_6; }
+    rudisha &e->kitendo_7;
+}
+
+UtawalaMtendaji* utawala_mtendaji_unda() {
+    UtawalaMtendaji* e = tenga(ukubwa(UtawalaMtendaji));
+    e->idadi_ya_vitendo = 0;
+    e->kura_za_turufu_zilizotolewa = 0;
+    e->kura_za_turufu_zilizopinduliwa = 0;
+    e->kura_za_turufu_zilizoshikiliwa = 0;
+    e->miswada_inayosubiri_saini = 0;
+    e->nguvu_ya_utendaji = 0.50;
+    e->mtaji_wa_kisiasa = 0.60;
+    e->nguvu_ya_amri = 0.20;
+    e->nguvu_ya_kura_ya_turufu = 0.50;
+    e->uunganishaji_wa_nguvu = 0.0;
+    e->katiba_imesimamishwa = 0;
+    e->zamu_zilizosimamishwa = 0;
+    e->uteuzi_uliofanywa = 0;
+    e->msamaha_uliotolewa = 0;
+    e->anaweza_kutoa_amri = 0;
+    rudisha e;
+}
+
+W0 utawala_mtendaji_uharibu(UtawalaMtendaji* e) {
+    achilia e;
+}
+
+W0 utawala_mtendaji_sindika_vitendo(UtawalaMtendaji* e) {
+    N32 i = 0;
+    wakati (i < e->idadi_ya_vitendo) {
+        UtawalaMtendajiKitendo* a = utawala_mtendaji_pata_kitendo(e, i);
+        N32 inaendelea = 0;
+        kama (a->hali_ya_kitendo == UTAWALA_MTENDAJI_IMETOLEWA) { inaendelea = 1; }
+        sivyo { kama (a->hali_ya_kitendo == UTAWALA_MTENDAJI_IMEPINGWA) { inaendelea = 1; } }
+        kama (inaendelea == 1 && a->ni_wa_kudumu == 0) {
+            a->zamu_zilizobaki = a->zamu_zilizobaki - 1;
+            kama (a->zamu_zilizobaki <= 0) { a->hali_ya_kitendo = UTAWALA_MTENDAJI_IMEISHA_MUDA; }
+        }
+        i = i + 1;
+    }
+}
+
+W0 utawala_mtendaji_sasisha(UtawalaMtendaji* e, D64 muda, D64 uwiano_wa_udhibiti_mkuu,
+                              D64 uhalali, D64 nguvu_ya_dharura, D64 uwakilishi) {
+    e->nguvu_ya_utendaji = uwiano_wa_udhibiti_mkuu * 0.40 + nguvu_ya_dharura * 0.30
+        - uwakilishi * 0.20 + uhalali * 0.20 + 0.25;
+    kama (e->nguvu_ya_utendaji < 0.10) { e->nguvu_ya_utendaji = 0.10; }
+    kama (e->nguvu_ya_utendaji > 0.95) { e->nguvu_ya_utendaji = 0.95; }
+
+    e->mtaji_wa_kisiasa = e->mtaji_wa_kisiasa
+        + (uhalali * 0.02 - (1.0 - e->mtaji_wa_kisiasa) * 0.01) * muda;
+    kama (e->mtaji_wa_kisiasa < 0.05) { e->mtaji_wa_kisiasa = 0.05; }
+    kama (e->mtaji_wa_kisiasa > 1.0) { e->mtaji_wa_kisiasa = 1.0; }
+
+    e->nguvu_ya_amri = uwiano_wa_udhibiti_mkuu * 0.50 + nguvu_ya_dharura * 0.30
+        - uwakilishi * 0.20;
+    kama (e->nguvu_ya_amri < 0.0) { e->nguvu_ya_amri = 0.0; }
+    kama (e->nguvu_ya_amri > 1.0) { e->nguvu_ya_amri = 1.0; }
+    kama (e->nguvu_ya_amri > 0.30) { e->anaweza_kutoa_amri = 1; } sivyo { e->anaweza_kutoa_amri = 0; }
+
+    kama (e->katiba_imesimamishwa != 0) {
+        e->zamu_zilizosimamishwa = e->zamu_zilizosimamishwa + 1;
+        e->uunganishaji_wa_nguvu = e->uunganishaji_wa_nguvu + 0.003 * muda;
+        kama (e->uunganishaji_wa_nguvu > 1.0) { e->uunganishaji_wa_nguvu = 1.0; }
+        e->nguvu_ya_amri = e->nguvu_ya_amri + 0.002 * muda;
+        kama (e->nguvu_ya_amri > 1.0) { e->nguvu_ya_amri = 1.0; }
+    }
+
+    e->nguvu_ya_kura_ya_turufu = e->nguvu_ya_utendaji * 0.80 + nguvu_ya_dharura * 0.20;
+
+    utawala_mtendaji_sindika_vitendo(e);
+}
+
+UtawalaMtendajiKitendo* utawala_mtendaji_toa_amri(UtawalaMtendaji* e, N32 aina, N8* jina,
+                                                     D64 gharama_ya_nguvu) {
+    kama (e == 0 || jina == 0 || gharama_ya_nguvu > e->mtaji_wa_kisiasa) { rudisha 0; }
+    kama (e->idadi_ya_vitendo >= UTAWALA_MTENDAJI_VITENDO_UPEO) { rudisha 0; }
+    UtawalaMtendajiKitendo* a = utawala_mtendaji_pata_kitendo(e, e->idadi_ya_vitendo);
+    a->jina = jina;
+    a->aina = aina;
+    a->hali_ya_kitendo = UTAWALA_MTENDAJI_IMETOLEWA;
+    a->gharama_ya_nguvu = gharama_ya_nguvu;
+    a->ukubwa_wa_athari = gharama_ya_nguvu * 0.80 + e->nguvu_ya_utendaji * 0.20;
+    kama (aina == UTAWALA_MTENDAJI_TANGAZO) { a->zamu_zilizobaki = 40; } sivyo { a->zamu_zilizobaki = 10; }
+    kama (aina == UTAWALA_MTENDAJI_UTEUZI) { a->ni_wa_kudumu = 1; } sivyo { a->ni_wa_kudumu = 0; }
+    e->mtaji_wa_kisiasa = e->mtaji_wa_kisiasa - gharama_ya_nguvu;
+    e->idadi_ya_vitendo = e->idadi_ya_vitendo + 1;
+    kama (aina == UTAWALA_MTENDAJI_UTEUZI) { e->uteuzi_uliofanywa = e->uteuzi_uliofanywa + 1; }
+    kama (aina == UTAWALA_MTENDAJI_MSAMAHA) { e->msamaha_uliotolewa = e->msamaha_uliotolewa + 1; }
+    rudisha a;
+}
+
+UtawalaMtendajiKitendo* utawala_mtendaji_toa_tangazo(UtawalaMtendaji* e, N8* jina, D64 athari) {
+    kama (e == 0 || e->anaweza_kutoa_amri == 0) { rudisha 0; }
+    rudisha utawala_mtendaji_toa_amri(e, UTAWALA_MTENDAJI_TANGAZO, jina, athari * 0.3);
+}
+
+N32 utawala_mtendaji_kura_ya_turufu(UtawalaMtendaji* e, N8* mswada_id) {
+    kama (e == 0 || mswada_id == 0) { rudisha 0; }
+    e->kura_za_turufu_zilizotolewa = e->kura_za_turufu_zilizotolewa + 1;
+    e->miswada_inayosubiri_saini = e->miswada_inayosubiri_saini - 1;
+    e->mtaji_wa_kisiasa = e->mtaji_wa_kisiasa - 0.05;
+    rudisha 1;
+}
+
+N32 utawala_mtendaji_upinduaji_unawezekana(UtawalaMtendaji* e, D64 uungwaji_wa_kibunge) {
+    kama (e == 0) { rudisha 1; }
+    D64 kizingiti = 0.50 + e->nguvu_ya_kura_ya_turufu * 0.35;
+    kama (uungwaji_wa_kibunge > kizingiti) { rudisha 1; }
+    rudisha 0;
+}
+
+W0 utawala_mtendaji_saini_mswada(UtawalaMtendaji* e) {
+    kama (e == 0) { rudisha; }
+    e->miswada_inayosubiri_saini = e->miswada_inayosubiri_saini - 1;
+    e->mtaji_wa_kisiasa = e->mtaji_wa_kisiasa + 0.02;
+}
+
+D64 utawala_mtendaji_kielezo_cha_nguvu(UtawalaMtendaji* e) {
+    kama (e == 0) { rudisha 0.50; }
+    rudisha e->nguvu_ya_utendaji;
+}
+
+N32 utawala_mtendaji_simamisha_katiba(UtawalaMtendaji* e) {
+    kama (e == 0) { rudisha 0; }
+    kama (e->anaweza_kutoa_amri == 0 && e->uunganishaji_wa_nguvu < 0.60) { rudisha 0; }
+    e->katiba_imesimamishwa = 1;
+    e->zamu_zilizosimamishwa = 0;
+    e->uunganishaji_wa_nguvu = e->uunganishaji_wa_nguvu + 0.15;
+    e->mtaji_wa_kisiasa = e->mtaji_wa_kisiasa - 0.20;
+    rudisha 1;
+}
+
+N32 utawala_mtendaji_rejesha_katiba(UtawalaMtendaji* e) {
+    kama (e == 0 || e->katiba_imesimamishwa == 0) { rudisha 0; }
+    D64 upinzani = e->uunganishaji_wa_nguvu * 0.8;
+    D64 urejeshaji = e->mtaji_wa_kisiasa * 0.3 + (1.0 - e->uunganishaji_wa_nguvu) * 0.4;
+    kama (urejeshaji < upinzani) { rudisha 0; }
+    e->katiba_imesimamishwa = 0;
+    e->zamu_zilizosimamishwa = 0;
+    e->uunganishaji_wa_nguvu = e->uunganishaji_wa_nguvu - 0.10;
+    rudisha 1;
+}
+
+N32 utawala_mtendaji_katiba_imesimamishwa(UtawalaMtendaji* e) {
+    kama (e == 0) { rudisha 0; }
+    rudisha e->katiba_imesimamishwa;
+}
+
+D64 utawala_mtendaji_uunganishaji_wa_nguvu(UtawalaMtendaji* e) {
+    kama (e == 0) { rudisha 0.0; }
+    rudisha e->uunganishaji_wa_nguvu;
+}
+
+W0 utawala_mtendaji_unganisha_nguvu(UtawalaMtendaji* e, D64 kiasi) {
+    kama (e == 0) { rudisha; }
+    e->uunganishaji_wa_nguvu = e->uunganishaji_wa_nguvu + kiasi;
+    kama (e->uunganishaji_wa_nguvu > 1.0) { e->uunganishaji_wa_nguvu = 1.0; }
+    kama (e->uunganishaji_wa_nguvu < 0.0) { e->uunganishaji_wa_nguvu = 0.0; }
+}
+
+N32 utawala_mtendaji_anaweza_kutawala_kwa_amri(UtawalaMtendaji* e) {
+    kama (e == 0) { rudisha 0; }
+    kama (e->katiba_imesimamishwa != 0) { rudisha 1; }
+    kama (e->anaweza_kutoa_amri != 0) { rudisha 1; }
+    kama (e->uunganishaji_wa_nguvu > 0.70) { rudisha 1; }
+    rudisha 0;
+}
+
+N32 utawala_mtendaji_ni_unyakuzi_wa_kiimla(UtawalaMtendaji* e) {
+    kama (e == 0) { rudisha 0; }
+    kama (e->uunganishaji_wa_nguvu > 0.75 && e->katiba_imesimamishwa != 0
+          && e->zamu_zilizosimamishwa > 40) { rudisha 1; }
+    rudisha 0;
+}

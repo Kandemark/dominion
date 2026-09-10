@@ -1,0 +1,239 @@
+// ushindi.swa — tafsiri ya src/core/military/conquest.c (na .h)
+// kwenda Swa. Mfumo wa ushindi — uvamizi, kuzingirwa, nyara, na
+// uigaji wa kitamaduni baada ya ushindi.
+//
+// Kiambishi: ushindi_ — angalia ../../KANUNI-MAJINA.md (angalia pia
+// maelezo ya viambishi vidogo vya military/ kwenye mapigano.swa).
+//
+// TOFAUTI YA KIMAKUSUDI: civ_conquest_transfer_territory (uhamishaji
+// wa ardhi kwenye ramani baada ya ushindi) HAIKULETWA -- inahitaji
+// civ_map_t (ramani ya vigae), moduli ya world/ ambayo bado
+// haijaandikwa kwa Swa. Kazi zote nyingine 8 za conquest.c
+// zimeletwa kikamilifu. plunder_rng ya ndani ya C (LCG tofauti)
+// imeondolewa kwa niaba ya civ_nasibu iliyopo tayari.
+//
+// conquests[] (safu inayokua ya civ_conquest_event_t KWA THAMANI
+// kwenye C) imekuwa safu ya N64* ya anwani (mtindo uleule wa
+// kitengo.swa/dini.swa, lugha-swa/swa#185).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/utamaduni/uigaji.swa }
+
+N32 USHINDI_UVAMIZI = 0;
+N32 USHINDI_KUZINGIRWA = 1;
+N32 USHINDI_UVAMIZI_MDOGO = 2;
+N32 USHINDI_KUUNGANISHWA = 3;
+
+muundo UshindiNyara {
+    D64 dhahabu;
+    D64 rasilimali;
+    D64 mabaki;
+    N32 watu_waliotekwa;
+    D64 maarifa_yaliyopatikana;
+};
+
+muundo UshindiTukio {
+    N8* mshambuliaji_id;
+    N8* mtetezi_id;
+    N8* mkoa_lengwa_id;
+    N32 aina;
+    D64 maendeleo;
+    D64 nguvu_ya_mshambuliaji;
+    D64 nguvu_ya_mtetezi;
+    UshindiNyara nyara;
+    N32 uigaji_umewezeshwa;
+    N32 aina_ya_uigaji;
+    N32 imekamilika;
+    N32 eneo_limetumika;
+};
+
+muundo UshindiMfumo {
+    N64* matukio;
+    N32 idadi_ya_matukio;
+    N32 uwezo_wa_matukio;
+    D64 kiwango_cha_msingi_cha_ushindi;
+    D64 kizidishi_cha_nyara;
+};
+
+UshindiMfumo* ushindi_mfumo_unda() {
+    UshindiMfumo* s = tenga(ukubwa(UshindiMfumo));
+    s->kiwango_cha_msingi_cha_ushindi = 0.05;
+    s->kizidishi_cha_nyara = 1.0;
+    s->uwezo_wa_matukio = 32;
+    s->idadi_ya_matukio = 0;
+    s->matukio = tenga(ukubwa(N64) * s->uwezo_wa_matukio);
+    rudisha s;
+}
+
+W0 ushindi_mfumo_uharibu(UshindiMfumo* s) {
+    achilia s->matukio;
+    achilia s;
+}
+
+UshindiTukio* ushindi_pata_tukio_kwa_idx(UshindiMfumo* s, N32 idx) {
+    rudisha s->matukio[idx];
+}
+
+CivMatokeo ushindi_anza(UshindiMfumo* s, N8* mshambuliaji_id, N8* mtetezi_id,
+                          N8* mkoa_lengwa_id, N32 aina) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (s == 0 || mshambuliaji_id == 0 || mtetezi_id == 0 || mkoa_lengwa_id == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    N32 i = 0;
+    wakati (i < s->idadi_ya_matukio) {
+        UshindiTukio* uliopo = ushindi_pata_tukio_kwa_idx(s, i);
+        kama (linganisha_mfuatano(uliopo->mshambuliaji_id, mshambuliaji_id) == 0
+              && linganisha_mfuatano(uliopo->mtetezi_id, mtetezi_id) == 0
+              && linganisha_mfuatano(uliopo->mkoa_lengwa_id, mkoa_lengwa_id) == 0) {
+            r.hitilafu = CIV_HITILAFU_HALI_MBAYA;
+            r.ujumbe = "Ushindi tayari unaendelea";
+            rudisha r;
+        }
+        i = i + 1;
+    }
+
+    kama (s->idadi_ya_matukio >= s->uwezo_wa_matukio) {
+        s->uwezo_wa_matukio = s->uwezo_wa_matukio * 2;
+        s->matukio = badili(s->matukio, ukubwa(N64) * s->uwezo_wa_matukio);
+    }
+
+    UshindiTukio* tukio = tenga(ukubwa(UshindiTukio));
+    tukio->mshambuliaji_id = mshambuliaji_id;
+    tukio->mtetezi_id = mtetezi_id;
+    tukio->mkoa_lengwa_id = mkoa_lengwa_id;
+    tukio->aina = aina;
+    tukio->maendeleo = 0.0;
+    tukio->nguvu_ya_mshambuliaji = 1.0;
+    tukio->nguvu_ya_mtetezi = 1.0;
+    tukio->nyara.dhahabu = 0.0;
+    tukio->nyara.rasilimali = 0.0;
+    tukio->nyara.mabaki = 0.0;
+    tukio->nyara.watu_waliotekwa = 0;
+    tukio->nyara.maarifa_yaliyopatikana = 0.0;
+    tukio->uigaji_umewezeshwa = 1;
+    kama (aina == USHINDI_UVAMIZI || aina == USHINDI_KUUNGANISHWA) {
+        tukio->aina_ya_uigaji = UTAMADUNI_UIGA_KULAZIMISHWA;
+    } sivyo {
+        tukio->aina_ya_uigaji = UTAMADUNI_UIGA_HIARI;
+    }
+    tukio->imekamilika = 0;
+    tukio->eneo_limetumika = 0;
+
+    s->matukio[s->idadi_ya_matukio] = tukio;
+    s->idadi_ya_matukio = s->idadi_ya_matukio + 1;
+
+    rudisha r;
+}
+
+CivMatokeo ushindi_nyakua(UshindiTukio* tukio, UshindiNyara* matokeo) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (tukio == 0 || matokeo == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    D64 kizidishi_cha_nyakua = tukio->maendeleo;
+    kama (tukio->aina == USHINDI_UVAMIZI_MDOGO) { kizidishi_cha_nyakua = kizidishi_cha_nyakua * 1.5; }
+    sivyo { kama (tukio->aina == USHINDI_UVAMIZI) { kizidishi_cha_nyakua = kizidishi_cha_nyakua * 1.2; }
+    sivyo { kama (tukio->aina == USHINDI_KUZINGIRWA) { kizidishi_cha_nyakua = kizidishi_cha_nyakua * 0.8; }
+    sivyo { kizidishi_cha_nyakua = kizidishi_cha_nyakua * 0.5; } } }
+
+    N32 kura1 = civ_nasibu_chini_ya(1000);
+    N32 kura2 = civ_nasibu_chini_ya(1000);
+    N32 kura3 = civ_nasibu_chini_ya(1000);
+    D64 kura1_d = kura1; D64 kura2_d = kura2; D64 kura3_d = kura3;
+
+    matokeo->dhahabu = 1000.0 * kizidishi_cha_nyakua * (kura1_d / 1000.0);
+    matokeo->rasilimali = 500.0 * kizidishi_cha_nyakua * (kura2_d / 1000.0);
+    matokeo->mabaki = 10.0 * kizidishi_cha_nyakua * (kura3_d / 1000.0);
+    D64 watu_d = 1000.0 * kizidishi_cha_nyakua * (kura1_d / 1000.0);
+    matokeo->watu_waliotekwa = watu_d;
+    matokeo->maarifa_yaliyopatikana = 0.1 * kizidishi_cha_nyakua;
+
+    rudisha r;
+}
+
+CivMatokeo ushindi_tekeleza_uigaji(UshindiTukio* tukio, UtamaduniUigajiTracker* tracker) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (tukio == 0 || tracker == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    kama (tukio->uigaji_umewezeshwa == 0) { rudisha r; }
+
+    utamaduni_uigaji_tracker_ongeza_tukio(tracker, tukio->mshambuliaji_id,
+        tukio->mtetezi_id, tukio->mkoa_lengwa_id, tukio->aina_ya_uigaji);
+
+    rudisha r;
+}
+
+CivMatokeo ushindi_sasisha(UshindiMfumo* s, D64 muda) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (s == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    N32 i = 0;
+    wakati (i < s->idadi_ya_matukio) {
+        UshindiTukio* tukio = ushindi_pata_tukio_kwa_idx(s, i);
+
+        D64 mtetezi_salama = tukio->nguvu_ya_mtetezi;
+        kama (mtetezi_salama < 0.1) { mtetezi_salama = 0.1; }
+        D64 uwiano_wa_nguvu = tukio->nguvu_ya_mshambuliaji / mtetezi_salama;
+        D64 kiwango_cha_maendeleo = s->kiwango_cha_msingi_cha_ushindi * uwiano_wa_nguvu * muda;
+
+        tukio->maendeleo = finya_d64(tukio->maendeleo + kiwango_cha_maendeleo, 0.0, 1.0);
+
+        kama (tukio->maendeleo >= 1.0) {
+            tukio->maendeleo = 1.0;
+            kama (tukio->imekamilika == 0) {
+                tukio->imekamilika = 1;
+                UshindiNyara nyara_matokeo;
+                ushindi_nyakua(tukio, &nyara_matokeo);
+                tukio->nyara.dhahabu = nyara_matokeo.dhahabu;
+                tukio->nyara.rasilimali = nyara_matokeo.rasilimali;
+                tukio->nyara.mabaki = nyara_matokeo.mabaki;
+                tukio->nyara.watu_waliotekwa = nyara_matokeo.watu_waliotekwa;
+                tukio->nyara.maarifa_yaliyopatikana = nyara_matokeo.maarifa_yaliyopatikana;
+            }
+        }
+
+        i = i + 1;
+    }
+
+    rudisha r;
+}
+
+UshindiTukio* ushindi_tafuta(UshindiMfumo* s, N8* mshambuliaji_id, N8* mtetezi_id) {
+    kama (s == 0 || mshambuliaji_id == 0 || mtetezi_id == 0) { rudisha 0; }
+
+    N32 i = 0;
+    wakati (i < s->idadi_ya_matukio) {
+        UshindiTukio* tukio = ushindi_pata_tukio_kwa_idx(s, i);
+        kama (linganisha_mfuatano(tukio->mshambuliaji_id, mshambuliaji_id) == 0
+              && linganisha_mfuatano(tukio->mtetezi_id, mtetezi_id) == 0) {
+            rudisha tukio;
+        }
+        i = i + 1;
+    }
+
+    rudisha 0;
+}

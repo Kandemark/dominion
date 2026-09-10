@@ -1,0 +1,142 @@
+// lugha.swa — maktaba ya lugha/localization kwa maandishi ya ndani
+// ya mchezo (UI, matukio, majina). Hii SI kuhusu Swa kama lugha ya
+// programu — ni mfumo unaoruhusu mchezo (Dominion, na baadaye
+// miradi mingine ya Swa kama e-citizen) kuonyesha maandishi kwa
+// lugha nyingi za binadamu (Kiswahili kama lugha ya msingi/fallback,
+// lakini yoyote inaweza kusajiliwa, mfano Kiingereza).
+//
+// Hakuna faili la C sanjari — hii ni uwezo mpya, si tafsiri.
+//
+// Muundo wa data umeamuliwa kwa uzoefu wa moja kwa moja (jaribio
+// dogo lililotengwa), si dhana:
+//   - Ramani (msingi/maktaba/ramani.swa) inasaidia FUNGUO na THAMANI
+//     za N32 TU (si mfuatano/vielekezi). Kwa hiyo funguo ya utafutaji
+//     ni HESHI (N32, kutoka heshi_mfuatano) ya lugha+ufunguo
+//     iliyounganishwa kwa hesabu (heshi_mfuatano(lugha)*31 +
+//     heshi_mfuatano(ufunguo)) badala ya mfuatano halisi -- inaepuka
+//     hitaji la ku-unganisha mfuatano na kuepuka ukomo wa saizi ya
+//     bafa.
+//   - THAMANI ya Ramani ni FAHARISI (index) ndani ya safu ya
+//     maadili N64* (kila kipengele ni N8* halisi ya mfuatano
+//     uliotafsiriwa, kikihifadhiwa kama N64 -- angalia
+//     lugha-swa/swa#185, mfano halisi: dini.swa).
+//   - Ramani* haiwezi kuwa FIELD ya muundo mwingine moja kwa moja --
+//     nimejaribu moja kwa moja na kuthibitisha kushindwa (jaribio
+//     dogo: muundo Wrapper { Ramani* r; } -- thamani iliyoandikwa
+//     kupitia w->r haikusomwa sahihi baadaye). Hii ni mfano MPYA wa
+//     lugha-swa/swa#186 (field ya muundo yenye aina ya kielekezi
+//     kwenda muundo mwingine haihifadhi thamani sahihi). Suluhisho:
+//     hifadhi anwani ya Ramani* kama N64 (si Ramani* moja kwa moja)
+//     kwenye field, na tumia kazi ya "pata" inayorudisha Ramani*
+//     kupitia aina ya kurudisha (return type coercion) -- jaribio
+//     lililotengwa lilithibitisha hii inafanya kazi sahihi.
+//   - Ramani haikui (haina realloc ya ndani) -- uwezo wake
+//     umewekwa mwanzoni na lugha_unda() na hauwezi kuongezeka baada
+//     ya hapo. Mwito wa lugha_sajili() zaidi ya uwezo utashindwa
+//     KIMYA (ramani_weka inarudi bila kufanya lolote ikiwa
+//     r->idadi >= r->uwezo) -- panga uwezo mkubwa wa kutosha
+//     mwanzoni kwa jumla ya (idadi ya funguo) x (idadi ya lugha).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/ramani.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+muundo LughaMfumo {
+    N64 faharisi_addr;   // Ramani* iliyohifadhiwa kama anwani (#186)
+    N64* maadili;        // safu ya N8* (thamani za tafsiri), #185
+    N32 idadi;
+    N32 uwezo;
+    N8* lugha_hai;
+    N8* lugha_ya_msingi;
+};
+
+Ramani* lugha_pata_faharisi(LughaMfumo* l) {
+    rudisha l->faharisi_addr;
+}
+
+N32 lugha_heshi_ya_funguo(N8* lugha, N8* ufunguo) {
+    N32 h1 = heshi_mfuatano(lugha);
+    N32 h2 = heshi_mfuatano(ufunguo);
+    N32 h = h1 * 31 + h2;
+    // MUHIMU: Ramani (ramani_weka/ramani_pata) huhesabu
+    // `idx = funguo % r->uwezo` -- ikiwa funguo ni HASI, matokeo ya
+    // % kwenye N32 ya kusaini (signed) yanaweza kuwa hasi, na
+    // r->funguo[idx]/r->thamani[idx] huwa ufikiaji WA NJE YA MIPAKA
+    // (out-of-bounds), ukiharibu kumbukumbu ya rundo kimya kimya --
+    // hitilafu haionekani mara moja, inajitokeza baadaye kwenye wito
+    // usiohusiana. Nimethibitisha hii kwa jaribio (heshi hasi ya
+    // "siasa_kiongozi" ilisababisha kuanguka kwa wito wa TANO
+    // uliofuata, si wito uliotumia heshi hiyo hasi). Suluhisho:
+    // hakikisha heshi ni chanya kila mara kabla ya kuitumia kama
+    // funguo ya Ramani.
+    kama (h < 0) {
+        h = 0 - h;
+    }
+    rudisha h;
+}
+
+LughaMfumo* lugha_unda(N32 uwezo_wa_faharisi) {
+    LughaMfumo* l = tenga(ukubwa(LughaMfumo));
+    l->faharisi_addr = ramani_mpya(uwezo_wa_faharisi);
+    l->uwezo = 64;
+    l->maadili = tenga(ukubwa(N64) * l->uwezo);
+    l->idadi = 0;
+    l->lugha_hai = "sw";
+    l->lugha_ya_msingi = "sw";
+    rudisha l;
+}
+
+W0 lugha_weka_lugha_hai(LughaMfumo* l, N8* lugha) {
+    l->lugha_hai = lugha;
+}
+
+W0 lugha_weka_lugha_ya_msingi(LughaMfumo* l, N8* lugha) {
+    l->lugha_ya_msingi = lugha;
+}
+
+N8* lugha_pata_thamani(LughaMfumo* l, N32 faharisi) {
+    rudisha l->maadili[faharisi];
+}
+
+W0 lugha_sajili(LughaMfumo* l, N8* ufunguo, N8* lugha, N8* thamani) {
+    kama (l->idadi >= l->uwezo) {
+        l->uwezo = l->uwezo * 2;
+        l->maadili = badili(l->maadili, ukubwa(N64) * l->uwezo);
+    }
+    l->maadili[l->idadi] = thamani;
+    N32 heshi = lugha_heshi_ya_funguo(lugha, ufunguo);
+    ramani_weka(lugha_pata_faharisi(l), heshi, l->idadi);
+    l->idadi = l->idadi + 1;
+}
+
+N8* lugha_tafsiri(LughaMfumo* l, N8* ufunguo) {
+    N32 heshi_hai = lugha_heshi_ya_funguo(l->lugha_hai, ufunguo);
+    N32 faharisi_hai = ramani_pata(lugha_pata_faharisi(l), heshi_hai);
+    kama (faharisi_hai != -1) {
+        rudisha lugha_pata_thamani(l, faharisi_hai);
+    }
+
+    N32 heshi_msingi = lugha_heshi_ya_funguo(l->lugha_ya_msingi, ufunguo);
+    N32 faharisi_msingi = ramani_pata(lugha_pata_faharisi(l), heshi_msingi);
+    kama (faharisi_msingi != -1) {
+        rudisha lugha_pata_thamani(l, faharisi_msingi);
+    }
+
+    // Hakuna tafsiri kwa lugha hai wala lugha ya msingi -- rudisha
+    // ufunguo wenyewe kama alama ya "haijatafsiriwa" (mtindo wa kawaida
+    // wa mifumo ya i18n, badala ya kurudisha 0/tupu).
+    rudisha ufunguo;
+}
+
+N32 lugha_ina_tafsiri(LughaMfumo* l, N8* ufunguo, N8* lugha) {
+    N32 heshi = lugha_heshi_ya_funguo(lugha, ufunguo);
+    N32 faharisi = ramani_pata(lugha_pata_faharisi(l), heshi);
+    kama (faharisi != -1) { rudisha 1; }
+    rudisha 0;
+}
+
+W0 lugha_huru(LughaMfumo* l) {
+    ramani_huru(lugha_pata_faharisi(l));
+    achilia_arena(l->maadili);
+    achilia_arena(l);
+}

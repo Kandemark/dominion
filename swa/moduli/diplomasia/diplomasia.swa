@@ -1,0 +1,209 @@
+// diplomasia.swa — tafsiri ya src/core/diplomacy/relations.c (na .h)
+// kwenda Swa. Mahusiano ya kimataifa, imani, na mikataba.
+//
+// Kiambishi: diplomasia_ — angalia ../../KANUNI-MAJINA.md.
+// relations[] na treaties[] (safu zinazokua za muundo, uwezo wa
+// awali 100/50 zinazoongezeka mara mbili) zimekuwa vigezo 12/8
+// vyenye majina + kazi ya kupata (kikomo cha vitendo kwa mchezo,
+// kuepuka field ya kielekezi-kwenda-safu-ya-muundo — angalia
+// lugha-swa/swa#186 na #182(b)). Majina ya mataifa (nation_a/b,
+// char[N] kwenye C) yamekuwa N8* (vielekezi vya mfuatano
+// vinavyomilikiwa na mwitaji, sio nakala zilizowekwa) — mtindo
+// uleule uliotumika kwenye idadi_ya_watu.swa kwa majina ya maeneo.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+N32 DIPLOMASIA_KIWANGO_VITA = -2;
+N32 DIPLOMASIA_KIWANGO_UADUI = -1;
+N32 DIPLOMASIA_KIWANGO_KATI = 0;
+N32 DIPLOMASIA_KIWANGO_URAFIKI = 1;
+N32 DIPLOMASIA_KIWANGO_UMOJA = 2;
+
+N32 DIPLOMASIA_MKATABA_BIASHARA = 0;
+N32 DIPLOMASIA_MKATABA_USIOSHAMBULIANA = 1;
+N32 DIPLOMASIA_MKATABA_ULINZI = 2;
+N32 DIPLOMASIA_MKATABA_JESHI = 3;
+N32 DIPLOMASIA_MKATABA_UTAFITI = 4;
+
+N32 DIPLOMASIA_UHUSIANO_KIWANGO_CHA_JUU = 12;
+N32 DIPLOMASIA_MKATABA_KIWANGO_CHA_JUU = 8;
+
+muundo DiplomasiaUhusiano {
+    N8* taifa_a;
+    N8* taifa_b;
+    N32 kiwango_cha_uhusiano;
+    N32 msimamo_wa_sasa;
+    D64 imani;
+    D64 alama_ya_maoni;
+    N32 aina_ya_tabia;
+    D64 malalamiko;
+    N8* sababu_kuu_ya_vita;
+    N64 ilisasishwa_mwisho;
+};
+
+muundo DiplomasiaMkataba {
+    N8* kitambulisho;
+    N32 aina;
+    N8* mtia_saini_a;
+    N8* mtia_saini_b;
+    N64 tarehe_ya_kuanza;
+    N32 muda_wa_siku;
+    N32 unafanya_kazi;
+};
+
+muundo DiplomasiaMfumo {
+    DiplomasiaUhusiano uh_0; DiplomasiaUhusiano uh_1; DiplomasiaUhusiano uh_2;
+    DiplomasiaUhusiano uh_3; DiplomasiaUhusiano uh_4; DiplomasiaUhusiano uh_5;
+    DiplomasiaUhusiano uh_6; DiplomasiaUhusiano uh_7; DiplomasiaUhusiano uh_8;
+    DiplomasiaUhusiano uh_9; DiplomasiaUhusiano uh_10; DiplomasiaUhusiano uh_11;
+    N32 idadi_ya_uhusiano;
+
+    DiplomasiaMkataba mk_0; DiplomasiaMkataba mk_1; DiplomasiaMkataba mk_2;
+    DiplomasiaMkataba mk_3; DiplomasiaMkataba mk_4; DiplomasiaMkataba mk_5;
+    DiplomasiaMkataba mk_6; DiplomasiaMkataba mk_7;
+    N32 idadi_ya_mikataba;
+};
+
+DiplomasiaUhusiano* diplomasia_pata_uhusiano(DiplomasiaMfumo* ds, N32 faharisi) {
+    kama (faharisi == 0) { rudisha &ds->uh_0; }
+    kama (faharisi == 1) { rudisha &ds->uh_1; }
+    kama (faharisi == 2) { rudisha &ds->uh_2; }
+    kama (faharisi == 3) { rudisha &ds->uh_3; }
+    kama (faharisi == 4) { rudisha &ds->uh_4; }
+    kama (faharisi == 5) { rudisha &ds->uh_5; }
+    kama (faharisi == 6) { rudisha &ds->uh_6; }
+    kama (faharisi == 7) { rudisha &ds->uh_7; }
+    kama (faharisi == 8) { rudisha &ds->uh_8; }
+    kama (faharisi == 9) { rudisha &ds->uh_9; }
+    kama (faharisi == 10) { rudisha &ds->uh_10; }
+    rudisha &ds->uh_11;
+}
+
+DiplomasiaMkataba* diplomasia_pata_mkataba(DiplomasiaMfumo* ds, N32 faharisi) {
+    kama (faharisi == 0) { rudisha &ds->mk_0; }
+    kama (faharisi == 1) { rudisha &ds->mk_1; }
+    kama (faharisi == 2) { rudisha &ds->mk_2; }
+    kama (faharisi == 3) { rudisha &ds->mk_3; }
+    kama (faharisi == 4) { rudisha &ds->mk_4; }
+    kama (faharisi == 5) { rudisha &ds->mk_5; }
+    kama (faharisi == 6) { rudisha &ds->mk_6; }
+    rudisha &ds->mk_7;
+}
+
+DiplomasiaMfumo* diplomasia_unda() {
+    DiplomasiaMfumo* ds = tenga(ukubwa(DiplomasiaMfumo));
+    ds->idadi_ya_uhusiano = 0;
+    ds->idadi_ya_mikataba = 0;
+    rudisha ds;
+}
+
+W0 diplomasia_uharibu(DiplomasiaMfumo* ds) {
+    achilia ds;
+}
+
+W0 diplomasia_anzisha_uhusiano(DiplomasiaMfumo* ds, N8* taifa_a, N8* taifa_b) {
+    kama (ds->idadi_ya_uhusiano >= DIPLOMASIA_UHUSIANO_KIWANGO_CHA_JUU) { rudisha; }
+    DiplomasiaUhusiano* r = diplomasia_pata_uhusiano(ds, ds->idadi_ya_uhusiano);
+    ds->idadi_ya_uhusiano = ds->idadi_ya_uhusiano + 1;
+
+    r->taifa_a = taifa_a;
+    r->taifa_b = taifa_b;
+    r->kiwango_cha_uhusiano = DIPLOMASIA_KIWANGO_KATI;
+    r->imani = 0.5;
+    r->aina_ya_tabia = civ_nasibu_chini_ya(4);
+    r->ilisasishwa_mwisho = 0;
+    r->malalamiko = 0.0;
+    r->sababu_kuu_ya_vita = 0;
+}
+
+DiplomasiaUhusiano* diplomasia_pata_kwa_taifa(DiplomasiaMfumo* ds, N8* taifa_a, N8* taifa_b) {
+    N32 i = 0;
+    wakati (i < ds->idadi_ya_uhusiano) {
+        DiplomasiaUhusiano* r = diplomasia_pata_uhusiano(ds, i);
+        N32 kwenda = 0;
+        kama (linganisha_mfuatano(r->taifa_a, taifa_a) == 0 && linganisha_mfuatano(r->taifa_b, taifa_b) == 0) { kwenda = 1; }
+        kama (linganisha_mfuatano(r->taifa_a, taifa_b) == 0 && linganisha_mfuatano(r->taifa_b, taifa_a) == 0) { kwenda = 1; }
+        kama (kwenda == 1) { rudisha r; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+W0 diplomasia_sasisha_mahusiano(DiplomasiaMfumo* ds, N64 tarehe_ya_sasa) {
+    N32 i = 0;
+    wakati (i < ds->idadi_ya_uhusiano) {
+        DiplomasiaUhusiano* r = diplomasia_pata_uhusiano(ds, i);
+
+        D64 nyongeza_ya_mkataba = 0.0;
+        N32 t = 0;
+        wakati (t < ds->idadi_ya_mikataba) {
+            DiplomasiaMkataba* mk = diplomasia_pata_mkataba(ds, t);
+            kama (mk->unafanya_kazi != 0 && mk->aina == DIPLOMASIA_MKATABA_BIASHARA) {
+                N32 inalingana = 0;
+                kama (linganisha_mfuatano(mk->mtia_saini_a, r->taifa_a) == 0 && linganisha_mfuatano(mk->mtia_saini_b, r->taifa_b) == 0) { inalingana = 1; }
+                kama (linganisha_mfuatano(mk->mtia_saini_a, r->taifa_b) == 0 && linganisha_mfuatano(mk->mtia_saini_b, r->taifa_a) == 0) { inalingana = 1; }
+                kama (inalingana == 1) { nyongeza_ya_mkataba = nyongeza_ya_mkataba + 0.005; }
+            }
+            t = t + 1;
+        }
+
+        D64 mwendo = (r->imani - 0.5) * 0.01;
+        r->imani = finya_d64(r->imani - mwendo + nyongeza_ya_mkataba, 0.0, 1.0);
+
+        kama (r->imani < 0.3) { r->kiwango_cha_uhusiano = DIPLOMASIA_KIWANGO_UADUI; }
+        sivyo { kama (r->imani < 0.4) { r->kiwango_cha_uhusiano = DIPLOMASIA_KIWANGO_KATI; }
+        sivyo { kama (r->imani < 0.7) { r->kiwango_cha_uhusiano = DIPLOMASIA_KIWANGO_URAFIKI; }
+        sivyo { r->kiwango_cha_uhusiano = DIPLOMASIA_KIWANGO_UMOJA; } } }
+
+        r->ilisasishwa_mwisho = tarehe_ya_sasa;
+        i = i + 1;
+    }
+}
+
+CivMatokeo diplomasia_pendekeza_mkataba(DiplomasiaMfumo* ds, N8* mpendekezaji, N8* mpokeaji, N32 aina) {
+    CivMatokeo matokeo;
+    matokeo.hitilafu = CIV_SAWA;
+    matokeo.ujumbe = 0;
+
+    DiplomasiaUhusiano* r = diplomasia_pata_kwa_taifa(ds, mpendekezaji, mpokeaji);
+    kama (r == 0) {
+        matokeo.hitilafu = CIV_HITILAFU_HAIJAPATIKANA;
+        rudisha matokeo;
+    }
+
+    kama (r->imani < 0.3) {
+        matokeo.hitilafu = CIV_HITILAFU_HALI_MBAYA;
+        matokeo.ujumbe = "Mkataba umekataliwa kwa sababu ya imani ndogo";
+        rudisha matokeo;
+    }
+
+    kama (ds->idadi_ya_mikataba >= DIPLOMASIA_MKATABA_KIWANGO_CHA_JUU) {
+        matokeo.hitilafu = CIV_HITILAFU_HALI_MBAYA;
+        rudisha matokeo;
+    }
+
+    DiplomasiaMkataba* mk = diplomasia_pata_mkataba(ds, ds->idadi_ya_mikataba);
+    ds->idadi_ya_mikataba = ds->idadi_ya_mikataba + 1;
+
+    mk->kitambulisho = 0;
+    mk->aina = aina;
+    mk->mtia_saini_a = mpendekezaji;
+    mk->mtia_saini_b = mpokeaji;
+    mk->tarehe_ya_kuanza = 0;
+    mk->unafanya_kazi = 1;
+
+    rudisha matokeo;
+}
+
+W0 diplomasia_ongeza_malalamiko(DiplomasiaUhusiano* r, D64 kiasi, N8* sababu) {
+    r->malalamiko = r->malalamiko + kiasi;
+    kama (kiasi > 0.5) { r->sababu_kuu_ya_vita = sababu; }
+    andika("Malalamiko yameongezwa: %s\n", sababu, 0,0,0,0,0);
+}
+
+N32 diplomasia_ina_sababu_halali_ya_vita(DiplomasiaUhusiano* r) {
+    kama (r->malalamiko > 1.0) { rudisha 1; }
+    kama (r->sababu_kuu_ya_vita != 0) { rudisha 1; }
+    rudisha 0;
+}

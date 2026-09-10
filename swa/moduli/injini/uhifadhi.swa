@@ -1,0 +1,85 @@
+// uhifadhi.swa — tafsiri ya src/core/simulation_engine/state_persistence.c
+// (na .h) kwenda Swa. Kuhifadhi na kupakia hali ya mchezo kwenye faili.
+//
+// Kiambishi: injini_uhifadhi_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - fopen/fwrite/fread za C zimekuwa faili_andika_yote/faili_soma_yote
+//     za msingi/maktaba/faili.swa (syscalls moja kwa moja, hakuna libc).
+//   - compression_enabled/encryption_enabled (bado hazijatekelezwa
+//     kwenye C ya asili) hazikuletwa.
+//   - civ_state_persistence_list_saves (bado "Not implemented" kwenye
+//     C ya asili -- inarudisha hitilafu kila mara) haikuletwa.
+//   - njia kamili (save_directory + "/" + filename) inajengwa kwa
+//     unganisha_mfuatano badala ya snprintf.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { msingi/maktaba/faili.swa }
+
+muundo InjiniUhifadhi {
+    N8* saraka_ya_kuhifadhi;
+};
+
+InjiniUhifadhi* injini_uhifadhi_unda(N8* saraka_ya_kuhifadhi) {
+    InjiniUhifadhi* sp = tenga(ukubwa(InjiniUhifadhi));
+    sp->saraka_ya_kuhifadhi = saraka_ya_kuhifadhi;
+    rudisha sp;
+}
+
+W0 injini_uhifadhi_uharibu(InjiniUhifadhi* sp) {
+    achilia sp;
+}
+
+N8* injini_uhifadhi_njia_kamili(InjiniUhifadhi* sp, N8* jina_la_faili) {
+    kama (sp->saraka_ya_kuhifadhi == 0) { rudisha jina_la_faili; }
+    N8* nusu = tenga(256);
+    unganisha_mfuatano(nusu, sp->saraka_ya_kuhifadhi, "/");
+    N8* njia = tenga(512);
+    unganisha_mfuatano(njia, nusu, jina_la_faili);
+    achilia nusu;
+    rudisha njia;
+}
+
+CivMatokeo injini_uhifadhi_hifadhi(InjiniUhifadhi* sp, N8* jina_la_faili, N8* data, N64 ukubwa_wa_data) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (sp == 0 || jina_la_faili == 0 || data == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    N8* njia = injini_uhifadhi_njia_kamili(sp, jina_la_faili);
+    N32 matokeo = faili_andika_yote(njia, data, ukubwa_wa_data);
+    kama (matokeo != 0) {
+        r.hitilafu = CIV_HITILAFU_IO;
+        r.ujumbe = "Imeshindwa kuandika data yote";
+    }
+    rudisha r;
+}
+
+CivMatokeo injini_uhifadhi_pakia(InjiniUhifadhi* sp, N8* jina_la_faili, N8* data, N64 uwezo_wa_data) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (sp == 0 || jina_la_faili == 0 || data == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    N8* njia = injini_uhifadhi_njia_kamili(sp, jina_la_faili);
+    kama (faili_ipo(njia) == 0) {
+        r.hitilafu = CIV_HITILAFU_HAIJAPATIKANA;
+        r.ujumbe = "Faili halijapatikana";
+        rudisha r;
+    }
+
+    N64 imesomwa = faili_soma_yote(njia, data, uwezo_wa_data);
+    kama (imesomwa < 0) {
+        r.hitilafu = CIV_HITILAFU_IO;
+        r.ujumbe = "Imeshindwa kusoma data";
+    }
+    rudisha r;
+}

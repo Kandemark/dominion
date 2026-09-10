@@ -1,0 +1,139 @@
+// jamii.swa — tafsiri ya src/core/population/race_system.c (na .h)
+// kwenda Swa. Jamii za kibiolojia zinazoibuka (DNA/traits) na
+// kuchanganyika kwa jamii mbili.
+//
+// Kiambishi: jamii_ — angalia ../../KANUNI-MAJINA.md (population/).
+// genome[] (safu inayokua ya civ_dna_trait_t, uwezo wa awali 8)
+// imekuwa vigezo 8 vyenye majina + kazi ya kupata (mtindo uleule wa
+// nguvukazi.swa). races[] (safu inayokua ya civ_race_t, uwezo wa
+// awali 16) imekuwa vigezo 16 vyenye majina + kazi ya kupata —
+// KIKOMO CHA JAMII 16 kwa mchezo (badala ya ukuaji usio na kikomo,
+// ambao haufanyi kazi salama kwa safu za muundo kwenye Swa —
+// angalia lugha-swa/swa#182(b)). Majina (id/name/origin_region_id,
+// char[N] kwenye C) yamewekwa kwa ukubwa uliopangwa wa herufi 24.
+// time_t emergence_time imekuwa N64 (muhuri wa muda uliorahisishwa,
+// hauitwi popote kwenye faili hili zaidi ya kuwekwa).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+N32 JAMII_SIFA_KIWANGO_CHA_JUU = 8;
+N32 JAMII_IDADI_KIWANGO_CHA_JUU = 16;
+
+muundo JamiiSifaYaDNA {
+    N8 jina_0; N8 jina_1; N8 jina_2; N8 jina_3; N8 jina_4; N8 jina_5;
+    N8 jina_6; N8 jina_7; N8 jina_8; N8 jina_9; N8 jina_10; N8 jina_11;
+    N8 jina_12; N8 jina_13; N8 jina_14; N8 jina_15;
+    D64 kiwango_cha_kujitokeza;
+    N32 kubwa_zaidi;
+};
+
+muundo Jamii {
+    N8* kitambulisho;
+    N8* jina;
+    N8* eneo_asilia_id;
+
+    JamiiSifaYaDNA sifa_0; JamiiSifaYaDNA sifa_1; JamiiSifaYaDNA sifa_2;
+    JamiiSifaYaDNA sifa_3; JamiiSifaYaDNA sifa_4; JamiiSifaYaDNA sifa_5;
+    JamiiSifaYaDNA sifa_6; JamiiSifaYaDNA sifa_7;
+    N32 idadi_ya_sifa;
+
+    D64 uthabiti_wa_kijenetiki;
+    N64 wakati_wa_kuibuka;
+};
+
+muundo JamiiMsimamizi {
+    Jamii jamii_0; Jamii jamii_1; Jamii jamii_2; Jamii jamii_3;
+    Jamii jamii_4; Jamii jamii_5; Jamii jamii_6; Jamii jamii_7;
+    Jamii jamii_8; Jamii jamii_9; Jamii jamii_10; Jamii jamii_11;
+    Jamii jamii_12; Jamii jamii_13; Jamii jamii_14; Jamii jamii_15;
+    N32 idadi_ya_jamii;
+};
+
+Jamii* jamii_pata(JamiiMsimamizi* m, N32 faharisi) {
+    kama (faharisi == 0) { rudisha &m->jamii_0; }
+    kama (faharisi == 1) { rudisha &m->jamii_1; }
+    kama (faharisi == 2) { rudisha &m->jamii_2; }
+    kama (faharisi == 3) { rudisha &m->jamii_3; }
+    kama (faharisi == 4) { rudisha &m->jamii_4; }
+    kama (faharisi == 5) { rudisha &m->jamii_5; }
+    kama (faharisi == 6) { rudisha &m->jamii_6; }
+    kama (faharisi == 7) { rudisha &m->jamii_7; }
+    kama (faharisi == 8) { rudisha &m->jamii_8; }
+    kama (faharisi == 9) { rudisha &m->jamii_9; }
+    kama (faharisi == 10) { rudisha &m->jamii_10; }
+    kama (faharisi == 11) { rudisha &m->jamii_11; }
+    kama (faharisi == 12) { rudisha &m->jamii_12; }
+    kama (faharisi == 13) { rudisha &m->jamii_13; }
+    kama (faharisi == 14) { rudisha &m->jamii_14; }
+    rudisha &m->jamii_15;
+}
+
+JamiiSifaYaDNA* jamii_pata_sifa(Jamii* j, N32 faharisi) {
+    kama (faharisi == 0) { rudisha &j->sifa_0; }
+    kama (faharisi == 1) { rudisha &j->sifa_1; }
+    kama (faharisi == 2) { rudisha &j->sifa_2; }
+    kama (faharisi == 3) { rudisha &j->sifa_3; }
+    kama (faharisi == 4) { rudisha &j->sifa_4; }
+    kama (faharisi == 5) { rudisha &j->sifa_5; }
+    kama (faharisi == 6) { rudisha &j->sifa_6; }
+    rudisha &j->sifa_7;
+}
+
+JamiiMsimamizi* jamii_msimamizi_unda() {
+    JamiiMsimamizi* m = tenga(ukubwa(JamiiMsimamizi));
+    m->idadi_ya_jamii = 0;
+    rudisha m;
+}
+
+W0 jamii_msimamizi_uharibu(JamiiMsimamizi* m) {
+    achilia m;
+}
+
+Jamii* jamii_ibuka(JamiiMsimamizi* m, N8* jina, N8* eneo_id) {
+    kama (m->idadi_ya_jamii >= JAMII_IDADI_KIWANGO_CHA_JUU) { rudisha 0; }
+
+    Jamii* j = jamii_pata(m, m->idadi_ya_jamii);
+    m->idadi_ya_jamii = m->idadi_ya_jamii + 1;
+
+    j->kitambulisho = jina;
+    j->jina = jina;
+    j->eneo_asilia_id = eneo_id;
+    j->idadi_ya_sifa = 0;
+    j->uthabiti_wa_kijenetiki = 0.9;
+    j->wakati_wa_kuibuka = 0;
+
+    andika("Jamii mpya imeibuka: %s\n", jina, 0,0,0,0,0);
+
+    rudisha j;
+}
+
+Jamii* jamii_changanya(JamiiMsimamizi* m, Jamii* mzazi_a, Jamii* mzazi_b, N8* jina_jipya) {
+    kama (mzazi_a == 0 || mzazi_b == 0) { rudisha 0; }
+
+    Jamii* mtoto = jamii_ibuka(m, jina_jipya, mzazi_a->eneo_asilia_id);
+    kama (mtoto == 0) { rudisha 0; }
+
+    N32 kiwango_cha_juu = mzazi_a->idadi_ya_sifa;
+    kama (mzazi_b->idadi_ya_sifa < kiwango_cha_juu) { kiwango_cha_juu = mzazi_b->idadi_ya_sifa; }
+    kama (JAMII_SIFA_KIWANGO_CHA_JUU < kiwango_cha_juu) { kiwango_cha_juu = JAMII_SIFA_KIWANGO_CHA_JUU; }
+
+    N32 i = 0;
+    wakati (i < kiwango_cha_juu) {
+        JamiiSifaYaDNA* sifa_a = jamii_pata_sifa(mzazi_a, i);
+        JamiiSifaYaDNA* sifa_b = jamii_pata_sifa(mzazi_b, i);
+        JamiiSifaYaDNA* sifa_mpya = jamii_pata_sifa(mtoto, mtoto->idadi_ya_sifa);
+        mtoto->idadi_ya_sifa = mtoto->idadi_ya_sifa + 1;
+
+        sifa_mpya->kiwango_cha_kujitokeza = (sifa_a->kiwango_cha_kujitokeza + sifa_b->kiwango_cha_kujitokeza) * 0.5;
+        sifa_mpya->kubwa_zaidi = 0;
+        kama (sifa_a->kubwa_zaidi != 0 || sifa_b->kubwa_zaidi != 0) { sifa_mpya->kubwa_zaidi = 1; }
+
+        i = i + 1;
+    }
+
+    mtoto->uthabiti_wa_kijenetiki = (mzazi_a->uthabiti_wa_kijenetiki + mzazi_b->uthabiti_wa_kijenetiki) * 0.45;
+    andika("Jamii mpya imeibuka kwa kuchanganya: %s\n", jina_jipya, 0,0,0,0,0);
+
+    rudisha mtoto;
+}

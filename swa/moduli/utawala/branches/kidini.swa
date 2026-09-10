@@ -1,0 +1,134 @@
+// kidini.swa — tafsiri ya src/core/governance/branches/religious_body.c
+// (na .h) kwenda Swa. Utawala wa kidini — teokrasi, mabaraza ya
+// makuhani, mamlaka ya kimungu.
+//
+// Kiambishi: utawala_kidini_ — angalia ../../../KANUNI-MAJINA.md.
+// leaders[] (kikomo 4) imegawanywa kuwa vigezo vyenye majina + kazi
+// ya kupata — mtindo uleule wa baraza.swa.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 UTAWALA_KIDINI_UONGOZI = 0;
+N32 UTAWALA_KIDINI_BARAZA = 1;
+N32 UTAWALA_KIDINI_MLINZI = 2;
+N32 UTAWALA_KIDINI_UNABII = 3;
+
+N32 UTAWALA_KIDINI_VIONGOZI_UPEO = 4;
+
+muundo UtawalaKidiniKiongozi {
+    N8* cheo;
+    N8* kitambulisho_cha_mtu;
+    D64 uchamungu;
+    D64 nguvu_ya_kisiasa;
+    N32 wafuasi;
+};
+
+muundo UtawalaKidini {
+    N32 aina;
+    UtawalaKidiniKiongozi kiongozi_0; UtawalaKidiniKiongozi kiongozi_1;
+    UtawalaKidiniKiongozi kiongozi_2; UtawalaKidiniKiongozi kiongozi_3;
+    N32 idadi_ya_viongozi;
+
+    D64 mamlaka_ya_kiroho;
+    D64 ushawishi_wa_kisiasa;
+    D64 ugumu_wa_mafundisho;
+    D64 nyongeza_ya_umoja_wa_utamaduni;
+    D64 adhabu_ya_kisayansi;
+    N32 anaweza_kupinga_sheria_za_kidunia;
+    N32 anaweza_kuteua_viongozi;
+    N8* dini_kuu;
+};
+
+UtawalaKidiniKiongozi* utawala_kidini_pata_kiongozi(UtawalaKidini* r, N32 idx) {
+    kama (idx == 0) { rudisha &r->kiongozi_0; }
+    kama (idx == 1) { rudisha &r->kiongozi_1; }
+    kama (idx == 2) { rudisha &r->kiongozi_2; }
+    rudisha &r->kiongozi_3;
+}
+
+UtawalaKidini* utawala_kidini_unda(N32 aina, N8* dini_kuu) {
+    UtawalaKidini* r = tenga(ukubwa(UtawalaKidini));
+    r->aina = aina;
+    r->dini_kuu = dini_kuu;
+    r->idadi_ya_viongozi = 0;
+    r->mamlaka_ya_kiroho = 0.60;
+    r->ushawishi_wa_kisiasa = 0.30;
+    r->ugumu_wa_mafundisho = 0.55;
+    r->nyongeza_ya_umoja_wa_utamaduni = 0.15;
+    r->adhabu_ya_kisayansi = 0.10;
+    kama (aina == UTAWALA_KIDINI_MLINZI) { r->anaweza_kupinga_sheria_za_kidunia = 1; } sivyo { r->anaweza_kupinga_sheria_za_kidunia = 0; }
+    kama (aina == UTAWALA_KIDINI_UONGOZI) { r->anaweza_kuteua_viongozi = 1; } sivyo { r->anaweza_kuteua_viongozi = 0; }
+    rudisha r;
+}
+
+W0 utawala_kidini_uharibu(UtawalaKidini* r) {
+    achilia r;
+}
+
+W0 utawala_kidini_sasisha(UtawalaKidini* r, D64 muda, D64 sifa_ya_mamlaka_ya_kidini,
+                            D64 mila, D64 uwakilishi, D64 rushwa) {
+    r->mamlaka_ya_kiroho = r->mamlaka_ya_kiroho
+        + (sifa_ya_mamlaka_ya_kidini * 0.5 + mila * 0.3 - r->mamlaka_ya_kiroho) * 0.03 * muda;
+
+    r->ushawishi_wa_kisiasa = r->mamlaka_ya_kiroho * 0.7 - uwakilishi * 0.2 + mila * 0.1;
+    kama (r->ushawishi_wa_kisiasa < 0.0) { r->ushawishi_wa_kisiasa = 0.0; }
+    kama (r->ushawishi_wa_kisiasa > 0.90) { r->ushawishi_wa_kisiasa = 0.90; }
+
+    r->ugumu_wa_mafundisho = r->ugumu_wa_mafundisho
+        + (mila * 0.5 + r->mamlaka_ya_kiroho * 0.3 - uwakilishi * 0.2 - r->ugumu_wa_mafundisho) * 0.04 * muda;
+    kama (r->ugumu_wa_mafundisho < 0.10) { r->ugumu_wa_mafundisho = 0.10; }
+    kama (r->ugumu_wa_mafundisho > 0.95) { r->ugumu_wa_mafundisho = 0.95; }
+
+    r->nyongeza_ya_umoja_wa_utamaduni = r->mamlaka_ya_kiroho * 0.25 + r->ugumu_wa_mafundisho * 0.10;
+
+    r->adhabu_ya_kisayansi = r->ugumu_wa_mafundisho * 0.25 + r->ushawishi_wa_kisiasa * 0.10;
+
+    kama (r->aina == UTAWALA_KIDINI_MLINZI && r->ushawishi_wa_kisiasa > 0.30) {
+        r->anaweza_kupinga_sheria_za_kidunia = 1;
+    } sivyo {
+        r->anaweza_kupinga_sheria_za_kidunia = 0;
+    }
+
+    r->mamlaka_ya_kiroho = r->mamlaka_ya_kiroho - rushwa * 0.02 * muda;
+    kama (r->mamlaka_ya_kiroho < 0.05) { r->mamlaka_ya_kiroho = 0.05; }
+
+    N32 i = 0;
+    wakati (i < r->idadi_ya_viongozi) {
+        UtawalaKidiniKiongozi* k = utawala_kidini_pata_kiongozi(r, i);
+        k->uchamungu = k->uchamungu + (r->mamlaka_ya_kiroho - k->uchamungu) * 0.02 * muda;
+        k->uchamungu = k->uchamungu - rushwa * (1.0 - k->uchamungu) * 0.01 * muda;
+        i = i + 1;
+    }
+}
+
+UtawalaKidiniKiongozi* utawala_kidini_ongeza_kiongozi(UtawalaKidini* r, N8* cheo,
+                                                        N8* kitambulisho_cha_mtu, D64 uchamungu) {
+    kama (r == 0 || cheo == 0 || r->idadi_ya_viongozi >= UTAWALA_KIDINI_VIONGOZI_UPEO) { rudisha 0; }
+    UtawalaKidiniKiongozi* k = utawala_kidini_pata_kiongozi(r, r->idadi_ya_viongozi);
+    k->cheo = cheo;
+    k->kitambulisho_cha_mtu = kitambulisho_cha_mtu;
+    k->uchamungu = uchamungu;
+    k->nguvu_ya_kisiasa = uchamungu * 0.5;
+    N32 nyongeza = civ_nasibu_chini_ya(10000);
+    D64 nyongeza_d = nyongeza;
+    D64 wafuasi_d = 1000.0 + uchamungu * nyongeza_d;
+    N32 wafuasi_n = wafuasi_d;
+    k->wafuasi = wafuasi_n;
+    r->idadi_ya_viongozi = r->idadi_ya_viongozi + 1;
+    rudisha k;
+}
+
+D64 utawala_kidini_uhalali_wa_kimaadili(UtawalaKidini* r) {
+    kama (r == 0) { rudisha 0.0; }
+    rudisha r->mamlaka_ya_kiroho;
+}
+
+D64 utawala_kidini_kikwazo_cha_kidunia(UtawalaKidini* r) {
+    kama (r == 0) { rudisha 0.0; }
+    rudisha r->ushawishi_wa_kisiasa;
+}
+
+N32 utawala_kidini_pinga_sheria(UtawalaKidini* r, N8* sheria_id) {
+    kama (r == 0) { rudisha 0; }
+    rudisha r->anaweza_kupinga_sheria_za_kidunia;
+}

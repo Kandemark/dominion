@@ -1,0 +1,204 @@
+// mkakati.swa (ndani ya moduli/akili/) — tafsiri ya
+// src/core/ai/strategic_ai.c (na .h) kwenda Swa. Akili ya mkakati
+// wa muda mrefu — malengo, utu, na mipango.
+//
+// Kiambishi: akili_mkakati_ — angalia msingi.swa kwa maelezo ya
+// viambishi vidogo vya ai/.
+//
+// TOFAUTI ZA KIMAKUSUDI: kazi nne za asili
+// (civ_strategic_ai_evaluate_threats, civ_strategic_ai_should_declare_war,
+// civ_strategic_ai_should_offer_peace, civ_strategic_ai_process_expansion)
+// HAZIKULETWA -- zote zinahitaji game_ptr (civ_game_t*, mfumo mkuu wa
+// mchezo unaojumuisha ramani/makazi/diplomasia), ambao bado
+// haujaandikwa kwa Swa. civ_strategic_ai_plan imeletwa kwa
+// UREMBUZI: sehemu inayoita evaluate_threats na sehemu inayotumia
+// diplomasia_system kupitia game_ptr zimeondolewa; sehemu
+// zinazobaki (fikra ya msingi, urekebishaji wa hatari kwa utu,
+// uundaji wa lengo kwa utu, usafishaji wa malengo yaliyokamilika)
+// zimehifadhiwa kikamilifu. game_ptr (void*) HAIKULETWA kabisa kwa
+// sababu hiyo hiyo.
+//
+// base_ai (kielekezi kwenda AkiliMsingi) na malengo[] (safu
+// inayokua) vinafuata mitindo iliyothibitishwa kwenye mbinu.swa
+// (N64 kwa field moja ya kielekezi, #186) na kitengo.swa/dini.swa
+// (N64* kwa safu ya kielekezi, #185).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/akili/msingi.swa }
+
+N32 AKILI_MKAKATI_UTU_USAWA = 0;
+N32 AKILI_MKAKATI_UTU_UKALI = 1;
+N32 AKILI_MKAKATI_UTU_UPANUZI = 2;
+N32 AKILI_MKAKATI_UTU_BIASHARA = 3;
+N32 AKILI_MKAKATI_UTU_UTAMADUNI = 4;
+
+muundo AkiliMkakatiLengo {
+    N8* aina_ya_lengo;
+    N8* maelezo;
+    D64 kipaumbele;
+    D64 maendeleo;
+};
+
+muundo AkiliMkakati {
+    N64 msingi_anwani;
+    N64* malengo;
+    N32 idadi_ya_malengo;
+    N32 uwezo_wa_malengo;
+    D64 upeo_wa_mipango;
+    D64 uvumilivu_wa_hatari;
+    N32 zamu_ya_mwisho_ya_upanuzi;
+    N32 marudio_ya_upanuzi;
+    N32 utu;
+};
+
+AkiliMsingi* akili_mkakati_pata_msingi(AkiliMkakati* ai) {
+    rudisha ai->msingi_anwani;
+}
+
+AkiliMkakatiLengo* akili_mkakati_pata_lengo(AkiliMkakati* ai, N32 idx) {
+    rudisha ai->malengo[idx];
+}
+
+AkiliMkakati* akili_mkakati_unda(N8* kitambulisho, N8* jina) {
+    AkiliMkakati* ai = tenga(ukubwa(AkiliMkakati));
+    AkiliMsingi* msingi = akili_msingi_unda(kitambulisho, jina);
+    ai->msingi_anwani = msingi;
+
+    ai->upeo_wa_mipango = 10.0;
+    ai->uvumilivu_wa_hatari = 0.5;
+    ai->uwezo_wa_malengo = 16;
+    ai->idadi_ya_malengo = 0;
+    ai->malengo = tenga(ukubwa(N64) * ai->uwezo_wa_malengo);
+
+    ai->utu = civ_nasibu_chini_ya(4);
+    ai->zamu_ya_mwisho_ya_upanuzi = 0;
+    kama (ai->utu == AKILI_MKAKATI_UTU_UPANUZI || ai->utu == AKILI_MKAKATI_UTU_UTAMADUNI) {
+        ai->marudio_ya_upanuzi = 12;
+    } sivyo {
+        ai->marudio_ya_upanuzi = 25;
+    }
+
+    rudisha ai;
+}
+
+W0 akili_mkakati_uharibu(AkiliMkakati* ai) {
+    AkiliMsingi* msingi = akili_mkakati_pata_msingi(ai);
+    kama (msingi != 0) { akili_msingi_uharibu(msingi); }
+    achilia ai->malengo;
+    achilia ai;
+}
+
+CivMatokeo akili_mkakati_ongeza_lengo(AkiliMkakati* ai, N8* aina_ya_lengo, N8* maelezo, D64 kipaumbele) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (ai == 0 || aina_ya_lengo == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    D64 kipaumbele_kilichofinywa = finya_d64(kipaumbele, 0.0, 1.0);
+
+    kama (ai->idadi_ya_malengo >= ai->uwezo_wa_malengo) {
+        ai->uwezo_wa_malengo = ai->uwezo_wa_malengo * 2;
+        ai->malengo = badili(ai->malengo, ukubwa(N64) * ai->uwezo_wa_malengo);
+    }
+
+    AkiliMkakatiLengo* lengo = tenga(ukubwa(AkiliMkakatiLengo));
+    lengo->aina_ya_lengo = aina_ya_lengo;
+    lengo->maelezo = maelezo;
+    lengo->kipaumbele = kipaumbele_kilichofinywa;
+    lengo->maendeleo = 0.0;
+
+    ai->malengo[ai->idadi_ya_malengo] = lengo;
+    ai->idadi_ya_malengo = ai->idadi_ya_malengo + 1;
+
+    rudisha r;
+}
+
+AkiliMkakatiLengo* akili_mkakati_lengo_la_kipaumbele(AkiliMkakati* ai) {
+    kama (ai == 0 || ai->idadi_ya_malengo == 0) { rudisha 0; }
+
+    AkiliMkakatiLengo* bora = akili_mkakati_pata_lengo(ai, 0);
+    N32 i = 1;
+    wakati (i < ai->idadi_ya_malengo) {
+        AkiliMkakatiLengo* huyu = akili_mkakati_pata_lengo(ai, i);
+        kama (huyu->kipaumbele > bora->kipaumbele) { bora = huyu; }
+        i = i + 1;
+    }
+
+    rudisha bora;
+}
+
+CivMatokeo akili_mkakati_sasisha_lengo(AkiliMkakati* ai, N32 faharisi_ya_lengo, D64 maendeleo) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (ai == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+    kama (faharisi_ya_lengo >= ai->idadi_ya_malengo) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        rudisha r;
+    }
+
+    AkiliMkakatiLengo* lengo = akili_mkakati_pata_lengo(ai, faharisi_ya_lengo);
+    lengo->maendeleo = finya_d64(maendeleo, 0.0, 1.0);
+
+    rudisha r;
+}
+
+W0 akili_mkakati_ondoa_lengo_kwa_idx(AkiliMkakati* ai, N32 idx) {
+    N32 j = idx;
+    wakati (j < ai->idadi_ya_malengo - 1) {
+        ai->malengo[j] = ai->malengo[j + 1];
+        j = j + 1;
+    }
+    ai->idadi_ya_malengo = ai->idadi_ya_malengo - 1;
+}
+
+CivMatokeo akili_mkakati_panga(AkiliMkakati* ai, D64 muda) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (ai == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    AkiliMsingi* msingi = akili_mkakati_pata_msingi(ai);
+    kama (msingi != 0) { akili_msingi_fikiri(msingi, muda); }
+
+    kama (ai->utu == AKILI_MKAKATI_UTU_UKALI) { ai->uvumilivu_wa_hatari = 0.8; }
+    sivyo { kama (ai->utu == AKILI_MKAKATI_UTU_USAWA) { ai->uvumilivu_wa_hatari = 0.5; }
+    sivyo { ai->uvumilivu_wa_hatari = 0.3; } }
+
+    kama (ai->idadi_ya_malengo < 3) {
+        kama (ai->utu == AKILI_MKAKATI_UTU_UPANUZI) {
+            akili_mkakati_ongeza_lengo(ai, "Upanuzi", "Anzisha makazi mapya", 0.9);
+        } sivyo { kama (ai->utu == AKILI_MKAKATI_UTU_UKALI) {
+            akili_mkakati_ongeza_lengo(ai, "Kijeshi", "Jenga majeshi", 0.8);
+        } sivyo { kama (ai->utu == AKILI_MKAKATI_UTU_BIASHARA) {
+            akili_mkakati_ongeza_lengo(ai, "Biashara", "Anzisha njia za biashara", 0.7);
+        } sivyo { kama (ai->utu == AKILI_MKAKATI_UTU_UTAMADUNI) {
+            akili_mkakati_ongeza_lengo(ai, "Utamaduni", "Fikia utawala wa kitamaduni", 0.95);
+        } } } }
+    }
+
+    N32 i = 0;
+    wakati (i < ai->idadi_ya_malengo) {
+        AkiliMkakatiLengo* lengo = akili_mkakati_pata_lengo(ai, i);
+        kama (lengo->maendeleo >= 1.0) {
+            akili_mkakati_ondoa_lengo_kwa_idx(ai, i);
+            i = i - 1;
+        }
+        i = i + 1;
+    }
+
+    rudisha r;
+}

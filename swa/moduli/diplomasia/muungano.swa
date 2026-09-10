@@ -1,0 +1,69 @@
+// muungano.swa — tafsiri ya src/core/diplomacy/unification_engine.c
+// (na .h) kwenda Swa. Uunganishaji wa mataifa (mergers) na miundo
+// ya pamoja ya kimataifa.
+//
+// Kiambishi: muungano_ — angalia ../../KANUNI-MAJINA.md (diplomacy/).
+// new_national_name (snprintf ya jina jipya kutoka mataifa mawili,
+// char[STRING_MEDIUM_LEN]) imekuwa kutumia unganisha_mfuatano mara
+// tatu (haiwezi kufanya kazi ya snprintf ya mfumo wa Kiswahili
+// moja kwa moja kwa sababu ya muundo wa maneno matatu — imerahisishwa
+// kuwa "<taifa_a>-<taifa_b>" bila neno la mbele "The United
+// Commonwealth of"). Kigezo cha ukubwa wa hifadhi kimewekwa 96
+// herufi kwa jina jipya.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+N32 MUUNGANO_HATUA_USHIRIKIANO_WA_SOKO = 0;
+N32 MUUNGANO_HATUA_UMOJA_WA_SARAFU = 1;
+N32 MUUNGANO_HATUA_SHIRIKISHO_LA_KISIASA = 2;
+N32 MUUNGANO_HATUA_UUNGANISHAJI_KAMILI = 3;
+
+muundo MuunganoMatokeo {
+    N8* jina_jipya_la_taifa;
+    N32 hatua;
+    D64 athari_ya_utulivu;
+    N32 mafanikio;
+};
+
+MuunganoMatokeo muungano_pendekeza(N8* taifa_a, N8* taifa_b, N32 lengo) {
+    MuunganoMatokeo matokeo;
+    matokeo.jina_jipya_la_taifa = 0;
+    matokeo.hatua = lengo;
+    matokeo.athari_ya_utulivu = 0.0;
+    matokeo.mafanikio = 0;
+
+    kama (taifa_a != 0 && taifa_b != 0) {
+        matokeo.mafanikio = 1;
+        N8* jina = tenga(96);
+        unganisha_mfuatano(jina, taifa_a, "-");
+        N8* jina_kamili = tenga(96);
+        unganisha_mfuatano(jina_kamili, jina, taifa_b);
+        matokeo.jina_jipya_la_taifa = jina_kamili;
+        matokeo.athari_ya_utulivu = 0.1;
+    }
+
+    kama (matokeo.mafanikio != 0) {
+        andika("Pendekezo la muungano kati ya %s na %s: LIMEKUBALIWA\n", taifa_a, taifa_b, 0,0,0,0);
+    } sivyo {
+        andika("Pendekezo la muungano kati ya %s na %s: LIMEKATALIWA\n", taifa_a, taifa_b, 0,0,0,0);
+    }
+
+    rudisha matokeo;
+}
+
+CivMatokeo muungano_unganisha_uchumi(N8* taifa_a, N8* taifa_b) {
+    andika("Kuunganisha masoko ya %s na %s kuwa kundi moja la biashara.\n", taifa_a, taifa_b, 0,0,0,0);
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    rudisha r;
+}
+
+CivMatokeo muungano_unda_sarafu_ya_pamoja(N8* jina, N8* taifa_a, N8* taifa_b) {
+    andika("Sarafu mpya ya pamoja '%s' imeanzishwa kati ya %s na %s.\n", jina, taifa_a, taifa_b, 0,0,0);
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    rudisha r;
+}

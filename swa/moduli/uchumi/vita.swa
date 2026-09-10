@@ -1,0 +1,116 @@
+// vita.swa — tafsiri ya src/core/economy/war_economy.c (na .h)
+// kwenda Swa. Uhamasishaji, mgao, ununuzi wa kijeshi, na
+// ubadilishaji wa viwanda kwa vita.
+//
+// Kiambishi: vita_ — angalia ../../KANUNI-MAJINA.md.
+// switch(w->level) imekuwa kama/sivyo.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 VITA_UHAMASISHAJI_AMANI = 0;
+N32 VITA_UHAMASISHAJI_SEHEMU = 1;
+N32 VITA_UHAMASISHAJI_KAMILI = 2;
+N32 VITA_UHAMASISHAJI_JUMLA = 3;
+
+muundo VitaMfumo {
+    N32 kiwango;                          // level
+    D64 uwiano_wa_matumizi_ya_kijeshi;
+    D64 ubadilishaji_wa_viwanda_kwa_kijeshi;
+    D64 kiwango_cha_mgao;                  // rationing_level
+    D64 kiwango_cha_uandikishaji;          // conscription_rate
+    D64 akiba_ya_vifaa_vya_vita;
+    D64 kiwango_cha_matumizi_ya_vifaa;
+    D64 adhabu_ya_uchumi_wa_kiraia;
+    D64 uchovu_wa_vita;                    // war_exhaustion
+    N32 miezi_ya_vita;
+    N32 vitani;                             // at_war, 0/1
+};
+
+VitaMfumo* vita_unda() {
+    VitaMfumo* w = tenga(ukubwa(VitaMfumo));
+    w->kiwango = VITA_UHAMASISHAJI_AMANI;
+    w->uwiano_wa_matumizi_ya_kijeshi = 0.02;
+    w->ubadilishaji_wa_viwanda_kwa_kijeshi = 0.0;
+    w->kiwango_cha_mgao = 0.0;
+    w->kiwango_cha_uandikishaji = 0.0;
+    w->akiba_ya_vifaa_vya_vita = 1000.0;
+    w->kiwango_cha_matumizi_ya_vifaa = 0.0;
+    w->adhabu_ya_uchumi_wa_kiraia = 0.0;
+    w->uchovu_wa_vita = 0.0;
+    w->miezi_ya_vita = 0;
+    w->vitani = 0;
+    rudisha w;
+}
+
+W0 vita_uharibu(VitaMfumo* w) {
+    achilia w;
+}
+
+W0 vita_zalisha_vifaa(VitaMfumo* w, D64 pembejeo_ya_viwanda) {
+    w->akiba_ya_vifaa_vya_vita = w->akiba_ya_vifaa_vya_vita + pembejeo_ya_viwanda * 0.5;
+}
+
+W0 vita_sasisha(VitaMfumo* w, D64 muda, D64 pato, D64 uzalishaji_wa_viwanda,
+                  N32 idadi_ya_watu, N32 inapigana_sasa) {
+    kama (w->vitani == 0 && inapigana_sasa == 0) {
+        w->uwiano_wa_matumizi_ya_kijeshi = w->uwiano_wa_matumizi_ya_kijeshi
+            + (0.02 - w->uwiano_wa_matumizi_ya_kijeshi) * 0.1;
+        w->ubadilishaji_wa_viwanda_kwa_kijeshi = w->ubadilishaji_wa_viwanda_kwa_kijeshi * 0.95;
+        w->kiwango_cha_mgao = w->kiwango_cha_mgao * 0.9;
+        w->kiwango_cha_uandikishaji = w->kiwango_cha_uandikishaji * 0.9;
+        w->miezi_ya_vita = 0;
+        w->uchovu_wa_vita = w->uchovu_wa_vita * 0.95;
+    } sivyo {
+        w->vitani = 1;
+        kama (inapigana_sasa != 0) { w->miezi_ya_vita = w->miezi_ya_vita + 1; }
+
+        kama (w->kiwango == VITA_UHAMASISHAJI_AMANI) {
+            w->uwiano_wa_matumizi_ya_kijeshi = 0.03;
+            w->adhabu_ya_uchumi_wa_kiraia = 0.0;
+        } sivyo { kama (w->kiwango == VITA_UHAMASISHAJI_SEHEMU) {
+            w->uwiano_wa_matumizi_ya_kijeshi = 0.12;
+            w->adhabu_ya_uchumi_wa_kiraia = 0.08;
+            w->ubadilishaji_wa_viwanda_kwa_kijeshi = 0.10;
+            w->kiwango_cha_uandikishaji = 0.02;
+        } sivyo { kama (w->kiwango == VITA_UHAMASISHAJI_KAMILI) {
+            w->uwiano_wa_matumizi_ya_kijeshi = 0.30;
+            w->adhabu_ya_uchumi_wa_kiraia = 0.20;
+            w->ubadilishaji_wa_viwanda_kwa_kijeshi = 0.40;
+            w->kiwango_cha_mgao = 0.30;
+            w->kiwango_cha_uandikishaji = 0.08;
+        } sivyo { kama (w->kiwango == VITA_UHAMASISHAJI_JUMLA) {
+            w->uwiano_wa_matumizi_ya_kijeshi = 0.60;
+            w->adhabu_ya_uchumi_wa_kiraia = 0.45;
+            w->ubadilishaji_wa_viwanda_kwa_kijeshi = 0.75;
+            w->kiwango_cha_mgao = 0.70;
+            w->kiwango_cha_uandikishaji = 0.20;
+        } } } }
+
+        w->uchovu_wa_vita = w->uchovu_wa_vita + (0.01 + w->kiwango_cha_mgao * 0.03
+            + w->adhabu_ya_uchumi_wa_kiraia * 0.02);
+        kama (w->uchovu_wa_vita > 1.0) { w->uchovu_wa_vita = 1.0; }
+    }
+
+    D64 viwanda_vya_kijeshi = uzalishaji_wa_viwanda * w->ubadilishaji_wa_viwanda_kwa_kijeshi;
+    vita_zalisha_vifaa(w, viwanda_vya_kijeshi);
+
+    kama (inapigana_sasa != 0) {
+        w->kiwango_cha_matumizi_ya_vifaa = w->akiba_ya_vifaa_vya_vita * 0.05;
+        w->akiba_ya_vifaa_vya_vita = w->akiba_ya_vifaa_vya_vita - w->kiwango_cha_matumizi_ya_vifaa;
+        kama (w->akiba_ya_vifaa_vya_vita < 0.0) { w->akiba_ya_vifaa_vya_vita = 0.0; }
+    }
+}
+
+W0 vita_weka_uhamasishaji(VitaMfumo* w, N32 kiwango) {
+    w->kiwango = kiwango;
+    kama (kiwango != VITA_UHAMASISHAJI_AMANI) { w->vitani = 1; } sivyo { w->vitani = 0; }
+}
+
+D64 vita_adhabu_ya_pato(VitaMfumo* w) {
+    rudisha w->adhabu_ya_uchumi_wa_kiraia;
+}
+
+N32 vita_ni_endelevu(VitaMfumo* w) {
+    kama (w->uchovu_wa_vita < 0.8) { rudisha 1; }
+    rudisha 0;
+}

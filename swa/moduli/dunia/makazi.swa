@@ -1,0 +1,419 @@
+// makazi.swa (ndani ya moduli/dunia/) — tafsiri ya
+// src/core/world/settlement_manager.c (na .h) kwenda Swa. Uundaji na
+// ukuaji wa makazi (settlements) kutoka kwa idadi ya watu,
+// rasilimali, na jiografia.
+//
+// Kiambishi: dunia_makazi_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - race_pop[8]/language_pop[8]/faith_pop[8] (safu za ndani za
+//     muundo) zimegawanywa kuwa vigezo 8 vyenye majina KILA MOJA (24
+//     jumla) + kazi tatu za kupata zinazorudisha kielekezi.
+//   - civ_settlement_manager_add (asili: kunakili muundo *settlement
+//     KWA THAMANI kwenye safu) imekuwa kuhifadhi KIELEKEZI moja kwa
+//     moja (safu ya N64*, #185) -- inaepuka #182(b) kabisa.
+//   - civ_settlement_t id/name (snprintf + time()) imekuwa
+//     kupitishwa na mwitaji moja kwa moja badala ya kuzalishwa
+//     ndani (hakuna snprintf ya kuunganisha nambari+mfuatano kwa
+//     urahisi katika Swa).
+//   - time_t founded_date haikuletwa (haihitajiki kwa mantiki).
+//   - struct civ_government* gov (mfumo mkuu wa utawala) HAUKULETWA
+//     bado -- utawala/government.c wenyewe unahitaji moduli 6
+//     ambazo bado hazijaandikwa (angalia ripoti ya kikao hiki).
+//     Sehemu ya "Institutional Bonuses"/stability/legitimacy
+//     iliyotegemea gov imeachwa (sawa na "gov == 0" tawi la asili la
+//     C -- stability_bonus=-0.01, legitimacy_bonus=0.0, hakuna
+//     institution bonus).
+//   - printf za "[SOVEREIGN]"/"[HEGEMONY]" zimekuwa andika().
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/dunia/ramani.swa }
+husisha { moduli/mazingira/jiografia.swa }
+
+N32 DUNIA_MAKAZI_KIJIJI_KIDOGO = 0;
+N32 DUNIA_MAKAZI_KIJIJI = 1;
+N32 DUNIA_MAKAZI_MJI_MDOGO = 2;
+N32 DUNIA_MAKAZI_MJI = 3;
+N32 DUNIA_MAKAZI_JIJI_KUU = 4;
+N32 DUNIA_MAKAZI_MJI_MKUU = 5;
+
+muundo DuniaMakaziMiundombinu {
+    D64 ubora_wa_barabara;
+    D64 ngome;
+    D64 uwezo_wa_bandari;
+    D64 usafi;
+};
+
+muundo DuniaMakazi {
+    N8* kitambulisho;
+    N8* jina;
+    N32 kiwango;
+
+    D64 x;
+    D64 y;
+
+    N64 idadi_ya_watu;
+    D64 kiwango_cha_ukuaji;
+    D64 uvutio;
+
+    N64 kabila_0; N64 kabila_1; N64 kabila_2; N64 kabila_3;
+    N64 kabila_4; N64 kabila_5; N64 kabila_6; N64 kabila_7;
+    N64 lugha_0; N64 lugha_1; N64 lugha_2; N64 lugha_3;
+    N64 lugha_4; N64 lugha_5; N64 lugha_6; N64 lugha_7;
+    N64 imani_0; N64 imani_1; N64 imani_2; N64 imani_3;
+    N64 imani_4; N64 imani_5; N64 imani_6; N64 imani_7;
+    D64 elimu_ya_kusoma;
+    D64 kiwango_cha_afya;
+
+    DuniaMakaziMiundombinu miundombinu;
+
+    N8* eneo_id;
+
+    N32 aina_ya_uzalishaji;
+    D64 maendeleo_ya_uzalishaji;
+    D64 lengo_la_uzalishaji;
+    N32 inazalisha;
+
+    D64 mavuno_ya_utamaduni;
+    D64 utamaduni_uliokusanywa;
+    N32 eneo_la_kipenyo;
+
+    D64 uaminifu;
+    D64 machafuko;
+
+    N32 kabila_kuu;
+    N32 lugha_kuu;
+    N32 imani_kuu;
+};
+
+muundo DuniaMakaziMsimamizi {
+    N64* makazi_yote;   // safu ya DuniaMakazi*, #185
+    N32 idadi;
+    N32 uwezo;
+    D64 umbali_wa_chini;
+};
+
+N64* dunia_makazi_pata_kabila(DuniaMakazi* s, N32 idx) {
+    kama (idx == 0) { rudisha &s->kabila_0; }
+    kama (idx == 1) { rudisha &s->kabila_1; }
+    kama (idx == 2) { rudisha &s->kabila_2; }
+    kama (idx == 3) { rudisha &s->kabila_3; }
+    kama (idx == 4) { rudisha &s->kabila_4; }
+    kama (idx == 5) { rudisha &s->kabila_5; }
+    kama (idx == 6) { rudisha &s->kabila_6; }
+    rudisha &s->kabila_7;
+}
+
+N64* dunia_makazi_pata_lugha(DuniaMakazi* s, N32 idx) {
+    kama (idx == 0) { rudisha &s->lugha_0; }
+    kama (idx == 1) { rudisha &s->lugha_1; }
+    kama (idx == 2) { rudisha &s->lugha_2; }
+    kama (idx == 3) { rudisha &s->lugha_3; }
+    kama (idx == 4) { rudisha &s->lugha_4; }
+    kama (idx == 5) { rudisha &s->lugha_5; }
+    kama (idx == 6) { rudisha &s->lugha_6; }
+    rudisha &s->lugha_7;
+}
+
+N64* dunia_makazi_pata_imani(DuniaMakazi* s, N32 idx) {
+    kama (idx == 0) { rudisha &s->imani_0; }
+    kama (idx == 1) { rudisha &s->imani_1; }
+    kama (idx == 2) { rudisha &s->imani_2; }
+    kama (idx == 3) { rudisha &s->imani_3; }
+    kama (idx == 4) { rudisha &s->imani_4; }
+    kama (idx == 5) { rudisha &s->imani_5; }
+    kama (idx == 6) { rudisha &s->imani_6; }
+    rudisha &s->imani_7;
+}
+
+DuniaMakazi* dunia_makazi_msimamizi_pata(DuniaMakaziMsimamizi* m, N32 idx) {
+    rudisha m->makazi_yote[idx];
+}
+
+DuniaMakaziMsimamizi* dunia_makazi_msimamizi_unda() {
+    DuniaMakaziMsimamizi* m = tenga(ukubwa(DuniaMakaziMsimamizi));
+    m->uwezo = 16;
+    m->idadi = 0;
+    m->makazi_yote = tenga(ukubwa(N64) * m->uwezo);
+    m->umbali_wa_chini = 10.0;
+    rudisha m;
+}
+
+W0 dunia_makazi_msimamizi_uharibu(DuniaMakaziMsimamizi* m) {
+    achilia m->makazi_yote;
+    achilia m;
+}
+
+CivMatokeo dunia_makazi_msimamizi_ongeza(DuniaMakaziMsimamizi* m, DuniaMakazi* makazi) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0 || makazi == 0) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        r.ujumbe = "hoja batili";
+        rudisha r;
+    }
+
+    kama (m->idadi >= m->uwezo) {
+        m->uwezo = m->uwezo * 2;
+        m->makazi_yote = badili(m->makazi_yote, ukubwa(N64) * m->uwezo);
+    }
+
+    m->makazi_yote[m->idadi] = makazi;
+    m->idadi = m->idadi + 1;
+
+    r.ujumbe = "Makazi yameongezwa";
+    rudisha r;
+}
+
+D64 dunia_makazi_hesabu_ufaafu_wa_eneo(D64 x, D64 y) {
+    // Nafasi ya asili ya C: ilikuwa nafasi tu (rand()%100)/100 --
+    // hoja x/y hazitumiki kwenye chanzo pia (maoni ya asili yanasema
+    // hivyo waziwazi: "Placeholder for complex logic").
+    N32 kura = civ_nasibu_chini_ya(100);
+    D64 kura_d = kura;
+    rudisha kura_d / 100.0;
+}
+
+CivMatokeo dunia_makazi_jaribu_kuunda(DuniaMakaziMsimamizi* m, D64 x, D64 y,
+                                        N8* kitambulisho, N8* jina) {
+    kama (m == 0) {
+        CivMatokeo r;
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        r.ujumbe = "hakuna msimamizi";
+        rudisha r;
+    }
+
+    N32 i = 0;
+    wakati (i < m->idadi) {
+        DuniaMakazi* s = dunia_makazi_msimamizi_pata(m, i);
+        D64 dx = s->x - x;
+        D64 dy = s->y - y;
+        D64 umbali = civ_mzizi(dx * dx + dy * dy);
+        kama (umbali < m->umbali_wa_chini) {
+            CivMatokeo r;
+            r.hitilafu = CIV_HITILAFU_HALI_MBAYA;
+            r.ujumbe = "karibu sana na makazi mengine";
+            rudisha r;
+        }
+        i = i + 1;
+    }
+
+    D64 ufaafu = dunia_makazi_hesabu_ufaafu_wa_eneo(x, y);
+    kama (ufaafu <= 0.7) {
+        CivMatokeo r;
+        r.hitilafu = CIV_SAWA;
+        r.ujumbe = "eneo halifai";
+        rudisha r;
+    }
+
+    DuniaMakazi* mji_mpya = tenga(ukubwa(DuniaMakazi));
+    mji_mpya->kitambulisho = kitambulisho;
+    mji_mpya->jina = jina;
+    mji_mpya->kiwango = DUNIA_MAKAZI_KIJIJI_KIDOGO;
+    mji_mpya->x = x;
+    mji_mpya->y = y;
+    mji_mpya->idadi_ya_watu = 100;
+    mji_mpya->kiwango_cha_ukuaji = 0.0;
+    mji_mpya->uvutio = ufaafu;
+    mji_mpya->mavuno_ya_utamaduni = 1.0;
+    mji_mpya->utamaduni_uliokusanywa = 0.0;
+    mji_mpya->eneo_la_kipenyo = 2;
+    mji_mpya->uaminifu = 1.0;
+    mji_mpya->machafuko = 0.0;
+    mji_mpya->kabila_kuu = 0;
+    mji_mpya->lugha_kuu = 0;
+    mji_mpya->imani_kuu = 0;
+    mji_mpya->eneo_id = 0;
+    mji_mpya->aina_ya_uzalishaji = 0;
+    mji_mpya->maendeleo_ya_uzalishaji = 0.0;
+    mji_mpya->lengo_la_uzalishaji = 0.0;
+    mji_mpya->inazalisha = 0;
+    mji_mpya->elimu_ya_kusoma = 0.0;
+    mji_mpya->kiwango_cha_afya = 0.0;
+    mji_mpya->miundombinu.ubora_wa_barabara = 0.0;
+    mji_mpya->miundombinu.ngome = 0.0;
+    mji_mpya->miundombinu.uwezo_wa_bandari = 0.0;
+    mji_mpya->miundombinu.usafi = 0.0;
+
+    N32 i2 = 0;
+    wakati (i2 < 8) {
+        N64* kb = dunia_makazi_pata_kabila(mji_mpya, i2);
+        N64* lg = dunia_makazi_pata_lugha(mji_mpya, i2);
+        N64* im = dunia_makazi_pata_imani(mji_mpya, i2);
+        *kb = 0;
+        *lg = 0;
+        *im = 0;
+        i2 = i2 + 1;
+    }
+    N64* kb0 = dunia_makazi_pata_kabila(mji_mpya, 0);
+    N64* lg0 = dunia_makazi_pata_lugha(mji_mpya, 0);
+    N64* im0 = dunia_makazi_pata_imani(mji_mpya, 0);
+    *kb0 = 100;
+    *lg0 = 100;
+    *im0 = 100;
+
+    rudisha dunia_makazi_msimamizi_ongeza(m, mji_mpya);
+}
+
+W0 dunia_makazi_sasisha_moja(DuniaMakazi* s, DuniaRamani* ramani, D64 muda) {
+    D64 idadi_d = s->idadi_ya_watu;
+    D64 ukuaji = idadi_d * 0.01 * s->uvutio * muda;
+    N64 ukuaji_n = ukuaji;
+    s->idadi_ya_watu = s->idadi_ya_watu + ukuaji_n;
+
+    kama (s->kiwango == DUNIA_MAKAZI_KIJIJI_KIDOGO && s->idadi_ya_watu > 1000) {
+        s->kiwango = DUNIA_MAKAZI_KIJIJI;
+    } sivyo { kama (s->kiwango == DUNIA_MAKAZI_KIJIJI && s->idadi_ya_watu > 5000) {
+        s->kiwango = DUNIA_MAKAZI_MJI_MDOGO;
+    } sivyo { kama (s->kiwango == DUNIA_MAKAZI_MJI_MDOGO && s->idadi_ya_watu > 20000) {
+        s->kiwango = DUNIA_MAKAZI_MJI;
+    } sivyo { kama (s->kiwango == DUNIA_MAKAZI_MJI && s->idadi_ya_watu > 100000) {
+        s->kiwango = DUNIA_MAKAZI_JIJI_KUU;
+    } } } }
+
+    kama (s->inazalisha != 0) {
+        D64 idadi_d2 = s->idadi_ya_watu;
+        D64 kiwango_cha_uzalishaji = 2.0 + (idadi_d2 / 2000.0);
+        s->maendeleo_ya_uzalishaji = s->maendeleo_ya_uzalishaji + kiwango_cha_uzalishaji * muda;
+    }
+
+    D64 idadi_d3 = s->idadi_ya_watu;
+    s->mavuno_ya_utamaduni = 1.0 + (idadi_d3 / 5000.0);
+    s->utamaduni_uliokusanywa = s->utamaduni_uliokusanywa + s->mavuno_ya_utamaduni * muda;
+
+    D64 idadi_d4 = s->idadi_ya_watu;
+    D64 kigezo_cha_idadi = idadi_d4 / 10000.0;
+    D64 msongamano = kigezo_cha_idadi - 1.0;
+    kama (msongamano < 0.0) { msongamano = 0.0; }
+    msongamano = msongamano * 0.05;
+
+    D64 mfarakano_wa_utambulisho = 0.0;
+    kama (s->lugha_kuu != 0) { mfarakano_wa_utambulisho = mfarakano_wa_utambulisho + 0.05; }
+    kama (s->imani_kuu != 0) { mfarakano_wa_utambulisho = mfarakano_wa_utambulisho + 0.03; }
+    kama (s->kabila_kuu != 0) { mfarakano_wa_utambulisho = mfarakano_wa_utambulisho + 0.02; }
+
+    s->machafuko = finya_d64(s->machafuko
+        + (msongamano + mfarakano_wa_utambulisho - s->miundombinu.usafi * 0.1) * muda,
+        0.0, 1.0);
+
+    kama (s->idadi_ya_watu > 100 && muda > 0.0) {
+        D64 kiwango_cha_uigaji = 0.01 * muda;
+        kama (s->lugha_kuu != 0) {
+            D64 idadi_d5 = s->idadi_ya_watu;
+            D64 mtiririko_d = idadi_d5 * kiwango_cha_uigaji;
+            N64 mtiririko = mtiririko_d;
+            N64* lugha0 = dunia_makazi_pata_lugha(s, 0);
+            N64* lugha_kuu_p = dunia_makazi_pata_lugha(s, s->lugha_kuu);
+            *lugha0 = *lugha0 + mtiririko;
+            *lugha_kuu_p = *lugha_kuu_p - mtiririko;
+        }
+    }
+
+    // MUHIMU: gov (civ_government_t*) HAIJALETWA -- angalia maelezo
+    // ya faili hapo juu. Tunatumia tawi la asili la "gov == 0"
+    // moja kwa moja (haiathiriwi na taasisi/uthabiti wa taifa bado).
+    D64 nyongeza_ya_uthabiti = 0 - 0.01;
+    D64 nyongeza_ya_uhalali = 0.0;
+
+    D64 mtiririko_wa_uaminifu = (0.01 * s->miundombinu.ubora_wa_barabara)
+        - (0.02 * s->machafuko) + nyongeza_ya_uthabiti + nyongeza_ya_uhalali;
+    s->uaminifu = finya_d64(s->uaminifu + mtiririko_wa_uaminifu * muda, 0.0, 1.0);
+
+    kama (s->uaminifu < 0.15) {
+        N32 ni_mji_mkuu = linganisha_mfuatano(s->kitambulisho, "player_capital");
+        kama (ni_mji_mkuu != 0) {
+            s->eneo_id = "REBELS";
+            andika("[SOVEREIGN] %s AMEASI! Uaminifu: %d\n", s->jina, 0,0,0,0,0);
+        }
+    }
+
+    kama (s->eneo_la_kipenyo == 2 && s->utamaduni_uliokusanywa >= 20.0) {
+        s->eneo_la_kipenyo = 3;
+    } sivyo { kama (s->eneo_la_kipenyo == 3 && s->utamaduni_uliokusanywa >= 100.0) {
+        s->eneo_la_kipenyo = 4;
+    } sivyo { kama (s->eneo_la_kipenyo == 4 && s->utamaduni_uliokusanywa >= 500.0) {
+        s->eneo_la_kipenyo = 5;
+    } } }
+
+    kama (ramani == 0) { rudisha; }
+
+    N32 cx = s->x;
+    N32 cy = s->y;
+    N32 r = s->eneo_la_kipenyo;
+
+    N32 dy = 0 - r;
+    wakati (dy <= r) {
+        N32 dx = 0 - r;
+        wakati (dx <= r) {
+            N32 dist_sq = dx * dx + dy * dy;
+            kama (dist_sq <= r * r) {
+                N32 tx = cx + dx;
+                N32 ty = cy + dy;
+                N32 tx_iliyofunikwa = ((tx % ramani->upana) + ramani->upana) % ramani->upana;
+
+                kama (ty >= 0 && ty < ramani->urefu) {
+                    DuniaRamaniKipande* kipande = dunia_ramani_pata_kipande(ramani, tx_iliyofunikwa, ty);
+                    kama (kipande != 0) {
+                        D64 upinzani = 1.0;
+                        kama (kipande->ardhi == MAZINGIRA_ARDHI_MLIMA) { upinzani = 5.0; }
+                        sivyo { kama (kipande->matumizi_ya_ardhi == MAZINGIRA_MATUMIZI_MAJI) { upinzani = 2.0; } }
+
+                        D64 dist_sq_d = dist_sq;
+                        D64 umbali_halisi = civ_mzizi(dist_sq_d) * upinzani;
+                        D64 ushawishi = s->mavuno_ya_utamaduni / (umbali_halisi + 1.0);
+
+                        kama (ushawishi > 0.05) {
+                            N32 halina_mmiliki = 0;
+                            kama (kipande->mmiliki_id == 0) { halina_mmiliki = 1; }
+
+                            N32 ni_mmiliki = 0;
+                            kama (kipande->mmiliki_id != 0) {
+                                kama (linganisha_mfuatano(kipande->mmiliki_id, s->kitambulisho) == 0) { ni_mmiliki = 1; }
+                            }
+
+                            kama (ni_mmiliki != 0) {
+                                kipande->ushawishi_wa_kiutamaduni = ushawishi;
+                            } sivyo { kama (halina_mmiliki != 0) {
+                                kipande->mmiliki_id = s->kitambulisho;
+                                kipande->ushawishi_wa_kiutamaduni = ushawishi;
+                            } sivyo {
+                                D64 kizingiti = kipande->ushawishi_wa_kiutamaduni * 1.5;
+                                kama (ushawishi > kizingiti) {
+                                    kipande->mmiliki_id = s->kitambulisho;
+                                    kipande->ushawishi_wa_kiutamaduni = ushawishi;
+                                    andika("[HEGEMONY] Kipande (%d,%d) kimebadilika kwenda %s\n",
+                                        tx, ty, 0,0,0,0);
+                                }
+                            } }
+                        }
+                    }
+                }
+            }
+            dx = dx + 1;
+        }
+        dy = dy + 1;
+    }
+}
+
+CivMatokeo dunia_makazi_msimamizi_sasisha(DuniaMakaziMsimamizi* m, DuniaRamani* ramani, D64 muda) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "hakuna msimamizi";
+        rudisha r;
+    }
+
+    N32 i = 0;
+    wakati (i < m->idadi) {
+        DuniaMakazi* s = dunia_makazi_msimamizi_pata(m, i);
+        dunia_makazi_sasisha_moja(s, ramani, muda);
+        i = i + 1;
+    }
+
+    r.ujumbe = "Imesasishwa";
+    rudisha r;
+}

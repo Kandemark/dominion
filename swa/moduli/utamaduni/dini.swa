@@ -1,0 +1,95 @@
+// dini.swa — tafsiri ya src/core/culture/religion_system.c (na .h)
+// kwenda Swa. Dini zinazoibuka kutoka kwa tamaduni.
+//
+// Kiambishi: utamaduni_dini_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - enum civ_religion_tenet_t imekuwa viambatanisho vya N32.
+//   - tenets[4] (safu ya ukubwa maalum) imegawanywa kuwa vigezo 4
+//     vyenye majina (mafundisho_0..mafundisho_3).
+//   - id/name/origin_culture_id zimekuwa N8*, hazihifadhi nakala.
+//   - is_extinct (bool) imekuwa N32 (0/1). creation_time imeachwa.
+//   - rand() % 6 imekuwa civ_nasibu_chini_ya(6).
+//   - religions[] (safu inayokua) inatumia muundo wa N64* (angalia
+//     kitambulisho.swa kuhusu lugha-swa/swa#185).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+N32 UTAMADUNI_DINI_MILA = 0;
+N32 UTAMADUNI_DINI_UENEZAJI = 1;
+N32 UTAMADUNI_DINI_UNYENYEKEVU = 2;
+N32 UTAMADUNI_DINI_UPIGANAJI = 3;
+N32 UTAMADUNI_DINI_AMANI = 4;
+N32 UTAMADUNI_DINI_ISHARA = 5;
+
+muundo UtamaduniDini {
+    N8* kitambulisho;
+    N8* jina;
+    N8* asili_utamaduni_id;
+
+    N32 mafundisho_0; N32 mafundisho_1; N32 mafundisho_2; N32 mafundisho_3;
+    N32 idadi_ya_mafundisho;
+
+    D64 mori;             // fervor
+    D64 ufikiaji_wa_dunia; // global_reach
+    D64 kiwango_cha_kupungua; // decline_rate
+    N32 imetoweka;         // is_extinct, 0/1
+};
+
+muundo UtamaduniDiniMfumo {
+    N64* dini_zote;    // N64* ya vielekezi vya UtamaduniDini*
+    N32 idadi;
+    N32 uwezo;
+};
+
+UtamaduniDiniMfumo* utamaduni_dini_mfumo_unda() {
+    UtamaduniDiniMfumo* mfumo = tenga(ukubwa(UtamaduniDiniMfumo));
+    mfumo->uwezo = 16;
+    mfumo->idadi = 0;
+    mfumo->dini_zote = tenga(ukubwa(N64) * mfumo->uwezo);
+    rudisha mfumo;
+}
+
+UtamaduniDini* utamaduni_dini_mfumo_pata(UtamaduniDiniMfumo* mfumo, N32 idx) {
+    rudisha mfumo->dini_zote[idx];
+}
+
+UtamaduniDini* utamaduni_dini_ibuka(UtamaduniDiniMfumo* mfumo, N8* jina, N8* utamaduni_id) {
+    kama (mfumo->idadi >= mfumo->uwezo) {
+        mfumo->uwezo = mfumo->uwezo * 2;
+        mfumo->dini_zote = badili(mfumo->dini_zote, ukubwa(N64) * mfumo->uwezo);
+    }
+
+    UtamaduniDini* dini = tenga(ukubwa(UtamaduniDini));
+    dini->kitambulisho = jina;
+    dini->jina = jina;
+    dini->asili_utamaduni_id = utamaduni_id;
+
+    dini->mori = 0.5;
+    dini->ufikiaji_wa_dunia = 0.01;
+    dini->kiwango_cha_kupungua = 0.0;
+    dini->imetoweka = 0;
+
+    dini->idadi_ya_mafundisho = 2;
+    dini->mafundisho_0 = civ_nasibu_chini_ya(6);
+    dini->mafundisho_1 = civ_nasibu_chini_ya(6);
+    dini->mafundisho_2 = 0;
+    dini->mafundisho_3 = 0;
+
+    mfumo->dini_zote[mfumo->idadi] = dini;
+    mfumo->idadi = mfumo->idadi + 1;
+
+    rudisha dini;
+}
+
+N32 utamaduni_dini_eneza(UtamaduniDini* dini, N8* mkoa_lengwa_id, D64 kiwango) {
+    dini->ufikiaji_wa_dunia = dini->ufikiaji_wa_dunia + kiwango * dini->mori * 0.01;
+    dini->ufikiaji_wa_dunia = finya_d64(dini->ufikiaji_wa_dunia, 0.0, 1.0);
+
+    andika("Dini %s imeenea kwenda %s (ufikiaji mpya: %d)\n",
+        dini->jina, mkoa_lengwa_id, 0, 0, 0, 0);
+
+    rudisha CIV_SAWA;
+}

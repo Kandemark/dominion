@@ -1,0 +1,126 @@
+// kilimo.swa — tafsiri ya src/core/economy/agriculture.c (na .h)
+// kwenda Swa. Uzalishaji wa chakula, mifugo, misimu, rutuba ya
+// udongo, na hatari ya njaa.
+//
+// Kiambishi: kilimo_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti: civ_season_t (kutoka simulation_engine/time_manager.h,
+// moduli isiyojengwa bado) imekuwa viambatanisho 4 vya ndani hapa
+// (KILIMO_MSIMU_*) — ni thamani nne tu zinazohitajika, si sababu ya
+// kuhusisha moduli nzima ya wakati bado. season_mult[] (safu ya
+// ndani ya D64 yenye orodha ya thamani) imekuwa kama/sivyo — safu
+// za D64 hazifanyi kazi (lugha-swa/swa#181).
+
+husisha { msingi/msingi_civ.swa }
+
+N32 KILIMO_MSIMU_BARIDI = 0;
+N32 KILIMO_MSIMU_MASIKA = 1;
+N32 KILIMO_MSIMU_JOTO = 2;
+N32 KILIMO_MSIMU_VULI = 3;
+
+muundo KilimoMfumo {
+    D64 ardhi_ya_kilimo_km2;
+    D64 rutuba_ya_udongo;
+    D64 upatikanaji_wa_maji;
+    D64 mavuno_ya_mazao;
+    D64 uzalishaji_wa_mifugo;
+    D64 uzalishaji_wa_chakula;
+    D64 matumizi_ya_chakula;
+    D64 ziada_ya_chakula;
+    D64 hatari_ya_njaa;
+    D64 kiwango_cha_umwagiliaji;
+    D64 teknolojia_ya_mbolea;
+    N32 msimu;
+    D64 maendeleo_ya_msimu;
+};
+
+D64 kilimo_kizidishi_cha_msimu(N32 msimu) {
+    kama (msimu == KILIMO_MSIMU_BARIDI) { rudisha 0.8; }
+    kama (msimu == KILIMO_MSIMU_MASIKA) { rudisha 1.2; }
+    kama (msimu == KILIMO_MSIMU_JOTO) { rudisha 1.1; }
+    rudisha 0.3;
+}
+
+KilimoMfumo* kilimo_unda() {
+    KilimoMfumo* a = tenga(ukubwa(KilimoMfumo));
+    a->ardhi_ya_kilimo_km2 = 1000.0;
+    a->rutuba_ya_udongo = 0.65;
+    a->upatikanaji_wa_maji = 0.70;
+    a->mavuno_ya_mazao = 0.0;
+    a->uzalishaji_wa_mifugo = 0.0;
+    a->uzalishaji_wa_chakula = 0.0;
+    a->matumizi_ya_chakula = 0.0;
+    a->ziada_ya_chakula = 0.0;
+    a->hatari_ya_njaa = 0.0;
+    a->kiwango_cha_umwagiliaji = 0.10;
+    a->teknolojia_ya_mbolea = 1.0;
+    a->msimu = KILIMO_MSIMU_MASIKA;
+    a->maendeleo_ya_msimu = 0.0;
+    rudisha a;
+}
+
+W0 kilimo_uharibu(KilimoMfumo* a) {
+    achilia a;
+}
+
+W0 kilimo_sasisha(KilimoMfumo* a, D64 muda, D64 idadi_ya_watu,
+                    D64 ardhi_ya_jiografia, D64 kiwango_cha_teknolojia,
+                    D64 kizidishi_cha_hali_ya_hewa) {
+    a->maendeleo_ya_msimu = a->maendeleo_ya_msimu + muda * 0.01;
+    kama (a->maendeleo_ya_msimu >= 1.0) {
+        a->maendeleo_ya_msimu = 0.0;
+        a->msimu = (a->msimu + 1) % 4;
+    }
+
+    kama (ardhi_ya_jiografia > 0.0) { a->ardhi_ya_kilimo_km2 = ardhi_ya_jiografia; }
+
+    D64 ukali = idadi_ya_watu / (a->ardhi_ya_kilimo_km2 + 1.0);
+    a->rutuba_ya_udongo = a->rutuba_ya_udongo + (0.5 - ukali * 0.001
+        - a->rutuba_ya_udongo * 0.05 + kiwango_cha_teknolojia * 0.02) * muda * 0.5;
+    a->rutuba_ya_udongo = finya_d64(a->rutuba_ya_udongo, 0.10, 1.00);
+
+    a->kiwango_cha_umwagiliaji = a->kiwango_cha_umwagiliaji
+        + (kiwango_cha_teknolojia * 0.2 - a->kiwango_cha_umwagiliaji) * muda * 0.3;
+
+    a->teknolojia_ya_mbolea = 1.0 + kiwango_cha_teknolojia * 0.5;
+
+    D64 kizidishi_cha_msimu = kilimo_kizidishi_cha_msimu(a->msimu);
+
+    a->mavuno_ya_mazao = a->ardhi_ya_kilimo_km2 * a->rutuba_ya_udongo
+        * (0.5 + a->upatikanaji_wa_maji * 0.5) * (1.0 + a->kiwango_cha_umwagiliaji)
+        * a->teknolojia_ya_mbolea * kizidishi_cha_msimu * kizidishi_cha_hali_ya_hewa * 2.0;
+
+    a->uzalishaji_wa_mifugo = a->ardhi_ya_kilimo_km2 * 0.3 * a->rutuba_ya_udongo
+        * kizidishi_cha_msimu * 0.8;
+
+    a->uzalishaji_wa_chakula = (a->mavuno_ya_mazao + a->uzalishaji_wa_mifugo) * 800.0;
+    a->matumizi_ya_chakula = idadi_ya_watu * 2500.0 * 365.0;
+    a->ziada_ya_chakula = a->uzalishaji_wa_chakula - a->matumizi_ya_chakula;
+
+    D64 uwiano = 1.0;
+    kama (a->matumizi_ya_chakula > 0.0) {
+        uwiano = a->uzalishaji_wa_chakula / a->matumizi_ya_chakula;
+    }
+    kama (uwiano < 0.7) {
+        a->hatari_ya_njaa = 1.0 - uwiano / 0.7;
+    } sivyo {
+        a->hatari_ya_njaa = 0.0;
+    }
+}
+
+D64 kilimo_usalama_wa_chakula(KilimoMfumo* a) {
+    kama (a->matumizi_ya_chakula <= 0.0) { rudisha 1.0; }
+    D64 uwiano = a->uzalishaji_wa_chakula / a->matumizi_ya_chakula;
+    kama (uwiano > 1.0) { rudisha 1.0; }
+    rudisha uwiano;
+}
+
+N32 kilimo_ni_njaa(KilimoMfumo* a) {
+    kama (a->hatari_ya_njaa > 0.5) { rudisha 1; }
+    rudisha 0;
+}
+
+D64 kilimo_uwezo_wa_kuuza_ziada(KilimoMfumo* a) {
+    kama (a->ziada_ya_chakula <= 0.0) { rudisha 0.0; }
+    rudisha a->ziada_ya_chakula * 0.5;
+}

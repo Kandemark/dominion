@@ -1,0 +1,107 @@
+// bidhaa.swa — tafsiri ya src/core/economy/commodity_markets.c (na .h)
+// kwenda Swa. Soko la bidhaa/rasilimali, ugavi, mahitaji, na bei za
+// kikanda.
+//
+// Kiambishi: bidhaa_ — angalia ../../KANUNI-MAJINA.md.
+// resources[] (safu inayokua ya C) imekuwa BIDHAA_RASILIMALI_IDADI=16
+// vigezo vyenye majina + kazi ya kupata. jina (name, STRING_MEDIUM_LEN)
+// halikutumika kwenye mantiki ya bei — halikuletwa; resource_id (kama
+// N8*) limebaki.
+
+husisha { msingi/msingi_civ.swa }
+
+N32 BIDHAA_RASILIMALI_IDADI = 16;
+
+muundo BidhaaRasilimali {
+    N8* kitambulisho;
+    D64 ugavi_wa_ndani;
+    D64 mahitaji_ya_ndani;
+    D64 bei_ya_sasa;
+    D64 akiba;
+    N32 imesajiliwa;
+};
+
+muundo BidhaaSoko {
+    BidhaaRasilimali r_0; BidhaaRasilimali r_1; BidhaaRasilimali r_2;
+    BidhaaRasilimali r_3; BidhaaRasilimali r_4; BidhaaRasilimali r_5;
+    BidhaaRasilimali r_6; BidhaaRasilimali r_7; BidhaaRasilimali r_8;
+    BidhaaRasilimali r_9; BidhaaRasilimali r_10; BidhaaRasilimali r_11;
+    BidhaaRasilimali r_12; BidhaaRasilimali r_13; BidhaaRasilimali r_14;
+    BidhaaRasilimali r_15;
+
+    N32 idadi_ya_rasilimali;
+    D64 ujazo_jumla_wa_biashara;
+    D64 kiashiria_cha_bei_cha_dunia;
+};
+
+BidhaaRasilimali* bidhaa_pata_rasilimali(BidhaaSoko* soko, N32 idx) {
+    kama (idx == 0) { rudisha &soko->r_0; }
+    kama (idx == 1) { rudisha &soko->r_1; }
+    kama (idx == 2) { rudisha &soko->r_2; }
+    kama (idx == 3) { rudisha &soko->r_3; }
+    kama (idx == 4) { rudisha &soko->r_4; }
+    kama (idx == 5) { rudisha &soko->r_5; }
+    kama (idx == 6) { rudisha &soko->r_6; }
+    kama (idx == 7) { rudisha &soko->r_7; }
+    kama (idx == 8) { rudisha &soko->r_8; }
+    kama (idx == 9) { rudisha &soko->r_9; }
+    kama (idx == 10) { rudisha &soko->r_10; }
+    kama (idx == 11) { rudisha &soko->r_11; }
+    kama (idx == 12) { rudisha &soko->r_12; }
+    kama (idx == 13) { rudisha &soko->r_13; }
+    kama (idx == 14) { rudisha &soko->r_14; }
+    rudisha &soko->r_15;
+}
+
+BidhaaSoko* bidhaa_soko_unda() {
+    BidhaaSoko* soko = tenga(ukubwa(BidhaaSoko));
+    soko->idadi_ya_rasilimali = 0;
+    soko->ujazo_jumla_wa_biashara = 0.0;
+    soko->kiashiria_cha_bei_cha_dunia = 1.0;
+    rudisha soko;
+}
+
+W0 bidhaa_soko_uharibu(BidhaaSoko* soko) {
+    achilia soko;
+}
+
+CivMatokeo bidhaa_sajili(BidhaaSoko* soko, N8* kitambulisho) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (soko->idadi_ya_rasilimali >= BIDHAA_RASILIMALI_IDADI) {
+        r.hitilafu = CIV_HITILAFU_KUMBUKUMBU_IMEISHA;
+        r.ujumbe = "soko la bidhaa limejaa";
+        rudisha r;
+    }
+    BidhaaRasilimali* res = bidhaa_pata_rasilimali(soko, soko->idadi_ya_rasilimali);
+    res->kitambulisho = kitambulisho;
+    res->ugavi_wa_ndani = 100.0;
+    res->mahitaji_ya_ndani = 100.0;
+    res->bei_ya_sasa = 1.0;
+    res->akiba = 0.0;
+    res->imesajiliwa = 1;
+    soko->idadi_ya_rasilimali = soko->idadi_ya_rasilimali + 1;
+    rudisha r;
+}
+
+W0 bidhaa_sasisha_bei(BidhaaRasilimali* res, D64 kiashiria_cha_dunia) {
+    D64 ugavi_salama = res->ugavi_wa_ndani;
+    kama (ugavi_salama < 1.0) { ugavi_salama = 1.0; }
+    D64 uhaba = res->mahitaji_ya_ndani / ugavi_salama;
+    res->bei_ya_sasa = uhaba * kiashiria_cha_dunia;
+}
+
+W0 bidhaa_soko_sasisha_zote(BidhaaSoko* soko) {
+    N32 i = 0;
+    wakati (i < soko->idadi_ya_rasilimali) {
+        BidhaaRasilimali* res = bidhaa_pata_rasilimali(soko, i);
+        D64 kupinda = (civ_nasibu_chini_ya(100) - 50) / 100.0 * 0.05;
+        res->ugavi_wa_ndani = res->ugavi_wa_ndani + kupinda * 10.0;
+        kama (res->ugavi_wa_ndani < 1.0) { res->ugavi_wa_ndani = 1.0; }
+        res->mahitaji_ya_ndani = res->mahitaji_ya_ndani + kupinda * 10.0;
+        kama (res->mahitaji_ya_ndani < 1.0) { res->mahitaji_ya_ndani = 1.0; }
+        bidhaa_sasisha_bei(res, soko->kiashiria_cha_bei_cha_dunia);
+        i = i + 1;
+    }
+}
