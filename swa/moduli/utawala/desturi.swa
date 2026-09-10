@@ -1,0 +1,366 @@
+// desturi.swa — tafsiri ya src/core/governance/custom_governance.c (na
+// .h) kwenda Swa. Mfumo wa utawala unaoibuka/maalum (custom, emergent
+// governance) — majukumu ya kisiasa, chama, mvutano, na mageuzi.
+//
+// Kiambishi: utawala_desturi_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - civ_party_system_t (enum) imekuwa viambatanisho vya N32.
+//   - roles[] (safu inayokua ya muundo) imekuwa safu ya N64*
+//     (vielekezi vya UtawalaDesturiJukumu, angalia lugha-swa/swa#185)
+//     badala ya safu ya thamani — inaepuka #182(b) kabisa (hakuna
+//     kunakili muundo kupitia kielekezi cha safu).
+//   - custom_rules (mfuatano unaokua bila kikomo, ulioongezwa kwa
+//     historia kamili ya marekebisho) umepunguzwa kuwa
+//     "kanuni_ya_hivi_karibuni" (maelezo ya marekebisho la mwisho
+//     tu) — historia kamili ya mfuatano unaokua bila kikomo si rahisi
+//     kwa usalama bila realloc ya mfuatano iliyothibitishwa.
+//   - civ_custom_governance_manager_add (asili: kunakili muundo *gov
+//     kwa THAMANI kwenye safu, kisha kuachilia gov) imekuwa
+//     kuhifadhi KIELEKEZI moja kwa moja (angalia #185) -- inaepuka
+//     hatari ya #182(b) na inalingana na umiliki uliokusudiwa (asili
+//     ilikataza waziwazi kuachilia gov baada ya add).
+//   - constitution (kielekezi cha UtawalaKatiba) ni field ya muundo —
+//     mfano wa #186, imehifadhiwa kama anwani ya N64 + kazi ya
+//     "pata" (angalia mbinu.swa kwa mfano halisi wa mtindo huu).
+//   - time_t creation_time/last_reform havikuletwa (hazihitajiki kwa
+//     mantiki ya mchezo).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/utawala/legal/katiba.swa }
+
+N32 UTAWALA_DESTURI_CHAMA_HAKUNA = 0;
+N32 UTAWALA_DESTURI_CHAMA_KIMOJA = 1;
+N32 UTAWALA_DESTURI_CHAMA_MENGI = 2;
+
+muundo UtawalaDesturiJukumu {
+    N8* jina_la_jukumu;
+    N8* maelezo;
+    D64 mamlaka;
+    D64 wajibu;
+    N32 idadi_ya_wamiliki;
+};
+
+muundo UtawalaDesturi {
+    N8* kitambulisho;
+    N8* jina;
+    N8* maelezo;
+
+    N64* majukumu;              // safu ya UtawalaDesturiJukumu*, #185
+    N32 idadi_ya_majukumu;
+    N32 uwezo_wa_majukumu;
+
+    D64 umoja;                  // centralization
+    D64 kiwango_cha_demokrasia; // democracy_level
+    D64 rushwa;                 // corruption
+    D64 uthabiti;               // stability
+    D64 ufanisi;                // efficiency
+
+    N8* kanuni_ya_hivi_karibuni; // angalia maelezo hapo juu
+
+    N32 mfumo_wa_chama;         // party_system
+    D64 mvutano_wa_kisiasa;     // political_tension
+
+    N64 katiba_addr;            // UtawalaKatiba*, #186
+};
+
+muundo UtawalaDesturiMsimamizi {
+    N64* serikali_zote;         // safu ya UtawalaDesturi*, #185
+    N32 idadi;
+    N32 uwezo;
+};
+
+UtawalaDesturiJukumu* utawala_desturi_pata_jukumu(UtawalaDesturi* g, N32 idx) {
+    rudisha g->majukumu[idx];
+}
+
+UtawalaKatiba* utawala_desturi_pata_katiba(UtawalaDesturi* g) {
+    rudisha g->katiba_addr;
+}
+
+UtawalaDesturi* utawala_desturi_msimamizi_pata(UtawalaDesturiMsimamizi* m, N32 idx) {
+    rudisha m->serikali_zote[idx];
+}
+
+UtawalaDesturiMsimamizi* utawala_desturi_msimamizi_unda() {
+    UtawalaDesturiMsimamizi* m = tenga(ukubwa(UtawalaDesturiMsimamizi));
+    m->uwezo = 32;
+    m->idadi = 0;
+    m->serikali_zote = tenga(ukubwa(N64) * m->uwezo);
+    rudisha m;
+}
+
+W0 utawala_desturi_msimamizi_uharibu(UtawalaDesturiMsimamizi* m) {
+    achilia m->serikali_zote;
+    achilia m;
+}
+
+UtawalaDesturi* utawala_desturi_unda(N8* kitambulisho, N8* jina) {
+    kama (kitambulisho == 0 || jina == 0) { rudisha 0; }
+
+    UtawalaDesturi* g = tenga(ukubwa(UtawalaDesturi));
+    g->kitambulisho = kitambulisho;
+    g->jina = jina;
+    g->maelezo = 0;
+
+    g->uwezo_wa_majukumu = 16;
+    g->idadi_ya_majukumu = 0;
+    g->majukumu = tenga(ukubwa(N64) * g->uwezo_wa_majukumu);
+
+    g->umoja = 0.5;
+    g->kiwango_cha_demokrasia = 0.3;
+    g->rushwa = 0.0;
+    g->uthabiti = 0.7;
+    g->ufanisi = 0.5;
+    g->kanuni_ya_hivi_karibuni = 0;
+    g->mfumo_wa_chama = UTAWALA_DESTURI_CHAMA_HAKUNA;
+    g->mvutano_wa_kisiasa = 0.0;
+
+    UtawalaKatiba* k = utawala_katiba_unda(jina);
+    g->katiba_addr = k;
+
+    rudisha g;
+}
+
+W0 utawala_desturi_uharibu(UtawalaDesturi* g) {
+    kama (g == 0) { rudisha; }
+    achilia g->majukumu;
+    UtawalaKatiba* k = utawala_desturi_pata_katiba(g);
+    kama (k != 0) { utawala_katiba_uharibu(k); }
+    achilia g;
+}
+
+CivMatokeo utawala_desturi_ongeza_jukumu(UtawalaDesturi* g, N8* jina_la_jukumu,
+                                           N8* maelezo, D64 mamlaka) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (g == 0 || jina_la_jukumu == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Kielekezi tupu";
+        rudisha r;
+    }
+
+    D64 mamlaka_f = finya_d64(mamlaka, 0.0, 1.0);
+
+    kama (g->idadi_ya_majukumu >= g->uwezo_wa_majukumu) {
+        g->uwezo_wa_majukumu = g->uwezo_wa_majukumu * 2;
+        g->majukumu = badili(g->majukumu, ukubwa(N64) * g->uwezo_wa_majukumu);
+    }
+
+    UtawalaDesturiJukumu* jukumu = tenga(ukubwa(UtawalaDesturiJukumu));
+    jukumu->jina_la_jukumu = jina_la_jukumu;
+    jukumu->maelezo = maelezo;
+    jukumu->mamlaka = mamlaka_f;
+    jukumu->wajibu = mamlaka_f * 0.8;
+    jukumu->idadi_ya_wamiliki = 1;
+
+    g->majukumu[g->idadi_ya_majukumu] = jukumu;
+    g->idadi_ya_majukumu = g->idadi_ya_majukumu + 1;
+
+    rudisha r;
+}
+
+W0 utawala_desturi_badilika(UtawalaDesturi* g, D64 muda) {
+    D64 ukuaji_wa_rushwa = 0.0;
+    kama (g->kiwango_cha_demokrasia < 0.5) {
+        ukuaji_wa_rushwa = ukuaji_wa_rushwa + 0.01 * g->umoja;
+    }
+    kama (g->uthabiti < 0.4) {
+        ukuaji_wa_rushwa = ukuaji_wa_rushwa + 0.02;
+    }
+    kama (g->kiwango_cha_demokrasia > 0.7) {
+        ukuaji_wa_rushwa = ukuaji_wa_rushwa - 0.02;
+    }
+    g->rushwa = finya_d64(g->rushwa + ukuaji_wa_rushwa * muda, 0.0, 1.0);
+
+    kama (g->ufanisi < 0.4 || g->rushwa > 0.6) {
+        g->mvutano_wa_kisiasa = g->mvutano_wa_kisiasa + 0.05 * muda;
+    } sivyo {
+        g->mvutano_wa_kisiasa = g->mvutano_wa_kisiasa - 0.02 * muda;
+    }
+    g->mvutano_wa_kisiasa = finya_d64(g->mvutano_wa_kisiasa, 0.0, 1.0);
+
+    kama (g->mvutano_wa_kisiasa > 0.8) {
+        kama (g->umoja > 0.5) {
+            g->umoja = g->umoja + 0.05;
+            g->kiwango_cha_demokrasia = g->kiwango_cha_demokrasia - 0.05;
+        } sivyo {
+            g->umoja = g->umoja - 0.05;
+        }
+        g->mvutano_wa_kisiasa = g->mvutano_wa_kisiasa - 0.1;
+        g->uthabiti = g->uthabiti - 0.1;
+    }
+
+    g->umoja = finya_d64(g->umoja, 0.0, 1.0);
+    g->kiwango_cha_demokrasia = finya_d64(g->kiwango_cha_demokrasia, 0.0, 1.0);
+}
+
+CivMatokeo utawala_desturi_sasisha(UtawalaDesturi* g, D64 muda) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (g == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Kielekezi tupu";
+        rudisha r;
+    }
+
+    D64 ufanisi_wa_majukumu = 0.1;
+    kama (g->idadi_ya_majukumu > 0) {
+        D64 jumla = 0.0;
+        N32 i = 0;
+        wakati (i < g->idadi_ya_majukumu) {
+            UtawalaDesturiJukumu* j = utawala_desturi_pata_jukumu(g, i);
+            jumla = jumla + j->wajibu * j->mamlaka;
+            i = i + 1;
+        }
+        N32 idadi = g->idadi_ya_majukumu;
+        D64 idadi_d = idadi;
+        ufanisi_wa_majukumu = jumla / idadi_d;
+    }
+
+    D64 ufanisi_wa_umoja = g->umoja;
+    kama (g->kiwango_cha_demokrasia < 0.3) {
+        ufanisi_wa_umoja = ufanisi_wa_umoja * 0.8;
+    }
+    g->ufanisi = ufanisi_wa_umoja * 0.5 + ufanisi_wa_majukumu * 0.5;
+
+    D64 urejeshaji_wa_uthabiti = 0.02 * muda;
+    kama (g->ufanisi < 0.3) {
+        urejeshaji_wa_uthabiti = urejeshaji_wa_uthabiti - 0.05 * muda;
+    }
+
+    utawala_desturi_badilika(g, muda);
+
+    g->uthabiti = finya_d64(g->uthabiti + urejeshaji_wa_uthabiti, 0.0, 1.0);
+
+    rudisha r;
+}
+
+CivMatokeo utawala_desturi_marekebisho(UtawalaDesturi* g, N8* maelezo_ya_marekebisho) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (g == 0 || maelezo_ya_marekebisho == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Kielekezi tupu";
+        rudisha r;
+    }
+
+    g->kanuni_ya_hivi_karibuni = maelezo_ya_marekebisho;
+
+    // KUMBUKA: chanzo cha C kina if/else-if ya "Centralize"/"Decentralize"
+    // -- lakini "Decentralize" YENYEWE ina "centralize" ndani yake kama
+    // substring, hivyo tawi la "Decentralize" la C halifikiwi KAMWE kwa
+    // vitendo (bug ya kimya kwenye chanzo asili). Hapa tunachunguza
+    // "decentralize" NDANI ya tawi la jumla badala yake -- tabia
+    // inayotarajiwa kimantiki, tofauti kidogo na chanzo (ambacho
+    // hakiwezi kufikia tawi hilo kamwe).
+    N32 ina_centralize = tafuta_mfuatano(maelezo_ya_marekebisho, "entralize");
+    kama (ina_centralize >= 0) {
+        N32 ina_de = tafuta_mfuatano(maelezo_ya_marekebisho, "Decentralize");
+        N32 ina_de2 = tafuta_mfuatano(maelezo_ya_marekebisho, "decentralize");
+        kama (ina_de >= 0 || ina_de2 >= 0) {
+            g->umoja = g->umoja - 0.1;
+            g->kiwango_cha_demokrasia = g->kiwango_cha_demokrasia + 0.05;
+        } sivyo {
+            g->umoja = g->umoja + 0.1;
+            g->kiwango_cha_demokrasia = g->kiwango_cha_demokrasia - 0.05;
+        }
+    }
+
+    N32 ina_democratize = tafuta_mfuatano(maelezo_ya_marekebisho, "emocratize");
+    kama (ina_democratize >= 0) {
+        N32 ina_auto = tafuta_mfuatano(maelezo_ya_marekebisho, "Autocratize");
+        N32 ina_auto2 = tafuta_mfuatano(maelezo_ya_marekebisho, "autocratize");
+        kama (ina_auto >= 0 || ina_auto2 >= 0) {
+            g->kiwango_cha_demokrasia = g->kiwango_cha_demokrasia - 0.1;
+        } sivyo {
+            g->kiwango_cha_demokrasia = g->kiwango_cha_demokrasia + 0.1;
+        }
+    }
+
+    g->umoja = finya_d64(g->umoja, 0.0, 1.0);
+    g->kiwango_cha_demokrasia = finya_d64(g->kiwango_cha_demokrasia, 0.0, 1.0);
+    g->uthabiti = finya_d64(g->uthabiti - 0.15, 0.05, 1.0);
+
+    rudisha r;
+}
+
+N8* utawala_desturi_zalisha_jina(UtawalaDesturi* g) {
+    kama (g == 0) { rudisha "Serikali"; }
+
+    N8* nomino = "Serikali";
+    kama (g->umoja > 0.8) {
+        kama (g->kiwango_cha_demokrasia < 0.2) { nomino = "Milki"; }
+        sivyo { kama (g->kiwango_cha_demokrasia < 0.5) { nomino = "Udikteta"; }
+        sivyo { nomino = "Muungano"; } }
+    } sivyo { kama (g->umoja < 0.2) {
+        kama (g->kiwango_cha_demokrasia > 0.8) { nomino = "Jumuiya"; }
+        sivyo { nomino = "Shirikisho"; }
+    } sivyo {
+        kama (g->kiwango_cha_demokrasia > 0.6) { nomino = "Jamhuri"; }
+        sivyo { nomino = "Taifa"; }
+    } }
+
+    N8* kivumishi = "";
+    kama (g->rushwa > 0.7) { kivumishi = "Lenye Rushwa "; }
+    sivyo { kama (g->uthabiti < 0.3) { kivumishi = "Lililogawanyika "; }
+    sivyo { kama (g->ufanisi > 0.8) { kivumishi = "Lililopangwa "; }
+    sivyo { kama (g->kiwango_cha_demokrasia > 0.9) { kivumishi = "Huru "; } } } }
+
+    N8* jina_kamili = tenga(128);
+    unganisha_mfuatano(jina_kamili, kivumishi, nomino);
+    rudisha jina_kamili;
+}
+
+CivMatokeo utawala_desturi_msimamizi_ongeza(UtawalaDesturiMsimamizi* m, UtawalaDesturi* g) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0 || g == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Kielekezi tupu";
+        rudisha r;
+    }
+
+    kama (m->idadi >= m->uwezo) {
+        m->uwezo = m->uwezo * 2;
+        m->serikali_zote = badili(m->serikali_zote, ukubwa(N64) * m->uwezo);
+    }
+
+    m->serikali_zote[m->idadi] = g;
+    m->idadi = m->idadi + 1;
+
+    rudisha r;
+}
+
+UtawalaDesturi* utawala_desturi_msimamizi_tafuta(UtawalaDesturiMsimamizi* m, N8* kitambulisho) {
+    kama (m == 0 || kitambulisho == 0) { rudisha 0; }
+    N32 i = 0;
+    wakati (i < m->idadi) {
+        UtawalaDesturi* g = utawala_desturi_msimamizi_pata(m, i);
+        kama (linganisha_mfuatano(g->kitambulisho, kitambulisho) == 0) {
+            rudisha g;
+        }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+CivMatokeo utawala_desturi_ramanisha_cheo(UtawalaDesturi* g, N8* cheo, N8* jukumu_la_kazi) {
+    kama (g == 0 || cheo == 0 || jukumu_la_kazi == 0) {
+        CivMatokeo r;
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Kielekezi tupu";
+        rudisha r;
+    }
+    andika("Cheo '%s' kimeunganishwa na jukumu la kazi '%s' kwenye serikali %s\n",
+        cheo, jukumu_la_kazi, g->kitambulisho, 0, 0, 0);
+    CivMatokeo r2;
+    r2.hitilafu = CIV_SAWA;
+    r2.ujumbe = 0;
+    rudisha r2;
+}
