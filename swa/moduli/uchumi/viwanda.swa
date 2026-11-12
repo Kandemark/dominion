@@ -142,9 +142,9 @@ w0 viwanda_sasisha(ViwandaMfumo* m, d64 muda, d64 kiwango_cha_teknolojia,
     m->matumizi_ya_uwezo = 0.0;
     kama (uwezo_jumla > 0) {
         n32 wwt = wafanyakazi_walioteuliwa_jumla;
-        d64 wwt_d = wwt;
+        d64 wwt_desimali = wwt;
         d64 uwezo_jumla_d = uwezo_jumla;
-        m->matumizi_ya_uwezo = wwt_d / uwezo_jumla_d;
+        m->matumizi_ya_uwezo = wwt_desimali / uwezo_jumla_d;
     }
 }
 
