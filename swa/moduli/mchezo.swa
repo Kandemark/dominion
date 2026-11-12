@@ -6,7 +6,7 @@
 // HITILAFU YA MKUSANYAJI INAYOJULIKANA (lugha-swa/swa#292, 2026-10-01):
 // mchezo_anzisha() na mchezo_sasisha() huanguka (SIGSEGV ya kimya,
 // hakuna kosa la kukusanya) PALE faili hili likiunganishwa (husisha)
-// KIKAMILIFU (moduli ~45, kazi ~925) kupitia stage1 -- imethibitishwa
+// KIKAMILIFU (moduli ~45, kazi ~925) kupitia kamili -- imethibitishwa
 // kutokea HATA na mchezo.swa KABLA ya mabadiliko yoyote ya kikao hiki
 // (si kosa jipya, ni pengo la zamani lililofichika kwa sababu hakuna
 // jaribio lililokuwa likiita mchezo_anzisha() moja kwa moja hadi

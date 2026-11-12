@@ -30,6 +30,15 @@ husisha { msingi/lugha_dominion.swa }
 //      onyesho, hii itashindwa kwa makusudi ya kernel, si mdudu
 //      wetu -- angalia onyesho_drm_kuwa_bwana chini)
 
+// mfumo_dhibiti_kifaa -- ioctl(2), wito wa mfumo namba 16. Hoja ya
+// tatu ni kielekezi cha muundo wa hoja wa ombi (au 0). Ilikuwa
+// sys_ioctl kwenye nakala ya zamani ya kumbukumbu.swa; maktaba ya
+// lugha-swa/swa haina wito huu, hivyo unaishi hapa pamoja na
+// mtumiaji wake pekee.
+n64 mfumo_dhibiti_kifaa(n64 faili, n64 ombi, n8* hoja) {
+    rudisha wito_wa_mfumo(16, faili, ombi, hoja, 0, 0, 0);
+}
+
 // ---- Namba za ioctl (DRM_IOCTL_MODE_*) ----
 // Zimepatikana kwa programu ndogo ya C iliyotumia _IOWR halisi za
 // <drm/drm.h> na <drm/drm_mode.h> zilizosakinishwa -- SI kukisiwa
@@ -54,11 +63,11 @@ n64 onyesho_drm_fungua(n8* njia) {
     // O_RDWR=2. Kifaa kinahitaji uanachama wa kikundi "video" (au
     // "DRM master" kupitia logind/seat) -- ikiwa fungua inarudisha
     // hasi, ni ruhusa, si hitilafu ya msimbo huu.
-    rudisha sys_fungua(njia, 2, 0);
+    rudisha mfumo_fungua(njia, 2, 0);
 }
 
 w0 onyesho_drm_funga(n64 fd) {
-    sys_funga(fd);
+    mfumo_funga(fd);
 }
 
 // drm_mode_card_res, baiti 64 (angalia baiti_ghafi.swa kwa maelezo
@@ -75,7 +84,7 @@ w0 onyesho_drm_funga(n64 fd) {
 n8* onyesho_drm_pata_rasilimali(n64 fd) {
     n8* res = tenga(64);
     weka_sifuri(res, 64);
-    n64 rc1 = sys_ioctl(fd, DRM_IOCTL_MODE_GETRESOURCES, res);
+    n64 rc1 = mfumo_dhibiti_kifaa(fd, DRM_IOCTL_MODE_GETRESOURCES, res);
     kama (rc1 < 0) { rudisha 0; }
 
     n64 n_conn = pata_u32(res, 40);
@@ -107,7 +116,7 @@ n8* onyesho_drm_pata_rasilimali(n64 fd) {
         weka_u64(res, 24, anwani(enc_ids));
     }
 
-    n64 rc2 = sys_ioctl(fd, DRM_IOCTL_MODE_GETRESOURCES, res);
+    n64 rc2 = mfumo_dhibiti_kifaa(fd, DRM_IOCTL_MODE_GETRESOURCES, res);
     kama (rc2 < 0) { rudisha 0; }
     rudisha res;
 }
@@ -137,9 +146,9 @@ n8* onyesho_drm_pata_kiunganishi(n64 fd, n64 conn_id) {
     n8* c = tenga(80);
     weka_sifuri(c, 80);
     weka_u32(c, 48, conn_id);
-    n64 rc1 = sys_ioctl(fd, DRM_IOCTL_MODE_GETCONNECTOR, c);
+    n64 rc1 = mfumo_dhibiti_kifaa(fd, DRM_IOCTL_MODE_GETCONNECTOR, c);
     kama (rc1 < 0) {
-        andika_stderr(d_tafsiri("m36"), rc1, conn_id, 0, 0, 0, 0);
+        andika_kosa(d_tafsiri("m36"), rc1, conn_id, 0, 0, 0, 0);
         rudisha 0;
     }
 
@@ -172,9 +181,9 @@ n8* onyesho_drm_pata_kiunganishi(n64 fd, n64 conn_id) {
         weka_sifuri(encoders, n_encoders * 4);
         weka_u64(c, 0, anwani(encoders));
     }
-    n64 rc2 = sys_ioctl(fd, DRM_IOCTL_MODE_GETCONNECTOR, c);
+    n64 rc2 = mfumo_dhibiti_kifaa(fd, DRM_IOCTL_MODE_GETCONNECTOR, c);
     kama (rc2 < 0) {
-        andika_stderr(d_tafsiri("m37"), rc2, conn_id, n_modes, 0, 0, 0);
+        andika_kosa(d_tafsiri("m37"), rc2, conn_id, n_modes, 0, 0, 0);
         rudisha 0;
     }
     rudisha c;
@@ -217,7 +226,7 @@ n64 onyesho_drm_pata_crtc_ya_encoder(n64 fd, n64 encoder_id) {
     n8* e = tenga(20);
     weka_sifuri(e, 20);
     weka_u32(e, 0, encoder_id);
-    n64 rc = sys_ioctl(fd, DRM_IOCTL_MODE_GETENCODER, e);
+    n64 rc = mfumo_dhibiti_kifaa(fd, DRM_IOCTL_MODE_GETENCODER, e);
     kama (rc < 0) { rudisha 0; }
     rudisha pata_u32(e, 8);
 }
@@ -232,7 +241,7 @@ n8* onyesho_drm_unda_dumb(n64 fd, n64 upana, n64 kimo, n64 bpp) {
     weka_u32(d, 0, kimo);
     weka_u32(d, 4, upana);
     weka_u32(d, 8, bpp);
-    n64 rc = sys_ioctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, d);
+    n64 rc = mfumo_dhibiti_kifaa(fd, DRM_IOCTL_MODE_CREATE_DUMB, d);
     kama (rc < 0) { rudisha 0; }
     rudisha d;
 }
@@ -245,10 +254,10 @@ w0 onyesho_drm_haribu_dumb(n64 fd, n64 handle) {
     n8* dd = tenga(4);
     weka_sifuri(dd, 4);
     weka_u32(dd, 0, handle);
-    sys_ioctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, dd);
+    mfumo_dhibiti_kifaa(fd, DRM_IOCTL_MODE_DESTROY_DUMB, dd);
 }
 
-// mmap yenye offset (sys_mmap ya pamoja haina hoja ya 6 -- angalia
+// mmap yenye offset (mfumo_ramani_kumbukumbu ya pamoja haina hoja ya 6 -- angalia
 // maelezo kwenye onyesho_drm_ramanisha_dumb chini). syscall namba 9:
 // mmap(addr, len, prot, flags, fd, offset).
 n8* onyesho_mmap_na_offset(n64 ukubwa, n64 fd, n64 offset) {
@@ -261,16 +270,16 @@ n8* onyesho_drm_ramanisha_dumb(n64 fd, n64 handle, n64 ukubwa) {
     n8* md = tenga(16);
     weka_sifuri(md, 16);
     weka_u32(md, 0, handle);
-    n64 rc = sys_ioctl(fd, DRM_IOCTL_MODE_MAP_DUMB, md);
+    n64 rc = mfumo_dhibiti_kifaa(fd, DRM_IOCTL_MODE_MAP_DUMB, md);
     kama (rc < 0) { rudisha 0; }
     n64 off = pata_u64(md, 8);
     // MUHIMU: mmap ya kweli ya dumb buffer inahitaji `offset`
     // (kutoka MAP_DUMB, si 0) kama hoja ya 6 -- kernel inaitumia
     // kutambua ni "faili" gani ya ndani ya DRM device inayoombwa
-    // kuramanishwa. sys_mmap ya pamoja (kumbukumbu.swa) haina hoja
+    // kuramanishwa. mfumo_ramani_kumbukumbu ya pamoja (kumbukumbu.swa) haina hoja
     // ya offset (imeandikwa kwa MAP_ANONYMOUS pekee, offset=0 kila
     // wakati) -- kwa hiyo tunatumia onyesho_mmap_na_offset hapa
-    // badala ya kuibadilisha sys_mmap ya pamoja (maandiko mengine ya
+    // badala ya kuibadilisha mfumo_ramani_kumbukumbu ya pamoja (maandiko mengine ya
     // mradi yanaitegemea bila offset).
     n8* ramani = onyesho_mmap_na_offset(ukubwa, fd, off);
     rudisha ramani;
@@ -288,7 +297,7 @@ n64 onyesho_drm_ongeza_fb(n64 fd, n64 upana, n64 kimo, n64 pitch, n64 bpp, n64 d
     weka_u32(f, 16, bpp);
     weka_u32(f, 20, depth);
     weka_u32(f, 24, handle);
-    n64 rc = sys_ioctl(fd, DRM_IOCTL_MODE_ADDFB, f);
+    n64 rc = mfumo_dhibiti_kifaa(fd, DRM_IOCTL_MODE_ADDFB, f);
     kama (rc < 0) { rudisha 0; }
     rudisha pata_u32(f, 0);
 }
@@ -300,11 +309,11 @@ n64 onyesho_drm_ongeza_fb(n64 fd, n64 upana, n64 kimo, n64 pitch, n64 bpp, n64 d
 // ni sera ya kernel ya "mtu mmoja tu anamiliki onyesho kwa wakati
 // mmoja").
 n64 onyesho_drm_kuwa_bwana(n64 fd) {
-    rudisha sys_ioctl(fd, DRM_IOCTL_SET_MASTER, "");
+    rudisha mfumo_dhibiti_kifaa(fd, DRM_IOCTL_SET_MASTER, "");
 }
 
 w0 onyesho_drm_achilia_ubwana(n64 fd) {
-    sys_ioctl(fd, DRM_IOCTL_DROP_MASTER, "");
+    mfumo_dhibiti_kifaa(fd, DRM_IOCTL_DROP_MASTER, "");
 }
 
 // drm_mode_crtc, baiti 104:
@@ -327,5 +336,5 @@ n64 onyesho_drm_weka_crtc(n64 fd, n64 crtc_id, n64 fb_id, n64 conn_id, n8* modi)
     weka_u32(cr, 32, 1);
     nakili(cr + 36, modi, 68);
 
-    rudisha sys_ioctl(fd, DRM_IOCTL_MODE_SETCRTC, cr);
+    rudisha mfumo_dhibiti_kifaa(fd, DRM_IOCTL_MODE_SETCRTC, cr);
 }

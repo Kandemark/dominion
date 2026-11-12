@@ -7,10 +7,10 @@ husisha { moduli/kifaa/ingizo.swa }
 // (1) kifaa kinafunguka bila hitilafu, (2) kusoma bila kuzuia (non-
 // blocking) hakuanguka wala kunizuia milele, (3) hali ya EAGAIN
 // (hakuna tukio) inatambulika kwa usahihi kama 0, si hitilafu.
-n32 main() {
+n32 anza() {
     n64 fd = kifaa_fungua("/dev/input/event3");
     kama (fd < 0) {
-        andika_stderr("SKIP: haiwezi kufungua /dev/input/event3 rc=%d\n", fd, 0, 0, 0, 0, 0);
+        andika_kosa("SKIP: haiwezi kufungua /dev/input/event3 rc=%d\n", fd, 0, 0, 0, 0, 0);
         rudisha 2;
     }
     andika("OK: kifaa cha ingizo kimefunguliwa, fd=%d\n", fd, 0, 0, 0, 0, 0);
@@ -27,7 +27,7 @@ n32 main() {
             andika("  tukio: aina=%d kanuni=%d thamani=%d\n", aina, kanuni, thamani, 0, 0, 0);
             tukio_lolote = 1;
         } sivyo { kama (rc == -1) {
-                andika_stderr("FAIL: kusoma tukio kulishindwa kwa hitilafu halisi\n", 0, 0, 0, 0, 0, 0);
+                andika_kosa("FAIL: kusoma tukio kulishindwa kwa hitilafu halisi\n", 0, 0, 0, 0, 0, 0);
                 rudisha 1;
             } }
         jaribu = jaribu + 1;

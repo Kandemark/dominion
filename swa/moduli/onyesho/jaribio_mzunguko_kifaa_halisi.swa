@@ -20,10 +20,10 @@ husisha { moduli/onyesho/mzunguko.swa }
 // (block) milele inapokutana na EAGAIN (hakuna tukio) mara kwa mara
 // -- ndiyo hali pekee inayowezekana kuthibitishwa kwa uhakika bila
 // mwingiliano wa kweli.
-n32 main() {
+n32 anza() {
     n64 fd = kifaa_fungua("/dev/input/event3");
     kama (fd < 0) {
-        andika_stderr("SKIP: haiwezi kufungua /dev/input/event3 rc=%d\n", fd, 0, 0, 0, 0, 0);
+        andika_kosa("SKIP: haiwezi kufungua /dev/input/event3 rc=%d\n", fd, 0, 0, 0, 0, 0);
         rudisha 2;
     }
     andika("OK: kifaa cha ingizo kimefunguliwa, fd=%d\n", fd, 0, 0, 0, 0, 0);
@@ -32,7 +32,7 @@ n32 main() {
 
     Mchezo* g = mchezo_unda();
     kama (g == 0) {
-        andika_stderr("FAIL: mchezo_unda imerudisha kielekezi tupu\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: mchezo_unda imerudisha kielekezi tupu\n", 0, 0, 0, 0, 0, 0);
         kifaa_funga(fd);
         rudisha 1;
     }
@@ -40,7 +40,7 @@ n32 main() {
     mchezo_usanidi_chaguomsingi(&usanidi);
     CivMatokeo r = mchezo_anzisha(g, &usanidi);
     kama (r.hitilafu != CIV_SAWA) {
-        andika_stderr("FAIL: mchezo_anzisha imeshindwa\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: mchezo_anzisha imeshindwa\n", 0, 0, 0, 0, 0, 0);
         kifaa_funga(fd);
         rudisha 1;
     }
@@ -69,7 +69,7 @@ n32 main() {
             tukio_lolote = 1;
         } sivyo { kama (rc < 0) {
                 andika("INFO: mzunguko_hatua imerudisha -1 (ESC halisi kimepokelewa, au hitilafu ya kifaa)\n", 0, 0, 0, 0, 0, 0);
-                vunja;
+                acha;
             } }
         jaribu = jaribu + 1;
     }

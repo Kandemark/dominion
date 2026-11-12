@@ -1,9 +1,9 @@
 husisha { msingi/maktaba/mfuatano.swa }
 
 // mazingira.swa -- ufikiaji wa environment variables (envp) kutoka
-// argv PEKEE, bila kugusa _start/mkusanyaji. main(argc, argv) ndiyo
+// argv PEKEE, bila kugusa _start/mkusanyaji. anza(argc, argv) ndiyo
 // saini PEKEE inayotambulika na mkusanyaji (angalia
-// msingi/mkusanyaji/stage1.swa, lugha-swa/swa) -- Linux x86-64 ABI
+// msingi/mkusanyaji/kiendeshaji.swa, lugha-swa/swa) -- Linux x86-64 ABI
 // huweka envp[0] KWENYE STACK mara moja BAADA ya kiingilio cha NULL
 // kinachomalizia argv (baada ya argv[argc-1] kuna argv[argc]==0,
 // kisha envp[0] huanza hapo hapo). Hakuna wito wa mfumo unaohitajika

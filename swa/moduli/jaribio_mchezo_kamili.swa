@@ -27,7 +27,7 @@ husisha { moduli/mchezo.swa }
 //
 // MUUNDO WA FAILI: kazi imegawanywa katika vipande vidogo (jk_snapshot,
 // jk_seed_ziada, jk_linganisha_na_ripoti) badala ya kuwa yote ndani ya
-// main() moja -- sawa na somo lililojifunzwa na mchezo_sasisha_mifumo_huru
+// anza() moja -- sawa na somo lililojifunzwa na mchezo_sasisha_mifumo_huru
 // mwenyewe: kuunganisha mifumo mingi kwenye kazi MOJA kunagonga kikomo
 // cha mkusanyaji cha "vigezo vya ndani 64 kwa kila kazi" haraka sana
 // (imethibitishwa kwa vitendo wakati wa kuandika jaribio hili -- jaribio
@@ -48,7 +48,7 @@ n32 jk_yalioshindwa = 0;
 
 w0 jk_thibitisha(n32 sharti, n8* jina) {
     kama (sharti == 0) {
-        andika_stderr("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
         jk_yalioshindwa = jk_yalioshindwa + 1;
     } sivyo {
         andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
@@ -304,7 +304,7 @@ w0 jk_linganisha_na_ripoti(Mchezo* g, JkKabla* kabla, n32 idadi_ya_mizunguko) {
     jk_thibitisha(uhalali_ndani_ya_mipaka, "uhalali (siasa) unabaki ndani ya [0,1]");
 }
 
-n32 main() {
+n32 anza() {
     Mchezo* g = mchezo_unda();
     n32 g_sio_tupu = (g != 0);
     jk_thibitisha(g_sio_tupu, "mchezo_unda inarudisha kielekezi");

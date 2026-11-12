@@ -22,7 +22,7 @@ husisha { msingi/maktaba/mfuatano.swa }
 // gharama/jaribu-mnyororo.sh inavyounganisha kumbukumbu.swa/
 // mfuatano.swa moja kwa moja kwenye ujenzi wa msuluhishi), na mbegu.bin
 // haifahamu herufi ndogo za aina za msingi (upanuzi wa lugha-swa/swa#225
-// ulihusu TU mchanganuzi wa stage1 uliojiandika mwenyewe, si mbegu.bin
+// ulihusu TU mchanganuzi wa kamili uliojiandika mwenyewe, si mbegu.bin
 // iliyogandishwa) -- kwa hiyo msingi/maktaba/*.swa LAZIMA ibaki herufi
 // kubwa milele, isipokuwa mbegu.bin yenyewe itakapofanywa upya siku
 // moja. Hii ni tofauti ya KUDUMU, si mdudu wa muda -- ulinganisho hapa
@@ -83,16 +83,16 @@ n32 gawanya_tabo(n8* mstari, n8* a, n8* b) {
     rudisha 1;
 }
 
-n32 main(n32 argc, n8** argv) {
+n32 anza(n32 argc, n8** argv) {
     kama (argc < 2) {
-        andika_stderr("matumizi: kagua_usawazishaji <njia-ya-hazina-lugha-swa>\n");
+        andika_kosa("matumizi: kagua_usawazishaji <njia-ya-hazina-lugha-swa>\n");
         rudisha 1;
     }
     n8* mzizi_lugha = argv[1];
 
     n8* f = faili_fungua("../gharama/vendored-manifest.txt", "r");
     kama (f == 0) {
-        andika_stderr("KOSA: haiwezi kufungua gharama/vendored-manifest.txt (endesha kutoka saraka ya swa/)\n");
+        andika_kosa("KOSA: haiwezi kufungua gharama/vendored-manifest.txt (endesha kutoka saraka ya swa/)\n");
         rudisha 1;
     }
 
@@ -101,7 +101,7 @@ n32 main(n32 argc, n8** argv) {
 
     wakati (1) {
         n32 r = faili_soma_mstari(f, mstari, 512);
-        kama (r < 0) { vunja; }
+        kama (r < 0) { acha; }
         kama (r == 0) { endelea; }
         kama (mstari[0] == 35) { endelea; }  // '#' -- mstari wa maoni
         kama (gawanya_tabo(mstari, dominion_njia, upstream_rel) == 0) { endelea; }
@@ -120,14 +120,14 @@ n32 main(n32 argc, n8** argv) {
 
         n64 na = faili_soma_yote(dominion_njia, bafa_a, BAFA_UWEZO);
         kama (na < 0) {
-            andika_stderr("HITILAFU %s (haiwezi kusoma nakala ya Dominion)\n", dominion_njia);
+            andika_kosa("HITILAFU %s (haiwezi kusoma nakala ya Dominion)\n", dominion_njia);
             jumla_tofauti = jumla_tofauti + 1;
             endelea;
         }
 
         n64 nb = faili_soma_yote(upstream_kamili, bafa_b, BAFA_UWEZO);
         kama (nb < 0) {
-            andika_stderr("HITILAFU %s (haiwezi kusoma chanzo: %s)\n", dominion_njia, upstream_kamili, 0,0,0,0);
+            andika_kosa("HITILAFU %s (haiwezi kusoma chanzo: %s)\n", dominion_njia, upstream_kamili, 0,0,0,0);
             jumla_tofauti = jumla_tofauti + 1;
             endelea;
         }
@@ -141,7 +141,7 @@ n32 main(n32 argc, n8** argv) {
         sivyo {
             n64 i = 0;
             wakati (i < na) {
-                kama (herufi_ndogo(bafa_a[i]) != herufi_ndogo(bafa_b[i])) { sawa = 0; vunja; }
+                kama (herufi_ndogo(bafa_a[i]) != herufi_ndogo(bafa_b[i])) { sawa = 0; acha; }
                 i = i + 1;
             }
         }
@@ -157,6 +157,6 @@ n32 main(n32 argc, n8** argv) {
     faili_funga(f);
 
     n32 sawa_idadi = jumla_faili - jumla_tofauti;
-    andika_stderr("\nkagua_usawazishaji: %d/%d faili sawa\n", sawa_idadi, jumla_faili, 0,0,0,0);
+    andika_kosa("\nkagua_usawazishaji: %d/%d faili sawa\n", sawa_idadi, jumla_faili, 0,0,0,0);
     rudisha jumla_tofauti;
 }

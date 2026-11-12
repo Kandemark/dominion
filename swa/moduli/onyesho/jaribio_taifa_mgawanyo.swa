@@ -30,14 +30,14 @@ n32 jtm_yalioshindwa = 0;
 
 w0 jtm_thibitisha(n32 sharti, n8* jina) {
     kama (sharti == 0) {
-        andika_stderr("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
         jtm_yalioshindwa = jtm_yalioshindwa + 1;
     } sivyo {
         andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
     }
 }
 
-n32 main() {
+n32 anza() {
     // ---------- Unda TaifaNchi MOJA kwa mkono ----------
     TaifaNchi* t = tenga(ukubwa(TaifaNchi));
     t->kitambulisho = "taifa_jaribio";

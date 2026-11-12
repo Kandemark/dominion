@@ -9,14 +9,14 @@ n32 jaribio_hesabu_yalioshindwa = 0;
 
 w0 jaribio_thibitisha(n32 sharti, n8* jina) {
     kama (sharti == 0) {
-        andika_stderr("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
         jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
     } sivyo {
         andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
     }
 }
 
-n32 main() {
+n32 anza() {
     KitengoChiniMsimamizi* m = kitengo_chini_msimamizi_unda();
     n32 m_sio_tupu = (m != 0);
     jaribio_thibitisha(m_sio_tupu, "msimamizi_unda si tupu");

@@ -53,7 +53,7 @@ n32 jdd_yalioshindwa = 0;
 
 w0 jdd_thibitisha(n32 sharti, n8* jina) {
     kama (sharti == 0) {
-        andika_stderr("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
         jdd_yalioshindwa = jdd_yalioshindwa + 1;
     } sivyo {
         andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
@@ -239,7 +239,7 @@ w0 jdd_kagua_ukingo_duara(n8* fb, n64 pitch, n64 cx, n64 cy, n64 radius) {
                      "pikseli (cx+radius, cy) ina rangi ya UKINGO wa duara (mchoro_duara_mpaka imechora)");
 }
 
-n32 main() {
+n32 anza() {
     // ---------- Unda Mchezo HALISI (mifumo 47) ----------
     Mchezo* g = mchezo_unda();
     n32 g_sio_tupu = (g != 0);

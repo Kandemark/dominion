@@ -20,7 +20,7 @@ n32 jf_yalioshindwa = 0;
 
 w0 jf_thibitisha(n32 sharti, n8* jina) {
     kama (sharti == 0) {
-        andika_stderr("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
         jf_yalioshindwa = jf_yalioshindwa + 1;
     } sivyo {
         andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
@@ -74,7 +74,7 @@ n32 jf_tarajiwa_eacute(n32 safu) {
 }
 
 // jf_linganisha_glyph: soma glyph HALISI iliyochorwa kwenye (gx,gy)
-// kwenye fb (pikseli moja moja, bafa_herufi kwa bafa_herufi), ilinganishe
+// kwenye fb (pikseli moja moja, andika_herufi_kwenye_chombo kwa andika_herufi_kwenye_chombo), ilinganishe
 // na baiti tarajiwa ya kila safu (bitwise, si tu "si sifuri").
 // Inarudisha 1 kama ZOTE zinalingana, 0 vinginevyo.
 n32 jf_linganisha_glyph_0(n8* fb, n64 pitch, n64 gx, n64 gy, n64 nyeupe) {
@@ -131,7 +131,7 @@ n32 jf_linganisha_glyph_eacute(n8* fb, n64 pitch, n64 gx, n64 gy, n64 nyeupe) {
     rudisha 1;
 }
 
-n32 main() {
+n32 anza() {
     onyesho_fonti_pakia();
 
     n64 nyeupe = 4294967295;

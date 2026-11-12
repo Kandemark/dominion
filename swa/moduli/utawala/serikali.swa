@@ -493,8 +493,8 @@ w0 utawala_serikali_hesabu_wasifu(UtawalaSerikali* g) {
         n32 zinafanana_muda = 1;
         n32 mi = 0;
         wakati (1 == 1) {
-            kama (muda_p[mi] != jina_kifupi[mi]) { zinafanana_muda = 0; vunja; }
-            kama (muda_p[mi] == 0) { vunja; }
+            kama (muda_p[mi] != jina_kifupi[mi]) { zinafanana_muda = 0; acha; }
+            kama (muda_p[mi] == 0) { acha; }
             mi = mi + 1;
         }
         kama (zinafanana_muda == 1) { muda_wa_maisha = muda_wa_maisha + 1; }
@@ -504,8 +504,8 @@ w0 utawala_serikali_hesabu_wasifu(UtawalaSerikali* g) {
         n32 zinafanana_urithi = 1;
         n32 ui = 0;
         wakati (1 == 1) {
-            kama (njia_p[ui] != neno_urithi[ui]) { zinafanana_urithi = 0; vunja; }
-            kama (njia_p[ui] == 0) { vunja; }
+            kama (njia_p[ui] != neno_urithi[ui]) { zinafanana_urithi = 0; acha; }
+            kama (njia_p[ui] == 0) { acha; }
             ui = ui + 1;
         }
         kama (zinafanana_urithi == 1) { urithi = urithi + 1; }

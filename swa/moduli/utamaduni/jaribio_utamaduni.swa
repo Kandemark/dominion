@@ -10,14 +10,14 @@ n32 jaribio_hesabu_yalioshindwa = 0;
 
 w0 jaribio_thibitisha(n32 sharti, n8* jina) {
     kama (sharti == 0) {
-        andika_stderr("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
         jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
     } sivyo {
         andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
     }
 }
 
-n32 main() {
+n32 anza() {
     civ_nasibu_panda(11);
 
     UtamaduniKitambulishoMfumo* km = utamaduni_kitambulisho_mfumo_unda();

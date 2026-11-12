@@ -11,7 +11,7 @@
 //     kuandikwa) — hakuna kazi ya "civ_free" hapa; wito wa moja kwa
 //     moja wa achilia unafanyika mahali kielekezi kinapoachwa.
 //   - civ_log haitumii hoja zisizo na kikomo (Swa haina hilo) —
-//     inafuata muundo uleule wa andika()/andika_stderr(): kigezo
+//     inafuata muundo uleule wa andika()/andika_kosa(): kigezo
 //     kimoja cha muundo + nafasi sita za hoja za n64.
 
 husisha { maktaba/kumbukumbu.swa }
@@ -89,15 +89,15 @@ n32 civ_imeshindwa(CivMatokeo m) {
 }
 
 // civ_log: nafasi sita za n64 kama andika() — zisizotumika ni 0.
-// MUHIMU: tofauti na andika()/andika_stderr() (externi, hoja
+// MUHIMU: tofauti na andika()/andika_kosa() (externi, hoja
 // huru), civ_log ni kazi ya kawaida ya Swa yenye vigezo vya n64
 // vilivyokaguliwa kikamilifu — kupitisha kielekezi (n8*, kama
 // jina la mtu) kwenye nafasi hizi ni kosa la aina wakati wa
 // kukusanya. Ukihitaji kuandika kielekezi kwenye ujumbe wa log,
-// tumia andika()/andika_stderr() moja kwa moja badala ya civ_log.
+// tumia andika()/andika_kosa() moja kwa moja badala ya civ_log.
 w0 civ_log(n32 kiwango, n8* umbizo, n64 a1, n64 a2, n64 a3, n64 a4, n64 a5, n64 a6) {
     kama (kiwango >= CIV_LOG_HITILAFU) {
-        andika_stderr(umbizo, a1, a2, a3, a4, a5, a6);
+        andika_kosa(umbizo, a1, a2, a3, a4, a5, a6);
     } sivyo {
         andika(umbizo, a1, a2, a3, a4, a5, a6);
     }
@@ -108,7 +108,7 @@ w0 civ_log(n32 kiwango, n8* umbizo, n64 a1, n64 a2, n64 a3, n64 a4, n64 a5, n64 
 // inaandika ujumbe na kutoka kwa msimbo 1 (syscall 60 = exit).
 w0 civ_thibitisha(n32 sharti, n8* ujumbe) {
     kama (sharti == 0) {
-        andika_stderr(ujumbe, 0, 0, 0, 0, 0, 0);
+        andika_kosa(ujumbe, 0, 0, 0, 0, 0, 0);
         wito_wa_mfumo(60, 1, 0, 0, 0, 0, 0);
     }
 }

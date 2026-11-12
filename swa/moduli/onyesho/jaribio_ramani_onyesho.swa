@@ -18,7 +18,7 @@ n32 jro_yalioshindwa = 0;
 
 w0 jro_thibitisha(n32 sharti, n8* jina) {
     kama (sharti == 0) {
-        andika_stderr("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
         jro_yalioshindwa = jro_yalioshindwa + 1;
     } sivyo {
         andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
@@ -114,7 +114,7 @@ w0 jro_kagua_mji_mkuu(TaifaMfumo* taifa, DuniaRamani* ramani, n8* fb, n64 pitch,
                      "mji mkuu wa taifa la 0 una duara la rangi sahihi kwenye nafasi iliyokokotolewa kwa mkono kutoka mji_mkuu_lon/lat halisi");
 }
 
-n32 main() {
+n32 anza() {
     // ---------- Unda Mchezo HALISI (mifumo 47) ----------
     Mchezo* g = mchezo_unda();
     n32 g_sio_tupu = (g != 0);

@@ -1,11 +1,11 @@
 // i18n ya Dominion juu ya lugha.swa. d_tafsiri(ufunguo): kazi PEKEE
 // ya kuitwa badala ya literal. GLOBAL moja (D_LUGHA_HAI_ADDR); Mchezo
 // ndiye mmiliki (field lugha_addr, mchezo.swa). WIGO: kikomo cha 1MB
-// cha chanzo cha stage1 KILIONDOLEWA (lugha-swa/swa#301, bafa_chanzo/
+// cha chanzo cha kamili KILIONDOLEWA (lugha-swa/swa#301, bafa_chanzo/
 // bafa_kuu/bafa_ukaguzi sasa 16MB) -- m1..m16 zilikuwa sehemu (15/31)
 // ya ujumbe kutokana na kikomo hicho; m17..m37 ziliongezwa baada ya
 // kikomo kuondolewa, zikikamilisha ujumbe WOTE uliobaki (andika()/
-// andika_stderr() zenye mfuatano halisi, nje ya majaribio). m4
+// andika_kosa() zenye mfuatano halisi, nje ya majaribio). m4
 // imeachwa kimakusudi (haijatumika tangu awali). t1..t8 (mataifa)
 // ni yote tangu mwanzo.
 husisha { msingi/msingi_civ.swa }

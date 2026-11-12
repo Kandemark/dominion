@@ -22,7 +22,7 @@ husisha { moduli/mchezo.swa }
 //
 // KUMBUKA YA UKUBWA WA FAILI: ju_check_d64/n64 zinachanganya
 // uchapishaji na uthibitisho kwenye KAZI MOJA (badala ya mbili
-// tofauti) kimakusudi -- stage1 ya mkusanyaji ina bafa_text[524288]
+// tofauti) kimakusudi -- kamili ya mkusanyaji ina bafa_text[524288]
 // (baiti 512KB) ya KUDUMU kwa ajili ya msimbo wa mashine
 // unaozalishwa kwa KITENGO KIMOJA cha utafsiri (angalia
 // msingi/mkusanyaji/uzalishaji.swa kwenye lugha-swa/swa) -- jaribio
@@ -40,7 +40,7 @@ n32 ju_yalioshindwa = 0;
 
 w0 ju_thibitisha(n32 sharti, n8* jina) {
     kama (sharti == 0) {
-        andika_stderr("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
         ju_yalioshindwa = ju_yalioshindwa + 1;
     } sivyo {
         andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
@@ -273,7 +273,7 @@ w0 ju_linganisha_dynamic3(Mchezo* g, Mchezo* g2) {
     }
 }
 
-n32 main() {
+n32 anza() {
     Mchezo* g = mchezo_unda();
     MchezoUsanidi usanidi;
     mchezo_usanidi_chaguomsingi(&usanidi);

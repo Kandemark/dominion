@@ -10,14 +10,14 @@ n32 jaribio_hesabu_yalioshindwa = 0;
 
 w0 jaribio_thibitisha(n32 sharti, n8* jina) {
     kama (sharti == 0) {
-        andika_stderr("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
         jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
     } sivyo {
         andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
     }
 }
 
-n32 main() {
+n32 anza() {
     n8* njia = "/tmp/jaribio_historia_db.bin";
     // lugha-swa/swa#296-kama (tofauti): kupitisha namba 0 moja kwa
     // moja kama hoja yenye aina ya kielekezi (n8*) kunakataliwa pia

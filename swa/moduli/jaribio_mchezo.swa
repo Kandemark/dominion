@@ -21,7 +21,7 @@ husisha { moduli/mchezo.swa }
 // hitilafu hiyo tofauti kabisa.
 //
 // SASISHO (2026-10-02) -- lugha-swa/swa#292 IMETHIBITIKA KUREKEBISHWA:
-// stage1 mpya kabisa iliyojengwa kutoka `main` (d768113) haianguki
+// kamili mpya kabisa iliyojengwa kutoka `main` (d768113) haianguki
 // tena ikiendesha programu hii (kazi 1136, mnyororo mzima wa
 // mchezo.swa wa wimbi la tisa) -- PASS 16/16 zote zinatokea kwa
 // THAMANI SAHIHI (angalia uchapishaji wa [dbg] chini: mvutano
@@ -49,7 +49,7 @@ husisha { moduli/mchezo.swa }
 //     literal zinachanganyikiwa (mfano: thibitisho linalopaswa
 //     kuchapisha jina lake sahihi linachapisha "B" badala yake --
 //     anwani ya hoja ya mfuatano ya wito ULIOTANGULIA) na sehemu ya
-//     mwisho ya main() (uchapishaji wa "[muhtasari]"/"DONE")
+//     mwisho ya anza() (uchapishaji wa "[muhtasari]"/"DONE")
 //     inaonekana kuchapishwa MAPEMA kabla ya wakati wake kisha
 //     TENA mwishoni halisi. Hii ni thabiti (deterministic, si
 //     uharibifu wa nasibu wa kumbukumbu) na HAIATHIRI usahihi wa
@@ -62,14 +62,14 @@ n32 jaribio_hesabu_yalioshindwa = 0;
 
 w0 jaribio_mchezo_thibitisha(n32 sharti, n8* jina) {
     kama (sharti == 0) {
-        andika_stderr("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
         jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
     } sivyo {
         andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
     }
 }
 
-n32 main() {
+n32 anza() {
     Mchezo* g = mchezo_unda();
     n32 g_sio_tupu = (g != 0);
     jaribio_mchezo_thibitisha(g_sio_tupu, "mchezo_unda inarudisha kielekezi");

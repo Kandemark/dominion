@@ -35,7 +35,7 @@ husisha { moduli/onyesho/baiti_ghafi.swa }
 // wigo wa Dominion): HATUTUMII mmap() ya memfd KABISA kwenye mchakato
 // wetu wenyewe. Badala yake: tunachora kwenye bafa ya KAWAIDA (tenga(),
 // MAP_ANONYMOUS, SALAMA kwa sababu ya (2) hapo juu), kisha tunatumia
-// write(2) (sys_andika, hoja 3 TU -- a4/a5/a6 zote ni 0, HAZIATHIRIWI
+// write(2) (mfumo_andika, hoja 3 TU -- a4/a5/a6 zote ni 0, HAZIATHIRIWI
 // na hitilafu hii kwa sababu a4==a5==0 hazitofautiani) kunakili baiti
 // hizo MOJA KWA MOJA ndani ya memfd. compositor (upande wa pili)
 // atafanya mmap() YAKE MWENYEWE (code isiyo na hitilafu hii) na
@@ -72,5 +72,5 @@ n64 wayland_shm_unda(n64 ukubwa) {
 // memfd `fd` kuanzia offset 0, kwa write(2) ya moja kwa moja (SALAMA
 // dhidi ya hitilafu iliyoelezwa juu -- hoja 3 tu za maana).
 n64 wayland_shm_jaza(n64 fd, n8* bafa_chanzo, n64 ukubwa) {
-    rudisha sys_andika(fd, bafa_chanzo, ukubwa);
+    rudisha mfumo_andika(fd, bafa_chanzo, ukubwa);
 }

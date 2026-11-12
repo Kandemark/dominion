@@ -1,7 +1,7 @@
 husisha { moduli/mchezo.swa }
 
 // jaribio_lugha_dominion_mapya.swa -- jaribio la i18n kwa ujumbe MAPYA
-// (m17..m37) ulioongezwa baada ya kikomo cha 1MB cha chanzo cha stage1
+// (m17..m37) ulioongezwa baada ya kikomo cha 1MB cha chanzo cha kamili
 // kuondolewa (lugha-swa/swa#301, bafa_chanzo sasa 16MB). TOFAUTI na
 // jaribio_lugha_dominion.swa (lililopo tayari, linalothibitisha m1..m16
 // + t1..t8): jaribio HILI linathibitisha SAMPULI ya ujumbe MAPYA pekee,
@@ -13,7 +13,7 @@ n32 jlm_yalioshindwa = 0;
 
 w0 jlm_thibitisha(n32 sharti, n8* jina) {
     kama (sharti == 0) {
-        andika_stderr("FAIL: %s\n", jina, 0,0,0,0,0);
+        andika_kosa("FAIL: %s\n", jina, 0,0,0,0,0);
         jlm_yalioshindwa = jlm_yalioshindwa + 1;
     } sivyo {
         andika("PASS: %s\n", jina, 0,0,0,0,0);
@@ -24,7 +24,7 @@ n32 jlm_sawa(n8* a, n8* b) {
     rudisha linganisha_mfuatano(a, b) == 0;
 }
 
-n32 main() {
+n32 anza() {
     Mchezo* g = mchezo_unda();
     n32 g_ipo = (g != 0);
     jlm_thibitisha(g_ipo, "mchezo_unda inarudisha kielekezi");
@@ -68,7 +68,7 @@ n32 main() {
     // ---- kurudi sw, thibitisha m36/m37 (drm.swa, stderr) pia ----
     mchezo_weka_lugha(g, "sw");
     n8* m36_sw = d_tafsiri("m36");
-    jlm_thibitisha(jlm_sawa(m36_sw, "    (tatizo) GETCONNECTOR pass1 rc=%d kwa conn_id=%d\n"), "m36 sw == literal ya awali (andika_stderr, drm.swa)");
+    jlm_thibitisha(jlm_sawa(m36_sw, "    (tatizo) GETCONNECTOR pass1 rc=%d kwa conn_id=%d\n"), "m36 sw == literal ya awali (andika_kosa, drm.swa)");
 
     mchezo_uharibu(g);
     jlm_thibitisha(1, "mchezo_uharibu(g) imekamilika bila kuanguka");

@@ -22,13 +22,13 @@ n64 KIFAA_EV_ABS = 3;
 n64 kifaa_fungua(n8* njia) {
     // O_RDONLY=0, na O_NONBLOCK=2048 -- bila hii, kusoma bila tukio
     // jipya huzuia (block) mchakato mzima milele. Kwa kuwa
-    // sys_fungua ya kumbukumbu.swa haichukui bendera ghafi za
+    // mfumo_fungua ya kumbukumbu.swa haichukui bendera ghafi za
     // ziada, tunatumia wito_wa_mfumo moja kwa moja hapa.
     rudisha wito_wa_mfumo(2, njia, 2048, 0, 0, 0, 0);
 }
 
 w0 kifaa_funga(n64 fd) {
-    sys_funga(fd);
+    mfumo_funga(fd);
 }
 
 // Jaribu kusoma tukio MOJA (baiti 24) kutoka kifaa (fd inayotarajiwa
@@ -38,7 +38,7 @@ w0 kifaa_funga(n64 fd) {
 // (EAGAIN -- kawaida kabisa, si hitilafu), au -1 kwa hitilafu halisi
 // nyingine.
 n64 kifaa_soma_tukio(n64 fd, n8* nje) {
-    n64 n = sys_soma(fd, nje, KIFAA_UKUBWA_TUKIO);
+    n64 n = mfumo_soma(fd, nje, KIFAA_UKUBWA_TUKIO);
     kama (n == KIFAA_UKUBWA_TUKIO) { rudisha 1; }
     kama (n < 0) {
         n64 hasi = 0 - n;

@@ -61,7 +61,7 @@ w0 mchoro_chora_mstari(n8* fb, n64 pitch, n64 canvas_w, n64 canvas_h, n64 x0, n6
         kama (x >= 0 && x < canvas_w && y >= 0 && y < canvas_h) {
             mchoro_weka_pikseli(fb, pitch, x, y, rangi);
         }
-        kama (x == x1 && y == y1) { vunja; }
+        kama (x == x1 && y == y1) { acha; }
         n64 e2 = 2 * err;
         kama (e2 > (0 - dy)) {
             err = err - dy;

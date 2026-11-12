@@ -88,8 +88,8 @@ muundo WaylandDirisha {
 n64 jdk_pata_fd_na_globals(n8** envp, WaylandGlobals* ng) {
     n8* xdg = wayland_mazingira_tafuta(envp, "XDG_RUNTIME_DIR");
     n8* wd = wayland_mazingira_tafuta(envp, "WAYLAND_DISPLAY");
-    kama (xdg == 0) { andika_stderr("FAIL: XDG_RUNTIME_DIR haipo\n", 0, 0, 0, 0, 0, 0); rudisha 0 - 1; }
-    kama (wd == 0) { andika_stderr("FAIL: WAYLAND_DISPLAY haipo\n", 0, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+    kama (xdg == 0) { andika_kosa("FAIL: XDG_RUNTIME_DIR haipo\n", 0, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+    kama (wd == 0) { andika_kosa("FAIL: WAYLAND_DISPLAY haipo\n", 0, 0, 0, 0, 0, 0); rudisha 0 - 1; }
 
     n8* njia = tenga(256);
     weka_sifuri(njia, 256);
@@ -99,9 +99,9 @@ n64 jdk_pata_fd_na_globals(n8** envp, WaylandGlobals* ng) {
     unganisha_mfuatano(njia2, njia, wd);
 
     n64 fd = wayland_soketi_fungua();
-    kama (fd < 0) { andika_stderr("FAIL: socket() rc=%d\n", fd, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+    kama (fd < 0) { andika_kosa("FAIL: socket() rc=%d\n", fd, 0, 0, 0, 0, 0); rudisha 0 - 1; }
     n64 rc = wayland_soketi_unganisha(fd, njia2);
-    kama (rc < 0) { andika_stderr("FAIL: connect() rc=%d\n", rc, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+    kama (rc < 0) { andika_kosa("FAIL: connect() rc=%d\n", rc, 0, 0, 0, 0, 0); rudisha 0 - 1; }
     andika("OK: connect() imefaulu, fd=%d\n", fd, 0, 0, 0, 0, 0);
 
     ng->registry_id = 2;
@@ -123,12 +123,12 @@ n64 jdk_pata_fd_na_globals(n8** envp, WaylandGlobals* ng) {
 
     wakati (imekamilika == 0) {
         wakati (1 == 1) {
-            kama (jumla - nafasi < 8) { vunja; }
+            kama (jumla - nafasi < 8) { acha; }
             obj = wayland_waya_msg_object_id(bafa, nafasi);
             op = wayland_waya_msg_opcode(bafa, nafasi);
             sz = wayland_waya_msg_ukubwa(bafa, nafasi);
-            kama (sz < 8) { imekamilika = 1; vunja; }
-            kama (jumla - nafasi < sz) { vunja; }
+            kama (sz < 8) { imekamilika = 1; acha; }
+            kama (jumla - nafasi < sz) { acha; }
 
             kama (obj == ng->registry_id && op == WAYLAND_WAYA_REGISTRY_EV_GLOBAL) {
                 n64 jina = wayland_waya_global_name(bafa, nafasi);
@@ -141,9 +141,9 @@ n64 jdk_pata_fd_na_globals(n8** envp, WaylandGlobals* ng) {
                 kama (obj == sync_id && op == WAYLAND_WAYA_CALLBACK_EV_DONE) { imekamilika = 1; }
             }
             nafasi = nafasi + sz;
-            kama (imekamilika == 1) { vunja; }
+            kama (imekamilika == 1) { acha; }
         }
-        kama (imekamilika == 1) { vunja; }
+        kama (imekamilika == 1) { acha; }
         kama (nafasi > 0) {
             iliyobaki = jumla - nafasi;
             nakili(bafa, bafa + nafasi, iliyobaki);
@@ -151,14 +151,14 @@ n64 jdk_pata_fd_na_globals(n8** envp, WaylandGlobals* ng) {
             nafasi = 0;
         }
         n = wayland_soketi_pokea(fd, bafa + jumla, ukubwa_bafa - jumla);
-        kama (n <= 0) { andika_stderr("FAIL: recvmsg() rc=%d\n", n, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+        kama (n <= 0) { andika_kosa("FAIL: recvmsg() rc=%d\n", n, 0, 0, 0, 0, 0); rudisha 0 - 1; }
         jumla = jumla + n;
     }
 
     andika("GLOBALS: wl_compositor(v=%d) wl_shm(v=%d) xdg_wm_base(v=%d)\n",
         ng->comp_toleo, ng->shm_toleo, ng->wmbase_toleo, 0, 0, 0);
     kama (ng->comp_name == (0 - 1) || ng->shm_name == (0 - 1) || ng->wmbase_name == (0 - 1)) {
-        andika_stderr("FAIL: globals za msingi hazikupatikana\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: globals za msingi hazikupatikana\n", 0, 0, 0, 0, 0, 0);
         rudisha 0 - 1;
     }
     rudisha fd;
@@ -187,13 +187,13 @@ n64 jdk_jenga_dirisha(WaylandGlobals* ng, WaylandDirisha* d, n8* kichwa) {
     d->stride = d->upana * 4;
     d->ukubwa_shm = d->stride * d->kimo;
     d->shm_fd = wayland_shm_unda(d->ukubwa_shm);
-    kama (d->shm_fd < 0) { andika_stderr("FAIL: shm_unda rc=%d\n", d->shm_fd, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+    kama (d->shm_fd < 0) { andika_kosa("FAIL: shm_unda rc=%d\n", d->shm_fd, 0, 0, 0, 0, 0); rudisha 0 - 1; }
     d->shm_ptr = tenga(d->ukubwa_shm);
     andika("OK: dirisha %dx%d (shm fd=%d, baiti=%d)\n", d->upana, d->kimo, d->shm_fd, d->ukubwa_shm, 0, 0);
 
     msg = wayland_waya_jenga_create_pool(d->shm_id, d->pool_id, d->ukubwa_shm);
     n64 s_cp = wayland_soketi_tuma_na_fd(d->fd, msg, 16, d->shm_fd);
-    kama (s_cp < 0) { andika_stderr("FAIL: create_pool sendmsg rc=%d\n", s_cp, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+    kama (s_cp < 0) { andika_kosa("FAIL: create_pool sendmsg rc=%d\n", s_cp, 0, 0, 0, 0, 0); rudisha 0 - 1; }
 
     msg = wayland_waya_jenga_create_buffer(d->pool_id, d->buffer_id, 0, d->upana, d->kimo, d->stride, WAYLAND_WAYA_SHM_FORMAT_XRGB8888);
     wayland_soketi_tuma(d->fd, msg, 32);
@@ -254,12 +254,12 @@ n64 jdk_subiri_configure_ya_kwanza(WaylandDirisha* d) {
         kama (n > 0) {
             d->jumla = d->jumla + n;
             wakati (1 == 1) {
-                kama (d->jumla - d->nafasi < 8) { vunja; }
+                kama (d->jumla - d->nafasi < 8) { acha; }
                 obj = wayland_waya_msg_object_id(d->bafa, d->nafasi);
                 op = wayland_waya_msg_opcode(d->bafa, d->nafasi);
                 sz = wayland_waya_msg_ukubwa(d->bafa, d->nafasi);
-                kama (sz < 8) { vunja; }
-                kama (d->jumla - d->nafasi < sz) { vunja; }
+                kama (sz < 8) { acha; }
+                kama (d->jumla - d->nafasi < sz) { acha; }
 
                 kama (obj == d->wmbase_id && op == WAYLAND_WAYA_XDG_WM_BASE_EV_PING) {
                     serial = wayland_waya_ev_serial(d->bafa, d->nafasi);
@@ -281,11 +281,11 @@ n64 jdk_subiri_configure_ya_kwanza(WaylandDirisha* d) {
                 d->jumla = iliyobaki; d->nafasi = 0;
             }
         } sivyo {
-            kama (n == 0) { andika_stderr("WARN: soketi imefungwa\n", 0, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+            kama (n == 0) { andika_kosa("WARN: soketi imefungwa\n", 0, 0, 0, 0, 0, 0); rudisha 0 - 1; }
             wayland_soketi_lala_ms(20);
         }
     }
-    kama (kwanza == 0) { andika_stderr("FAIL: hakuna configure ya kwanza\n", 0, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+    kama (kwanza == 0) { andika_kosa("FAIL: hakuna configure ya kwanza\n", 0, 0, 0, 0, 0, 0); rudisha 0 - 1; }
     rudisha 0;
 }
 
@@ -307,12 +307,12 @@ n64 jdk_subiri_frame_done(WaylandDirisha* d, n64 callback_id) {
         kama (n > 0) {
             d->jumla = d->jumla + n;
             wakati (1 == 1) {
-                kama (d->jumla - d->nafasi < 8) { vunja; }
+                kama (d->jumla - d->nafasi < 8) { acha; }
                 obj = wayland_waya_msg_object_id(d->bafa, d->nafasi);
                 op = wayland_waya_msg_opcode(d->bafa, d->nafasi);
                 sz = wayland_waya_msg_ukubwa(d->bafa, d->nafasi);
-                kama (sz < 8) { vunja; }
-                kama (d->jumla - d->nafasi < sz) { vunja; }
+                kama (sz < 8) { acha; }
+                kama (d->jumla - d->nafasi < sz) { acha; }
 
                 kama (obj == d->wmbase_id && op == WAYLAND_WAYA_XDG_WM_BASE_EV_PING) {
                     serial = wayland_waya_ev_serial(d->bafa, d->nafasi);
@@ -336,12 +336,12 @@ n64 jdk_subiri_frame_done(WaylandDirisha* d, n64 callback_id) {
                 d->jumla = iliyobaki; d->nafasi = 0;
             }
         } sivyo {
-            kama (n == 0) { andika_stderr("WARN: soketi imefungwa wakati wa kusubiri frame\n", 0, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+            kama (n == 0) { andika_kosa("WARN: soketi imefungwa wakati wa kusubiri frame\n", 0, 0, 0, 0, 0, 0); rudisha 0 - 1; }
             wayland_soketi_lala_ms(10);
         }
     }
     kama (imepokelewa == 0) {
-        andika_stderr("FAIL: wl_callback.done haikupokelewa ndani ya muda\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: wl_callback.done haikupokelewa ndani ya muda\n", 0, 0, 0, 0, 0, 0);
         rudisha 0 - 1;
     }
     rudisha 1;
@@ -433,16 +433,16 @@ w0 jdk_chora_paneli_takwimu(Mchezo* g, MchoroThamaniHuishwa* gdp_anim, n8* fb, n
     chati_pau(&hp);
 }
 
-n32 main(n32 argc, n8** argv) {
+n32 anza(n32 argc, n8** argv) {
     n8** envp = wayland_mazingira_pata_envp(argv);
     onyesho_fonti_pakia();
 
     Mchezo* g = mchezo_unda();
-    kama (g == 0) { andika_stderr("FAIL: mchezo_unda\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (g == 0) { andika_kosa("FAIL: mchezo_unda\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
     MchezoUsanidi usanidi;
     mchezo_usanidi_chaguomsingi(&usanidi);
     CivMatokeo r = mchezo_anzisha(g, &usanidi);
-    kama (r.hitilafu != CIV_SAWA) { andika_stderr("FAIL: mchezo_anzisha\n", 0, 0, 0, 0, 0, 0); mchezo_uharibu(g); rudisha 1; }
+    kama (r.hitilafu != CIV_SAWA) { andika_kosa("FAIL: mchezo_anzisha\n", 0, 0, 0, 0, 0, 0); mchezo_uharibu(g); rudisha 1; }
 
     DuniaRamani* ramani = mchezo_pata_ramani(g);
     n32 y_seed = 0;
@@ -528,14 +528,14 @@ n32 main(n32 argc, n8** argv) {
         kama (rc_hatua < 0) {
             andika("INFO: mwisho wa matukio -- nafunga kwa heshima\n", 0, 0, 0, 0, 0, 0);
             inaendelea = 0;
-            vunja;
+            acha;
         }
         kama (rc_hatua == 1) {
             n64 kanuni = kifaa_tukio_kanuni(tukio);
             kama (kanuni == MZUNGUKO_KEY_ESC) {
                 andika("INFO: ESC -- nafunga kwa heshima\n", 0, 0, 0, 0, 0, 0);
                 inaendelea = 0;
-                vunja;
+                acha;
             }
             kama (kanuni == MZUNGUKO_KEY_SPACE) {
                 mchezo_sasisha(g);
@@ -562,7 +562,7 @@ n32 main(n32 argc, n8** argv) {
         kama (idadi_ya_fremu == 2) {
             gdp_baada_ya_space = gdp_anim->sasa;
             kama (gdp_baada_ya_space == gdp_anim->lengwa) {
-                andika_stderr("FAIL: GDP imefika lengwa MARA MOJA (hakuna uhuishaji wa taratibu)\n", 0, 0, 0, 0, 0, 0);
+                andika_kosa("FAIL: GDP imefika lengwa MARA MOJA (hakuna uhuishaji wa taratibu)\n", 0, 0, 0, 0, 0, 0);
                 yalioshindwa = yalioshindwa + 1;
             } sivyo {
                 // MUHIMU: andika() haiwezi kupokea usemi wa d64 MOJA KWA
@@ -584,27 +584,27 @@ n32 main(n32 argc, n8** argv) {
         rc_frame = jdk_subiri_frame_done(&d, callback_id);
         kama (rc_frame < 0) {
             inaendelea = 0;
-            vunja;
+            acha;
         }
     }
 
     andika("INFO: jumla ya fremu halisi (wl_callback.done) zilizopokelewa: %d\n", idadi_ya_fremu, 0, 0, 0, 0, 0);
     kama (idadi_ya_fremu < 5) {
-        andika_stderr("FAIL: fremu chache mno zilipokelewa (%d, zilizotarajiwa angalau 5)\n", idadi_ya_fremu, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: fremu chache mno zilipokelewa (%d, zilizotarajiwa angalau 5)\n", idadi_ya_fremu, 0, 0, 0, 0, 0);
         yalioshindwa = yalioshindwa + 1;
     } sivyo {
         andika("PASS: fremu za kutosha zilipokelewa kupitia frame-pacing HALISI (%d)\n", idadi_ya_fremu, 0, 0, 0, 0, 0);
     }
 
     kama (g->zamu_ya_sasa != zamu_awali + 1) {
-        andika_stderr("FAIL: SPACE haikusonga zamu moja (awali=%d, mwisho=%d)\n", zamu_awali, g->zamu_ya_sasa, 0, 0, 0, 0);
+        andika_kosa("FAIL: SPACE haikusonga zamu moja (awali=%d, mwisho=%d)\n", zamu_awali, g->zamu_ya_sasa, 0, 0, 0, 0);
         yalioshindwa = yalioshindwa + 1;
     } sivyo {
         andika("PASS: SPACE ilisonga zamu MOJA HASA (%d -> %d)\n", zamu_awali, g->zamu_ya_sasa, 0, 0, 0, 0);
     }
 
     kama (ramani_hali != 2) {
-        andika_stderr("FAIL: hali ya ramani si 2 baada ya M mara mbili, ni %d\n", ramani_hali, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: hali ya ramani si 2 baada ya M mara mbili, ni %d\n", ramani_hali, 0, 0, 0, 0, 0);
         yalioshindwa = yalioshindwa + 1;
     } sivyo {
         andika("PASS: M mara mbili ilisogeza hali ya ramani 0->1->2 HASA\n", 0, 0, 0, 0, 0, 0);

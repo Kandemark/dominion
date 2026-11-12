@@ -56,11 +56,11 @@ n64 jdm2_pata_fd_na_globals(n8** envp, WaylandGlobals* ng) {
     n8* xdg = wayland_mazingira_tafuta(envp, "XDG_RUNTIME_DIR");
     n8* wd = wayland_mazingira_tafuta(envp, "WAYLAND_DISPLAY");
     kama (xdg == 0) {
-        andika_stderr("FAIL: XDG_RUNTIME_DIR haipo kwenye mazingira\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: XDG_RUNTIME_DIR haipo kwenye mazingira\n", 0, 0, 0, 0, 0, 0);
         rudisha 0 - 1;
     }
     kama (wd == 0) {
-        andika_stderr("FAIL: WAYLAND_DISPLAY haipo kwenye mazingira\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: WAYLAND_DISPLAY haipo kwenye mazingira\n", 0, 0, 0, 0, 0, 0);
         rudisha 0 - 1;
     }
 
@@ -75,12 +75,12 @@ n64 jdm2_pata_fd_na_globals(n8** envp, WaylandGlobals* ng) {
 
     n64 fd = wayland_soketi_fungua();
     kama (fd < 0) {
-        andika_stderr("FAIL: socket() imeshindwa rc=%d\n", fd, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: socket() imeshindwa rc=%d\n", fd, 0, 0, 0, 0, 0);
         rudisha 0 - 1;
     }
     n64 rc = wayland_soketi_unganisha(fd, njia2);
     kama (rc < 0) {
-        andika_stderr("FAIL: connect() kwenye %s imeshindwa rc=%d\n", njia2, rc, 0, 0, 0, 0);
+        andika_kosa("FAIL: connect() kwenye %s imeshindwa rc=%d\n", njia2, rc, 0, 0, 0, 0);
         rudisha 0 - 1;
     }
     andika("OK: connect() imefaulu, fd=%d\n", fd, 0, 0, 0, 0, 0);
@@ -115,16 +115,16 @@ n64 jdm2_pata_fd_na_globals(n8** envp, WaylandGlobals* ng) {
 
     wakati (imekamilika == 0) {
         wakati (1 == 1) {
-            kama (jumla - nafasi < 8) { vunja; }
+            kama (jumla - nafasi < 8) { acha; }
             obj = wayland_waya_msg_object_id(bafa, nafasi);
             op = wayland_waya_msg_opcode(bafa, nafasi);
             sz = wayland_waya_msg_ukubwa(bafa, nafasi);
             kama (sz < 8) {
-                andika_stderr("FAIL: ukubwa batili wa ujumbe (sz=%d)\n", sz, 0, 0, 0, 0, 0);
+                andika_kosa("FAIL: ukubwa batili wa ujumbe (sz=%d)\n", sz, 0, 0, 0, 0, 0);
                 imekamilika = 1;
-                vunja;
+                acha;
             }
-            kama (jumla - nafasi < sz) { vunja; }
+            kama (jumla - nafasi < sz) { acha; }
 
             kama (obj == ng->registry_id && op == WAYLAND_WAYA_REGISTRY_EV_GLOBAL) {
                 n64 jina = wayland_waya_global_name(bafa, nafasi);
@@ -150,9 +150,9 @@ n64 jdm2_pata_fd_na_globals(n8** envp, WaylandGlobals* ng) {
             }
 
             nafasi = nafasi + sz;
-            kama (imekamilika == 1) { vunja; }
+            kama (imekamilika == 1) { acha; }
         }
-        kama (imekamilika == 1) { vunja; }
+        kama (imekamilika == 1) { acha; }
 
         kama (nafasi > 0) {
             iliyobaki = jumla - nafasi;
@@ -163,7 +163,7 @@ n64 jdm2_pata_fd_na_globals(n8** envp, WaylandGlobals* ng) {
 
         n = wayland_soketi_pokea(fd, bafa + jumla, ukubwa_bafa - jumla);
         kama (n <= 0) {
-            andika_stderr("FAIL: recvmsg() imerudisha %d kabla ya sync.done\n", n, 0, 0, 0, 0, 0);
+            andika_kosa("FAIL: recvmsg() imerudisha %d kabla ya sync.done\n", n, 0, 0, 0, 0, 0);
             wayland_soketi_funga(fd);
             rudisha 0 - 1;
         }
@@ -174,7 +174,7 @@ n64 jdm2_pata_fd_na_globals(n8** envp, WaylandGlobals* ng) {
         ng->comp_name, ng->comp_toleo, ng->shm_name, ng->shm_toleo, ng->wmbase_name, ng->wmbase_toleo);
 
     kama (ng->comp_name == (0 - 1) || ng->shm_name == (0 - 1) || ng->wmbase_name == (0 - 1)) {
-        andika_stderr("FAIL: moja au zaidi ya globals za msingi hazikupatikana\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: moja au zaidi ya globals za msingi hazikupatikana\n", 0, 0, 0, 0, 0, 0);
         wayland_soketi_funga(fd);
         rudisha 0 - 1;
     }
@@ -209,7 +209,7 @@ n64 jdm2_jenga_dirisha(WaylandGlobals* ng, WaylandDirisha* d, n8* kichwa) {
 
     d->shm_fd = wayland_shm_unda(d->ukubwa_shm);
     kama (d->shm_fd < 0) {
-        andika_stderr("FAIL: memfd_create/ftruncate ya shm imeshindwa rc=%d\n", d->shm_fd, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: memfd_create/ftruncate ya shm imeshindwa rc=%d\n", d->shm_fd, 0, 0, 0, 0, 0);
         rudisha 0 - 1;
     }
     d->shm_ptr = tenga(d->ukubwa_shm);
@@ -218,7 +218,7 @@ n64 jdm2_jenga_dirisha(WaylandGlobals* ng, WaylandDirisha* d, n8* kichwa) {
     msg = wayland_waya_jenga_create_pool(d->shm_id, d->pool_id, d->ukubwa_shm);
     n64 s_cp = wayland_soketi_tuma_na_fd(d->fd, msg, 16, d->shm_fd);
     kama (s_cp < 0) {
-        andika_stderr("FAIL: sendmsg ya wl_shm.create_pool (SCM_RIGHTS) imeshindwa rc=%d\n", s_cp, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: sendmsg ya wl_shm.create_pool (SCM_RIGHTS) imeshindwa rc=%d\n", s_cp, 0, 0, 0, 0, 0);
         rudisha 0 - 1;
     }
     andika("OK: wl_shm.create_pool (pool=%d, fd kupitia SCM_RIGHTS) imetumwa\n", d->pool_id, 0, 0, 0, 0, 0);
@@ -276,15 +276,15 @@ n64 jdm2_subiri_configure_ya_kwanza(WaylandDirisha* d, Mchezo* g) {
             d->jumla = d->jumla + n;
 
             wakati (1 == 1) {
-                kama (d->jumla - d->nafasi < 8) { vunja; }
+                kama (d->jumla - d->nafasi < 8) { acha; }
                 obj = wayland_waya_msg_object_id(d->bafa, d->nafasi);
                 op = wayland_waya_msg_opcode(d->bafa, d->nafasi);
                 sz = wayland_waya_msg_ukubwa(d->bafa, d->nafasi);
                 kama (sz < 8) {
-                    andika_stderr("WARN: ukubwa batili wa ujumbe wakati wa kusubiri configure (sz=%d)\n", sz, 0, 0, 0, 0, 0);
-                    vunja;
+                    andika_kosa("WARN: ukubwa batili wa ujumbe wakati wa kusubiri configure (sz=%d)\n", sz, 0, 0, 0, 0, 0);
+                    acha;
                 }
-                kama (d->jumla - d->nafasi < sz) { vunja; }
+                kama (d->jumla - d->nafasi < sz) { acha; }
 
                 kama (obj == d->wmbase_id && op == WAYLAND_WAYA_XDG_WM_BASE_EV_PING) {
                     serial = wayland_waya_ev_serial(d->bafa, d->nafasi);
@@ -319,11 +319,11 @@ n64 jdm2_subiri_configure_ya_kwanza(WaylandDirisha* d, Mchezo* g) {
             }
         } sivyo {
             kama (n == 0) {
-                andika_stderr("WARN: soketi imefungwa na compositor wakati wa kusubiri configure ya kwanza\n", 0, 0, 0, 0, 0, 0);
+                andika_kosa("WARN: soketi imefungwa na compositor wakati wa kusubiri configure ya kwanza\n", 0, 0, 0, 0, 0, 0);
                 rudisha 0 - 1;
             } sivyo {
                 kama (n != WAYLAND_SOKETI_EAGAIN) {
-                    andika_stderr("WARN: recvmsg() rc=%d (si EAGAIN) wakati wa kusubiri configure ya kwanza\n", n, 0, 0, 0, 0, 0);
+                    andika_kosa("WARN: recvmsg() rc=%d (si EAGAIN) wakati wa kusubiri configure ya kwanza\n", n, 0, 0, 0, 0, 0);
                 }
                 wayland_soketi_lala_ms(50);
             }
@@ -331,7 +331,7 @@ n64 jdm2_subiri_configure_ya_kwanza(WaylandDirisha* d, Mchezo* g) {
     }
 
     kama (kwanza_kimechorwa == 0) {
-        andika_stderr("FAIL: hakuna xdg_surface.configure iliyopokelewa ndani ya sekunde %d -- dirisha HALIKUCHORWA\n", SEKUNDE_KUNGOJA, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: hakuna xdg_surface.configure iliyopokelewa ndani ya sekunde %d -- dirisha HALIKUCHORWA\n", SEKUNDE_KUNGOJA, 0, 0, 0, 0, 0);
         rudisha 0 - 1;
     }
     rudisha 0;
@@ -353,15 +353,15 @@ n64 jdm2_pampu_matukio(WaylandDirisha* d, n64 sekunde) {
             d->jumla = d->jumla + n;
 
             wakati (1 == 1) {
-                kama (d->jumla - d->nafasi < 8) { vunja; }
+                kama (d->jumla - d->nafasi < 8) { acha; }
                 obj = wayland_waya_msg_object_id(d->bafa, d->nafasi);
                 op = wayland_waya_msg_opcode(d->bafa, d->nafasi);
                 sz = wayland_waya_msg_ukubwa(d->bafa, d->nafasi);
                 kama (sz < 8) {
-                    andika_stderr("WARN: ukubwa batili wa ujumbe kwenye pampu ya matukio (sz=%d)\n", sz, 0, 0, 0, 0, 0);
-                    vunja;
+                    andika_kosa("WARN: ukubwa batili wa ujumbe kwenye pampu ya matukio (sz=%d)\n", sz, 0, 0, 0, 0, 0);
+                    acha;
                 }
-                kama (d->jumla - d->nafasi < sz) { vunja; }
+                kama (d->jumla - d->nafasi < sz) { acha; }
 
                 kama (obj == d->wmbase_id && op == WAYLAND_WAYA_XDG_WM_BASE_EV_PING) {
                     serial = wayland_waya_ev_serial(d->bafa, d->nafasi);
@@ -386,11 +386,11 @@ n64 jdm2_pampu_matukio(WaylandDirisha* d, n64 sekunde) {
             }
         } sivyo {
             kama (n == 0) {
-                andika_stderr("WARN: soketi imefungwa na compositor wakati wa pampu ya matukio\n", 0, 0, 0, 0, 0, 0);
+                andika_kosa("WARN: soketi imefungwa na compositor wakati wa pampu ya matukio\n", 0, 0, 0, 0, 0, 0);
                 rudisha 0 - 1;
             } sivyo {
                 kama (n != WAYLAND_SOKETI_EAGAIN) {
-                    andika_stderr("WARN: recvmsg() rc=%d (si EAGAIN) wakati wa pampu ya matukio\n", n, 0, 0, 0, 0, 0);
+                    andika_kosa("WARN: recvmsg() rc=%d (si EAGAIN) wakati wa pampu ya matukio\n", n, 0, 0, 0, 0, 0);
                 }
                 wayland_soketi_lala_ms(50);
             }
@@ -426,7 +426,7 @@ w0 jm_weka_tukio(n8* matukio, n64 faharisi, n64 kanuni, n64 thamani) {
     weka_u32(t, 20, thamani);  // value
 }
 
-n32 main(n32 argc, n8** argv) {
+n32 anza(n32 argc, n8** argv) {
     n8** envp = wayland_mazingira_pata_envp(argv);
 
     onyesho_fonti_pakia();
@@ -436,7 +436,7 @@ n32 main(n32 argc, n8** argv) {
 
     Mchezo* g = mchezo_unda();
     kama (g == 0) {
-        andika_stderr("FAIL: mchezo_unda imerudisha 0\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: mchezo_unda imerudisha 0\n", 0, 0, 0, 0, 0, 0);
         rudisha 1;
     }
 
@@ -444,7 +444,7 @@ n32 main(n32 argc, n8** argv) {
     mchezo_usanidi_chaguomsingi(&usanidi);
     CivMatokeo r = mchezo_anzisha(g, &usanidi);
     kama (r.hitilafu != CIV_SAWA) {
-        andika_stderr("FAIL: mchezo_anzisha haikurudi CIV_SAWA\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: mchezo_anzisha haikurudi CIV_SAWA\n", 0, 0, 0, 0, 0, 0);
         mchezo_uharibu(g);
         rudisha 1;
     }
@@ -538,13 +538,13 @@ n32 main(n32 argc, n8** argv) {
         kama (rc_pampu < 0) {
             andika("INFO: dirisha limefungwa wakati wa kusubiri -- natoka\n", 0, 0, 0, 0, 0, 0);
             inaendelea = 0;
-            vunja;
+            acha;
         }
 
         rc_hatua = mzunguko_hatua_kina(g, &chanzo, d.shm_ptr, d.stride);
         kama (rc_hatua < 0) {
             inaendelea = 0;
-            vunja;
+            acha;
         }
         jdm2_onyesha_upya(&d);
         andika("OK: hatua imeshughulikiwa (hali_kina=%d taifa_lililochaguliwa=%d zamu=%d), dirisha limechorwa upya\n",
@@ -558,7 +558,7 @@ n32 main(n32 argc, n8** argv) {
 
     // ---------- Uthibitisho ----------
     kama (jc.idadi_ya_miito != idadi_matukio) {
-        andika_stderr("FAIL: chanzo cha matukio hakikuitwa idadi sahihi ya mara (%d badala ya %d)\n", jc.idadi_ya_miito, idadi_matukio, 0, 0, 0, 0);
+        andika_kosa("FAIL: chanzo cha matukio hakikuitwa idadi sahihi ya mara (%d badala ya %d)\n", jc.idadi_ya_miito, idadi_matukio, 0, 0, 0, 0);
         yalioshindwa = yalioshindwa + 1;
     } sivyo {
         andika("PASS: chanzo cha matukio kimeitwa idadi sahihi ya mara (%d)\n", jc.idadi_ya_miito, 0, 0, 0, 0, 0);
@@ -569,21 +569,21 @@ n32 main(n32 argc, n8** argv) {
     // libaki 2 (halijarudishwa sifuri na TAB -- uchaguzi UNADUMU hata
     // baada ya kutoka "undani").
     kama (MZUNGUKO_HALI_KINA != 0) {
-        andika_stderr("FAIL: hali ya mwisho si 'orodha' (0), ni %d\n", MZUNGUKO_HALI_KINA, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: hali ya mwisho si 'orodha' (0), ni %d\n", MZUNGUKO_HALI_KINA, 0, 0, 0, 0, 0);
         yalioshindwa = yalioshindwa + 1;
     } sivyo {
         andika("PASS: TAB ya pili imerudisha hali kwenda 'orodha' sahihi\n", 0, 0, 0, 0, 0, 0);
     }
 
     kama (MZUNGUKO_TAIFA_LILILOCHAGULIWA != 2) {
-        andika_stderr("FAIL: taifa lililochaguliwa si 2 (RIGHT x2 kutoka 0), ni %d\n", MZUNGUKO_TAIFA_LILILOCHAGULIWA, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: taifa lililochaguliwa si 2 (RIGHT x2 kutoka 0), ni %d\n", MZUNGUKO_TAIFA_LILILOCHAGULIWA, 0, 0, 0, 0, 0);
         yalioshindwa = yalioshindwa + 1;
     } sivyo {
         andika("PASS: RIGHT x2 imechagua taifa la faharisi 2 HASA\n", 0, 0, 0, 0, 0, 0);
     }
 
     kama (g->zamu_ya_sasa != zamu_awali + 1) {
-        andika_stderr("FAIL: SPACE kwenye hali ya 'undani' haikusonga zamu moja (awali=%d, mwisho=%d)\n", zamu_awali, g->zamu_ya_sasa, 0, 0, 0, 0);
+        andika_kosa("FAIL: SPACE kwenye hali ya 'undani' haikusonga zamu moja (awali=%d, mwisho=%d)\n", zamu_awali, g->zamu_ya_sasa, 0, 0, 0, 0);
         yalioshindwa = yalioshindwa + 1;
     } sivyo {
         andika("PASS: SPACE imesonga zamu MOJA hata ikiwa hali ya 'undani' ilikuwa hai\n", 0, 0, 0, 0, 0, 0);
@@ -593,7 +593,7 @@ n32 main(n32 argc, n8** argv) {
     // mfumo wa mataifa haujaharibiwa na mabadiliko ya view/selection).
     TaifaNchi* taifa_2_baada = dunia_taifa_mfumo_pata_kwa_faharisi(taifa, 2);
     kama (linganisha_mfuatano(taifa_2_halisi->jina, taifa_2_baada->jina) != 0) {
-        andika_stderr("FAIL: jina la taifa la faharisi 2 limebadilika bila sababu\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: jina la taifa la faharisi 2 limebadilika bila sababu\n", 0, 0, 0, 0, 0, 0);
         yalioshindwa = yalioshindwa + 1;
     } sivyo {
         andika("PASS: taifa la faharisi 2 bado ni sawa (jina=%s), kama lilivyochaguliwa na RIGHT x2\n", anwani(taifa_2_baada->jina), 0, 0, 0, 0, 0);

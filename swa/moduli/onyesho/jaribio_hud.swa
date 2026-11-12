@@ -10,7 +10,7 @@ husisha { moduli/onyesho/drm.swa }
 // mchezo.swa pekee (mifumo 47) tayari unafikia baiti 1,034,722 za
 // chanzo (98.7% ya kikomo kisichobadilika cha mkusanyaji cha baiti
 // 1,048,576, angalia ongeza_chanzo kwenye msingi/mkusanyaji/
-// stage1.swa, lugha-swa/swa), ukiacha nafasi ndogo mno kwa fonti.swa
+// kiendeshaji.swa, lugha-swa/swa), ukiacha nafasi ndogo mno kwa fonti.swa
 // (~baiti 52,500). Badala yake, jaribio hili huunda IdadiYaWatuMsimamizi
 // na TaifaMfumo HALISI kwa kutumia KAZI HALISI ZILE ZILE ambazo
 // mchezo_anzisha/mchezo_sasisha hutumia ndani yake (zimenakiliwa
@@ -38,7 +38,7 @@ n32 jh_yalioshindwa = 0;
 
 w0 jh_thibitisha(n32 sharti, n8* jina) {
     kama (sharti == 0) {
-        andika_stderr("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
         jh_yalioshindwa = jh_yalioshindwa + 1;
     } sivyo {
         andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
@@ -181,7 +181,7 @@ w0 jh_unda_data_halisi(JhDataHalisi* nje, n32 idadi_ya_mizunguko) {
     nje->zamu = zamu;
 }
 
-n32 main() {
+n32 anza() {
     onyesho_fonti_pakia();
 
     JhDataHalisi data;
@@ -264,7 +264,7 @@ n32 main() {
     // SKIP (rc=2) imeandikwa WAZI, SI kushindwa (FAIL).
     n64 fd = onyesho_drm_fungua("/dev/dri/card1");
     kama (fd < 0) {
-        andika_stderr("SKIP: haiwezi kufungua /dev/dri/card1 (ruhusa?) rc=%d -- HUD halisi ya hardware haijathibitishwa kwenye kikao hiki\n", fd, 0, 0, 0, 0, 0);
+        andika_kosa("SKIP: haiwezi kufungua /dev/dri/card1 (ruhusa?) rc=%d -- HUD halisi ya hardware haijathibitishwa kwenye kikao hiki\n", fd, 0, 0, 0, 0, 0);
         andika("\n[muhtasari] yaliyoshindwa: %d\n", jh_yalioshindwa, 0, 0, 0, 0, 0);
         kama (jh_yalioshindwa > 0) { rudisha 1; }
         andika("DONE (DRM halisi: SKIP)\n", 0, 0, 0, 0, 0, 0);
@@ -274,7 +274,7 @@ n32 main() {
 
     n8* res = onyesho_drm_pata_rasilimali(fd);
     kama (res == 0) {
-        andika_stderr("SKIP: GETRESOURCES imeshindwa -- HUD halisi ya hardware haijathibitishwa\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("SKIP: GETRESOURCES imeshindwa -- HUD halisi ya hardware haijathibitishwa\n", 0, 0, 0, 0, 0, 0);
         onyesho_drm_funga(fd);
         andika("\n[muhtasari] yaliyoshindwa: %d\n", jh_yalioshindwa, 0, 0, 0, 0, 0);
         kama (jh_yalioshindwa > 0) { rudisha 1; }
@@ -295,7 +295,7 @@ n32 main() {
         i2 = i2 + 1;
     }
     kama (kiungo == 0) {
-        andika_stderr("SKIP: hakuna onyesho lililounganishwa -- HUD halisi ya hardware haijathibitishwa\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("SKIP: hakuna onyesho lililounganishwa -- HUD halisi ya hardware haijathibitishwa\n", 0, 0, 0, 0, 0, 0);
         onyesho_drm_funga(fd);
         andika("\n[muhtasari] yaliyoshindwa: %d\n", jh_yalioshindwa, 0, 0, 0, 0, 0);
         kama (jh_yalioshindwa > 0) { rudisha 1; }
@@ -310,7 +310,7 @@ n32 main() {
 
     n8* dumb = onyesho_drm_unda_dumb(fd, upana, kimo, 32);
     kama (dumb == 0) {
-        andika_stderr("SKIP: CREATE_DUMB imeshindwa -- HUD halisi ya hardware haijathibitishwa\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("SKIP: CREATE_DUMB imeshindwa -- HUD halisi ya hardware haijathibitishwa\n", 0, 0, 0, 0, 0, 0);
         onyesho_drm_funga(fd);
         andika("\n[muhtasari] yaliyoshindwa: %d\n", jh_yalioshindwa, 0, 0, 0, 0, 0);
         kama (jh_yalioshindwa > 0) { rudisha 1; }
@@ -325,7 +325,7 @@ n32 main() {
     n8* fb_mem = onyesho_drm_ramanisha_dumb(fd, handle, ukubwa);
     n64 fb_mem_addr = fb_mem;
     kama (fb_mem_addr < 0) {
-        andika_stderr("SKIP: mmap ya dumb buffer imekataliwa (errno=-%d) -- kawaida kwa sababu compositor mwingine (Wayland) tayari ni DRM master kwenye kikao hiki; HUD halisi ya hardware HAIJATHIBITISHWA kwa sababu hii (si kwa sababu ya hitilafu ya msimbo wa HUD -- angalia uthibitisho wa pikseli HALISI dhidi ya bafa ya synthetic hapo juu, ambao UMEFAULU)\n", 0 - fb_mem_addr, 0, 0, 0, 0, 0);
+        andika_kosa("SKIP: mmap ya dumb buffer imekataliwa (errno=-%d) -- kawaida kwa sababu compositor mwingine (Wayland) tayari ni DRM master kwenye kikao hiki; HUD halisi ya hardware HAIJATHIBITISHWA kwa sababu hii (si kwa sababu ya hitilafu ya msimbo wa HUD -- angalia uthibitisho wa pikseli HALISI dhidi ya bafa ya synthetic hapo juu, ambao UMEFAULU)\n", 0 - fb_mem_addr, 0, 0, 0, 0, 0);
         onyesho_drm_haribu_dumb(fd, handle);
         onyesho_drm_funga(fd);
         andika("\n[muhtasari] yaliyoshindwa: %d\n", jh_yalioshindwa, 0, 0, 0, 0, 0);

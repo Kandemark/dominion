@@ -64,7 +64,7 @@ d64 maarifa_endeleza(d64 kiwango_cha_awali, d64 pointi_za_utafiti,
         }
 
         kama (jumla_iliyoendelea > 0.0 && jumla_iliyoendelea < 0.0001) {
-            vunja;
+            acha;
         }
         hatua = hatua + 1;
     }

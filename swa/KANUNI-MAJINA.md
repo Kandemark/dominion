@@ -149,16 +149,16 @@ wito wa mbele wenye idadi mbaya ya hoja, wakati wowote wa kukusanya.
 
 lugha-swa/swa#279 ("Awamu D") iliondoa kabisa uungwaji mkono wa
 herufi kubwa za aina za msingi (N32/N64/D64/B1/W0 n.k. hazitambuliwi
-tena KABISA) kwenye stage1, ikimaliza mradi wa uhamiaji wa herufi
+tena KABISA) kwenye kamili, ikimaliza mradi wa uhamiaji wa herufi
 ndogo ulioanza na lugha-swa/swa#225. Kabla ya #279 kuungana
 (2026-09-26), tayari commit 271ce40 (2026-09-12, PR #1 ya hazina hii)
 ilikuwa imehamisha faili zote 111 za .swa za mradi huu kwenda herufi
 ndogo -- kwa hiyo hazina hii ilikuwa TAYARI salama dhidi ya #279 kabla
 haijaungana.
 
-Uthibitisho uliofanywa baada ya #279 kuungana (dhidi ya stage1 mpya
+Uthibitisho uliofanywa baada ya #279 kuungana (dhidi ya kamili mpya
 kabisa iliyojengwa kutoka lugha-swa/swa main ya 2026-09-26, mnyororo
-kamili mbegu->msuluhishi->stage1, si binary ya zamani):
+kamili mbegu->msuluhishi->kamili, si binary ya zamani):
 
 - Grep ya `swa/` yote: HAKUNA `\bN8\b`..`\bW64\b` (herufi kubwa)
   kwenye msimbo halisi -- tukio pekee lililopatikana ni maandishi ya
@@ -173,16 +173,16 @@ kamili mbegu->msuluhishi->stage1, si binary ya zamani):
   kubadilishwa jina): hazitumiki ndani ya muktadha wa aina (`ukubwa(x)`
   / `tenga(x...)` / tamko la aina), na kuendesha kwa mkono kunathibitisha
   thamani sahihi (bin_soma: v16=513, v32=67305985; jaribio_mchoro.swa:
-  PASS) dhidi ya stage1 mpya.
+  PASS) dhidi ya kamili mpya.
 - `swa/moduli/mchezo.swa` na `swa/moduli/dunia/taifa.swa`
   (sehemu mbili nzito zilizotajwa) zinakusanya bila hitilafu yoyote
-  dhidi ya stage1 mpya.
+  dhidi ya kamili mpya.
 - Programu ya majaribio iliyoendesha `mchezo_unda()`, mizunguko 5 ya
   `idadi_ya_watu_sasisha`, mizunguko 5 ya `uchumi_mkuu_sasisha`, na
   `dunia_taifa_mfumo_dai_maeneo_yote` (ikiwemo kudai kipande kimoja
   cha ardhi HALISI kwenye ramani) ilitoa matokeo YANAYOFANANA KABISA
-  (diff tupu, herufi kwa herufi) kati ya stage1 iliyojengwa KABLA ya
-  #279 (commit d3bb984, inayounga mkono herufi zote mbili) na stage1
+  (diff tupu, herufi kwa herufi) kati ya kamili iliyojengwa KABLA ya
+  #279 (commit d3bb984, inayounga mkono herufi zote mbili) na kamili
   iliyojengwa BAADA ya #279 (herufi ndogo pekee).
 
 ### Mdudu ULIOKUWEPO TAYARI uliogunduliwa (nje ya wigo wa uhamiaji huu)
@@ -194,7 +194,7 @@ inafaulu (imethibitishwa kwa `strace`). Hii HAITOKEI ikiwa
 `serikali.swa` inakusanywa peke yake (kitengo kidogo cha ukusanyaji);
 INATOKEA TU wakati imekusanywa kama sehemu ya graph NZIMA ya
 `mchezo.swa` (miundo 215+ ya `husisha` inayofuatana). Imethibitishwa
-kutokea SAWA KABISA (mahali pamoja, tabia moja) dhidi ya stage1 ya
+kutokea SAWA KABISA (mahali pamoja, tabia moja) dhidi ya kamili ya
 KABLA na BAADA ya #279 -- kwa hiyo SI athari ya uhamiaji wa herufi
 ndogo wala ya #279 yenyewe, ni mdudu wa kina zaidi (labda kikomo
 kingine cha jedwali la ndani la mkusanyaji, kinachofanana na
@@ -263,7 +263,7 @@ Hii iliathiri moja kwa moja `mmap()` ya memfd (wl_shm inahitaji
 MAP_SHARED + fd HALISI -- fd ikawa na thamani ya `flags`(=1=stdout),
 ikitoa EACCES). Haikuonekana awali kwenye `drm.swa`
 (`onyesho_mmap_na_offset`) wala kwenye arena allocator (MAP_ANONYMOUS,
-`sys_mmap` ya kumbukumbu.swa) kwa sababu: (1) `MAP_ANONYMOUS` humfanya
+`mfumo_ramani_kumbukumbu` ya kumbukumbu.swa) kwa sababu: (1) `MAP_ANONYMOUS` humfanya
 kernel apuuze thamani ya fd kabisa, (2) maelezo ya awali ya EACCES ya
 DRM dumb buffer (angalia Awamu ya DRM/KMS hapo juu, 2026-09-11)
 yaliihusisha na "DRM master" -- huenda hilo pia ni kweli, LAKINI
@@ -272,7 +272,7 @@ mengine yanayoonekana sahihi. **SULUHISHO lililotumika (epuko, SI
 urekebishaji wa mkusanyaji -- hilo ni nje ya wigo wa Dominion)**:
 `shm.swa` HAIFANYI KAMWE mmap ya memfd kwenye mchakato wetu wenyewe --
 tunachora kwenye bafa ya KAWAIDA (`tenga()`, MAP_ANONYMOUS, salama kwa
-sababu (1)), kisha `write(2)` (`sys_andika`, hoja 3 TU, a4=a5=a6=0
+sababu (1)), kisha `write(2)` (`mfumo_andika`, hoja 3 TU, a4=a5=a6=0
 hazitofautiani kiasi cha kuathiriwa) kunakili baiti ndani ya memfd --
 compositor anafanya mmap YAKE MWENYEWE (bila hitilafu hii) na kuona
 data ile ile kupitia kurasa za page cache zinazoshirikiwa. **Hii

@@ -1,24 +1,24 @@
 husisha { moduli/onyesho/baiti_ghafi.swa }
 
-n32 main() {
+n32 anza() {
     n8* buf = tenga(32);
     weka_sifuri(buf, 32);
 
     weka_u32(buf, 0, 3225445536);
     n64 r1 = pata_u32(buf, 0);
-    kama (r1 != 3225445536) { andika_stderr("FAIL u32 %d\n", r1, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (r1 != 3225445536) { andika_kosa("FAIL u32 %d\n", r1, 0, 0, 0, 0, 0); rudisha 1; }
 
     weka_u16(buf, 4, 61374);
     n64 r2 = pata_u16(buf, 4);
-    kama (r2 != 61374) { andika_stderr("FAIL u16 %d\n", r2, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (r2 != 61374) { andika_kosa("FAIL u16 %d\n", r2, 0, 0, 0, 0, 0); rudisha 1; }
 
     weka_u64(buf, 8, 12345678901234);
     n64 r3 = pata_u64(buf, 8);
-    kama (r3 != 12345678901234) { andika_stderr("FAIL u64 %d\n", r3, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (r3 != 12345678901234) { andika_kosa("FAIL u64 %d\n", r3, 0, 0, 0, 0, 0); rudisha 1; }
 
     // hakikisha haiharibu baiti jirani
     weka_u16(buf, 4, 61374);
-    kama (buf[6] != 0) { andika_stderr("FAIL spillover buf[6]=%d\n", buf[6], 0, 0, 0, 0, 0); rudisha 1; }
+    kama (buf[6] != 0) { andika_kosa("FAIL spillover buf[6]=%d\n", buf[6], 0, 0, 0, 0, 0); rudisha 1; }
 
     andika("PASS baiti_ghafi\n", 0, 0, 0, 0, 0, 0);
     rudisha 0;

@@ -24,7 +24,7 @@ husisha { moduli/mchezo.swa }
 //
 // KIKOMO HICHO KIMEONDOLEWA (lugha-swa/swa PR #301, 2026-10-04):
 // kikomo cha baiti za chanzo kimepanuliwa kutoka 1MB (1,048,576)
-// hadi 16MB (16,777,216) -- angalia msingi/mkusanyaji/stage1.swa,
+// hadi 16MB (16,777,216) -- angalia msingi/mkusanyaji/kiendeshaji.swa,
 // lugha-swa/swa. Mchezo.swa + majaribio yake (jaribio_mchezo_kamili.swa)
 // kwa pamoja ni baiti 1,052,450 TU (~6.3% ya kikomo kipya) --
 // kuna nafasi KUBWA sasa. Kwa hiyo faili hili SASA LINAHUSISHA

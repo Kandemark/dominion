@@ -6,7 +6,7 @@ husisha { moduli/onyesho/chati.swa }
 // la Kisasa", dhidi ya data YA KUJULIKANA, kwa kusoma pikseli HALISI
 // kwenye framebuffer -- si tu "haikuanguka".
 
-n32 main() {
+n32 anza() {
     // ===== 1. chati_bunge =====
     n64 canvas_w = 400;
     n64 canvas_h = 250;
@@ -60,7 +60,7 @@ n32 main() {
         ry = ry + 1;
     }
 
-    kama (eneo_duara_moja == 0) { andika_stderr("FAIL: chati_bunge -- eneo_duara_moja=0 (kipimo cha rejea kimeshindwa)\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (eneo_duara_moja == 0) { andika_kosa("FAIL: chati_bunge -- eneo_duara_moja=0 (kipimo cha rejea kimeshindwa)\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
 
     // 1b. hesabu pikseli HALISI za kila rangi (chama) kwenye bafa
     //     nzima ya chati_bunge, kisha gawanya na eneo_duara_moja
@@ -82,7 +82,7 @@ n32 main() {
             kama (px == rangi0) { idadi0 = idadi0 + 1; jumla_pikseli_zenye_rangi = jumla_pikseli_zenye_rangi + 1; }
             sivyo { kama (px == rangi1) { idadi1 = idadi1 + 1; jumla_pikseli_zenye_rangi = jumla_pikseli_zenye_rangi + 1; }
             sivyo { kama (px == rangi2) { idadi2 = idadi2 + 1; jumla_pikseli_zenye_rangi = jumla_pikseli_zenye_rangi + 1; }
-            sivyo { kama (px != 0) { andika_stderr("FAIL: chati_bunge -- pikseli isiyotarajiwa (%d) kwenye (%d,%d)\n", px, xx, yy, 0, 0, 0); rudisha 1; } } } }
+            sivyo { kama (px != 0) { andika_kosa("FAIL: chati_bunge -- pikseli isiyotarajiwa (%d) kwenye (%d,%d)\n", px, xx, yy, 0, 0, 0); rudisha 1; } } } }
             xx = xx + 1;
         }
         yy = yy + 1;
@@ -97,19 +97,19 @@ n32 main() {
 
     // thibitisha HASA hakuna mabaki (dots hazipishani/overlap) --
     // kugawanya kunatakiwa kuwa SAWASAWA, bila baki.
-    kama ((idadi0 % eneo_duara_moja) != 0) { andika_stderr("FAIL: chati_bunge -- pikseli za rangi0 (%d) si kizidishi HASA cha eneo_duara_moja (%d)\n", idadi0, eneo_duara_moja, 0, 0, 0, 0); rudisha 1; }
-    kama ((idadi1 % eneo_duara_moja) != 0) { andika_stderr("FAIL: chati_bunge -- pikseli za rangi1 (%d) si kizidishi HASA cha eneo_duara_moja (%d)\n", idadi1, eneo_duara_moja, 0, 0, 0, 0); rudisha 1; }
-    kama ((idadi2 % eneo_duara_moja) != 0) { andika_stderr("FAIL: chati_bunge -- pikseli za rangi2 (%d) si kizidishi HASA cha eneo_duara_moja (%d)\n", idadi2, eneo_duara_moja, 0, 0, 0, 0); rudisha 1; }
+    kama ((idadi0 % eneo_duara_moja) != 0) { andika_kosa("FAIL: chati_bunge -- pikseli za rangi0 (%d) si kizidishi HASA cha eneo_duara_moja (%d)\n", idadi0, eneo_duara_moja, 0, 0, 0, 0); rudisha 1; }
+    kama ((idadi1 % eneo_duara_moja) != 0) { andika_kosa("FAIL: chati_bunge -- pikseli za rangi1 (%d) si kizidishi HASA cha eneo_duara_moja (%d)\n", idadi1, eneo_duara_moja, 0, 0, 0, 0); rudisha 1; }
+    kama ((idadi2 % eneo_duara_moja) != 0) { andika_kosa("FAIL: chati_bunge -- pikseli za rangi2 (%d) si kizidishi HASA cha eneo_duara_moja (%d)\n", idadi2, eneo_duara_moja, 0, 0, 0, 0); rudisha 1; }
 
-    kama (makadirio0 != 10) { andika_stderr("FAIL: chati_bunge -- rangi0 ina dots %d (ilitarajiwa 10)\n", makadirio0, 0, 0, 0, 0, 0); rudisha 1; }
-    kama (makadirio1 != 5) { andika_stderr("FAIL: chati_bunge -- rangi1 ina dots %d (ilitarajiwa 5)\n", makadirio1, 0, 0, 0, 0, 0); rudisha 1; }
-    kama (makadirio2 != 3) { andika_stderr("FAIL: chati_bunge -- rangi2 ina dots %d (ilitarajiwa 3)\n", makadirio2, 0, 0, 0, 0, 0); rudisha 1; }
-    kama (jumla_dots != 18) { andika_stderr("FAIL: chati_bunge -- jumla ya dots zote ni %d (ilitarajiwa 18)\n", jumla_dots, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (makadirio0 != 10) { andika_kosa("FAIL: chati_bunge -- rangi0 ina dots %d (ilitarajiwa 10)\n", makadirio0, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (makadirio1 != 5) { andika_kosa("FAIL: chati_bunge -- rangi1 ina dots %d (ilitarajiwa 5)\n", makadirio1, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (makadirio2 != 3) { andika_kosa("FAIL: chati_bunge -- rangi2 ina dots %d (ilitarajiwa 3)\n", makadirio2, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (jumla_dots != 18) { andika_kosa("FAIL: chati_bunge -- jumla ya dots zote ni %d (ilitarajiwa 18)\n", jumla_dots, 0, 0, 0, 0, 0); rudisha 1; }
 
     // 1c. eneo la NJE ya nusu-duara (kona ya juu ya bafa, nje ya
     //     radius na nje ya cy) LAZIMA libaki rangi ya nyuma.
     n64 kona = mchoro_pata_pikseli(fb1, pitch, 2, 2);
-    kama (kona != 0) { andika_stderr("FAIL: chati_bunge -- kona ya juu-kushoto ya bafa imeguswa (=%d, ilitarajiwa 0)\n", kona, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (kona != 0) { andika_kosa("FAIL: chati_bunge -- kona ya juu-kushoto ya bafa imeguswa (=%d, ilitarajiwa 0)\n", kona, 0, 0, 0, 0, 0); rudisha 1; }
 
     // ===== 2. chati_mstari_eleza =====
     n8* fb2 = tenga(pitch * canvas_h);
@@ -161,7 +161,7 @@ n32 main() {
         }
         dy = dy + 1;
     }
-    kama (imepatikana == 0) { andika_stderr("FAIL: chati_mstari_eleza -- hakuna pikseli (maandishi) karibu na nafasi iliyokokotolewa (%d,%d)\n", x_juu, y_lebo, 0, 0, 0, 0); rudisha 1; }
+    kama (imepatikana == 0) { andika_kosa("FAIL: chati_mstari_eleza -- hakuna pikseli (maandishi) karibu na nafasi iliyokokotolewa (%d,%d)\n", x_juu, y_lebo, 0, 0, 0, 0); rudisha 1; }
 
     andika("PASS chati_bunge/chati_mstari_eleza (pikseli halisi zote sahihi)\n", 0, 0, 0, 0, 0, 0);
     rudisha 0;

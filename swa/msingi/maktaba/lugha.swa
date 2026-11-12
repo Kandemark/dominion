@@ -11,9 +11,9 @@
 // dogo lililotengwa), si dhana:
 //   - Ramani (msingi/maktaba/ramani.swa) inasaidia FUNGUO na THAMANI
 //     za n32 TU (si mfuatano/vielekezi). Kwa hiyo funguo ya utafutaji
-//     ni HESHI (n32, kutoka heshi_mfuatano) ya lugha+ufunguo
-//     iliyounganishwa kwa hesabu (heshi_mfuatano(lugha)*31 +
-//     heshi_mfuatano(ufunguo)) badala ya mfuatano halisi -- inaepuka
+//     ni HESHI (n32, kutoka heshi_ya_mfuatano) ya lugha+ufunguo
+//     iliyounganishwa kwa hesabu (heshi_ya_mfuatano(lugha)*31 +
+//     heshi_ya_mfuatano(ufunguo)) badala ya mfuatano halisi -- inaepuka
 //     hitaji la ku-unganisha mfuatano na kuepuka ukomo wa saizi ya
 //     bafa.
 //   - THAMANI ya Ramani ni FAHARISI (index) ndani ya safu ya
@@ -55,8 +55,8 @@ Ramani* lugha_pata_faharisi(LughaMfumo* l) {
 }
 
 n32 lugha_heshi_ya_funguo(n8* lugha, n8* ufunguo) {
-    n32 h1 = heshi_mfuatano(lugha);
-    n32 h2 = heshi_mfuatano(ufunguo);
+    n32 h1 = heshi_ya_mfuatano(lugha);
+    n32 h2 = heshi_ya_mfuatano(ufunguo);
     n32 h = h1 * 31 + h2;
     // MUHIMU: Ramani (ramani_weka/ramani_pata) huhesabu
     // `idx = funguo % r->uwezo` -- ikiwa funguo ni HASI, matokeo ya
@@ -137,6 +137,6 @@ n32 lugha_ina_tafsiri(LughaMfumo* l, n8* ufunguo, n8* lugha) {
 
 w0 lugha_huru(LughaMfumo* l) {
     ramani_huru(lugha_pata_faharisi(l));
-    achilia_arena(l->maadili);
-    achilia_arena(l);
+    achilia_eneo_la_utengaji(l->maadili);
+    achilia_eneo_la_utengaji(l);
 }

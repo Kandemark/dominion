@@ -30,7 +30,7 @@ n32 jhm_yalioshindwa = 0;
 
 w0 jhm_thibitisha(n32 sharti, n8* jina) {
     kama (sharti == 0) {
-        andika_stderr("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
         jhm_yalioshindwa = jhm_yalioshindwa + 1;
     } sivyo {
         andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
@@ -100,7 +100,7 @@ w0 jhm_thibitisha_namba(n8* fb, n64 pitch, n64 x0, n64 y, n64 thamani, n64 nyeup
     jhm_thibitisha(zote_sahihi, jina);
 }
 
-n32 main() {
+n32 anza() {
     onyesho_fonti_pakia();
 
     // ---------- Unda Mchezo KAMILI HALISI (mifumo 47) ----------

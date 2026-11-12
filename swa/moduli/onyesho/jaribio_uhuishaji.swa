@@ -24,7 +24,7 @@ n32 uh_yalioshindwa = 0;
 
 w0 uh_thibitisha(n32 sharti, n8* jina) {
     kama (sharti == 0) {
-        andika_stderr("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
         uh_yalioshindwa = uh_yalioshindwa + 1;
     } sivyo {
         andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
@@ -36,7 +36,7 @@ w0 uh_dbg_d64(n8* jina, d64 v) {
     andika("  [dbg] %s*1000 = %d\n", jina, v_x1000, 0, 0, 0, 0);
 }
 
-n32 main() {
+n32 anza() {
     // ===== 1. Hesabu HASA ya mkono: kasi=2.0, dt=0.1, hatua mbili =====
     MchoroThamaniHuishwa* h1 = uhuishaji_unda(0.0, 2.0);
 

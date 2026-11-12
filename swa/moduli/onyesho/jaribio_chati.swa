@@ -5,7 +5,7 @@ husisha { moduli/onyesho/chati.swa }
 // takwimu") dhidi ya data YA KUJULIKANA, kwa kusoma pikseli HALISI
 // kwenye framebuffer -- si tu "haikuanguka".
 
-n32 main() {
+n32 anza() {
     n64 canvas_w = 300;
     n64 canvas_h = 200;
     n64 pitch = canvas_w * 4;
@@ -63,18 +63,18 @@ n32 main() {
 
     andika("chati_pau: pikseli A=%d B=%d C=%d\n", kundi_a, kundi_b, kundi_c, 0, 0, 0);
 
-    kama (kundi_b <= kundi_a) { andika_stderr("FAIL: chati_pau -- B (thamani 100) haina kimo kirefu zaidi ya A (thamani 50): B=%d A=%d\n", kundi_b, kundi_a, 0, 0, 0, 0); rudisha 1; }
-    kama (kundi_a <= kundi_c) { andika_stderr("FAIL: chati_pau -- A (thamani 50) haina kimo kirefu zaidi ya C (thamani 25): A=%d C=%d\n", kundi_a, kundi_c, 0, 0, 0, 0); rudisha 1; }
+    kama (kundi_b <= kundi_a) { andika_kosa("FAIL: chati_pau -- B (thamani 100) haina kimo kirefu zaidi ya A (thamani 50): B=%d A=%d\n", kundi_b, kundi_a, 0, 0, 0, 0); rudisha 1; }
+    kama (kundi_a <= kundi_c) { andika_kosa("FAIL: chati_pau -- A (thamani 50) haina kimo kirefu zaidi ya C (thamani 25): A=%d C=%d\n", kundi_a, kundi_c, 0, 0, 0, 0); rudisha 1; }
 
     // thamani HASA zinazotarajiwa (kimo cha pau = (thamani/juu)*h, 150*50/100=75, 150*100/100=150, 150*25/100=37)
-    kama (kundi_a != 75) { andika_stderr("FAIL: chati_pau -- A ina pikseli %d (ilitarajiwa 75)\n", kundi_a, 0, 0, 0, 0, 0); rudisha 1; }
-    kama (kundi_b != 150) { andika_stderr("FAIL: chati_pau -- B ina pikseli %d (ilitarajiwa 150)\n", kundi_b, 0, 0, 0, 0, 0); rudisha 1; }
-    kama (kundi_c != 37) { andika_stderr("FAIL: chati_pau -- C ina pikseli %d (ilitarajiwa 37)\n", kundi_c, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (kundi_a != 75) { andika_kosa("FAIL: chati_pau -- A ina pikseli %d (ilitarajiwa 75)\n", kundi_a, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (kundi_b != 150) { andika_kosa("FAIL: chati_pau -- B ina pikseli %d (ilitarajiwa 150)\n", kundi_b, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (kundi_c != 37) { andika_kosa("FAIL: chati_pau -- C ina pikseli %d (ilitarajiwa 37)\n", kundi_c, 0, 0, 0, 0, 0); rudisha 1; }
 
     // eneo la NJE ya chati (kona ya mbali ya bafa) LAZIMA libaki
     // rangi ya nyuma (haijaguswa) -- hakuna uchoraji nje ya mipaka.
     n64 kona = mchoro_pata_pikseli(fb1, pitch, canvas_w - 1, canvas_h - 1);
-    kama (kona != 0) { andika_stderr("FAIL: chati_pau -- kona ya mbali ya bafa imeguswa (=%d, ilitarajiwa 0)\n", kona, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (kona != 0) { andika_kosa("FAIL: chati_pau -- kona ya mbali ya bafa imeguswa (=%d, ilitarajiwa 0)\n", kona, 0, 0, 0, 0, 0); rudisha 1; }
 
     // ===== 2. chati_mstari =====
     n8* fb2 = tenga(pitch * canvas_h);
@@ -124,11 +124,11 @@ n32 main() {
         }
         dy = dy + 1;
     }
-    kama (imepatikana == 0) { andika_stderr("FAIL: chati_mstari -- hakuna pikseli karibu na pointi ya juu zaidi (%d,%d)\n", x_juu, y_juu, 0, 0, 0, 0); rudisha 1; }
+    kama (imepatikana == 0) { andika_kosa("FAIL: chati_mstari -- hakuna pikseli karibu na pointi ya juu zaidi (%d,%d)\n", x_juu, y_juu, 0, 0, 0, 0); rudisha 1; }
 
     // thibitisha pointi hiyo iko KARIBU na SEHEMU YA JUU ya eneo la
     // chati (y ndogo) -- si katikati wala chini.
-    kama (y_juu > hm.y + 5) { andika_stderr("FAIL: chati_mstari -- pointi ya thamani ya juu zaidi si karibu na juu ya chati (y_juu=%d, hm.y=%d)\n", y_juu, hm.y, 0, 0, 0, 0); rudisha 1; }
+    kama (y_juu > hm.y + 5) { andika_kosa("FAIL: chati_mstari -- pointi ya thamani ya juu zaidi si karibu na juu ya chati (y_juu=%d, hm.y=%d)\n", y_juu, hm.y, 0, 0, 0, 0); rudisha 1; }
 
     // ===== 3. chati_mstari na idadi=0/idadi=1 HAIANGUKI =====
     n8* fb3 = tenga(pitch * canvas_h);
@@ -159,7 +159,7 @@ n32 main() {
         n64 xxx = 0;
         wakati (xxx < canvas_w) {
             kama (mchoro_pata_pikseli(fb3, pitch, xxx, yyy) != 0) {
-                andika_stderr("FAIL: chati_mstari(idadi<2) ilichora kitu kwenye (%d,%d)\n", xxx, yyy, 0, 0, 0, 0);
+                andika_kosa("FAIL: chati_mstari(idadi<2) ilichora kitu kwenye (%d,%d)\n", xxx, yyy, 0, 0, 0, 0);
                 rudisha 1;
             }
             xxx = xxx + 8;

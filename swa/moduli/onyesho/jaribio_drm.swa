@@ -5,10 +5,10 @@ husisha { moduli/onyesho/drm.swa }
 // tofauti kwenye robo tatu za kwanza za bafa ya dumb, kisha
 // husoma nyuma na kuthibitisha thamani HALISI (si tu "haikuanguka").
 
-n32 main() {
+n32 anza() {
     n64 fd = onyesho_drm_fungua("/dev/dri/card1");
     kama (fd < 0) {
-        andika_stderr("SKIP: haiwezi kufungua /dev/dri/card1 (ruhusa?) rc=%d\n", fd, 0, 0, 0, 0, 0);
+        andika_kosa("SKIP: haiwezi kufungua /dev/dri/card1 (ruhusa?) rc=%d\n", fd, 0, 0, 0, 0, 0);
         rudisha 2;
     }
     andika("OK: kifaa kimefunguliwa, fd=%d\n", fd, 0, 0, 0, 0, 0);
@@ -18,14 +18,14 @@ n32 main() {
 
     n8* res = onyesho_drm_pata_rasilimali(fd);
     kama (res == 0) {
-        andika_stderr("FAIL: GETRESOURCES imeshindwa\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: GETRESOURCES imeshindwa\n", 0, 0, 0, 0, 0, 0);
         rudisha 1;
     }
     n64 n_conn = onyesho_rasilimali_idadi_conn(res);
     n64 n_crtc = onyesho_rasilimali_idadi_crtc(res);
     andika("OK: GETRESOURCES -- connectors=%d crtcs=%d\n", n_conn, n_crtc, 0, 0, 0, 0);
     kama (n_conn == 0) {
-        andika_stderr("FAIL: hakuna connector yoyote imerudishwa\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: hakuna connector yoyote imerudishwa\n", 0, 0, 0, 0, 0, 0);
         rudisha 1;
     }
 
@@ -51,7 +51,7 @@ n32 main() {
     }
 
     kama (kiungo == 0) {
-        andika_stderr("SKIP: hakuna onyesho lililounganishwa (hakuna monitor?)\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("SKIP: hakuna onyesho lililounganishwa (hakuna monitor?)\n", 0, 0, 0, 0, 0, 0);
         rudisha 2;
     }
 
@@ -69,7 +69,7 @@ n32 main() {
 
     n8* dumb = onyesho_drm_unda_dumb(fd, upana, kimo, 32);
     kama (dumb == 0) {
-        andika_stderr("FAIL: CREATE_DUMB imeshindwa\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: CREATE_DUMB imeshindwa\n", 0, 0, 0, 0, 0, 0);
         rudisha 1;
     }
     n64 handle = onyesho_dumb_handle(dumb);
@@ -80,7 +80,7 @@ n32 main() {
     n8* fb_mem = onyesho_drm_ramanisha_dumb(fd, handle, ukubwa);
     n64 fb_mem_addr = fb_mem;
     kama (fb_mem_addr < 0) {
-        andika_stderr("SKIP: mmap ya dumb buffer imekataliwa (errno=-%d) -- kawaida kwa sababu compositor mwingine (Wayland) tayari ni DRM master; angalia dokezo la SET_MASTER hapo juu\n", 0 - fb_mem_addr, 0, 0, 0, 0, 0);
+        andika_kosa("SKIP: mmap ya dumb buffer imekataliwa (errno=-%d) -- kawaida kwa sababu compositor mwingine (Wayland) tayari ni DRM master; angalia dokezo la SET_MASTER hapo juu\n", 0 - fb_mem_addr, 0, 0, 0, 0, 0);
         onyesho_drm_haribu_dumb(fd, handle);
         onyesho_drm_funga(fd);
         rudisha 2;
@@ -97,14 +97,14 @@ n32 main() {
     n64 v1 = pata_u32(fb_mem, 4);
     n64 v2 = pata_u32(fb_mem, pitch);
     kama (v0 != 4293322470 || v1 != 4278190335 || v2 != 4294901760) {
-        andika_stderr("FAIL: usomaji nyuma wa dumb buffer haulingani (v0=%d v1=%d v2=%d)\n", v0, v1, v2, 0, 0, 0);
+        andika_kosa("FAIL: usomaji nyuma wa dumb buffer haulingani (v0=%d v1=%d v2=%d)\n", v0, v1, v2, 0, 0, 0);
         rudisha 1;
     }
     andika("OK: uandishi+usomaji wa pikseli HALISI kwenye kumbukumbu ya kernel umethibitishwa\n", 0, 0, 0, 0, 0, 0);
 
     n64 fb_id = onyesho_drm_ongeza_fb(fd, upana, kimo, pitch, 32, 24, handle);
     kama (fb_id == 0) {
-        andika_stderr("FAIL: ADDFB imeshindwa\n", 0, 0, 0, 0, 0, 0);
+        andika_kosa("FAIL: ADDFB imeshindwa\n", 0, 0, 0, 0, 0, 0);
         rudisha 1;
     }
     andika("OK: ADDFB -- fb_id=%d\n", fb_id, 0, 0, 0, 0, 0);
@@ -114,7 +114,7 @@ n32 main() {
 
     n64 crtc_rc = onyesho_drm_weka_crtc(fd, crtc_id, fb_id, conn_id, modi);
     kama (crtc_rc < 0) {
-        andika_stderr("INFO: SETCRTC imeshindwa rc=%d (kinatarajiwa ikiwa hatuna DRM master -- angalia SET_MASTER hapo juu)\n", crtc_rc, 0, 0, 0, 0, 0);
+        andika_kosa("INFO: SETCRTC imeshindwa rc=%d (kinatarajiwa ikiwa hatuna DRM master -- angalia SET_MASTER hapo juu)\n", crtc_rc, 0, 0, 0, 0, 0);
     } sivyo {
         andika("OK: SETCRTC imefanikiwa -- onyesho limebadilishwa kwa kweli!\n", 0, 0, 0, 0, 0, 0);
     }

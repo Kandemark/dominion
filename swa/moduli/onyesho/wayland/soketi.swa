@@ -67,7 +67,7 @@ n64 wayland_soketi_unganisha(n64 fd, n8* njia) {
 }
 
 n64 wayland_soketi_funga(n64 fd) {
-    rudisha sys_funga(fd);
+    rudisha mfumo_funga(fd);
 }
 
 // struct iovec, baiti 16: 0 iov_base(u64 ptr)  8 iov_len(u64)

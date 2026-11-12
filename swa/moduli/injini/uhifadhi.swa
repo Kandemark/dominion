@@ -35,7 +35,7 @@ InjiniUhifadhi* injini_uhifadhi_unda(n8* saraka_ya_kuhifadhi) {
     // kwenye ujumbe wa commit). Hitilafu ya "tayari ipo" (-17,
     // EEXIST) inapuuzwa kwa makusudi, SI kukataliwa.
     kama (saraka_ya_kuhifadhi != 0) {
-        sys_mkdir(saraka_ya_kuhifadhi, 493);
+        mfumo_unda_saraka(saraka_ya_kuhifadhi, 493);
     }
     rudisha sp;
 }
@@ -194,7 +194,7 @@ n64 injini_uhifadhi_soma_n64(n8* f) {
 // anwani ya kigeu cha ndani (cha aina yoyote) inaweza kuhamishwa
 // moja kwa moja kwenda n8* na kusomwa baiti kwa baiti. Hii inaepuka
 // kabisa upotevu wa usahihi ambao ungetokea kwa njia ya
-// mfuatano/decimali (bits_ya_d64_swa ni kwa ajili ya kuchanganua
+// mfuatano/decimali (biti_ya_d64_swa ni kwa ajili ya kuchanganua
 // VYANZO vya herufi, si kwa ajili ya kuhifadhi thamani za d64 za
 // wakati wa kuendesha kwa usahihi KAMILI wa baiti).
 w0 injini_uhifadhi_andika_d64(n8* f, d64 v) {
