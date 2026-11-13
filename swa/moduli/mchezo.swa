@@ -301,6 +301,9 @@ muundo MchezoUsanidi {
 };
 
 n64 MCHEZO_MBEGU_YA_DUNIA = 7;
+// Mataifa 36 ya ukubwa tofauti sana (falme kubwa na dola ndogo), na nchi
+// pori kati yao -- si gridi ya mataifa sawa.
+n64 MCHEZO_IDADI_YA_MATAIFA = 36;
 
 muundo MchezoUtendaji {
     n64 idadi_ya_sasisho;
@@ -818,11 +821,11 @@ CivMatokeo mchezo_anzisha(Mchezo* g, MchezoUsanidi* usanidi) {
     mchezo_weka_muda(g, injini_muda_unda());
     mchezo_weka_idadi_ya_watu(g, idadi_ya_watu_unda());
     mchezo_weka_serikali(g, utawala_serikali_unda(usanidi->jina));
-    // Dunia: atlasi ya mataifa 160 (dunia_atlasi.swa) ndiyo jiografia.
+    // Dunia: atlasi (dunia_atlasi.swa) ndiyo jiografia.
     // Ramani ya vipande 360x180 (shahada moja kwa kipande) hujazwa
     // kutoka atlasi -- nchi kavu, mwinuko, hali ya hewa, matumizi ya
     // ardhi -- hivyo uigaji na ramani inayochorwa ni dunia moja.
-    Atlasi* atlasi = atlasi_unda(MCHEZO_MBEGU_YA_DUNIA, 160, 64, 36);
+    Atlasi* atlasi = atlasi_unda(MCHEZO_MBEGU_YA_DUNIA, MCHEZO_IDADI_YA_MATAIFA, 64, 36);
     Miji* miji = atlasi_unda_miji(atlasi);
     mchezo_weka_atlasi(g, atlasi);
     mchezo_weka_miji(g, miji);

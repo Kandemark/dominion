@@ -24,7 +24,10 @@ husisha { moduli/onyesho/turubai.swa }
 // Vipimo: nafasi za dunia ni namba kamili kwa 1/1024 ya "kizio cha dunia".
 // Thamani za kelele ni 0..65535.
 
+// Usawa wa bahari huwekwa na atlasi_unda ili sehemu ya nchi kavu iwe
+// ATLASI_NCHI_KAVU_ASILIMIA ya dunia kwa kila mbegu.
 n64 ATLASI_USAWA_WA_BAHARI = 33400;
+n64 ATLASI_NCHI_KAVU_ASILIMIA = 42;
 n64 ATLASI_UPEO_WA_MATAIFA = 512;
 n64 ATLASI_SELI = 4096;                  // upande wa seli ya gridi ya miji mikuu (vizio 4)
 
@@ -39,6 +42,7 @@ muundo Atlasi {
     n64* mji_y;
     n64* uzito;             // 1024 = kawaida; kubwa = taifa dogo
     n64* rangi;             // rangi ya ukanda
+    n64 upeo_wa_madai;      // umbali wenye uzito zaidi ya huu ni nchi pori (haina taifa)
     n64 upana;              // ukubwa wa dunia, vizio
     n64 kimo;
     n64 seli_upana;         // gridi ya miji mikuu: seli za ATLASI_SELI
@@ -98,10 +102,34 @@ n64 atlasi_tabaka(n64 x, n64 y, n64 mbegu, n64 matabaka) {
 // vizio 16 (mabara); kila linalofuata ni nusu yake, hadi 1/8 ya kizio
 // (umbo la pwani linapokuzwa). Ukingo wa pwani hupindwa kidogo na kelele
 // ya pili ili ghuba na rasi zisiwe za mviringo tu.
+n64 ATLASI_BARA_UZITO = 5;          // uzito wa uwanja wa bara dhidi ya undani (kati ya 9)
+
 n64 atlasi_mwinuko(Atlasi* a, n64 x, n64 y) {
     n64 wx = x + ((atlasi_tabaka(x >> 2, y >> 2, a->mbegu + 31, 3) - 32768) >> 2);
     n64 wy = y + ((atlasi_tabaka(x >> 2, y >> 2, a->mbegu + 47, 3) - 32768) >> 2);
-    rudisha atlasi_tabaka(wx >> 4, wy >> 4, a->mbegu, 8);
+    n64 undani = atlasi_tabaka(wx >> 4, wy >> 4, a->mbegu, 8);
+    // uwanja wa bara: vipengele vya vizio ~40, hukusanya nchi kavu kuwa
+    // mabara makubwa badala ya visiwa vilivyotawanyika
+    n64 bara = atlasi_tabaka((wx * 2) / 5 >> 4, (wy * 2) / 5 >> 4, a->mbegu + 9000, 3);
+    n64 e = (bara * ATLASI_BARA_UZITO + undani * (9 - ATLASI_BARA_UZITO)) / 9;
+    // kingo za dunia ni bahari: duaradufu iliyopindwa na kelele kubwa
+    // (vizio +-12), yenye mteremko mpole ili kelele ya undani iamue pwani; pwani za nje zinapinda badala ya kufuata mstari
+    // wa kingo za dunia
+    n64 upana = a->upana * 1024;
+    n64 kimo = a->kimo * 1024;
+    n64 px = x + ((atlasi_tabaka(x >> 4, y >> 4, a->mbegu + 9100, 4) - 32768) * 3) / 8;
+    n64 py = y + ((atlasi_tabaka(x >> 4, y >> 4, a->mbegu + 9200, 4) - 32768) * 3) / 8;
+    n64 dx = ((px - upana / 2) * 1024) / (upana / 2);        // -1024..1024 kwenye kingo
+    n64 dy = ((py - kimo / 2) * 1024) / (kimo / 2);
+    n64 r2 = (dx * dx + dy * dy) / 1024;                      // 1024 = kingo za duaradufu
+    n64 mwanzo = 400;                                          // r^2 ambapo kushuka huanza (~r 0.63)
+    kama (r2 > mwanzo) {
+        n64 f = r2 - mwanzo;
+        kama (f > 900) { f = 900; }
+        e = e - (f * 9000) / (1024 - mwanzo);                  // mstari, si mraba: mteremko mpole
+    }
+    kama (e < 0) { e = 0; }
+    rudisha e;
 }
 
 n32 atlasi_ni_nchi_kavu(Atlasi* a, n64 x, n64 y) {
@@ -110,8 +138,11 @@ n32 atlasi_ni_nchi_kavu(Atlasi* a, n64 x, n64 y) {
 
 // ---------- mataifa ----------
 
-// Taifa linalomiliki nukta (x,y), au -1 ikiwa hakuna mji mkuu karibu.
+// Taifa linalomiliki nukta (x,y), au ATLASI_PORI ikiwa hakuna mji mkuu
+// unaofika (nchi pori -- tundra, misitu ya mbali, jangwa tupu).
 // Hutafuta seli 5x5 za gridi kuzunguka nukta iliyopindwa.
+n64 ATLASI_PORI = -2;               // nchi kavu isiyo na taifa (atlasi_wamiliki: maji ni -1)
+
 n64 atlasi_mmiliki(Atlasi* a, n64 x, n64 y) {
     // mpindo: vipengele vya vizio ~2, ukubwa hadi ~0.5 kizio -- mipaka
     // inatanga kama mito na milima, bila kuvunjika kuwa visiwa vidogo
@@ -141,6 +172,7 @@ n64 atlasi_mmiliki(Atlasi* a, n64 x, n64 y) {
         }
         j = j + 1;
     }
+    kama (mshindi < 0 || bora > a->upeo_wa_madai) { rudisha ATLASI_PORI; }
     rudisha mshindi;
 }
 
@@ -172,14 +204,41 @@ Atlasi* atlasi_unda(n64 mbegu, n64 idadi, n64 upana, n64 kimo) {
     a->uzito = tenga(8 * ATLASI_UPEO_WA_MATAIFA);
     a->rangi = tenga(8 * ATLASI_UPEO_WA_MATAIFA);
     a->idadi = 0;
-    // umbali wa chini kati ya miji mikuu: eneo la dunia / idadi, kipeuo
-    n64 umbali_wa_chini = (turubai_kipeuo((upana * kimo) / n) * 1024 * 7) / 10;
+    // usawa wa bahari: asilimia ya mwinuko kwenye gridi ya 128x72
+    n64* histo = tenga(8 * 256);
+    weka_sifuri(histo, 8 * 256);
+    n64 gy = 0;
+    wakati (gy < 72) {
+        n64 gx = 0;
+        wakati (gx < 128) {
+            n64 e = atlasi_mwinuko(a, (gx * 2 + 1) * upana * 512 / 128, (gy * 2 + 1) * kimo * 512 / 72);
+            histo[e >> 8] = histo[e >> 8] + 1;
+            gx = gx + 1;
+        }
+        gy = gy + 1;
+    }
+    n64 juu_yake = 0;
+    n64 lengo = (128 * 72 * ATLASI_NCHI_KAVU_ASILIMIA) / 100;
+    n64 ndoo = 255;
+    wakati (ndoo > 0 && juu_yake + histo[ndoo] < lengo) {
+        juu_yake = juu_yake + histo[ndoo];
+        ndoo = ndoo - 1;
+    }
+    ATLASI_USAWA_WA_BAHARI = ndoo << 8;
+    achilia histo;
+    // umbali wa chini kati ya miji mikuu: kipeuo cha eneo la nchi kavu
+    // kwa kila taifa. Mataifa hufika hadi mara 1.4 ya "nusu-kipenyo" chao
+    // cha wastani; zaidi ya hapo ni nchi pori.
+    n64 eneo_la_taifa = (upana * kimo * ATLASI_NCHI_KAVU_ASILIMIA) / (100 * n);
+    n64 umbali_wa_chini = (turubai_kipeuo(eneo_la_taifa) * 1024 * 8) / 10;
+    a->upeo_wa_madai = (turubai_kipeuo(eneo_la_taifa) * 1024 * 9) / 10;
     n64 jaribio = 0;
     wakati (a->idadi < n && jaribio < 200000) {
         n64 x = (atlasi_heshi(jaribio, 17, mbegu + 5) * upana * 1024) >> 16;
         n64 y = (atlasi_heshi(jaribio, 43, mbegu + 9) * kimo * 1024) >> 16;
         jaribio = jaribio + 1;
-        kama (atlasi_mwinuko(a, x, y) > ATLASI_USAWA_WA_BAHARI + 1200) {
+        // kaskazini ya mbali (16% ya juu ya dunia) haina miji mikuu: tundra
+        kama (y > (kimo * 1024 * 16) / 100 && atlasi_mwinuko(a, x, y) > ATLASI_USAWA_WA_BAHARI + 1200) {
             n64 karibu_mno = 0;
             n64 i = 0;
             wakati (i < a->idadi && karibu_mno == 0) {
@@ -191,7 +250,10 @@ Atlasi* atlasi_unda(n64 mbegu, n64 idadi, n64 upana, n64 kimo) {
             kama (karibu_mno == 0) {
                 a->mji_x[a->idadi] = x;
                 a->mji_y[a->idadi] = y;
-                a->uzito[a->idadi] = 780 + ((atlasi_heshi(jaribio, 71, mbegu) * 480) >> 16);
+                // uzito mdogo = taifa kubwa: falme kubwa na dola ndogo
+                // (1 - (1-u)^2): wengi ni wadogo, wachache ni wakubwa
+                n64 hu = 65535 - atlasi_heshi(jaribio, 71, mbegu);
+                a->uzito[a->idadi] = 620 + (65535 - ((hu * hu) >> 16)) * 900 / 65536;
                 a->rangi[a->idadi] = atlasi_rangi_ya_ukanda(a->idadi * 5 + (atlasi_heshi(jaribio, 3, mbegu) & 3));
                 a->idadi = a->idadi + 1;
             }
@@ -373,7 +435,7 @@ w0 atlasi_jaza_wamiliki(Atlasi* a, n64* o, n64* e, n64 w, n64 h, n64 x0, n64 y0,
         wakati (gx < gw - 1) {
             n64 c = g[gy * gw + gx];
             n64 sawa = 0;
-            kama (c >= 0 && g[gy * gw + gx + 1] == c && g[(gy + 1) * gw + gx] == c && g[(gy + 1) * gw + gx + 1] == c) { sawa = 1; }
+            kama (c != 0 - 1 && g[gy * gw + gx + 1] == c && g[(gy + 1) * gw + gx] == c && g[(gy + 1) * gw + gx + 1] == c) { sawa = 1; }
             n64 fy = 0;
             wakati (fy < s && gy * s + fy < h) {
                 n64 j = gy * s + fy;
@@ -436,10 +498,11 @@ w0 atlasi_chora_msingi(Atlasi* a, Turubai* t, n64 x0, n64 y0, n64 kipimo) {
             n64 m = atlasi_wamiliki[k];
             mpaka[k] = mbali;
             kama (m >= 0) {
-                kama ((i > 0 && atlasi_wamiliki[k - 1] >= 0 && atlasi_wamiliki[k - 1] != m)
-                    || (i < w - 1 && atlasi_wamiliki[k + 1] >= 0 && atlasi_wamiliki[k + 1] != m)
-                    || (j > 0 && atlasi_wamiliki[k - w] >= 0 && atlasi_wamiliki[k - w] != m)
-                    || (j < h - 1 && atlasi_wamiliki[k + w] >= 0 && atlasi_wamiliki[k + w] != m)) {
+                // jirani wa nchi kavu (taifa jingine au nchi pori)
+                kama ((i > 0 && atlasi_wamiliki[k - 1] != 0 - 1 && atlasi_wamiliki[k - 1] != m)
+                    || (i < w - 1 && atlasi_wamiliki[k + 1] != 0 - 1 && atlasi_wamiliki[k + 1] != m)
+                    || (j > 0 && atlasi_wamiliki[k - w] != 0 - 1 && atlasi_wamiliki[k - w] != m)
+                    || (j < h - 1 && atlasi_wamiliki[k + w] != 0 - 1 && atlasi_wamiliki[k + w] != m)) {
                     mpaka[k] = 0;
                 }
             }
@@ -453,7 +516,7 @@ w0 atlasi_chora_msingi(Atlasi* a, Turubai* t, n64 x0, n64 y0, n64 kipimo) {
     // upana wa ukanda hufuata ukuzaji: pikseli 14 karibu, 3 dunia nzima
     n64 upana_wa_ukanda = (3584 * 5) / kipimo;
     kama (upana_wa_ukanda > 3584) { upana_wa_ukanda = 3584; }
-    kama (upana_wa_ukanda < 768) { upana_wa_ukanda = 768; }
+    kama (upana_wa_ukanda < 1536) { upana_wa_ukanda = 1536; }
     j = 0;
     wakati (j < h) {
         n64 i = 0;
