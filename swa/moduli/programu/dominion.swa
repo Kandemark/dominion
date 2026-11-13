@@ -1,11 +1,13 @@
 husisha { msingi/maktaba/mfuatano.swa }
 husisha { moduli/skrini/ramani.swa }
+husisha { moduli/skrini/uchumi.swa }
 husisha { moduli/onyesho/wayland/dirisha.swa }
 
 // dominion.swa -- programu ya mchezo: dirisha la Wayland, mchezo halisi,
 // na skrini zinazojibu ingizo la kweli.
 //
-//   kielekezi   bofya urambazaji kushoto kubadili skrini
+//   kielekezi   bofya urambazaji kushoto kubadili skrini (Muhtasari,
+//               Uchumi wa taifa lililochaguliwa, Ramani)
 //   ramani      buruta kusogeza; gurudumu kukuza karibu na kielekezi;
 //               bofya taifa kulichagua
 //   Space       zamu inayofuata
@@ -27,6 +29,7 @@ n64 KEY_LEFT = 105;
 n64 KEY_RIGHT = 106;
 
 n64 SKRINI_MUHTASARI = 0;
+n64 SKRINI_UCHUMI = 1;
 n64 SKRINI_RAMANI = 7;
 
 muundo Hali {
@@ -103,6 +106,7 @@ w0 shughulikia(Mchezo* g, Hali* h, Dirisha* d) {
                 kama (px < SKRINI_UPANA_WA_PEMBENI && py > SKRINI_UPAU_WA_JUU + 20) {
                     n64 kipengele = (py - SKRINI_UPAU_WA_JUU - 20) / 40;
                     kama (kipengele == 0) { h->skrini = SKRINI_MUHTASARI; h->haja = 1; }
+                    kama (kipengele == 1) { h->skrini = SKRINI_UCHUMI; h->haja = 1; }
                     kama (kipengele == 7) { h->skrini = SKRINI_RAMANI; h->haja = 1; }
                 }
                 kama (h->skrini == SKRINI_RAMANI && ndani_ya_ramani(d, px, py)) {
@@ -197,7 +201,8 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
                 }
                 kama (haraka == 0) { skrini_ramani_chora(g, t, h->kitovu_x, h->kitovu_y, h->kipimo, h->taifa); }
             } sivyo {
-                skrini_muhtasari_chora(g, t);
+                kama (h->skrini == SKRINI_UCHUMI) { skrini_uchumi_chora(g, t, h->taifa); }
+                sivyo { skrini_muhtasari_chora(g, t); }
             }
             kama (dampo != 0) {
                 n64 fd = mfumo_fungua(dampo, 577, 420);

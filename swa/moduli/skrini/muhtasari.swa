@@ -175,7 +175,7 @@ w0 skrini_historia_ya_pato(Mchezo* g, n64 x, n64 y, n64 w) {
     n64 i = 0;
     wakati (i < n) {
         d64 s = h->sampuli[mwanzo + i];
-        n64 v = s * 1000.0;
+        n64 v = s * 1000000.0;          // sampuli ni milioni
         thamani[i] = v;
         i = i + 1;
     }

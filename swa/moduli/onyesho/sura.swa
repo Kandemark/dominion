@@ -240,7 +240,7 @@ n64 sura_tabo(n8* s, n64 x, n64 y, n64 hai) {
 
 // Chati ya mstari: thamani `idadi` (n64) ndani ya mstatili, mistari minne
 // ya gridi, eneo hafifu chini ya mstari, na nukta kwenye thamani ya mwisho.
-w0 sura_chati_mstari(n64 x, n64 y, n64 w, n64 h, n64* thamani, n64 idadi) {
+w0 sura_chati_mstari(n64 x0_wa_paneli, n64 y, n64 w_wa_paneli, n64 h, n64* thamani, n64 idadi) {
     kama (idadi < 2) { rudisha; }
     n64 chini = thamani[0];
     n64 juu = thamani[0];
@@ -252,6 +252,18 @@ w0 sura_chati_mstari(n64 x, n64 y, n64 w, n64 h, n64* thamani, n64 idadi) {
     }
     n64 wigo = juu - chini;
     kama (wigo <= 0) { wigo = 1; }
+    // lebo za mhimili wima (juu, kati, chini) kwenye nafasi ya kushoto
+    n64 nafasi_ya_lebo = 78;
+    n64 x = x0_wa_paneli + nafasi_ya_lebo;
+    n64 w = w_wa_paneli - nafasi_ya_lebo;
+    n8 lebo[32];
+    turubai_brashi(sura_t, SURA_HAFIFU, 255);
+    sura_namba_fupi(lebo, juu);
+    sura_lebo_kulia(lebo, x - 10, y - 4, 11);
+    sura_namba_fupi(lebo, chini + wigo / 2);
+    sura_lebo_kulia(lebo, x - 10, y + (h - 8) / 2 - 4, 11);
+    sura_namba_fupi(lebo, chini);
+    sura_lebo_kulia(lebo, x - 10, y + h - 12, 11);
     turubai_brashi(sura_t, 16777215, 14);
     i = 0;
     wakati (i < 4) {
