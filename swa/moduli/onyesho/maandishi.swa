@@ -1,0 +1,664 @@
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { msingi/maktaba/faili.swa }
+husisha { moduli/onyesho/turubai.swa }
+
+// maandishi.swa -- maandishi ya TrueType yenye kingo laini, juu ya turubai.
+//
+// Husoma faili la .ttf moja kwa moja (cmap ya umbo 4, loca, glyf pamoja na
+// glyph za kiwanja, hmtx, head, hhea, maxp), hunyoosha tao za Bezier kuwa
+// vipande vya mstari, na kujaza kwa kanuni ya "nonzero winding" kwa safu
+// ndogo MK_SAFU_NDOGO ndani ya kila pikseli -- upana wa kila kipande
+// huhesabiwa kamili (1/256 ya pikseli), hivyo funiko ni laini pande zote.
+//
+// Kila glyph huchorwa mara moja kwa (fonti, ukubwa) na kuwekwa kwenye akiba
+// kama ramani ya funiko (baiti moja kwa pikseli); kuchora maandishi ni
+// kuchanganya ramani hizo kwa rangi ya brashi ya turubai.
+//
+// Vipimo vyote vya ndani ni namba kamili: nukta za glyph kwa 1/256 ya
+// pikseli, na kalamu (mahali pa herufi inayofuata) kwa 1/64 ya pikseli.
+
+n64 MK_SAFU_NDOGO = 5;
+n64 MK_UWEZO_WA_AKIBA = 8192;       // nguvu ya 2
+n64 MK_UWEZO_WA_VIPANDE = 8192;
+n64 MK_UWEZO_WA_NUKTA = 2048;
+
+muundo Fonti {
+    n8* data;
+    n64 kitambulisho;
+    n64 glyf;
+    n64 loca;
+    n64 hmtx;
+    n64 cmap4;          // mwanzo wa jedwali dogo la umbo 4
+    n64 vizio;          // vizio kwa em
+    n64 loca_ndefu;     // 1 = n32, 0 = n16*2
+    n64 idadi_ya_glyph;
+    n64 idadi_ya_hm;
+    n64 mpando;         // ascender (vizio)
+    n64 mshuko;         // descender (vizio, hasi)
+    n64 pengo;          // line gap
+}
+
+// ---------- hali ya pamoja (hutengwa mara moja) ----------
+
+n64 mk_imeanzishwa = 0;
+n64 mk_idadi_ya_fonti = 0;
+
+// nukta za glyph inayosomwa (vizio vya fonti)
+n64* mk_nx;
+n64* mk_ny;
+n64* mk_kwenye;        // 1 = nukta iko kwenye mkondo
+n64* mk_mwisho;        // faharasa ya nukta ya mwisho ya kila mkondo
+n64 mk_idadi_ya_nukta = 0;
+n64 mk_idadi_ya_mikondo = 0;
+
+// vipande vya mstari (1/256 ya pikseli)
+n64* mk_vx0;
+n64* mk_vy0;
+n64* mk_vx1;
+n64* mk_vy1;
+n64 mk_idadi_ya_vipande = 0;
+
+// makutano ya safu ndogo moja
+n64* mk_kx;
+n64* mk_kd;
+n64 mk_idadi_ya_makutano = 0;
+
+n64* mk_jumla;          // funiko la safu ya pikseli inayojazwa
+
+// akiba ya glyph: safu sambamba, anwani wazi
+n64* mk_a_ufunguo;
+n64* mk_a_ramani;
+n64* mk_a_upana;
+n64* mk_a_kimo;
+n64* mk_a_kushoto;
+n64* mk_a_juu;
+n64* mk_a_songa;        // 1/64 ya pikseli
+
+n64 mk_utf_urefu = 0;   // baiti zilizotumiwa na maandishi_herufi
+
+w0 maandishi_anzisha() {
+    kama (mk_imeanzishwa) { rudisha; }
+    mk_imeanzishwa = 1;
+    mk_nx = tenga(8 * MK_UWEZO_WA_NUKTA);
+    mk_ny = tenga(8 * MK_UWEZO_WA_NUKTA);
+    mk_kwenye = tenga(8 * MK_UWEZO_WA_NUKTA);
+    mk_mwisho = tenga(8 * 512);
+    mk_vx0 = tenga(8 * MK_UWEZO_WA_VIPANDE);
+    mk_vy0 = tenga(8 * MK_UWEZO_WA_VIPANDE);
+    mk_vx1 = tenga(8 * MK_UWEZO_WA_VIPANDE);
+    mk_vy1 = tenga(8 * MK_UWEZO_WA_VIPANDE);
+    mk_kx = tenga(8 * 512);
+    mk_kd = tenga(8 * 512);
+    mk_jumla = tenga(8 * 1024);
+    mk_a_ufunguo = tenga(8 * MK_UWEZO_WA_AKIBA);
+    mk_a_ramani = tenga(8 * MK_UWEZO_WA_AKIBA);
+    mk_a_upana = tenga(8 * MK_UWEZO_WA_AKIBA);
+    mk_a_kimo = tenga(8 * MK_UWEZO_WA_AKIBA);
+    mk_a_kushoto = tenga(8 * MK_UWEZO_WA_AKIBA);
+    mk_a_juu = tenga(8 * MK_UWEZO_WA_AKIBA);
+    mk_a_songa = tenga(8 * MK_UWEZO_WA_AKIBA);
+    weka_sifuri(mk_a_ufunguo, 8 * MK_UWEZO_WA_AKIBA);
+}
+
+// ---------- usomaji wa baiti (TrueType ni "kubwa kwanza") ----------
+
+n64 mk_b(n8* d, n64 m) {
+    n64 v = d[m];
+    rudisha v & 255;
+}
+
+n64 mk_u16(n8* d, n64 m) {
+    rudisha (mk_b(d, m) << 8) | mk_b(d, m + 1);
+}
+
+n64 mk_i16(n8* d, n64 m) {
+    n64 v = mk_u16(d, m);
+    kama (v >= 32768) { v = v - 65536; }
+    rudisha v;
+}
+
+n64 mk_u32(n8* d, n64 m) {
+    rudisha (mk_u16(d, m) << 16) | mk_u16(d, m + 2);
+}
+
+// Mwanzo wa jedwali lenye tagi ya herufi 4, au 0.
+n64 mk_jedwali(n8* d, n8* tagi) {
+    n64 n = mk_u16(d, 4);
+    n64 i = 0;
+    wakati (i < n) {
+        n64 r = 12 + i * 16;
+        kama (mk_b(d, r) == (tagi[0] & 255) && mk_b(d, r + 1) == (tagi[1] & 255)
+            && mk_b(d, r + 2) == (tagi[2] & 255) && mk_b(d, r + 3) == (tagi[3] & 255)) {
+            rudisha mk_u32(d, r + 8);
+        }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+// Pakia fonti kutoka faili. Hurudisha 0 ikiwa faili halipo au si TrueType
+// yenye cmap ya umbo 4.
+Fonti* maandishi_pakia(n8* njia) {
+    maandishi_anzisha();
+    n64 uwezo = 4194304;
+    n8* d = tenga(uwezo);
+    n64 n = faili_soma_yote(njia, d, uwezo);
+    kama (n < 12) { rudisha 0; }
+    Fonti* f = tenga(ukubwa(Fonti));
+    f->data = d;
+    mk_idadi_ya_fonti = mk_idadi_ya_fonti + 1;
+    f->kitambulisho = mk_idadi_ya_fonti;
+    f->glyf = mk_jedwali(d, "glyf");
+    f->loca = mk_jedwali(d, "loca");
+    f->hmtx = mk_jedwali(d, "hmtx");
+    n64 head = mk_jedwali(d, "head");
+    n64 hhea = mk_jedwali(d, "hhea");
+    n64 maxp = mk_jedwali(d, "maxp");
+    n64 cmap = mk_jedwali(d, "cmap");
+    kama (f->glyf == 0 || f->loca == 0 || f->hmtx == 0 || head == 0 || hhea == 0 || maxp == 0 || cmap == 0) { rudisha 0; }
+    f->vizio = mk_u16(d, head + 18);
+    f->loca_ndefu = mk_i16(d, head + 50);
+    f->idadi_ya_glyph = mk_u16(d, maxp + 4);
+    f->mpando = mk_i16(d, hhea + 4);
+    f->mshuko = mk_i16(d, hhea + 6);
+    f->pengo = mk_i16(d, hhea + 8);
+    f->idadi_ya_hm = mk_u16(d, hhea + 34);
+    // cmap: jedwali dogo la umbo 4 (Unicode BMP)
+    f->cmap4 = 0;
+    n64 idadi = mk_u16(d, cmap + 2);
+    n64 i = 0;
+    wakati (i < idadi) {
+        n64 dogo = cmap + mk_u32(d, cmap + 4 + i * 8 + 4);
+        kama (mk_u16(d, dogo) == 4) { f->cmap4 = dogo; }
+        i = i + 1;
+    }
+    kama (f->cmap4 == 0) { rudisha 0; }
+    rudisha f;
+}
+
+// Nukta ya Unicode -> namba ya glyph (0 = haipo).
+n64 maandishi_glyph(Fonti* f, n64 herufi) {
+    kama (herufi > 65535) { rudisha 0; }
+    n8* d = f->data;
+    n64 m = f->cmap4;
+    n64 sx2 = mk_u16(d, m + 6);
+    n64 mwisho = m + 14;
+    n64 mwanzo = m + 16 + sx2;
+    n64 tofauti = m + 16 + 2 * sx2;
+    n64 masafa = m + 16 + 3 * sx2;
+    n64 i = 0;
+    wakati (i < sx2) {
+        kama (mk_u16(d, mwisho + i) >= herufi) {
+            n64 a = mk_u16(d, mwanzo + i);
+            kama (a > herufi) { rudisha 0; }
+            n64 ro = mk_u16(d, masafa + i);
+            kama (ro == 0) { rudisha (herufi + mk_u16(d, tofauti + i)) & 65535; }
+            n64 g = mk_u16(d, masafa + i + ro + 2 * (herufi - a));
+            kama (g == 0) { rudisha 0; }
+            rudisha (g + mk_u16(d, tofauti + i)) & 65535;
+        }
+        i = i + 2;
+    }
+    rudisha 0;
+}
+
+// Songa ya glyph (vizio vya fonti).
+n64 maandishi_songa_vizio(Fonti* f, n64 g) {
+    n64 i = g;
+    kama (i >= f->idadi_ya_hm) { i = f->idadi_ya_hm - 1; }
+    rudisha mk_u16(f->data, f->hmtx + i * 4);
+}
+
+n64 mk_loca(Fonti* f, n64 g) {
+    kama (f->loca_ndefu) { rudisha mk_u32(f->data, f->loca + g * 4); }
+    rudisha mk_u16(f->data, f->loca + g * 2) * 2;
+}
+
+// Ongeza nukta za glyph g (zikisogezwa kwa dx,dy) kwenye mk_nx/mk_ny.
+// Glyph za kiwanja hujirudia kwa kila sehemu yake.
+w0 mk_soma_muhtasari(Fonti* f, n64 g, n64 dx, n64 dy, n64 kina) {
+    kama (g >= f->idadi_ya_glyph || kina > 4) { rudisha; }
+    n64 a = mk_loca(f, g);
+    n64 b = mk_loca(f, g + 1);
+    kama (b <= a) { rudisha; }
+    n8* d = f->data;
+    n64 m = f->glyf + a;
+    n64 mikondo = mk_i16(d, m);
+    kama (mikondo < 0) {
+        // kiwanja: (bendera, glyph, hoja mbili, [kipimo])
+        n64 p = m + 10;
+        n64 zaidi = 1;
+        wakati (zaidi) {
+            n64 bendera = mk_u16(d, p);
+            n64 sehemu = mk_u16(d, p + 2);
+            p = p + 4;
+            n64 ox = 0;
+            n64 oy = 0;
+            kama (bendera & 1) {
+                ox = mk_i16(d, p);
+                oy = mk_i16(d, p + 2);
+                p = p + 4;
+            } sivyo {
+                ox = mk_b(d, p);
+                oy = mk_b(d, p + 1);
+                kama (ox >= 128) { ox = ox - 256; }
+                kama (oy >= 128) { oy = oy - 256; }
+                p = p + 2;
+            }
+            kama ((bendera & 2) == 0) { ox = 0; oy = 0; }
+            kama (bendera & 8) { p = p + 2; }
+            kama (bendera & 64) { p = p + 4; }
+            kama (bendera & 128) { p = p + 8; }
+            mk_soma_muhtasari(f, sehemu, dx + ox, dy + oy, kina + 1);
+            zaidi = bendera & 32;
+        }
+        rudisha;
+    }
+    n64 msingi_wa_nukta = mk_idadi_ya_nukta;
+    n64 i = 0;
+    n64 nukta = 0;
+    wakati (i < mikondo) {
+        n64 e = mk_u16(d, m + 10 + i * 2);
+        mk_mwisho[mk_idadi_ya_mikondo] = msingi_wa_nukta + e;
+        mk_idadi_ya_mikondo = mk_idadi_ya_mikondo + 1;
+        nukta = e + 1;
+        i = i + 1;
+    }
+    kama (msingi_wa_nukta + nukta >= MK_UWEZO_WA_NUKTA) {
+        mk_idadi_ya_mikondo = mk_idadi_ya_mikondo - mikondo;
+        rudisha;
+    }
+    n64 p = m + 10 + mikondo * 2;
+    p = p + 2 + mk_u16(d, p);
+    // bendera (zenye marudio)
+    i = 0;
+    wakati (i < nukta) {
+        n64 bn = mk_b(d, p);
+        p = p + 1;
+        mk_kwenye[msingi_wa_nukta + i] = bn;
+        i = i + 1;
+        kama (bn & 8) {
+            n64 marudio = mk_b(d, p);
+            p = p + 1;
+            wakati (marudio > 0 && i < nukta) {
+                mk_kwenye[msingi_wa_nukta + i] = bn;
+                i = i + 1;
+                marudio = marudio - 1;
+            }
+        }
+    }
+    // x kisha y, kila moja kama tofauti kutoka nukta iliyotangulia
+    n64 v = 0;
+    i = 0;
+    wakati (i < nukta) {
+        n64 bx = mk_kwenye[msingi_wa_nukta + i];
+        kama (bx & 2) {
+            n64 t = mk_b(d, p);
+            p = p + 1;
+            kama (bx & 16) { v = v + t; } sivyo { v = v - t; }
+        } sivyo {
+            kama ((bx & 16) == 0) { v = v + mk_i16(d, p); p = p + 2; }
+        }
+        mk_nx[msingi_wa_nukta + i] = v + dx;
+        i = i + 1;
+    }
+    v = 0;
+    i = 0;
+    wakati (i < nukta) {
+        n64 by = mk_kwenye[msingi_wa_nukta + i];
+        kama (by & 4) {
+            n64 u = mk_b(d, p);
+            p = p + 1;
+            kama (by & 32) { v = v + u; } sivyo { v = v - u; }
+        } sivyo {
+            kama ((by & 32) == 0) { v = v + mk_i16(d, p); p = p + 2; }
+        }
+        mk_ny[msingi_wa_nukta + i] = v + dy;
+        mk_kwenye[msingi_wa_nukta + i] = by & 1;
+        i = i + 1;
+    }
+    mk_idadi_ya_nukta = msingi_wa_nukta + nukta;
+}
+
+w0 mk_kipande(n64 x0, n64 y0, n64 x1, n64 y1) {
+    kama (y0 == y1) { rudisha; }
+    kama (mk_idadi_ya_vipande >= MK_UWEZO_WA_VIPANDE) { rudisha; }
+    mk_vx0[mk_idadi_ya_vipande] = x0;
+    mk_vy0[mk_idadi_ya_vipande] = y0;
+    mk_vx1[mk_idadi_ya_vipande] = x1;
+    mk_vy1[mk_idadi_ya_vipande] = y1;
+    mk_idadi_ya_vipande = mk_idadi_ya_vipande + 1;
+}
+
+// Tao la Bezier la daraja la pili (x0,y0) -> (x1,y1) lenye nukta ya
+// udhibiti (cx,cy), likinyooshwa kuwa vipande. Idadi hufuata ukubwa wa tao.
+w0 mk_tao(n64 x0, n64 y0, n64 cx, n64 cy, n64 x1, n64 y1) {
+    n64 ukubwa_wa_tao = x1 - x0;
+    kama (ukubwa_wa_tao < 0) { ukubwa_wa_tao = 0 - ukubwa_wa_tao; }
+    n64 dy = y1 - y0;
+    kama (dy < 0) { dy = 0 - dy; }
+    kama (dy > ukubwa_wa_tao) { ukubwa_wa_tao = dy; }
+    n64 n = 2 + ukubwa_wa_tao / 768;
+    kama (n > 16) { n = 16; }
+    n64 px = x0;
+    n64 py = y0;
+    n64 i = 1;
+    wakati (i <= n) {
+        n64 t = (i * 1024) / n;
+        n64 u = 1024 - t;
+        n64 x = (u * u * x0 + 2 * u * t * cx + t * t * x1) / 1048576;
+        n64 y = (u * u * y0 + 2 * u * t * cy + t * t * y1) / 1048576;
+        mk_kipande(px, py, x, y);
+        px = x;
+        py = y;
+        i = i + 1;
+    }
+}
+
+// Nukta ya glyph i kwa 1/256 ya pikseli (y imegeuzwa: chini ni chanya).
+n64 mk_px(Fonti* f, n64 i, n64 ukubwa_px) {
+    rudisha (mk_nx[i] * ukubwa_px * 256) / f->vizio;
+}
+
+n64 mk_py(Fonti* f, n64 i, n64 ukubwa_px) {
+    rudisha (0 - mk_ny[i] * ukubwa_px * 256) / f->vizio;
+}
+
+// Mikondo yote -> vipande. Nukta mbili za udhibiti zinazofuatana zina nukta
+// ya mkondo iliyofichwa katikati yake (kanuni ya TrueType).
+w0 mk_mikondo_kuwa_vipande(Fonti* f, n64 ukubwa_px) {
+    mk_idadi_ya_vipande = 0;
+    n64 mwanzo = 0;
+    n64 c = 0;
+    wakati (c < mk_idadi_ya_mikondo) {
+        n64 mwisho = mk_mwisho[c];
+        n64 n = mwisho - mwanzo + 1;
+        kama (n >= 2) {
+            // nukta ya kuanzia: ya kwanza iliyo kwenye mkondo, au katikati
+            // ya ya kwanza na ya mwisho
+            n64 sx = 0;
+            n64 sy = 0;
+            n64 anzia = mwanzo;
+            kama (mk_kwenye[mwanzo]) {
+                sx = mk_px(f, mwanzo, ukubwa_px);
+                sy = mk_py(f, mwanzo, ukubwa_px);
+                anzia = mwanzo + 1;
+            } sivyo {
+                kama (mk_kwenye[mwisho]) {
+                    sx = mk_px(f, mwisho, ukubwa_px);
+                    sy = mk_py(f, mwisho, ukubwa_px);
+                } sivyo {
+                    sx = (mk_px(f, mwanzo, ukubwa_px) + mk_px(f, mwisho, ukubwa_px)) / 2;
+                    sy = (mk_py(f, mwanzo, ukubwa_px) + mk_py(f, mwisho, ukubwa_px)) / 2;
+                }
+            }
+            n64 px = sx;
+            n64 py = sy;
+            n64 ina_udhibiti = 0;
+            n64 ux = 0;
+            n64 uy = 0;
+            n64 k = 0;
+            wakati (k < n) {
+                n64 i = anzia + k;
+                kama (i > mwisho) { i = i - n; }
+                n64 x = mk_px(f, i, ukubwa_px);
+                n64 y = mk_py(f, i, ukubwa_px);
+                kama (mk_kwenye[i]) {
+                    kama (ina_udhibiti) {
+                        mk_tao(px, py, ux, uy, x, y);
+                        ina_udhibiti = 0;
+                    } sivyo {
+                        mk_kipande(px, py, x, y);
+                    }
+                    px = x;
+                    py = y;
+                } sivyo {
+                    kama (ina_udhibiti) {
+                        n64 mx = (ux + x) / 2;
+                        n64 my = (uy + y) / 2;
+                        mk_tao(px, py, ux, uy, mx, my);
+                        px = mx;
+                        py = my;
+                    }
+                    ux = x;
+                    uy = y;
+                    ina_udhibiti = 1;
+                }
+                k = k + 1;
+            }
+            // funga mkondo
+            kama (ina_udhibiti) {
+                mk_tao(px, py, ux, uy, sx, sy);
+            } sivyo {
+                mk_kipande(px, py, sx, sy);
+            }
+        }
+        mwanzo = mwisho + 1;
+        c = c + 1;
+    }
+}
+
+// Ongeza kipande [xa,xb) (1/256 ya pikseli) kwenye funiko la safu.
+w0 mk_ongeza_kipande_cha_safu(n64 xa, n64 xb, n64 upana) {
+    n64 a = xa;
+    n64 b = xb;
+    kama (a < 0) { a = 0; }
+    kama (b > upana * 256) { b = upana * 256; }
+    kama (b <= a) { rudisha; }
+    n64 p0 = a / 256;
+    n64 p1 = (b - 1) / 256;
+    kama (p0 == p1) {
+        mk_jumla[p0] = mk_jumla[p0] + (b - a);
+        rudisha;
+    }
+    mk_jumla[p0] = mk_jumla[p0] + (256 - (a - p0 * 256));
+    n64 p = p0 + 1;
+    wakati (p < p1) {
+        mk_jumla[p] = mk_jumla[p] + 256;
+        p = p + 1;
+    }
+    mk_jumla[p1] = mk_jumla[p1] + (b - p1 * 256);
+}
+
+// Jaza vipande (vilivyosogezwa ili kona ya juu-kushoto iwe 0,0) kwenye
+// ramani ya funiko ya upana x kimo, baiti moja kwa pikseli.
+w0 mk_jaza(n8* ramani, n64 upana, n64 kimo) {
+    n64 safu = 0;
+    wakati (safu < kimo) {
+        n64 i = 0;
+        wakati (i < upana) { mk_jumla[i] = 0; i = i + 1; }
+        n64 dogo = 0;
+        wakati (dogo < MK_SAFU_NDOGO) {
+            n64 sy = safu * 256 + (dogo * 256 + 128) / MK_SAFU_NDOGO;
+            mk_idadi_ya_makutano = 0;
+            n64 v = 0;
+            wakati (v < mk_idadi_ya_vipande) {
+                n64 y0 = mk_vy0[v];
+                n64 y1 = mk_vy1[v];
+                n64 mwelekeo = 1;
+                kama (y0 > y1) { n64 muda = y0; y0 = y1; y1 = muda; mwelekeo = 0 - 1; }
+                kama (sy >= y0 && sy < y1 && mk_idadi_ya_makutano < 500) {
+                    n64 x = mk_vx0[v] + ((sy - mk_vy0[v]) * (mk_vx1[v] - mk_vx0[v])) / (mk_vy1[v] - mk_vy0[v]);
+                    // ingiza kwa mpangilio wa x
+                    n64 j = mk_idadi_ya_makutano;
+                    wakati (j > 0 && mk_kx[j - 1] > x) {
+                        mk_kx[j] = mk_kx[j - 1];
+                        mk_kd[j] = mk_kd[j - 1];
+                        j = j - 1;
+                    }
+                    mk_kx[j] = x;
+                    mk_kd[j] = mwelekeo;
+                    mk_idadi_ya_makutano = mk_idadi_ya_makutano + 1;
+                }
+                v = v + 1;
+            }
+            n64 mzunguko = 0;
+            n64 mwanzo_wa_kipande = 0;
+            n64 k = 0;
+            wakati (k < mk_idadi_ya_makutano) {
+                n64 kabla = mzunguko;
+                mzunguko = mzunguko + mk_kd[k];
+                kama (kabla == 0 && mzunguko != 0) { mwanzo_wa_kipande = mk_kx[k]; }
+                kama (kabla != 0 && mzunguko == 0) { mk_ongeza_kipande_cha_safu(mwanzo_wa_kipande, mk_kx[k], upana); }
+                k = k + 1;
+            }
+            dogo = dogo + 1;
+        }
+        i = 0;
+        wakati (i < upana) {
+            n64 a = (mk_jumla[i] * 255) / (256 * MK_SAFU_NDOGO);
+            kama (a > 255) { a = 255; }
+            ramani[safu * upana + i] = a;
+            i = i + 1;
+        }
+        safu = safu + 1;
+    }
+}
+
+// Nafasi ya akiba ya (fonti, ukubwa, glyph); huichora mara ya kwanza.
+n64 mk_akiba(Fonti* f, n64 g, n64 ukubwa_px) {
+    n64 ufunguo = (f->kitambulisho << 40) | (ukubwa_px << 20) | (g + 1);
+    n64 h = (ufunguo * 2654435761) & (MK_UWEZO_WA_AKIBA - 1);
+    n64 majaribio = 0;
+    wakati (mk_a_ufunguo[h] != 0 && majaribio < MK_UWEZO_WA_AKIBA) {
+        kama (mk_a_ufunguo[h] == ufunguo) { rudisha h; }
+        h = (h + 1) & (MK_UWEZO_WA_AKIBA - 1);
+        majaribio = majaribio + 1;
+    }
+    mk_a_ufunguo[h] = ufunguo;
+    mk_a_songa[h] = (maandishi_songa_vizio(f, g) * ukubwa_px * 64) / f->vizio;
+    mk_a_ramani[h] = 0;
+    mk_a_upana[h] = 0;
+    mk_a_kimo[h] = 0;
+    mk_a_kushoto[h] = 0;
+    mk_a_juu[h] = 0;
+
+    mk_idadi_ya_nukta = 0;
+    mk_idadi_ya_mikondo = 0;
+    mk_soma_muhtasari(f, g, 0, 0, 0);
+    kama (mk_idadi_ya_nukta == 0) { rudisha h; }
+    mk_mikondo_kuwa_vipande(f, ukubwa_px);
+    kama (mk_idadi_ya_vipande == 0) { rudisha h; }
+
+    // sanduku la vipande, kwa pikseli nzima
+    n64 x_chini = mk_vx0[0];
+    n64 x_juu = mk_vx0[0];
+    n64 y_chini = mk_vy0[0];
+    n64 y_juu = mk_vy0[0];
+    n64 v = 0;
+    wakati (v < mk_idadi_ya_vipande) {
+        kama (mk_vx0[v] < x_chini) { x_chini = mk_vx0[v]; }
+        kama (mk_vx1[v] < x_chini) { x_chini = mk_vx1[v]; }
+        kama (mk_vx0[v] > x_juu) { x_juu = mk_vx0[v]; }
+        kama (mk_vx1[v] > x_juu) { x_juu = mk_vx1[v]; }
+        kama (mk_vy0[v] < y_chini) { y_chini = mk_vy0[v]; }
+        kama (mk_vy1[v] < y_chini) { y_chini = mk_vy1[v]; }
+        kama (mk_vy0[v] > y_juu) { y_juu = mk_vy0[v]; }
+        kama (mk_vy1[v] > y_juu) { y_juu = mk_vy1[v]; }
+        v = v + 1;
+    }
+    // sakafu kwa namba hasi: (a - 255) / 256 ikiwa a < 0
+    n64 kushoto = x_chini / 256;
+    kama (x_chini < 0) { kushoto = (x_chini - 255) / 256; }
+    n64 juu = y_chini / 256;
+    kama (y_chini < 0) { juu = (y_chini - 255) / 256; }
+    n64 upana = (x_juu + 255) / 256 - kushoto;
+    kama (x_juu < 0) { upana = x_juu / 256 - kushoto; }
+    n64 kimo = (y_juu + 255) / 256 - juu;
+    kama (y_juu < 0) { kimo = y_juu / 256 - juu; }
+    kama (upana <= 0 || kimo <= 0 || upana > 1000) { rudisha h; }
+    v = 0;
+    wakati (v < mk_idadi_ya_vipande) {
+        mk_vx0[v] = mk_vx0[v] - kushoto * 256;
+        mk_vx1[v] = mk_vx1[v] - kushoto * 256;
+        mk_vy0[v] = mk_vy0[v] - juu * 256;
+        mk_vy1[v] = mk_vy1[v] - juu * 256;
+        v = v + 1;
+    }
+    n8* ramani = tenga(upana * kimo);
+    mk_jaza(ramani, upana, kimo);
+    mk_a_ramani[h] = anwani(ramani);
+    mk_a_upana[h] = upana;
+    mk_a_kimo[h] = kimo;
+    mk_a_kushoto[h] = kushoto;
+    mk_a_juu[h] = juu;
+    rudisha h;
+}
+
+// Nukta ya Unicode inayoanzia s[i] (UTF-8). Urefu wake kwa baiti huwekwa
+// kwenye mk_utf_urefu. Baiti batili husomwa kama herufi moja.
+n64 maandishi_herufi(n8* s, n64 i) {
+    n64 b = s[i];
+    b = b & 255;
+    mk_utf_urefu = 1;
+    kama (b < 128) { rudisha b; }
+    kama (b >= 240) {
+        mk_utf_urefu = 4;
+        rudisha ((b & 7) << 18) | ((s[i + 1] & 63) << 12) | ((s[i + 2] & 63) << 6) | (s[i + 3] & 63);
+    }
+    kama (b >= 224) {
+        mk_utf_urefu = 3;
+        rudisha ((b & 15) << 12) | ((s[i + 1] & 63) << 6) | (s[i + 2] & 63);
+    }
+    kama (b >= 192) {
+        mk_utf_urefu = 2;
+        rudisha ((b & 31) << 6) | (s[i + 1] & 63);
+    }
+    rudisha b;
+}
+
+// Kimo cha mstari mmoja wa maandishi (mpando - mshuko + pengo), pikseli.
+n64 maandishi_kimo_cha_mstari(Fonti* f, n64 ukubwa_px) {
+    rudisha ((f->mpando - f->mshuko + f->pengo) * ukubwa_px + f->vizio - 1) / f->vizio;
+}
+
+// Umbali kutoka juu ya mstari hadi msingi wa herufi, pikseli.
+n64 maandishi_mpando(Fonti* f, n64 ukubwa_px) {
+    rudisha (f->mpando * ukubwa_px + f->vizio / 2) / f->vizio;
+}
+
+// Upana wa maandishi kwa pikseli (bila kuchora).
+n64 maandishi_upana(Fonti* f, n8* s, n64 ukubwa_px) {
+    n64 kalamu = 0;
+    n64 i = 0;
+    wakati (s[i] != 0) {
+        n64 herufi = maandishi_herufi(s, i);
+        i = i + mk_utf_urefu;
+        n64 h = mk_akiba(f, maandishi_glyph(f, herufi), ukubwa_px);
+        kalamu = kalamu + mk_a_songa[h];
+    }
+    rudisha (kalamu + 63) / 64;
+}
+
+// Chora maandishi kwa rangi ya brashi ya turubai. (x,y) ni kona ya
+// juu-kushoto ya mstari. Hurudisha x baada ya herufi ya mwisho.
+n64 maandishi_chora(Turubai* t, Fonti* f, n8* s, n64 x, n64 y, n64 ukubwa_px) {
+    n64 msingi = y + maandishi_mpando(f, ukubwa_px);
+    n64 kalamu = x * 64;
+    n64 i = 0;
+    wakati (s[i] != 0) {
+        n64 herufi = maandishi_herufi(s, i);
+        i = i + mk_utf_urefu;
+        n64 h = mk_akiba(f, maandishi_glyph(f, herufi), ukubwa_px);
+        kama (mk_a_ramani[h] != 0) {
+            n8* ramani = mk_a_ramani[h];
+            n64 upana = mk_a_upana[h];
+            n64 kimo = mk_a_kimo[h];
+            n64 gx = (kalamu + 32) / 64 + mk_a_kushoto[h];
+            n64 gy = msingi + mk_a_juu[h];
+            n64 j = 0;
+            wakati (j < kimo) {
+                n64 k = 0;
+                wakati (k < upana) {
+                    n64 a = ramani[j * upana + k];
+                    a = a & 255;
+                    kama (a > 0) { turubai_changanya(t, gx + k, gy + j, a + (a >> 7)); }
+                    k = k + 1;
+                }
+                j = j + 1;
+            }
+        }
+        kalamu = kalamu + mk_a_songa[h];
+    }
+    rudisha (kalamu + 63) / 64;
+}
