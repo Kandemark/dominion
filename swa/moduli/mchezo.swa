@@ -808,6 +808,7 @@ CivMatokeo mchezo_anzisha(Mchezo* g, MchezoUsanidi* usanidi) {
     // vya nchi kavu ambavyo atlasi inasema ni vyake.
     TaifaMfumo* taifa = dunia_taifa_mfumo_unda();
     dunia_atlasi_unda_mataifa(taifa, ramani_mpya, atlasi, miji);
+    dunia_atlasi_hesabu_majirani(taifa, ramani_mpya);
     mchezo_weka_taifa(g, taifa);
     DuniaRasilimaliRamani* rm_ya_mwanzo = 0;
     TaifaUchumi* jumla_ya_mwanzo = 0;
