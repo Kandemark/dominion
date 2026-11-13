@@ -1,0 +1,72 @@
+// hadithi.swa — tafsiri ya src/core/events/story_events.c (na .h)
+// kwenda Swa. Matukio ya hadithi ya mwanzo wa mchezo: kuzaliwa kwa
+// jamii na uongozi.
+//
+// Kiambishi: matukio_ — angalia ../../KANUNI-MAJINA.md (events/).
+// region_id/ai_leader_id (char[STRING_SHORT_LEN]) zimekuwa n8*
+// (vielekezi, si nakala zilizowekwa) — mtindo uleule wa moduli
+// nyingine za idadi_ya_watu/diplomasia. rand()%500 imebadilishwa
+// kuwa civ_nasibu_chini_ya.
+//
+// event_manager.c (moduli dada) HAIKUHAMISHWA — mfumo wake wa
+// civ_event_handler_t una field ya kujirejelea (self-referential)
+// 'struct civ_event_handler* next' (orodha kiungo/linked list) —
+// hii imezuiwa kabisa na lugha-swa/swa#186 (field ya muundo yenye
+// kielekezi kwenda muundo mwingine haihifadhi thamani sahihi);
+// orodha kiungo haiwezi "kuingizwa kwa thamani" (ingesababisha
+// ukubwa usio na kikomo), kwa hiyo hakuna suluhisho la muda kwa
+// muundo huu maalum.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/lugha_dominion.swa }
+
+n32 MATUKIO_HALI_MWANACHAMA_WA_JAMII = 0;
+n32 MATUKIO_HALI_MCHAKATO_WA_UCHAGUZI = 1;
+n32 MATUKIO_HALI_JUKUMU_LA_UPINZANI = 2;
+n32 MATUKIO_HALI_MBUNIFU_WA_KIONGOZI = 3;
+n32 MATUKIO_HALI_NGUVU_ILIYOTHIBITIKA = 4;
+
+muundo MatukioJamiiYaMchezaji {
+    n64 idadi_ya_watu;
+    d64 ari;
+    d64 ushawishi_wa_kisiasa;
+    n8* eneo_id;
+    n8* kiongozi_wa_akili_bandia_id;
+    n32 hali_ya_jamii;
+};
+
+w0 hadithi_zalisha_jamii(MatukioJamiiYaMchezaji* jamii, n8* eneo_id) {
+    n32 nyongeza = civ_nasibu_chini_ya(500);
+    jamii->idadi_ya_watu = 1000 + nyongeza;
+    jamii->ari = 0.7;
+    jamii->eneo_id = eneo_id;
+    jamii->kiongozi_wa_akili_bandia_id = 0;
+    jamii->hali_ya_jamii = MATUKIO_HALI_MWANACHAMA_WA_JAMII;
+
+    andika(d_tafsiri("m25"), eneo_id, 0,0,0,0,0);
+}
+
+n32 hadithi_anzisha_mkutano_mkuu(MatukioJamiiYaMchezaji* jamii) {
+    andika(d_tafsiri("m26"), 0,0,0,0,0,0);
+    andika(d_tafsiri("m27"), 0,0,0,0,0,0);
+
+    jamii->hali_ya_jamii = MATUKIO_HALI_MCHAKATO_WA_UCHAGUZI;
+    rudisha 1;
+}
+
+CivMatokeo hadithi_matokeo_ya_uchaguzi(MatukioJamiiYaMchezaji* jamii, n32 alishinda) {
+    kama (alishinda != 0) {
+        jamii->hali_ya_jamii = MATUKIO_HALI_MBUNIFU_WA_KIONGOZI;
+        jamii->ari = jamii->ari + 0.2;
+        andika(d_tafsiri("m28"), 0,0,0,0,0,0);
+    } sivyo {
+        jamii->ari = jamii->ari - 0.1;
+        andika(d_tafsiri("m29"), 0,0,0,0,0,0);
+    }
+
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    rudisha r;
+}

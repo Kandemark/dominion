@@ -1,0 +1,147 @@
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { moduli/onyesho/maandishi.swa }
+
+// jaribio_maandishi.swa -- thamani halisi za msomaji wa TrueType na
+// kijazaji cha glyph. Huendeshwa kutoka saraka ya swa/ (njia ya fonti ni
+// rasilimali/fonti/). Ikipewa njia, huandika fremu ghafi ya mfano.
+
+n32 makosa = 0;
+
+w0 thibitisha(n8* jina, n64 halisi, n64 tarajiwa) {
+    kama (halisi == tarajiwa) {
+        andika("SAWA: %s\n", jina, 0, 0, 0, 0, 0);
+    } sivyo {
+        andika("SHINDWA: %s -- %d, ilitarajiwa %d\n", jina, halisi, tarajiwa, 0, 0, 0);
+        makosa = makosa + 1;
+    }
+}
+
+w0 thibitisha_kati(n8* jina, n64 halisi, n64 chini, n64 juu) {
+    kama (halisi >= chini && halisi <= juu) {
+        andika("SAWA: %s (%d)\n", jina, halisi, 0, 0, 0, 0);
+    } sivyo {
+        andika("SHINDWA: %s -- %d, ilitarajiwa %d..%d\n", jina, halisi, chini, juu, 0, 0);
+        makosa = makosa + 1;
+    }
+}
+
+// Jumla ya funiko la pikseli zote za turubai (chaneli moja).
+n64 wino(Turubai* t) {
+    n64 jumla = 0;
+    n64 i = 0;
+    wakati (i < t->upana * t->kimo) {
+        jumla = jumla + (pata_u32(t->pikseli, i * 4) & 255);
+        i = i + 1;
+    }
+    rudisha jumla;
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    Fonti* f = maandishi_pakia("rasilimali/fonti/NotoSans-Regular.ttf");
+    kama (f == 0) { andika("SHINDWA: fonti haikupakiwa\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    Fonti* nene = maandishi_pakia("rasilimali/fonti/NotoSans-Bold.ttf");
+    kama (nene == 0) { andika("SHINDWA: fonti nene haikupakiwa\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+
+    // vipimo vya fonti (Noto Sans: vizio 1000 kwa em)
+    thibitisha("vizio kwa em", f->vizio, 1000);
+    thibitisha_kati("mpando", f->mpando, 900, 1200);
+    thibitisha_kati("idadi ya glyph", f->idadi_ya_glyph, 1000, 10000);
+
+    // cmap: herufi tofauti -> glyph tofauti, zisizo sifuri
+    n64 gA = maandishi_glyph(f, 65);
+    n64 gB = maandishi_glyph(f, 66);
+    n64 nafasi = maandishi_glyph(f, 32);
+    kama (gA == 0 || gB == 0 || gA == gB) { makosa = makosa + 1; andika("SHINDWA: cmap A/B\n", 0, 0, 0, 0, 0, 0); }
+    sivyo { andika("SAWA: cmap A=%d B=%d\n", gA, gB, 0, 0, 0, 0); }
+    thibitisha("herufi isiyokuwepo -> 0", maandishi_glyph(f, 57344), 0);
+
+    // tarakimu zina songa moja (jedwali za namba hujipanga)
+    n64 s0 = maandishi_songa_vizio(f, maandishi_glyph(f, 48));
+    n64 s1 = maandishi_songa_vizio(f, maandishi_glyph(f, 49));
+    n64 s8 = maandishi_songa_vizio(f, maandishi_glyph(f, 56));
+    thibitisha("tarakimu: songa ya 1 = ya 0", s1, s0);
+    thibitisha("tarakimu: songa ya 8 = ya 0", s8, s0);
+
+    // upana: hujumlishwa, na nafasi haina wino
+    n64 wa = maandishi_upana(f, "Dominion", 16);
+    n64 wb = maandishi_upana(f, "DominionDominion", 16);
+    thibitisha_kati("upana wa 'Dominion' @16", wa, 60, 80);
+    thibitisha_kati("upana mara mbili", wb, wa * 2 - 2, wa * 2 + 2);
+    thibitisha("maandishi tupu -> 0", maandishi_upana(f, "", 16), 0);
+
+    // UTF-8: 'e' yenye alama (U+00E9) ni herufi MOJA ya baiti 2
+    n8 e_kali[3];
+    e_kali[0] = 195; e_kali[1] = 169; e_kali[2] = 0;
+    thibitisha("UTF-8: U+00E9", maandishi_herufi(e_kali, 0), 233);
+    thibitisha("UTF-8: urefu baiti 2", mk_utf_urefu, 2);
+    thibitisha_kati("glyph ya kiwanja ina upana", maandishi_upana(f, e_kali, 16), 6, 12);
+
+    // kuchora: wino upo, kingo ni laini, na kukata kunaheshimiwa
+    Turubai* t = turubai_unda(200, 40);
+    turubai_brashi(t, 16777215, 255);
+    n64 mwisho = maandishi_chora(t, f, "Swa 2026", 4, 4, 20);
+    thibitisha_kati("kuchora hurudisha x ya mwisho", mwisho, 70, 110);
+    n64 w1 = wino(t);
+    thibitisha_kati("wino umewekwa", w1, 20000, 200000);
+    n64 kati = 0;
+    n64 i = 0;
+    wakati (i < 200 * 40) {
+        n64 v = pata_u32(t->pikseli, i * 4) & 255;
+        kama (v > 0 && v < 255) { kati = kati + 1; }
+        i = i + 1;
+    }
+    thibitisha_kati("pikseli za kingo laini", kati, 50, 5000);
+
+    Turubai* t2 = turubai_unda(200, 40);
+    turubai_brashi(t2, 16777215, 255);
+    turubai_kata(t2, 0, 0, 10, 40);
+    maandishi_chora(t2, f, "Swa 2026", 4, 4, 20);
+    n64 nje = 0;
+    i = 0;
+    wakati (i < 40) {
+        n64 k = 10;
+        wakati (k < 200) {
+            nje = nje + (pata_u32(t2->pikseli, (i * 200 + k) * 4) & 255);
+            k = k + 1;
+        }
+        i = i + 1;
+    }
+    thibitisha("kukata: hakuna wino nje ya eneo", nje, 0);
+
+    // nene ina wino zaidi kuliko ya kawaida kwa maandishi yale yale
+    Turubai* t3 = turubai_unda(200, 40);
+    turubai_brashi(t3, 16777215, 255);
+    maandishi_chora(t3, nene, "Swa 2026", 4, 4, 20);
+    n64 w3 = wino(t3);
+    n64 nene_zaidi = 0;
+    kama (w3 > w1) { nene_zaidi = 1; }
+    thibitisha("nene ina wino zaidi", nene_zaidi, 1);
+
+    kama (idadi_ya_hoja > 1) {
+        Turubai* m = turubai_unda(1080, 400);
+        turubai_brashi(m, 1250067, 255);
+        turubai_jaza(m, 0, 0, 1080, 400);
+        turubai_brashi(m, 15921906, 255);
+        maandishi_chora(m, nene, "Dominion", 32, 24, 44);
+        turubai_brashi(m, 10066329, 255);
+        maandishi_chora(m, f, "Uchumi wa taifa, robo ya tatu ya mwaka 1444", 34, 80, 18);
+        n64 ukubwa_px = 11;
+        n64 y = 130;
+        wakati (ukubwa_px <= 24) {
+            turubai_brashi(m, 14474460, 255);
+            maandishi_chora(m, f, "Haba na haba hujaza kibaba -- 0123456789  Pato ghafi: 1,284,550", 34, y, ukubwa_px);
+            y = y + maandishi_kimo_cha_mstari(f, ukubwa_px) + 4;
+            ukubwa_px = ukubwa_px + 3;
+        }
+        turubai_brashi(m, 3066993, 255);
+        maandishi_chora(m, nene, "+4.2%", 34, y + 8, 28);
+        turubai_brashi(m, 15158332, 255);
+        maandishi_chora(m, nene, "-1.7%", 150, y + 8, 28);
+        n64 fd = mfumo_fungua(hoja_za_mstari[1], 577, 420);
+        mfumo_andika(fd, m->pikseli, m->hatua * m->kimo);
+        mfumo_funga(fd);
+    }
+    andika("[muhtasari] yaliyoshindwa: %d\n", makosa, 0, 0, 0, 0, 0);
+    kama (makosa > 0) { rudisha 1; }
+    rudisha 0;
+}

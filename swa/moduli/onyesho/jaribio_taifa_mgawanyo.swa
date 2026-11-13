@@ -1,0 +1,130 @@
+husisha { moduli/onyesho/ramani_onyesho.swa }
+
+// jaribio_taifa_mgawanyo.swa -- jaribio la kudumu la
+// onyesho_taifa_mgawanyo_chora (Awamu G3 ya "Ramani Halisi + Uhuishaji
+// + Dirisha la Kisasa" -- "territory divided into regions", picha ya
+// rejea ya mtumiaji ya Balkan: mikoa/majimbo yenye rangi tofauti NA
+// mipaka inayoonekana).
+//
+// TaifaNchi MOJA ya majaribio inaundwa KWA MKONO (tenga() + kuweka
+// fields moja kwa moja), SI kupitia Mchezo kamili -- kazi hii
+// haihitaji serikali/katiba/dunia nzima, sawa na mtindo wa
+// jaribio_maajabu.swa (bila kupitia mchezo.swa, angalia
+// lugha-swa/swa#292).
+//
+// UCHAGUZI WA DATA: eneo kuu la taifa ni mstatili wa digrii 40x40
+// (lon 0..40, lat 0..40), bafa ya kuchorwa ni 200x200 pikseli (5px
+// kwa kila digrii, uwiano safi -- hakuna mzunguko wa floating point
+// usiotarajiwa kwa sababu mipaka yote ya mgawanyo ni viwiko vya 20
+// digrii, ambavyo vinagawanyika SAWA kwenda 100px):
+//   mgawanyo 0: robo ya JUU-KUSHOTO (lon 0..20, lat 20..40) -- NYEKUNDU.
+//   mgawanyo 1: robo ya JUU-KULIA (lon 20..40, lat 20..40) -- KIJANI.
+//   mgawanyo 2: NUSU YA CHINI (lon 0..40, lat 0..20) -- BLUU.
+// Kwa fomula ya onyesho_taifa_mgawanyo_chora (y_k=0 juu kabisa =
+// lat_juu_kuu, sawa na mwelekeo uliothibitishwa Awamu G1/G2), haya
+// yanalingana HASA na robo ya juu-kushoto/juu-kulia/nusu ya chini ya
+// bafa 200x200: mgawanyo 0 -> px[0,100) py[0,100); mgawanyo 1 ->
+// px[100,200) py[0,100); mgawanyo 2 -> px[0,200) py[100,200).
+
+n32 jtm_yalioshindwa = 0;
+
+w0 jtm_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jtm_yalioshindwa = jtm_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    // ---------- Unda TaifaNchi MOJA kwa mkono ----------
+    TaifaNchi* t = tenga(ukubwa(TaifaNchi));
+    t->kitambulisho = "taifa_jaribio";
+    t->jina = "Taifa la Jaribio";
+    t->rangi = 0;
+    t->rangi_pambizo = 0;
+    t->idadi_ya_maeneo = 0;
+    t->idadi_ya_mgawanyo = 0;
+
+    // Eneo kuu la taifa (SIO Mchezo -- lon/lat za majaribio pekee).
+    TaifaEneo* e0 = dunia_taifa_pata_eneo(t, 0);
+    e0->lon_chini = 0.0; e0->lon_juu = 40.0;
+    e0->lat_chini = 0.0; e0->lat_juu = 40.0;
+    t->idadi_ya_maeneo = 1;
+
+    // Mgawanyo 0: robo ya juu-kushoto -- NYEKUNDU (0xFF0000).
+    TaifaMgawanyo* m0 = dunia_taifa_pata_mgawanyo(t, 0);
+    m0->jina = "Mgawanyo Mmoja"; m0->kitambulisho = "mmoja";
+    m0->rangi = 16711680;
+    m0->eneo.lon_chini = 0.0; m0->eneo.lon_juu = 20.0;
+    m0->eneo.lat_chini = 20.0; m0->eneo.lat_juu = 40.0;
+
+    // Mgawanyo 1: robo ya juu-kulia -- KIJANI (0x00FF00).
+    TaifaMgawanyo* m1 = dunia_taifa_pata_mgawanyo(t, 1);
+    m1->jina = "Mgawanyo Mbili"; m1->kitambulisho = "mbili";
+    m1->rangi = 65280;
+    m1->eneo.lon_chini = 20.0; m1->eneo.lon_juu = 40.0;
+    m1->eneo.lat_chini = 20.0; m1->eneo.lat_juu = 40.0;
+
+    // Mgawanyo 2: nusu ya chini -- BLUU (0x0000FF).
+    TaifaMgawanyo* m2 = dunia_taifa_pata_mgawanyo(t, 2);
+    m2->jina = "Mgawanyo Tatu"; m2->kitambulisho = "tatu";
+    m2->rangi = 255;
+    m2->eneo.lon_chini = 0.0; m2->eneo.lon_juu = 40.0;
+    m2->eneo.lat_chini = 0.0; m2->eneo.lat_juu = 20.0;
+
+    t->idadi_ya_mgawanyo = 3;
+
+    // ---------- Chora kwenye bafa 200x200 (x=0,y=0 -- eneo lote) ----------
+    n64 canvas_w = 200;
+    n64 canvas_h = 200;
+    n64 pitch = canvas_w * 4;
+    n8* fb = tenga(pitch * canvas_h);
+    weka_sifuri(fb, pitch * canvas_h);
+
+    onyesho_taifa_mgawanyo_chora(t, fb, pitch, canvas_w, canvas_h, 0, 0, canvas_w, canvas_h);
+
+    n64 rangi_nyekundu = 16711680;
+    n64 rangi_kijani = 65280;
+    n64 rangi_bluu = 255;
+    n64 rangi_mpaka = 0;
+
+    // ---------- Pikseli NDANI ya kila mgawanyo (rangi NGUMU, SI blend) ----------
+    n64 p_m0 = mchoro_pata_pikseli(fb, pitch, 50, 50);
+    jtm_thibitisha(p_m0 == rangi_nyekundu, "pikseli ndani ya mgawanyo 0 (juu-kushoto) ni NYEKUNDU hasa");
+
+    n64 p_m1 = mchoro_pata_pikseli(fb, pitch, 150, 50);
+    jtm_thibitisha(p_m1 == rangi_kijani, "pikseli ndani ya mgawanyo 1 (juu-kulia) ni KIJANI hasa");
+
+    n64 p_m2 = mchoro_pata_pikseli(fb, pitch, 100, 150);
+    jtm_thibitisha(p_m2 == rangi_bluu, "pikseli ndani ya mgawanyo 2 (nusu ya chini) ni BLUU hasa");
+
+    jtm_thibitisha(p_m0 != rangi_kijani && p_m0 != rangi_bluu,
+                     "mgawanyo 0 SI rangi iliyochanganyika na mgawanyo mwingine");
+    jtm_thibitisha(p_m1 != rangi_nyekundu && p_m1 != rangi_bluu,
+                     "mgawanyo 1 SI rangi iliyochanganyika na mgawanyo mwingine");
+    jtm_thibitisha(p_m2 != rangi_nyekundu && p_m2 != rangi_kijani,
+                     "mgawanyo 2 SI rangi iliyochanganyika na mgawanyo mwingine");
+
+    // ---------- Mpaka (nyeusi) kati ya mgawanyo ----------
+    // Mstari wa chini wa mgawanyo 0 (py=99) -- mpaka kati ya mgawanyo 0 na 2.
+    n64 p_mpaka_0_2 = mchoro_pata_pikseli(fb, pitch, 50, 99);
+    jtm_thibitisha(p_mpaka_0_2 == rangi_mpaka, "pikseli kwenye mpaka kati ya mgawanyo 0 na 2 ni NYEUSI (mpaka)");
+
+    // Mstari wa kulia wa mgawanyo 0 (px=99) -- mpaka kati ya mgawanyo 0 na 1.
+    n64 p_mpaka_0_1 = mchoro_pata_pikseli(fb, pitch, 99, 50);
+    jtm_thibitisha(p_mpaka_0_1 == rangi_mpaka, "pikseli kwenye mpaka kati ya mgawanyo 0 na 1 ni NYEUSI (mpaka)");
+
+    // Mstari wa chini wa mgawanyo 1 (px=150,py=99) -- mpaka kati ya mgawanyo 1 na 2.
+    n64 p_mpaka_1_2 = mchoro_pata_pikseli(fb, pitch, 150, 99);
+    jtm_thibitisha(p_mpaka_1_2 == rangi_mpaka, "pikseli kwenye mpaka kati ya mgawanyo 1 na 2 ni NYEUSI (mpaka)");
+
+    achilia fb;
+    achilia t;
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", jtm_yalioshindwa, 0, 0, 0, 0, 0);
+    kama (jtm_yalioshindwa > 0) { rudisha 1; }
+    andika("DONE\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

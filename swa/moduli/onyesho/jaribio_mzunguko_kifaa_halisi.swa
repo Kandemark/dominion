@@ -1,0 +1,87 @@
+husisha { moduli/onyesho/mzunguko.swa }
+
+// jaribio_mzunguko_kifaa_halisi.swa -- jaribio la HIARI la mkono la
+// mwisho WA KWELI wa hardware kwa mzunguko.swa: mzunguko_chanzo_weka_kifaa
+// (wrapper nyembamba inayotumia kifaa_fungua/kifaa_soma_tukio HALISI,
+// angalia maelezo yake kwenye mzunguko.swa) dhidi ya kifaa HALISI cha
+// /dev/input/eventN -- TOFAUTI na jaribio_mzunguko.swa (ambalo hulisha
+// matukio BANDIA kupitia MzungukoChanzo cha majaribio), jaribio HILI
+// huthibitisha kwamba uelekezaji wa kazi (MzungukoChanzo.soma_kazi ->
+// mzunguko_chanzo_kifaa_soma -> kifaa_soma_tukio HALISI) unafanya
+// kazi dhidi ya kifaa cha kweli, si tu dhidi ya chanzo cha majaribio.
+//
+// MUUNDO WA UTHIBITISHO (SKIP, SI FAIL, ukikosa ruhusa/kifaa --
+// mtindo HUO HUO ulioothibitishwa na jaribio_hud.swa/jaribio_drm.swa
+// kwa EACCES ya mmap ya DRM, na jaribio_ingizo.swa kwa kifaa
+// kisichopatikana): hakuna mtu wa kubonyeza kitufe wakati wa jaribio
+// la kiotomatiki, kwa hiyo HATUTHIBITISHI SPACE/ESC halisi hapa --
+// badala yake tunathibitisha kwamba mzunguko_hatua, ikiendeshwa dhidi
+// ya chanzo cha KIFAA HALISI (SI bandia), HAIANGUKI wala HAIZUII
+// (block) milele inapokutana na EAGAIN (hakuna tukio) mara kwa mara
+// -- ndiyo hali pekee inayowezekana kuthibitishwa kwa uhakika bila
+// mwingiliano wa kweli.
+n32 anza() {
+    n64 fd = kifaa_fungua("/dev/input/event3");
+    kama (fd < 0) {
+        andika_kosa("SKIP: haiwezi kufungua /dev/input/event3 rc=%d\n", fd, 0, 0, 0, 0, 0);
+        rudisha 2;
+    }
+    andika("OK: kifaa cha ingizo kimefunguliwa, fd=%d\n", fd, 0, 0, 0, 0, 0);
+
+    onyesho_fonti_pakia();
+
+    Mchezo* g = mchezo_unda();
+    kama (g == 0) {
+        andika_kosa("FAIL: mchezo_unda imerudisha kielekezi tupu\n", 0, 0, 0, 0, 0, 0);
+        kifaa_funga(fd);
+        rudisha 1;
+    }
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) {
+        andika_kosa("FAIL: mchezo_anzisha imeshindwa\n", 0, 0, 0, 0, 0, 0);
+        kifaa_funga(fd);
+        rudisha 1;
+    }
+
+    n64 canvas_w = ONYESHO_HUD_UPANA;
+    n64 canvas_h = ONYESHO_HUD_KIMO;
+    n64 pitch = canvas_w * 4;
+    n8* fb = tenga(pitch * canvas_h);
+    weka_sifuri(fb, pitch * canvas_h);
+
+    MzungukoChanzo chanzo;
+    mzunguko_chanzo_weka_kifaa(&chanzo, fd);
+
+    // Hatua zenye kikomo (5, sawa na jaribio_ingizo.swa) -- SI kitanzi
+    // kisicho na mwisho: hakuna ESC ya kweli inayotarajiwa kufika,
+    // kwa hiyo mzunguko_endesha (ambayo huendelea hadi ESC/mwisho wa
+    // chanzo) isingewahi kusimama hapa. mzunguko_hatua MOJA MOJA
+    // inatuwezesha kuthibitisha tabia bila hitaji la ESC halisi.
+    n64 zamu_kabla = g->zamu_ya_sasa;
+    n32 jaribu = 0;
+    n32 tukio_lolote = 0;
+    n32 imeanguka = 0;
+    wakati (jaribu < 5) {
+        n64 rc = mzunguko_hatua(g, &chanzo, fb, pitch);
+        kama (rc == 1) {
+            tukio_lolote = 1;
+        } sivyo { kama (rc < 0) {
+                andika("INFO: mzunguko_hatua imerudisha -1 (ESC halisi kimepokelewa, au hitilafu ya kifaa)\n", 0, 0, 0, 0, 0, 0);
+                acha;
+            } }
+        jaribu = jaribu + 1;
+    }
+
+    kama (tukio_lolote == 1) {
+        andika("OK: tukio HALISI la kibodi lilisomwa kupitia mzunguko_hatua wakati wa jaribio\n", 0, 0, 0, 0, 0, 0);
+    } sivyo {
+        andika("OK: hakuna tukio (EAGAIN kila mara kupitia mzunguko_chanzo_kifaa_soma) -- kinatarajiwa kwa jaribio la kiotomatiki bila mtu kubonyeza; mzunguko_hatua HAUKUANGUKA wala kuzuia dhidi ya kifaa HALISI\n", 0, 0, 0, 0, 0, 0);
+    }
+
+    kifaa_funga(fd);
+    mchezo_uharibu(g);
+    andika("DONE\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

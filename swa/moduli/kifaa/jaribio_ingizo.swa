@@ -1,0 +1,45 @@
+husisha { moduli/kifaa/ingizo.swa }
+
+// jaribio_ingizo.swa -- jaribio la mkono dhidi ya kifaa HALISI cha
+// /dev/input/eventN. Kwa kuwa hii ni programu ya kiotomatiki isiyo
+// na mtu anayebonyeza kitufe wakati wa jaribio, HATUWEZI kuthibitisha
+// tukio halisi la kibodi/kipanya limesomwa -- badala yake tunathibitisha:
+// (1) kifaa kinafunguka bila hitilafu, (2) kusoma bila kuzuia (non-
+// blocking) hakuanguka wala kunizuia milele, (3) hali ya EAGAIN
+// (hakuna tukio) inatambulika kwa usahihi kama 0, si hitilafu.
+n32 anza() {
+    n64 fd = kifaa_fungua("/dev/input/event3");
+    kama (fd < 0) {
+        andika_kosa("SKIP: haiwezi kufungua /dev/input/event3 rc=%d\n", fd, 0, 0, 0, 0, 0);
+        rudisha 2;
+    }
+    andika("OK: kifaa cha ingizo kimefunguliwa, fd=%d\n", fd, 0, 0, 0, 0, 0);
+
+    n8* tukio = tenga(KIFAA_UKUBWA_TUKIO);
+    n64 jaribu = 0;
+    n64 tukio_lolote = 0;
+    wakati (jaribu < 5) {
+        n64 rc = kifaa_soma_tukio(fd, tukio);
+        kama (rc == 1) {
+            n64 aina = kifaa_tukio_aina(tukio);
+            n64 kanuni = kifaa_tukio_kanuni(tukio);
+            n64 thamani = kifaa_tukio_thamani(tukio);
+            andika("  tukio: aina=%d kanuni=%d thamani=%d\n", aina, kanuni, thamani, 0, 0, 0);
+            tukio_lolote = 1;
+        } sivyo { kama (rc == -1) {
+                andika_kosa("FAIL: kusoma tukio kulishindwa kwa hitilafu halisi\n", 0, 0, 0, 0, 0, 0);
+                rudisha 1;
+            } }
+        jaribu = jaribu + 1;
+    }
+
+    kama (tukio_lolote == 1) {
+        andika("OK: matukio HALISI ya kibodi yalisomwa wakati wa jaribio\n", 0, 0, 0, 0, 0, 0);
+    } sivyo {
+        andika("OK: hakuna tukio (EAGAIN kila mara) -- kinatarajiwa kwa jaribio la kiotomatiki bila mtu kubonyeza; mfumo wa kusoma HAUKUANGUKA wala kuzuia\n", 0, 0, 0, 0, 0, 0);
+    }
+
+    kifaa_funga(fd);
+    andika("DONE\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

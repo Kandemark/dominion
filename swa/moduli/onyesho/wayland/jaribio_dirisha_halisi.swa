@@ -1,0 +1,334 @@
+husisha { moduli/onyesho/wayland/mazingira.swa }
+husisha { moduli/onyesho/wayland/soketi.swa }
+husisha { moduli/onyesho/wayland/waya.swa }
+husisha { moduli/onyesho/wayland/shm.swa }
+husisha { moduli/onyesho/mchoro.swa }
+
+// jaribio_dirisha_halisi.swa -- Wayland Awamu 2: DIRISHA HALISI la
+// rangi moja imara linaloonekana kwenye desktop ya Hyprland (SI tu
+// "kushikana kwa itifaki" ya Awamu 1 -- hapa tunaenda hadi
+// wl_surface.commit yenye wl_buffer halisi iliyojazwa pikseli).
+//
+// Mlolongo kamili (kila hoja imethibitishwa dhidi ya
+// /usr/share/wayland/wayland.xml na
+// /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml --
+// angalia maoni ya waya.swa kwa opcodes HASA):
+//   1. unganisha kwenye soketi (TUMIA TENA muundo wa Awamu 1)
+//   2. get_registry + sync -- kusanya globals, TUKIHIFADHI jina (name)
+//      na toleo HALISI vya wl_compositor/wl_shm/xdg_wm_base (SI
+//      namba zilizokisiwa -- bind hutumia toleo lililotangazwa na
+//      compositor HII, wakati HUU)
+//   3. bind x3
+//   4. compositor.create_surface
+//   5. memfd_create+ftruncate+mmap (shm.swa) -> fd + kielekezi
+//   6. shm.create_pool (SCM_RIGHTS -- fd inapita kupitia control
+//      data, SI mwili wa ujumbe)
+//   7. shm_pool.create_buffer (XRGB8888)
+//   8. xdg_wm_base.get_xdg_surface
+//   9. xdg_surface.get_toplevel
+//   10. xdg_toplevel.set_title("Dominion")
+//   11. wl_surface.commit (commit ya AWALI, tupu -- inahitajika KABLA
+//       ya configure ya kwanza, angalia xdg-shell.xml "basic model")
+//   12. kitanzi cha matukio: jibu ping/pong papo hapo, ack_configure,
+//       kwenye configure YA KWANZA: jaza bafa na rangi, attach,
+//       damage_buffer, commit -- BAKIA kitanzini kwa ~sekunde 9
+//       (ukijibu matukio yoyote mengine) kabla ya kufunga kwa heshima.
+//
+// MUHIMU (kizuizi cha mkusanyaji): kigezo cha ndani cha kazi moja
+// hairuhusiwi kuzidi 64 (kikomo cha kamili cha sasa). Kwa hiyo bafa za
+// ujumbe ZOTE za muda mfupi (jengwa->tuma mara moja, haihitajiki tena)
+// zinatumia kigezo KIMOJA kinachotumika tena "msg" badala ya kigezo
+// kipya kwa kila ujumbe -- vivyo hivyo kwa obj/op/sz/n/iliyobaki/serial
+// zinazofanana kati ya vitanzi viwili vya kusoma matukio.
+
+n64 WAYLAND_DIRISHA_UPANA = 640;
+n64 WAYLAND_DIRISHA_KIMO = 480;
+n64 WAYLAND_DIRISHA_RANGI = 2236246;  // 0x00222D96 -- buluu ya giza, imara
+
+n32 anza(n32 argc, n8** argv) {
+    n8** envp = wayland_mazingira_pata_envp(argv);
+
+    n8* xdg = wayland_mazingira_tafuta(envp, "XDG_RUNTIME_DIR");
+    n8* wd = wayland_mazingira_tafuta(envp, "WAYLAND_DISPLAY");
+    kama (xdg == 0) {
+        andika_kosa("FAIL: XDG_RUNTIME_DIR haipo kwenye mazingira\n", 0, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    kama (wd == 0) {
+        andika_kosa("FAIL: WAYLAND_DISPLAY haipo kwenye mazingira\n", 0, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+
+    n8* njia = tenga(256);
+    weka_sifuri(njia, 256);
+    unganisha_mfuatano(njia, xdg, "/");
+    n8* njia2 = tenga(256);
+    weka_sifuri(njia2, 256);
+    unganisha_mfuatano(njia2, njia, wd);
+
+    andika("INFO: soketi ya Wayland = %s\n", njia2, 0, 0, 0, 0, 0);
+
+    n64 fd = wayland_soketi_fungua();
+    kama (fd < 0) {
+        andika_kosa("FAIL: socket() imeshindwa rc=%d\n", fd, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+
+    n64 rc = wayland_soketi_unganisha(fd, njia2);
+    kama (rc < 0) {
+        andika_kosa("FAIL: connect() kwenye %s imeshindwa rc=%d\n", njia2, rc, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("OK: connect() imefaulu, fd=%d\n", fd, 0, 0, 0, 0, 0);
+
+    n64 registry_id = 2;
+    n64 sync_id = 3;
+
+    n8* msg = wayland_waya_jenga_get_registry(registry_id);
+    wayland_soketi_tuma(fd, msg, wayland_waya_get_registry_ukubwa());
+    msg = wayland_waya_jenga_sync(sync_id);
+    wayland_soketi_tuma(fd, msg, 12);
+    andika("OK: get_registry + sync zimetumwa, nasubiri burst ya globals...\n", 0, 0, 0, 0, 0, 0);
+
+    n64 ukubwa_bafa = 65536;
+    n8* bafa = tenga(ukubwa_bafa);
+    n64 jumla = 0;
+    n64 nafasi = 0;
+    n64 imekamilika = 0;
+
+    n64 comp_name = 0 - 1;
+    n64 comp_toleo = 0;
+    n64 shm_name = 0 - 1;
+    n64 shm_toleo = 0;
+    n64 wmbase_name = 0 - 1;
+    n64 wmbase_toleo = 0;
+
+    n64 obj = 0;
+    n64 op = 0;
+    n64 sz = 0;
+    n64 n = 0;
+    n64 iliyobaki = 0;
+
+    wakati (imekamilika == 0) {
+        wakati (1 == 1) {
+            kama (jumla - nafasi < 8) { acha; }
+            obj = wayland_waya_msg_object_id(bafa, nafasi);
+            op = wayland_waya_msg_opcode(bafa, nafasi);
+            sz = wayland_waya_msg_ukubwa(bafa, nafasi);
+            kama (sz < 8) {
+                andika_kosa("FAIL: ukubwa batili wa ujumbe (sz=%d)\n", sz, 0, 0, 0, 0, 0);
+                imekamilika = 1;
+                acha;
+            }
+            kama (jumla - nafasi < sz) { acha; }
+
+            kama (obj == registry_id && op == WAYLAND_WAYA_REGISTRY_EV_GLOBAL) {
+                n64 jina = wayland_waya_global_name(bafa, nafasi);
+                n8* iface = wayland_waya_global_interface_ptr(bafa, nafasi);
+                n64 toleo = wayland_waya_global_version(bafa, nafasi);
+                kama (linganisha_mfuatano(iface, "wl_compositor") == 0) {
+                    comp_name = jina;
+                    comp_toleo = toleo;
+                }
+                kama (linganisha_mfuatano(iface, "wl_shm") == 0) {
+                    shm_name = jina;
+                    shm_toleo = toleo;
+                }
+                kama (linganisha_mfuatano(iface, "xdg_wm_base") == 0) {
+                    wmbase_name = jina;
+                    wmbase_toleo = toleo;
+                }
+            } sivyo {
+                kama (obj == sync_id && op == WAYLAND_WAYA_CALLBACK_EV_DONE) {
+                    andika("OK: wl_callback.done (sync) -- burst ya globals imekamilika\n", 0, 0, 0, 0, 0, 0);
+                    imekamilika = 1;
+                }
+            }
+
+            nafasi = nafasi + sz;
+            kama (imekamilika == 1) { acha; }
+        }
+        kama (imekamilika == 1) { acha; }
+
+        kama (nafasi > 0) {
+            iliyobaki = jumla - nafasi;
+            nakili(bafa, bafa + nafasi, iliyobaki);
+            jumla = iliyobaki;
+            nafasi = 0;
+        }
+
+        n = wayland_soketi_pokea(fd, bafa + jumla, ukubwa_bafa - jumla);
+        kama (n <= 0) {
+            andika_kosa("FAIL: recvmsg() imerudisha %d kabla ya sync.done\n", n, 0, 0, 0, 0, 0);
+            wayland_soketi_funga(fd);
+            rudisha 1;
+        }
+        jumla = jumla + n;
+    }
+
+    andika("GLOBALS: wl_compositor(name=%d,v=%d) wl_shm(name=%d,v=%d) xdg_wm_base(name=%d,v=%d)\n",
+        comp_name, comp_toleo, shm_name, shm_toleo, wmbase_name, wmbase_toleo);
+
+    kama (comp_name == (0 - 1) || shm_name == (0 - 1) || wmbase_name == (0 - 1)) {
+        andika_kosa("FAIL: moja au zaidi ya globals za msingi hazikupatikana\n", 0, 0, 0, 0, 0, 0);
+        wayland_soketi_funga(fd);
+        rudisha 1;
+    }
+
+    // ---- Ugawaji wa object_id, kuendelea kutoka 3 (sync_id) ----
+    n64 compositor_id = 4;
+    n64 shm_id = 5;
+    n64 wmbase_id = 6;
+    n64 surface_id = 7;
+    n64 pool_id = 8;
+    n64 buffer_id = 9;
+    n64 xdg_surface_id = 10;
+    n64 toplevel_id = 11;
+
+    msg = wayland_waya_jenga_bind(registry_id, comp_name, "wl_compositor", comp_toleo, compositor_id);
+    wayland_soketi_tuma(fd, msg, wayland_waya_bind_ukubwa("wl_compositor"));
+    msg = wayland_waya_jenga_bind(registry_id, shm_name, "wl_shm", shm_toleo, shm_id);
+    wayland_soketi_tuma(fd, msg, wayland_waya_bind_ukubwa("wl_shm"));
+    msg = wayland_waya_jenga_bind(registry_id, wmbase_name, "xdg_wm_base", wmbase_toleo, wmbase_id);
+    wayland_soketi_tuma(fd, msg, wayland_waya_bind_ukubwa("xdg_wm_base"));
+    andika("OK: bind x3 (wl_compositor=%d wl_shm=%d xdg_wm_base=%d) zimetumwa\n", compositor_id, shm_id, wmbase_id, 0, 0, 0);
+
+    msg = wayland_waya_jenga_create_surface(compositor_id, surface_id);
+    wayland_soketi_tuma(fd, msg, 12);
+    andika("OK: wl_compositor.create_surface (surface=%d) imetumwa\n", surface_id, 0, 0, 0, 0, 0);
+
+    n64 upana = WAYLAND_DIRISHA_UPANA;
+    n64 kimo = WAYLAND_DIRISHA_KIMO;
+    n64 stride = upana * 4;
+    n64 ukubwa_shm = stride * kimo;
+
+    n64 shm_fd = wayland_shm_unda(ukubwa_shm);
+    kama (shm_fd < 0) {
+        andika_kosa("FAIL: memfd_create/ftruncate ya shm imeshindwa rc=%d\n", shm_fd, 0, 0, 0, 0, 0);
+        wayland_soketi_funga(fd);
+        rudisha 1;
+    }
+    // Bafa ya ndani (ya KAWAIDA, tenga()=MAP_ANONYMOUS -- SI mmap ya
+    // memfd, angalia maelezo ya shm.swa kuhusu hitilafu ya mkusanyaji
+    // iliyogunduliwa kwenye mmap(fd halisi)) tunayochora ndani yake,
+    // kisha kuinakili ndani ya memfd kwa write(2) (wayland_shm_jaza).
+    n8* shm_ptr = tenga(ukubwa_shm);
+    andika("OK: memfd (fd=%d, ukubwa=%d baiti) imeundwa\n", shm_fd, ukubwa_shm, 0, 0, 0, 0);
+
+    msg = wayland_waya_jenga_create_pool(shm_id, pool_id, ukubwa_shm);
+    n64 s_cp = wayland_soketi_tuma_na_fd(fd, msg, 16, shm_fd);
+    kama (s_cp < 0) {
+        andika_kosa("FAIL: sendmsg ya wl_shm.create_pool (SCM_RIGHTS) imeshindwa rc=%d\n", s_cp, 0, 0, 0, 0, 0);
+        wayland_soketi_funga(fd);
+        rudisha 1;
+    }
+    andika("OK: wl_shm.create_pool (pool=%d, fd kupitia SCM_RIGHTS) imetumwa\n", pool_id, 0, 0, 0, 0, 0);
+
+    msg = wayland_waya_jenga_create_buffer(pool_id, buffer_id, 0, upana, kimo, stride, WAYLAND_WAYA_SHM_FORMAT_XRGB8888);
+    wayland_soketi_tuma(fd, msg, 32);
+    andika("OK: wl_shm_pool.create_buffer (buffer=%d, %dx%d) imetumwa\n", buffer_id, upana, kimo, 0, 0, 0);
+
+    msg = wayland_waya_jenga_get_xdg_surface(wmbase_id, xdg_surface_id, surface_id);
+    wayland_soketi_tuma(fd, msg, 16);
+    andika("OK: xdg_wm_base.get_xdg_surface (xdg_surface=%d) imetumwa\n", xdg_surface_id, 0, 0, 0, 0, 0);
+
+    msg = wayland_waya_jenga_get_toplevel(xdg_surface_id, toplevel_id);
+    wayland_soketi_tuma(fd, msg, 12);
+    andika("OK: xdg_surface.get_toplevel (toplevel=%d) imetumwa\n", toplevel_id, 0, 0, 0, 0, 0);
+
+    msg = wayland_waya_jenga_set_title(toplevel_id, "Dominion");
+    wayland_soketi_tuma(fd, msg, wayland_waya_set_title_ukubwa("Dominion"));
+    andika("OK: xdg_toplevel.set_title(Dominion) imetumwa\n", 0, 0, 0, 0, 0, 0);
+
+    msg = wayland_waya_jenga_commit(surface_id);
+    wayland_soketi_tuma(fd, msg, 8);
+    andika("OK: wl_surface.commit (commit ya AWALI, tupu) imetumwa -- nasubiri configure ya kwanza\n", 0, 0, 0, 0, 0, 0);
+
+    // ---- Kitanzi cha matukio: jibu ping/configure, chora kwenye
+    // configure ya kwanza, bakia dirisha wazi kwa ~sekunde 9 ----
+    wayland_soketi_weka_zisizozuia(fd);
+
+    n64 kwanza_kimechorwa = 0;
+    n64 mwanzo = civ_muda_sasa();
+    n64 SEKUNDE_KUBAKIA = 9;
+    n64 serial = 0;
+
+    wakati ((civ_muda_sasa() - mwanzo) < SEKUNDE_KUBAKIA) {
+        n = wayland_soketi_pokea(fd, bafa + jumla, ukubwa_bafa - jumla);
+        kama (n > 0) {
+            jumla = jumla + n;
+
+            wakati (1 == 1) {
+                kama (jumla - nafasi < 8) { acha; }
+                obj = wayland_waya_msg_object_id(bafa, nafasi);
+                op = wayland_waya_msg_opcode(bafa, nafasi);
+                sz = wayland_waya_msg_ukubwa(bafa, nafasi);
+                kama (sz < 8) {
+                    andika_kosa("WARN: ukubwa batili wa ujumbe kwenye kitanzi (sz=%d), nasimamisha kusoma zaidi\n", sz, 0, 0, 0, 0, 0);
+                    acha;
+                }
+                kama (jumla - nafasi < sz) { acha; }
+
+                kama (obj == wmbase_id && op == WAYLAND_WAYA_XDG_WM_BASE_EV_PING) {
+                    serial = wayland_waya_ev_serial(bafa, nafasi);
+                    msg = wayland_waya_jenga_pong(wmbase_id, serial);
+                    wayland_soketi_tuma(fd, msg, 12);
+                    andika("OK: xdg_wm_base.ping(serial=%d) -> pong imetumwa\n", serial, 0, 0, 0, 0, 0);
+                } sivyo {
+                    kama (obj == xdg_surface_id && op == WAYLAND_WAYA_XDG_SURFACE_EV_CONFIGURE) {
+                        serial = wayland_waya_ev_serial(bafa, nafasi);
+                        msg = wayland_waya_jenga_ack_configure(xdg_surface_id, serial);
+                        wayland_soketi_tuma(fd, msg, 12);
+                        andika("OK: xdg_surface.configure(serial=%d) -> ack_configure imetumwa\n", serial, 0, 0, 0, 0, 0);
+
+                        kama (kwanza_kimechorwa == 0) {
+                            mchoro_piga_mstatili(shm_ptr, stride, upana, kimo, 0, 0, upana, kimo, WAYLAND_DIRISHA_RANGI);
+                            wayland_shm_jaza(shm_fd, shm_ptr, ukubwa_shm);
+                            msg = wayland_waya_jenga_attach(surface_id, buffer_id, 0, 0);
+                            wayland_soketi_tuma(fd, msg, 20);
+                            msg = wayland_waya_jenga_damage_buffer(surface_id, 0, 0, upana, kimo);
+                            wayland_soketi_tuma(fd, msg, 24);
+                            msg = wayland_waya_jenga_commit(surface_id);
+                            wayland_soketi_tuma(fd, msg, 8);
+                            kwanza_kimechorwa = 1;
+                            andika("OK: bafa imejazwa rangi + attach + damage_buffer + commit -- DIRISHA LINAPASWA KUONEKANA SASA\n", 0, 0, 0, 0, 0, 0);
+                        }
+                    }
+                }
+
+                nafasi = nafasi + sz;
+            }
+
+            kama (nafasi > 0) {
+                iliyobaki = jumla - nafasi;
+                nakili(bafa, bafa + nafasi, iliyobaki);
+                jumla = iliyobaki;
+                nafasi = 0;
+            }
+        } sivyo {
+            kama (n == 0) {
+                andika_kosa("WARN: soketi imefungwa na compositor wakati wa kitanzi\n", 0, 0, 0, 0, 0, 0);
+                acha;
+            } sivyo {
+                kama (n != WAYLAND_SOKETI_EAGAIN) {
+                    andika_kosa("WARN: recvmsg() rc=%d (si EAGAIN) wakati wa kitanzi\n", n, 0, 0, 0, 0, 0);
+                }
+                wayland_soketi_lala_ms(100);
+            }
+        }
+    }
+
+    andika("INFO: muda wa kubakia (sekunde %d) umekamilika, nafunga kwa heshima\n", SEKUNDE_KUBAKIA, 0, 0, 0, 0, 0);
+
+    msg = wayland_waya_jenga_surface_destroy(surface_id);
+    wayland_soketi_tuma(fd, msg, 8);
+    wayland_soketi_funga(fd);
+
+    kama (kwanza_kimechorwa == 0) {
+        andika_kosa("FAIL: hakuna xdg_surface.configure iliyopokelewa -- dirisha HALIKUCHORWA\n", 0, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+
+    andika("DONE: dirisha la Dominion limeonekana kwenye Hyprland kwa sekunde %d\n", SEKUNDE_KUBAKIA, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

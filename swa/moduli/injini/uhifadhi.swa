@@ -1,0 +1,254 @@
+// uhifadhi.swa — tafsiri ya src/core/simulation_engine/state_persistence.c
+// (na .h) kwenda Swa. Kuhifadhi na kupakia hali ya mchezo kwenye faili.
+//
+// Kiambishi: injini_uhifadhi_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - fopen/fwrite/fread za C zimekuwa faili_andika_yote/faili_soma_yote
+//     za msingi/maktaba/faili.swa (syscalls moja kwa moja, hakuna libc).
+//   - compression_enabled/encryption_enabled (bado hazijatekelezwa
+//     kwenye C ya asili) hazikuletwa.
+//   - civ_state_persistence_list_saves (bado "Not implemented" kwenye
+//     C ya asili -- inarudisha hitilafu kila mara) haikuletwa.
+//   - njia kamili (save_directory + "/" + filename) inajengwa kwa
+//     unganisha_mfuatano badala ya snprintf.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { msingi/maktaba/faili.swa }
+
+muundo InjiniUhifadhi {
+    n8* saraka_ya_kuhifadhi;
+};
+
+InjiniUhifadhi* injini_uhifadhi_unda(n8* saraka_ya_kuhifadhi) {
+    InjiniUhifadhi* sp = tenga(ukubwa(InjiniUhifadhi));
+    sp->saraka_ya_kuhifadhi = saraka_ya_kuhifadhi;
+    // MUHIMU: hakuna kinachoundaga saraka hii popote pengine --
+    // mchezo_hifadhi() ingekuwa ikishindwa KIMYA (faili_fungua(...,
+    // "w") inarudisha 0/ENOENT ikiwa saraka mzazi haipo) kila wakati
+    // saraka hii haijawahi kuundwa kwa mkono KABLA -- hii NDIYO
+    // sababu halisi ya hitilafu 30 za jaribio_uhifadhi_mchezo.swa
+    // (mchezo_hifadhi/mchezo_pakia zenyewe zilikuwa zikishindwa,
+    // SI mantiki ya uchanganuzi wa shamba -- angalia uchunguzi kamili
+    // kwenye ujumbe wa commit). Hitilafu ya "tayari ipo" (-17,
+    // EEXIST) inapuuzwa kwa makusudi, SI kukataliwa.
+    kama (saraka_ya_kuhifadhi != 0) {
+        mfumo_unda_saraka(saraka_ya_kuhifadhi, 493);
+    }
+    rudisha sp;
+}
+
+w0 injini_uhifadhi_uharibu(InjiniUhifadhi* sp) {
+    achilia sp;
+}
+
+n8* injini_uhifadhi_njia_kamili(InjiniUhifadhi* sp, n8* jina_la_faili) {
+    kama (sp->saraka_ya_kuhifadhi == 0) { rudisha jina_la_faili; }
+    n8* nusu = tenga(256);
+    unganisha_mfuatano(nusu, sp->saraka_ya_kuhifadhi, "/");
+    n8* njia = tenga(512);
+    unganisha_mfuatano(njia, nusu, jina_la_faili);
+    achilia nusu;
+    rudisha njia;
+}
+
+CivMatokeo injini_uhifadhi_hifadhi(InjiniUhifadhi* sp, n8* jina_la_faili, n8* data, n64 ukubwa_wa_data) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (sp == 0 || jina_la_faili == 0 || data == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    n8* njia = injini_uhifadhi_njia_kamili(sp, jina_la_faili);
+    n32 matokeo = faili_andika_yote(njia, data, ukubwa_wa_data);
+    kama (matokeo != 0) {
+        r.hitilafu = CIV_HITILAFU_IO;
+        r.ujumbe = "Imeshindwa kuandika data yote";
+    }
+    rudisha r;
+}
+
+CivMatokeo injini_uhifadhi_pakia(InjiniUhifadhi* sp, n8* jina_la_faili, n8* data, n64 uwezo_wa_data) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (sp == 0 || jina_la_faili == 0 || data == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    n8* njia = injini_uhifadhi_njia_kamili(sp, jina_la_faili);
+    kama (faili_ipo(njia) == 0) {
+        r.hitilafu = CIV_HITILAFU_HAIJAPATIKANA;
+        r.ujumbe = "Faili halijapatikana";
+        rudisha r;
+    }
+
+    n64 imesomwa = faili_soma_yote(njia, data, uwezo_wa_data);
+    kama (imesomwa < 0) {
+        r.hitilafu = CIV_HITILAFU_IO;
+        r.ujumbe = "Imeshindwa kusoma data";
+    }
+    rudisha r;
+}
+
+// ==========================================================
+// Primitives za I/O za kiwango cha chini (binary, little-endian)
+// kwa ajili ya uhifadhi/upakiaji KAMILI wa Mchezo (angalia
+// mchezo.swa, sehemu ya "Uhifadhi wa hali kamili ya mchezo") --
+// nyongeza kwenye injini_uhifadhi iliyopo (ambayo kabla ilikuwa
+// primitives za baiti ghafi tu). Mtindo ni nakala ya moja kwa moja
+// ya weka_u32/weka_u64 za historia_db.swa (angalia faili hilo kwa
+// maelezo kamili ya uamuzi wa little-endian + kuepuka upanuzi wa
+// ishara wa n8), zikifanywa za JUMLA hapa ili mifumo yote ya Mchezo
+// iweze kuzitumia bila kurudia nakala yake yenyewe.
+//
+// Kazi hizi zinafanya kazi juu ya KISHIKIO CHA FAILI (n8* kutoka
+// faili_fungua), SI njia (path) -- mwitaji (mchezo.swa) anadhibiti
+// kufungua/kufunga faili moja kwa ajili ya mfumo mzima wa 47, badala
+// ya kufungua faili tofauti kwa kila mfumo (injini_uhifadhi_hifadhi/
+// pakia asilia ya hapo juu bado zipo kwa matumizi mengine yoyote ya
+// baiti ghafi moja).
+
+// Baiti moja -- kwa ajili ya shamba za n8 za mtu binafsi (mfano
+// jina_0..jina_15 za UhaiUgonjwa/JamiiSifaYaDNA, ambazo ni hifadhi
+// ya herufi zenye ukubwa usiobadilika zilizogawanywa kwenye shamba
+// MOJA MOJA -- angalia kanuni za mradi kuhusu safu za ukubwa
+// maalum ndani ya muundo).
+w0 injini_uhifadhi_andika_n8(n8* f, n8 v) {
+    n8* buf = tenga(1);
+    buf[0] = v;
+    faili_andika(buf, 1, 1, f);
+    achilia buf;
+}
+
+n8 injini_uhifadhi_soma_n8(n8* f) {
+    n8* buf = tenga(1);
+    n64 n = faili_soma(buf, 1, 1, f);
+    n8 v = 0;
+    kama (n == 1) { v = buf[0]; }
+    achilia buf;
+    rudisha v;
+}
+
+w0 injini_uhifadhi_andika_n32(n8* f, n32 v) {
+    n8* buf = tenga(4);
+    buf[0] = v & 255;
+    buf[1] = (v >> 8) & 255;
+    buf[2] = (v >> 16) & 255;
+    buf[3] = (v >> 24) & 255;
+    faili_andika(buf, 1, 4, f);
+    achilia buf;
+}
+
+n32 injini_uhifadhi_soma_n32(n8* f) {
+    n8* buf = tenga(4);
+    n64 n = faili_soma(buf, 1, 4, f);
+    n32 v = 0;
+    kama (n == 4) {
+        n64 a = buf[0] & 255;
+        n64 b = buf[1] & 255;
+        n64 c = buf[2] & 255;
+        n64 d = buf[3] & 255;
+        n64 jumla = a | (b << 8) | (c << 16) | (d << 24);
+        v = jumla;
+    }
+    achilia buf;
+    rudisha v;
+}
+
+w0 injini_uhifadhi_andika_n64(n8* f, n64 v) {
+    n8* buf = tenga(8);
+    n64 i = 0;
+    wakati (i < 8) {
+        buf[i] = (v >> (i * 8)) & 255;
+        i = i + 1;
+    }
+    faili_andika(buf, 1, 8, f);
+    achilia buf;
+}
+
+n64 injini_uhifadhi_soma_n64(n8* f) {
+    n8* buf = tenga(8);
+    n64 n = faili_soma(buf, 1, 8, f);
+    n64 v = 0;
+    kama (n == 8) {
+        n64 i = 0;
+        wakati (i < 8) {
+            n64 b = buf[i] & 255;
+            v = v | (b << (i * 8));
+            i = i + 1;
+        }
+    }
+    achilia buf;
+    rudisha v;
+}
+
+// d64 <-> n64 (bit-reinterpret, SI ubadilishaji wa desimali-kwenda-
+// nambari) -- tunatumia mtindo uleule uliothibitishwa tayari kwenye
+// msingi/maktaba/kumbukumbu.swa (`n8* h = &ukubwa;` kwenye tenga/badili):
+// anwani ya kigeu cha ndani (cha aina yoyote) inaweza kuhamishwa
+// moja kwa moja kwenda n8* na kusomwa baiti kwa baiti. Hii inaepuka
+// kabisa upotevu wa usahihi ambao ungetokea kwa njia ya
+// mfuatano/decimali (biti_ya_d64_swa ni kwa ajili ya kuchanganua
+// VYANZO vya herufi, si kwa ajili ya kuhifadhi thamani za d64 za
+// wakati wa kuendesha kwa usahihi KAMILI wa baiti).
+w0 injini_uhifadhi_andika_d64(n8* f, d64 v) {
+    d64 lv = v;
+    n8* p = &lv;
+    n64 bits = 0;
+    n8* bq = &bits;
+    n32 i = 0;
+    wakati (i < 8) {
+        bq[i] = p[i];
+        i = i + 1;
+    }
+    injini_uhifadhi_andika_n64(f, bits);
+}
+
+d64 injini_uhifadhi_soma_d64(n8* f) {
+    n64 bits = injini_uhifadhi_soma_n64(f);
+    d64 v = 0.0;
+    n8* vp = &v;
+    n8* bq = &bits;
+    n32 i = 0;
+    wakati (i < 8) {
+        vp[i] = bq[i];
+        i = i + 1;
+    }
+    rudisha v;
+}
+
+// Mfuatano: n32 urefu (umbo hasi 0-1 = 0xFFFFFFFF kama alama ya
+// "hakuna mfuatano" yaani n8* == 0, kutofautisha na mfuatano tupu
+// "" ambao urefu wake ni 0), kisha baiti ghafi (bila NUL -- NUL
+// huongezwa wakati wa kusoma, sawa na historia_db_andika/pakia
+// kwa muktadha wa tukio).
+w0 injini_uhifadhi_andika_mfuatano(n8* f, n8* s) {
+    kama (s == 0) {
+        injini_uhifadhi_andika_n32(f, 0 - 1);
+        rudisha;
+    }
+    n64 urefu = urefu_wa_mfuatano(s);
+    n32 urefu32 = urefu;
+    injini_uhifadhi_andika_n32(f, urefu32);
+    kama (urefu32 > 0) {
+        faili_andika(s, 1, urefu32, f);
+    }
+}
+
+n8* injini_uhifadhi_soma_mfuatano(n8* f) {
+    n32 urefu = injini_uhifadhi_soma_n32(f);
+    n32 hakuna = 0 - 1;
+    kama (urefu == hakuna) { rudisha 0; }
+    n8* buf = tenga(urefu + 1);
+    kama (urefu > 0) {
+        faili_soma(buf, 1, urefu, f);
+    }
+    buf[urefu] = 0;
+    rudisha buf;
+}

@@ -1,0 +1,71 @@
+husisha { moduli/siasa/upinzani.swa }
+
+// jaribio_upinzani.swa -- jaribio la mkono dhidi ya SiasaMpinzani
+// (upinzani.swa, tafsiri ya political_rivalry.c) PEKEE, bila
+// kupitia mchezo.swa (angalia lugha-swa/swa#292). Linathibitisha
+// THAMANI HALISI.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    SiasaMpinzani* mp = tenga(ukubwa(SiasaMpinzani));
+    siasa_upinzani_anzisha_mpinzani(mp, "Mbunge Fulani");
+
+    jaribio_thibitisha(mp->umaarufu > 0.39 && mp->umaarufu < 0.41, "umaarufu huanza 0.4");
+    jaribio_thibitisha(mp->ushawishi > 99.9 && mp->ushawishi < 100.1, "ushawishi huanza 100.0");
+    jaribio_thibitisha(mp->anafanya_kazi == 1, "anafanya_kazi huanza 1 (hai)");
+
+    // Hisani: umaarufu +0.05, ushawishi -20.0.
+    CivMatokeo r1 = siasa_upinzani_fanya_kitendo(mp, SIASA_UPINZANI_HISANI);
+    jaribio_thibitisha(r1.hitilafu == CIV_SAWA, "hisani inarudisha CIV_SAWA");
+    jaribio_thibitisha(mp->umaarufu > 0.44 && mp->umaarufu < 0.46, "umaarufu umeongezeka kwa hisani");
+    jaribio_thibitisha(mp->ushawishi > 79.9 && mp->ushawishi < 80.1, "ushawishi umepungua kwa hisani");
+
+    // Propaganda: umaarufu +0.02, msimamo_mkali +0.05.
+    d64 msimamo_kabla = mp->msimamo_mkali;
+    CivMatokeo r2 = siasa_upinzani_fanya_kitendo(mp, SIASA_UPINZANI_PROPAGANDA);
+    jaribio_thibitisha(r2.hitilafu == CIV_SAWA, "propaganda inarudisha CIV_SAWA");
+    jaribio_thibitisha(mp->msimamo_mkali > msimamo_kabla, "msimamo_mkali umeongezeka kwa propaganda");
+
+    // Jaribio la mapinduzi na umaarufu/ushawishi haitoshi -- inapaswa
+    // kushindwa na kuweka umaarufu 0.0.
+    SiasaMpinzani* mp2 = tenga(ukubwa(SiasaMpinzani));
+    siasa_upinzani_anzisha_mpinzani(mp2, "Dhaifu");
+    CivMatokeo r3 = siasa_upinzani_fanya_kitendo(mp2, SIASA_UPINZANI_JARIBIO_LA_MAPINDUZI);
+    jaribio_thibitisha(r3.hitilafu != CIV_SAWA, "mapinduzi yanashindwa bila umaarufu/ushawishi wa kutosha");
+    jaribio_thibitisha(mp2->umaarufu > (0.0 - 0.001) && mp2->umaarufu < 0.001, "umaarufu unarudi 0.0 baada ya mapinduzi kushindwa");
+
+    // Mapinduzi yenye mafanikio: umaarufu>0.7, ushawishi>500.0.
+    SiasaMpinzani* mp3 = tenga(ukubwa(SiasaMpinzani));
+    siasa_upinzani_anzisha_mpinzani(mp3, "Mwenye Nguvu");
+    mp3->umaarufu = 0.8;
+    mp3->ushawishi = 600.0;
+    CivMatokeo r4 = siasa_upinzani_fanya_kitendo(mp3, SIASA_UPINZANI_JARIBIO_LA_MAPINDUZI);
+    jaribio_thibitisha(r4.hitilafu == CIV_SAWA, "mapinduzi yenye rasilimali za kutosha yanafanikiwa");
+
+    // Ukandamizaji: UPELELEZI hupunguza ushawishi kwa 10%.
+    SiasaMpinzani* mp4 = tenga(ukubwa(SiasaMpinzani));
+    siasa_upinzani_anzisha_mpinzani(mp4, "Lengwa");
+    d64 ushawishi_kabla = mp4->ushawishi;
+    siasa_upinzani_weka_ukandamizaji(SIASA_UKANDAMIZAJI_UPELELEZI, mp4);
+    d64 kinachotarajiwa = ushawishi_kabla * 0.9;
+    d64 tofauti = mp4->ushawishi - kinachotarajiwa;
+    kama (tofauti < 0.0) { tofauti = 0.0 - tofauti; }
+    jaribio_thibitisha(tofauti < 0.01, "UPELELEZI hupunguza ushawishi kwa 10% sahihi");
+
+    // KUONDOLEWA: anafanya_kazi -> 0.
+    siasa_upinzani_weka_ukandamizaji(SIASA_UKANDAMIZAJI_KUONDOLEWA, mp4);
+    jaribio_thibitisha(mp4->anafanya_kazi == 0, "KUONDOLEWA huzima mpinzani (anafanya_kazi=0)");
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

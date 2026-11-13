@@ -1,0 +1,349 @@
+// kitengo_chini.swa — tafsiri ya src/core/subunits/subunit.c (na .h)
+// kwenda Swa. Vitengo vidogo vya kiutawala ndani ya taifa (mkoa,
+// kanda, jiji, wilaya...), uwezo wa kugawanyika (split) na kuungana
+// (merge).
+//
+// Kiambishi: kitengo_chini_ — saraka ya chanzo (subunits/) haikuwa
+// kwenye ramani ya ../../KANUNI-MAJINA.md (ramani ina saraka kuu tu
+// kama economy/governance/culture) -- imeongezwa kama ingizo jipya
+// huko kando na tafsiri hii.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - id/name/parent_id (char[STRING_SHORT_LEN]/char[STRING_MEDIUM_LEN]
+//     ndani ya struct, na strncpy kuvijaza) yamekuwa n8* -- mfuatano
+//     wowote wa urefu wowote unaotumika KAMA ULIVYO (kielekezi
+//     kinapokelewa moja kwa moja kutoka kwa mwitaji, bila nakala ya
+//     ndani), mtindo uleule ulioothibitishwa kwenye mashirika.swa
+//     (shirika_unda: "hakuna snprintf ya namba->mfuatano salama kwa
+//     mkusanyaji huu bado").
+//   - manager->subunits (civ_subunit_t[], safu INAYOKUA KWA THAMANI
+//     kupitia CIV_REALLOC moja kwa moja kwenye C) imekuwa safu ya
+//     n64 za anwani (#185: TYPE[] inayokua kwa CIV_REALLOC
+//     hukokotoa hatua isiyo sahihi kwenye Swa; kila KitengoChini
+//     hutengwa peke yake kwa tenga() na anwani yake ndiyo
+//     inayohifadhiwa/kukua kwenye safu ya meneja, mtindo uleule wa
+//     jeshi/kitengo.swa na mashirika.swa).
+//   - subunit->child_ids (char**, safu ya vielekezi vya C-string
+//     inayokua kwa CIV_REALLOC) imekuwa n64* ya anwani za mfuatano
+//     zilizotengwa kwa tenga() moja moja (sawa na watoto wa Shirika
+//     kwenye mashirika.swa), ikifuatana na nakala ya ndani ya
+//     mfuatano (nakili_mfuatano kwenye buffer mpya) -- hii NI
+//     tofauti na kitambulisho/jina/mzazi_id (ambazo huhifadhi
+//     kielekezi cha mwitaji moja kwa moja): child_ids kwenye C
+//     huwa NA MAKUSUDI nakala zake (CIV_MALLOC+strcpy ndani ya
+//     civ_subunit_add_child), kwa hiyo tafsiri hii inafuata hilo
+//     hilo kwa usahihi.
+//   - civ_subunit_split/civ_subunit_merge: kwenye C, baada ya
+//     kuongeza kwenye meneja (ambaye huhifadhi KWA THAMANI), kitu
+//     kilichotengwa (new_sub/merged) hufutwa (CIV_FREE) kwa sababu
+//     meneja alishanakili THAMANI yake. Kwenye tafsiri hii, meneja
+//     huhifadhi KIELEKEZI (anwani) chenyewe moja kwa moja -- kwa
+//     hiyo HAKUNA achilia ya kitu kilichoongezwa baada ya
+//     kitengo_chini_msimamizi_ongeza (ingekuwa achilia-baada-ya-
+//     matumizi/use-after-free kama tungeiga C neno kwa neno hapa).
+//     Hii ni UBORESHAJI unaotokana na uamuzi wa #185, si kosa.
+//   - time_t creation_time (time()) imekuwa civ_muda_sasa()
+//     (clock_gettime ghafi, angalia msingi_civ.swa).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+// ---------- Aina za kitengo (badala ya civ_subunit_type_t) ----------
+n32 KITENGO_CHINI_AINA_MKOA = 0;     // PROVINCE
+n32 KITENGO_CHINI_AINA_KANDA = 1;    // REGION
+n32 KITENGO_CHINI_AINA_JIJI = 2;     // CITY
+n32 KITENGO_CHINI_AINA_WILAYA = 3;   // DISTRICT
+n32 KITENGO_CHINI_AINA_NYINGINE = 4; // OTHER
+
+muundo KitengoChini {
+    n8* kitambulisho;
+    n8* jina;
+    n32 aina;
+
+    n8* mzazi_id;   // parent_id, 0 kama hakuna mzazi
+
+    n64* watoto;    // safu ya anwani za n8* (nakala za ndani), #185
+    n32 idadi_ya_watoto;
+    n32 uwezo_wa_watoto;
+
+    d64 uhuru;       // autonomy, 0.0 hadi 1.0
+    d64 uaminifu;    // loyalty, 0.0 hadi 1.0
+    d64 maendeleo;   // development, 0.0 hadi 1.0
+
+    n64 idadi_ya_watu; // population
+    d64 pato;          // gdp
+
+    n64 muda_wa_kuundwa; // creation_time, kupitia civ_muda_sasa()
+};
+
+muundo KitengoChiniMsimamizi {
+    n64* vitengo; // safu ya anwani za KitengoChini*, #185
+    n32 idadi;
+    n32 uwezo;
+};
+
+n8* kitengo_chini_pata_mtoto(KitengoChini* s, n32 idx) { rudisha s->watoto[idx]; }
+KitengoChini* kitengo_chini_msimamizi_pata(KitengoChiniMsimamizi* m, n32 idx) { rudisha m->vitengo[idx]; }
+
+w0 kitengo_chini_msimamizi_anzisha(KitengoChiniMsimamizi* m) {
+    kama (m == 0) { rudisha; }
+    m->uwezo = 64;
+    m->idadi = 0;
+    m->vitengo = tenga(ukubwa(n64) * m->uwezo);
+}
+
+KitengoChiniMsimamizi* kitengo_chini_msimamizi_unda() {
+    KitengoChiniMsimamizi* m = tenga(ukubwa(KitengoChiniMsimamizi));
+    kitengo_chini_msimamizi_anzisha(m);
+    rudisha m;
+}
+
+KitengoChini* kitengo_chini_unda(n8* kitambulisho, n8* jina, n32 aina) {
+    kama (kitambulisho == 0 || jina == 0) { rudisha 0; }
+
+    KitengoChini* s = tenga(ukubwa(KitengoChini));
+    s->kitambulisho = kitambulisho;
+    s->jina = jina;
+    s->aina = aina;
+    s->mzazi_id = 0;
+
+    s->uwezo_wa_watoto = 16;
+    s->idadi_ya_watoto = 0;
+    s->watoto = tenga(ukubwa(n64) * s->uwezo_wa_watoto);
+
+    s->uhuru = 0.3;
+    s->uaminifu = 0.7;
+    s->maendeleo = 0.5;
+    s->idadi_ya_watu = 0;
+    s->pato = 0.0;
+    s->muda_wa_kuundwa = civ_muda_sasa();
+
+    rudisha s;
+}
+
+w0 kitengo_chini_uharibu(KitengoChini* s) {
+    kama (s == 0) { rudisha; }
+    n32 i = 0;
+    wakati (i < s->idadi_ya_watoto) {
+        n8* mtoto = kitengo_chini_pata_mtoto(s, i);
+        achilia mtoto;
+        i = i + 1;
+    }
+    achilia s->watoto;
+    achilia s;
+}
+
+w0 kitengo_chini_msimamizi_uharibu(KitengoChiniMsimamizi* m) {
+    kama (m == 0) { rudisha; }
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        KitengoChini* s = kitengo_chini_msimamizi_pata(m, i);
+        kitengo_chini_uharibu(s);
+        i = i + 1;
+    }
+    achilia m->vitengo;
+    achilia m;
+}
+
+CivMatokeo kitengo_chini_msimamizi_ongeza(KitengoChiniMsimamizi* m, KitengoChini* s) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0 || s == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Hoja batili";
+        rudisha r;
+    }
+
+    kama (m->idadi >= m->uwezo) {
+        m->uwezo = m->uwezo * 2;
+        m->vitengo = badili(m->vitengo, ukubwa(n64) * m->uwezo);
+    }
+    m->vitengo[m->idadi] = s;
+    m->idadi = m->idadi + 1;
+    rudisha r;
+}
+
+KitengoChini* kitengo_chini_msimamizi_tafuta(KitengoChiniMsimamizi* m, n8* kitambulisho) {
+    kama (m == 0 || kitambulisho == 0) { rudisha 0; }
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        KitengoChini* s = kitengo_chini_msimamizi_pata(m, i);
+        kama (linganisha_mfuatano(s->kitambulisho, kitambulisho) == 0) {
+            rudisha s;
+        }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+CivMatokeo kitengo_chini_weka_mzazi(KitengoChini* s, n8* mzazi_id) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (s == 0 || mzazi_id == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Hoja batili";
+        rudisha r;
+    }
+    s->mzazi_id = mzazi_id;
+    rudisha r;
+}
+
+CivMatokeo kitengo_chini_ongeza_mtoto(KitengoChini* s, n8* mtoto_id) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (s == 0 || mtoto_id == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Hoja batili";
+        rudisha r;
+    }
+
+    kama (s->idadi_ya_watoto >= s->uwezo_wa_watoto) {
+        s->uwezo_wa_watoto = s->uwezo_wa_watoto * 2;
+        s->watoto = badili(s->watoto, ukubwa(n64) * s->uwezo_wa_watoto);
+    }
+
+    n64 urefu = urefu_wa_mfuatano(mtoto_id);
+    n8* nakala = tenga(urefu + 1);
+    nakili_mfuatano(nakala, mtoto_id);
+
+    s->watoto[s->idadi_ya_watoto] = nakala;
+    s->idadi_ya_watoto = s->idadi_ya_watoto + 1;
+    rudisha r;
+}
+
+CivMatokeo kitengo_chini_msimamizi_sasisha(KitengoChiniMsimamizi* m, d64 muda_uliopita) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Meneja ni tupu";
+        rudisha r;
+    }
+
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        KitengoChini* s = kitengo_chini_msimamizi_pata(m, i);
+        d64 badiliko_la_maendeleo = (s->uaminifu * (1.0 - s->uhuru) - s->maendeleo) * muda_uliopita * 0.01;
+        s->maendeleo = finya_d64(s->maendeleo + badiliko_la_maendeleo, 0.0, 1.0);
+        i = i + 1;
+    }
+    rudisha r;
+}
+
+// kitengo_chini_tengeneza_kitambulisho: "<msingi>_<i>" -- mtindo wa
+// ujenzi wa kitambulisho uleule wa jeshi/kitengo.swa
+// (jeshi_vitengo_ajiri: unganisha_mfuatano mara mbili juu ya bafa
+// zilizotengwa).
+n8* kitengo_chini_tengeneza_kitambulisho(n8* msingi, n32 i) {
+    n8* jina_awali = tenga(64);
+    n8* namba_buf = tenga(16);
+    n8* matokeo = tenga(96);
+    nambari_kwa_mfuatano(i, namba_buf);
+    unganisha_mfuatano(jina_awali, msingi, "_");
+    unganisha_mfuatano(matokeo, jina_awali, namba_buf);
+    achilia jina_awali;
+    achilia namba_buf;
+    rudisha matokeo;
+}
+
+// civ_subunit_split: angalia maelezo ya wigo juu ya faili kuhusu
+// kwa nini HAKUNA achilia ya new_sub baada ya kuongeza kwenye
+// meneja (tofauti ya kimakusudi kutoka kwa C).
+CivMatokeo kitengo_chini_gawanya(KitengoChiniMsimamizi* m, KitengoChini* asili, n32 idadi, n64* majina_mapya, n64* matokeo_nje) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0 || asili == 0 || majina_mapya == 0 || idadi < 2) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        r.ujumbe = "Hoja batili";
+        rudisha r;
+    }
+
+    n64 mgao_wa_watu = asili->idadi_ya_watu / idadi;
+    n32 idadi_d = idadi;
+    d64 mgao_wa_pato = asili->pato / idadi_d;
+
+    n32 i = 0;
+    wakati (i < idadi) {
+        n8* jina_jipya = majina_mapya[i];
+        n8* id_jipya = kitengo_chini_tengeneza_kitambulisho(asili->kitambulisho, i);
+
+        KitengoChini* mpya = kitengo_chini_unda(id_jipya, jina_jipya, asili->aina);
+        kama (mpya != 0) {
+            mpya->idadi_ya_watu = mgao_wa_watu;
+            mpya->pato = mgao_wa_pato;
+            mpya->uhuru = asili->uhuru;
+            mpya->uaminifu = asili->uaminifu;
+
+            kama (asili->mzazi_id != 0) {
+                kitengo_chini_weka_mzazi(mpya, asili->mzazi_id);
+            }
+
+            kitengo_chini_msimamizi_ongeza(m, mpya);
+            kama (matokeo_nje != 0) {
+                matokeo_nje[i] = mpya;
+            }
+        }
+        i = i + 1;
+    }
+
+    r.ujumbe = "Mgawanyiko umefaulu";
+    rudisha r;
+}
+
+// civ_subunit_merge: angalia maelezo ya wigo juu ya faili -- hurudisha
+// kielekezi moja kwa moja (si CivMatokeo+out-param) kwa sababu
+// matokeo moja pekee yanahitajika, mtindo ulioothibitishwa wa kazi
+// za "_unda" nyingine za mradi huu.
+KitengoChini* kitengo_chini_unganisha(KitengoChiniMsimamizi* m, n64* vitengo, n32 idadi, n8* jina_jipya) {
+    kama (m == 0 || vitengo == 0 || idadi < 2 || jina_jipya == 0) { rudisha 0; }
+
+    n64 jumla_ya_watu = 0;
+    d64 jumla_ya_pato = 0.0;
+    d64 uaminifu_wa_wastani = 0.0;
+
+    n32 i = 0;
+    wakati (i < idadi) {
+        KitengoChini* s = vitengo[i];
+        jumla_ya_watu = jumla_ya_watu + s->idadi_ya_watu;
+        jumla_ya_pato = jumla_ya_pato + s->pato;
+        uaminifu_wa_wastani = uaminifu_wa_wastani + s->uaminifu;
+        i = i + 1;
+    }
+    n32 idadi_d = idadi;
+    uaminifu_wa_wastani = uaminifu_wa_wastani / idadi_d;
+
+    n8* muda_str = tenga(24);
+    n8* id_mpya = tenga(56);
+    nambari_kwa_mfuatano_n64(civ_muda_sasa(), muda_str);
+    unganisha_mfuatano(id_mpya, "muungano_", muda_str);
+    achilia muda_str;
+
+    KitengoChini* asili_ya_aina = vitengo[0];
+    KitengoChini* muungano = kitengo_chini_unda(id_mpya, jina_jipya, asili_ya_aina->aina);
+    kama (muungano != 0) {
+        muungano->idadi_ya_watu = jumla_ya_watu;
+        muungano->pato = jumla_ya_pato;
+        muungano->uaminifu = uaminifu_wa_wastani;
+        kitengo_chini_msimamizi_ongeza(m, muungano);
+    }
+
+    rudisha muungano;
+}
+
+CivMatokeo kitengo_chini_weka_aina(KitengoChini* s, n32 aina_mpya) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (s == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Kitengo ni tupu";
+        rudisha r;
+    }
+    s->aina = aina_mpya;
+    rudisha r;
+}

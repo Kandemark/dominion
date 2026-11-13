@@ -1,0 +1,237 @@
+husisha { moduli/onyesho/hud.swa }
+
+// jaribio_hud_mchezo_halisi.swa -- jaribio la mkono la
+// onyesho_hud_chora_kutoka_mchezo (angalia maelezo "NYONGEZA" juu ya
+// hud.swa) -- TOFAUTI na jaribio_hud.swa (lililopo tayari, ambalo
+// hunakili kazi za ndani za mchezo_anzisha/mchezo_sasisha kwa mkono
+// kwenye IdadiYaWatuMsimamizi/TaifaMfumo pekee): jaribio HILI huunda
+// Mchezo KAMILI HALISI kwa mchezo_unda()/mchezo_anzisha() (mifumo 47),
+// huendesha mizunguko KADHAA HALISI ya mchezo_sasisha(g), KISHA
+// huchora HUD kutoka Mchezo HIYO HASA kwa kazi mpya
+// onyesho_hud_chora_kutoka_mchezo(g, fb, pitch) -- SI kwa kunakili
+// vielekezi vya submoduli kwa mkono.
+//
+// Hii inawezekana sasa kwa sababu kikomo cha baiti 1,048,576 za
+// chanzo kimepanuliwa hadi 16,777,216 (lugha-swa/swa#301, 2026-10-04)
+// -- angalia maelezo kamili juu ya hud.swa. Faili hili (likiwa na
+// husisha ya moduli/onyesho/hud.swa, ambayo sasa inahusisha
+// moduli/mchezo.swa) ni programu ya KWANZA inayounganisha Mchezo
+// KAMILI + fonti.swa + hud.swa KATIKA PROGRAMU MOJA.
+//
+// MTINDO WA UTHIBITISHO (sawa na jaribio_hud.swa): tarakimu za namba
+// (zamu, idadi ya watu, GDP ya taifa la kwanza) zinatolewa kwa
+// mod/div YA MOJA KWA MOJA kutoka kwenye thamani HALISI za field za
+// Mchezo (SI kwa kutumia mfuatano_umbiza -- njia ile ile inayotumika
+// kuchora -- ili kuepuka jaribio "linalojithibitisha lenyewe"), kisha
+// kila glyph HALISI iliyochorwa kwenye framebuffer inasomwa pikseli
+// kwa pikseli na kulinganishwa na ONYESHO_FONTI_DATA.
+
+n32 jhm_yalioshindwa = 0;
+
+w0 jhm_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jhm_yalioshindwa = jhm_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+// jhm_glyph_sahihi: sawa HASA na jh_glyph_sahihi (jaribio_hud.swa) --
+// linganisha glyph HALISI iliyochorwa kwenye (gx,gy) dhidi ya
+// ONYESHO_FONTI_DATA, pikseli kwa pikseli (16 safu x 8 safu wima).
+n32 jhm_glyph_sahihi(n8* fb, n64 pitch, n64 gx, n64 gy, n32 faharisi, n64 nyeupe) {
+    kama (faharisi < 0) { rudisha 0; }
+    n64 msingi = faharisi * 16;
+    n32 safu = 0;
+    wakati (safu < 16) {
+        n32 byte = ONYESHO_FONTI_DATA[msingi + safu] & 255;
+        n32 col = 0;
+        wakati (col < 8) {
+            n32 biti = (byte >> (7 - col)) & 1;
+            n64 pikseli = mchoro_pata_pikseli(fb, pitch, gx + col, gy + safu);
+            n32 imewashwa = (pikseli == nyeupe);
+            kama (biti == 1 && imewashwa == 0) { rudisha 0; }
+            kama (biti == 0 && pikseli != 0) { rudisha 0; }
+            col = col + 1;
+        }
+        safu = safu + 1;
+    }
+    rudisha 1;
+}
+
+// jhm_thibitisha_namba: sawa HASA na jh_thibitisha_namba -- tarakimu
+// za `thamani` zinatolewa kwa mod/div (huru kabisa na mfuatano_umbiza),
+// kisha kila moja inalinganishwa na glyph halisi iliyochorwa kuanzia
+// (x0, y).
+w0 jhm_thibitisha_namba(n8* fb, n64 pitch, n64 x0, n64 y, n64 thamani, n64 nyeupe, n8* jina) {
+    n32 tarakimu[24];
+    n32 idadi = 0;
+    n64 tmp = thamani;
+    kama (tmp == 0) {
+        tarakimu[0] = 0;
+        idadi = 1;
+    } sivyo {
+        wakati (tmp > 0) {
+            tarakimu[idadi] = tmp % 10;
+            tmp = tmp / 10;
+            idadi = idadi + 1;
+        }
+    }
+    n32 kushoto = 0;
+    n32 kulia = idadi - 1;
+    wakati (kushoto < kulia) {
+        n32 t = tarakimu[kushoto];
+        tarakimu[kushoto] = tarakimu[kulia];
+        tarakimu[kulia] = t;
+        kushoto = kushoto + 1;
+        kulia = kulia - 1;
+    }
+
+    n32 zote_sahihi = 1;
+    n32 i = 0;
+    wakati (i < idadi) {
+        n32 d = tarakimu[i];
+        n32 faharisi = onyesho_fonti_faharisi_ascii(48 + d);
+        n32 sahihi = jhm_glyph_sahihi(fb, pitch, x0 + i * 8, y, faharisi, nyeupe);
+        kama (sahihi == 0) { zote_sahihi = 0; }
+        i = i + 1;
+    }
+    jhm_thibitisha(zote_sahihi, jina);
+}
+
+n32 anza() {
+    onyesho_fonti_pakia();
+
+    // ---------- Unda Mchezo KAMILI HALISI (mifumo 47) ----------
+    Mchezo* g = mchezo_unda();
+    n32 g_sio_tupu = (g != 0);
+    jhm_thibitisha(g_sio_tupu, "mchezo_unda inarudisha kielekezi");
+
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    jhm_thibitisha(r.hitilafu == CIV_SAWA, "mchezo_anzisha HALISI inarudi CIV_SAWA (mifumo 47)");
+
+    // MUHIMU: dunia_ramani_unda (inayotumiwa na mchezo_anzisha ndani
+    // yake, angalia mchezo.swa) HUWEKA KILA kipande kuwa MAJI kwa
+    // chaguo-msingi -- uzalishaji halisi wa ardhi (lugha-swa/swa#183)
+    // haujaletwa bado, tabia HII NI HALISI kwa Mchezo yenyewe, si
+    // kasoro ya jaribio hili (angalia maelezo sawa kwenye
+    // jaribio_hud.swa). Bila kipande chochote cha ardhi, GDP ya
+    // mataifa yote ingebaki 0.0 kimya milele. Kwa hiyo, sawa na
+    // jaribio_hud.swa, tunaweka kila kipande cha RAMANI HALISI ya
+    // Mchezo huu (mchezo_pata_ramani(g)) kuwa ardhi ya nyasi kabla
+    // ya mizunguko ya mchezo_sasisha -- hii ni mbegu ya ziada ya
+    // mazingira, SI kubadilisha mantiki ya mchezo wala HUD.
+    DuniaRamani* ramani_jh = mchezo_pata_ramani(g);
+    n32 y_seed = 0;
+    wakati (y_seed < ramani_jh->urefu) {
+        n32 x_seed = 0;
+        wakati (x_seed < ramani_jh->upana) {
+            DuniaRamaniKipande* kp = dunia_ramani_pata_kipande(ramani_jh, x_seed, y_seed);
+            kama (kp != 0) {
+                kp->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_NYASI;
+                kp->rutuba = 0.5;
+                kp->mwinuko = 0.3;
+            }
+            x_seed = x_seed + 1;
+        }
+        y_seed = y_seed + 1;
+    }
+    // mchezo_anzisha ILIKUWA imeita dunia_taifa_mfumo_dai_maeneo_yote
+    // KABLA ya mbegu hii ya ardhi (wakati ramani ilikuwa bado maji
+    // kote) -- dunia_taifa_dai_eneo huruka kipande chochote cha maji
+    // (angalia dunia_taifa_dai_kutoka_mipaka kwa muundo ule ule), kwa
+    // hiyo taifa halikudai eneo lolote wakati huo. Sasa kwamba
+    // ramani ina ardhi, tunarudia wito huu ili mataifa YADAI ardhi
+    // iliyopo SASA -- bila hatua hii, pato_ghafi lingebaki 0.0 milele
+    // licha ya mbegu ya ardhi hapo juu.
+    TaifaMfumo* taifa_jh = mchezo_pata_taifa(g);
+    dunia_taifa_mfumo_dai_maeneo_yote(taifa_jh, ramani_jh);
+
+    // Mizunguko KADHAA HALISI ya mchezo_sasisha -- hali inayobadilika
+    // kweli, si chaguo-msingi tuli (mtindo HASA wa
+    // jaribio_mchezo_kamili.swa).
+    n32 idadi_ya_mizunguko = 6;
+    n32 i = 0;
+    wakati (i < idadi_ya_mizunguko) {
+        mchezo_sasisha(g);
+        i = i + 1;
+    }
+    mchezo_maliza_zamu(g);
+    mchezo_maliza_zamu(g);
+
+    // ---------- Thamani HALISI za Mchezo (mod/div, huru na mfuatano_umbiza) ----------
+    n64 zamu_halisi = g->zamu_ya_sasa;
+    IdadiYaWatuMsimamizi* pm = mchezo_pata_idadi_ya_watu(g);
+    n64 idadi_ya_watu_halisi = idadi_ya_watu_pata_jumla(pm);
+    TaifaMfumo* taifa = mchezo_pata_taifa(g);
+    Atlasi* atlasi_ya_mchezo = mchezo_pata_atlasi(g);
+    jhm_thibitisha(taifa->idadi == atlasi_ya_mchezo->idadi && taifa->idadi > 8, "mataifa ya atlasi (si 8 ya zamani) yameundwa ndani ya Mchezo halisi");
+    TaifaNchi* t0 = dunia_taifa_mfumo_pata_kwa_faharisi(taifa, 0);
+    n64 gdp0_ghafi = t0->uchumi.pato_ghafi;
+
+    andika("[dbg] zamu=%d idadi_ya_watu=%d taifa[0].pato_ghafi=%d\n", zamu_halisi, idadi_ya_watu_halisi, gdp0_ghafi, 0, 0, 0);
+    jhm_thibitisha(zamu_halisi == 3, "zamu_ya_sasa == 3 baada ya mizunguko 6 + mchezo_maliza_zamu mara mbili");
+    jhm_thibitisha(idadi_ya_watu_halisi != 1000, "idadi ya watu (ndani ya Mchezo halisi) imebadilika kutoka chaguo-msingi (1000)");
+    jhm_thibitisha(gdp0_ghafi > 0, "taifa la kwanza (ndani ya Mchezo halisi) lina pato ghafi > 0 baada ya mizunguko (ardhi imedaiwa)");
+
+    // ---------- Chora HUD kutoka Mchezo HALISI, kwa kazi MPYA ----------
+    n64 canvas_w = ONYESHO_HUD_UPANA;
+    n64 canvas_h = ONYESHO_HUD_KIMO;
+    n64 pitch = canvas_w * 4;
+    n8* fb = tenga(pitch * canvas_h);
+    weka_sifuri(fb, pitch * canvas_h);
+    n64 nyeupe = ONYESHO_HUD_RANGI_MAANDISHI;
+
+    onyesho_hud_chora_kutoka_mchezo(g, fb, pitch);
+
+    // ---------- Uthibitisho wa pikseli HALISI dhidi ya data HALISI ya Mchezo ----------
+    // Mpangilio (angalia hud.swa:onyesho_hud_chora): kichwa y=8,
+    // zamu y=32, idadi_ya_watu y=52, kichwa_mataifa y=76, taifa_0 y=96.
+    n8 kiambishi_zamu[16];
+    kiambishi_zamu[0] = 90; kiambishi_zamu[1] = 65; kiambishi_zamu[2] = 77; kiambishi_zamu[3] = 85;
+    kiambishi_zamu[4] = 58; kiambishi_zamu[5] = 32; kiambishi_zamu[6] = 0;  // "ZAMU: "
+    n64 urefu_kiambishi_zamu = urefu_wa_mfuatano(kiambishi_zamu);
+    n64 x_zamu = ONYESHO_HUD_X_KINGO + urefu_kiambishi_zamu * 8;
+    jhm_thibitisha_namba(fb, pitch, x_zamu, 32, zamu_halisi, nyeupe, "tarakimu za ZAMU (kutoka Mchezo halisi) zinachorwa sahihi na onyesho_hud_chora_kutoka_mchezo");
+
+    n8 kiambishi_idadi[32];
+    kiambishi_idadi[0]=73; kiambishi_idadi[1]=68; kiambishi_idadi[2]=65; kiambishi_idadi[3]=68;
+    kiambishi_idadi[4]=73; kiambishi_idadi[5]=32; kiambishi_idadi[6]=89; kiambishi_idadi[7]=65;
+    kiambishi_idadi[8]=32; kiambishi_idadi[9]=87; kiambishi_idadi[10]=65; kiambishi_idadi[11]=84;
+    kiambishi_idadi[12]=85; kiambishi_idadi[13]=32; kiambishi_idadi[14]=40; kiambishi_idadi[15]=106;
+    kiambishi_idadi[16]=117; kiambishi_idadi[17]=109; kiambishi_idadi[18]=108; kiambishi_idadi[19]=97;
+    kiambishi_idadi[20]=41; kiambishi_idadi[21]=58; kiambishi_idadi[22]=32; kiambishi_idadi[23]=0;  // "IDADI YA WATU (jumla): "
+    n64 urefu_kiambishi_idadi = urefu_wa_mfuatano(kiambishi_idadi);
+    n64 x_idadi = ONYESHO_HUD_X_KINGO + urefu_kiambishi_idadi * 8;
+    jhm_thibitisha_namba(fb, pitch, x_idadi, 52, idadi_ya_watu_halisi, nyeupe, "tarakimu za IDADI YA WATU (kutoka Mchezo halisi) zinachorwa sahihi na onyesho_hud_chora_kutoka_mchezo");
+
+    // Taifa la kwanza: "  <jina>: %d" -- tumia urefu HALISI wa jina
+    // (unaosomwa kwa wakati wa kukimbia) kuhesabu mahali tarakimu za
+    // GDP zinapaswa kuanzia.
+    n8* jina0 = t0->jina;
+    n64 urefu_jina0 = urefu_wa_mfuatano(jina0);
+    n64 x_gdp0 = ONYESHO_HUD_X_KINGO + (2 + urefu_jina0 + 2) * 8;
+    jhm_thibitisha_namba(fb, pitch, x_gdp0, 96, gdp0_ghafi, nyeupe, "tarakimu za GDP ya taifa la kwanza (kutoka Mchezo halisi) zinachorwa sahihi na onyesho_hud_chora_kutoka_mchezo");
+
+    // Herufi ya kwanza ya jina la taifa la kwanza (baada ya "  ")
+    // inapaswa kuwa glyph SAHIHI ya herufi hiyo HALISI -- inathibitisha
+    // kuwa jina linalotoka kwenye Mchezo halisi (kupitia
+    // mchezo_pata_taifa) linafikia framebuffer, si bandia.
+    n32 herufi_ya_kwanza = jina0[0] & 255;
+    n32 faharisi_herufi_ya_kwanza = onyesho_fonti_faharisi_ascii(herufi_ya_kwanza);
+    n32 jina_sahihi = jhm_glyph_sahihi(fb, pitch, ONYESHO_HUD_X_KINGO + 2 * 8, 96, faharisi_herufi_ya_kwanza, nyeupe);
+    jhm_thibitisha(jina_sahihi, "herufi ya kwanza ya jina HALISI la taifa la kwanza (kutoka Mchezo halisi) inachorwa sahihi");
+
+    achilia fb;
+
+    mchezo_uharibu(g);
+    andika("mchezo_uharibu(g) imekamilika bila kuanguka\n", 0, 0, 0, 0, 0, 0);
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", jhm_yalioshindwa, 0, 0, 0, 0, 0);
+    kama (jhm_yalioshindwa > 0) { rudisha 1; }
+    andika("DONE\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

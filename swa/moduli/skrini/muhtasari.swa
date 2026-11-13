@@ -1,0 +1,227 @@
+husisha { moduli/onyesho/sura.swa }
+husisha { moduli/mchezo.swa }
+
+// muhtasari.swa -- skrini ya muhtasari wa dunia: upau wa juu, urambazaji,
+// kadi nne za takwimu, jedwali la mataifa (limepangwa kwa pato ghafi),
+// historia ya pato ghafi, na viashiria vya taifa la mchezaji.
+//
+// Kila namba inasomwa kutoka Mchezo -- hakuna thamani ya mfano. Pato ghafi
+// ni uchumi.pato_ghafi ya uigaji (watu x tija), ile ile ya historia ya GDP.
+
+n64 SKRINI_UPAU_WA_JUU = 56;
+n64 SKRINI_UPANA_WA_PEMBENI = 208;
+
+// Pato ghafi la taifa kwa vizio kamili (uchumi.pato_ghafi ni milioni).
+n64 skrini_pato_la_taifa(TaifaNchi* t) {
+    d64 jumla = t->uchumi.pato_ghafi * 1000000.0;
+    n64 v = jumla;
+    rudisha v;
+}
+
+w0 skrini_upau_wa_juu(Mchezo* g, Turubai* t) {
+    turubai_brashi(t, SURA_PANELI, 255);
+    turubai_jaza(t, 0, 0, t->upana, SKRINI_UPAU_WA_JUU);
+    turubai_brashi(t, SURA_MPAKA, 255);
+    turubai_jaza(t, 0, SKRINI_UPAU_WA_JUU, t->upana, 1);
+    sura_rangi(SURA_LAFUDHI);
+    sura_lebo_nene("DOMINION", 24, 16, 20);
+
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    TaifaNchi* mchezaji = dunia_taifa_mfumo_pata_kwa_faharisi(tm, tm->faharisi_ya_taifa_la_mchezaji);
+    kama (mchezaji != 0) {
+        turubai_brashi(t, mchezaji->rangi, 255);
+        turubai_duara(t, SKRINI_UPANA_WA_PEMBENI + 34, 28, 7);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kati(mchezaji->jina, SKRINI_UPANA_WA_PEMBENI + 50, 17, 16);
+    }
+
+    n8 chombo[64];
+    n8 namba[32];
+    sura_namba(namba, g->zamu_ya_sasa);
+    mfuatano_umbiza(chombo, 64, "Zamu %s", namba, 0, 0, 0, 0, 0);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo_kulia(chombo, t->upana - 24, 19, 14);
+}
+
+w0 skrini_urambazaji(Turubai* t, n64 hai) {
+    turubai_brashi(t, SURA_PANELI, 255);
+    turubai_jaza(t, 0, SKRINI_UPAU_WA_JUU + 1, SKRINI_UPANA_WA_PEMBENI, t->kimo);
+    turubai_brashi(t, SURA_MPAKA, 255);
+    turubai_jaza(t, SKRINI_UPANA_WA_PEMBENI, SKRINI_UPAU_WA_JUU + 1, 1, t->kimo);
+    n64 y = SKRINI_UPAU_WA_JUU + 20;
+    sura_urambazaji("Muhtasari", 12, y, SKRINI_UPANA_WA_PEMBENI - 24, hai == 0);
+    sura_urambazaji("Uchumi", 12, y + 40, SKRINI_UPANA_WA_PEMBENI - 24, hai == 1);
+    sura_urambazaji("Siasa", 12, y + 80, SKRINI_UPANA_WA_PEMBENI - 24, hai == 2);
+    sura_urambazaji("Jeshi", 12, y + 120, SKRINI_UPANA_WA_PEMBENI - 24, hai == 3);
+    sura_urambazaji("Diplomasia", 12, y + 160, SKRINI_UPANA_WA_PEMBENI - 24, hai == 4);
+    sura_urambazaji("Utamaduni", 12, y + 200, SKRINI_UPANA_WA_PEMBENI - 24, hai == 5);
+    sura_urambazaji("Teknolojia", 12, y + 240, SKRINI_UPANA_WA_PEMBENI - 24, hai == 6);
+    sura_urambazaji("Ramani", 12, y + 280, SKRINI_UPANA_WA_PEMBENI - 24, hai == 7);
+}
+
+n64 SKRINI_SAFU_ZA_JEDWALI = 9;
+n64 SKRINI_KIMO_CHA_SAFU = 38;
+
+// Jedwali la mataifa: mataifa YOTE yamepangwa kwa pato ghafi, safu
+// SKRINI_SAFU_ZA_JEDWALI za juu zinaonyeshwa; ikiwa taifa la mchezaji
+// haliko kati yao, safu ya mwisho ni lake (pamoja na nafasi yake halisi).
+w0 skrini_jedwali_la_mataifa(Mchezo* g, n64 x, n64 y, n64 w) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 idadi = tm->idadi;
+    n64 n = idadi;
+    kama (n > SKRINI_SAFU_ZA_JEDWALI) { n = SKRINI_SAFU_ZA_JEDWALI; }
+    n64 kimo_cha_safu = SKRINI_KIMO_CHA_SAFU;
+    n8 kichwa[64];
+    mfuatano_umbiza(kichwa, 64, "MATAIFA -- %d BORA KWA PATO GHAFI, KATI YA %d", n, idadi, 0, 0, 0, 0);
+    sura_paneli(x, y, w, 76 + n * kimo_cha_safu, kichwa);
+
+    // mpangilio: faharasa zilizopangwa kwa pato ghafi (kubwa kwanza)
+    n64* mpangilio = tenga(8 * idadi + 8);
+    n64* pato = tenga(8 * idadi + 8);
+    n64 i = 0;
+    n64 pato_kuu = 1;
+    wakati (i < idadi) {
+        TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, i);
+        n64 p = skrini_pato_la_taifa(tn);
+        n64 j = i;
+        wakati (j > 0 && pato[j - 1] < p) {
+            pato[j] = pato[j - 1];
+            mpangilio[j] = mpangilio[j - 1];
+            j = j - 1;
+        }
+        pato[j] = p;
+        mpangilio[j] = i;
+        kama (p > pato_kuu) { pato_kuu = p; }
+        i = i + 1;
+    }
+
+    // safu-wima: nafasi, taifa, watu, pato ghafi (+pau), kwa kila mtu,
+    // na viashiria vinne
+    n64 x_taifa = x + 56;
+    n64 x_watu = x + 420;
+    n64 x_pato = x + 560;
+    n64 x_pau = x + 580;
+    n64 x_kila_mtu = x + 800;
+    n64 x_viashiria = x + 840;
+    n64 yk = y + 44;
+    sura_kichwa_cha_safuwima("#", x + 20, yk, 0);
+    sura_kichwa_cha_safuwima("TAIFA", x_taifa, yk, 0);
+    sura_kichwa_cha_safuwima("WATU", x_watu, yk, 1);
+    sura_kichwa_cha_safuwima("PATO GHAFI", x_pato, yk, 1);
+    sura_kichwa_cha_safuwima("KWA KILA MTU", x_kila_mtu, yk, 1);
+    sura_kichwa_cha_safuwima("TEKNOLOJIA", x_viashiria, yk, 0);
+    sura_kichwa_cha_safuwima("UCHUMI", x_viashiria + 110, yk, 0);
+    sura_kichwa_cha_safuwima("JESHI", x_viashiria + 220, yk, 0);
+    sura_kichwa_cha_safuwima("UTAMADUNI", x_viashiria + 330, yk, 0);
+
+    // nafasi ya taifa la mchezaji
+    n64 nafasi_ya_mchezaji = 0;
+    i = 0;
+    wakati (i < idadi) {
+        kama (mpangilio[i] == tm->faharisi_ya_taifa_la_mchezaji) { nafasi_ya_mchezaji = i; }
+        i = i + 1;
+    }
+
+    n8 chombo[48];
+    i = 0;
+    wakati (i < n) {
+        n64 r = i;
+        kama (i == n - 1 && nafasi_ya_mchezaji >= n) { r = nafasi_ya_mchezaji; }
+        n64 f = mpangilio[r];
+        TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, f);
+        n64 ys = y + 66 + i * kimo_cha_safu;
+        sura_safu(x + 8, ys, w - 16, kimo_cha_safu - 4, i, f == tm->faharisi_ya_taifa_la_mchezaji);
+        n64 ym = ys + 8;
+        sura_namba(chombo, r + 1);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(chombo, x + 20, ym, 14);
+        turubai_brashi(sura_t, tn->rangi, 255);
+        turubai_duara(sura_t, x_taifa + 7, ys + 17, 6);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kati(tn->jina, x_taifa + 24, ym, 14);
+        sura_namba_fupi(chombo, tn->idadi_ya_watu);
+        sura_lebo_kulia(chombo, x_watu, ym, 14);
+        sura_namba_fupi(chombo, pato[r]);
+        sura_lebo_kulia(chombo, x_pato, ym, 14);
+        sura_pau(x_pau, ys + 13, 120, 8, (pato[r] * 1000) / pato_kuu, SURA_LAFUDHI);
+        n64 kila_mtu = 0;
+        kama (tn->idadi_ya_watu > 0) { kila_mtu = pato[r] / tn->idadi_ya_watu; }
+        sura_namba(chombo, kila_mtu);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kulia(chombo, x_kila_mtu, ym, 14);
+        sura_pau(x_viashiria, ys + 13, 90, 8, (tn->kielezo_cha_teknolojia * 1000) / 500, SURA_BAHARI);
+        sura_pau(x_viashiria + 110, ys + 13, 90, 8, (tn->kielezo_cha_uchumi * 1000) / 500, SURA_CHANYA);
+        sura_pau(x_viashiria + 220, ys + 13, 90, 8, (tn->kielezo_cha_kijeshi * 1000) / 500, SURA_HASI);
+        sura_pau(x_viashiria + 330, ys + 13, 90, 8, (tn->kielezo_cha_utamaduni * 1000) / 500, SURA_LAFUDHI);
+        i = i + 1;
+    }
+    achilia mpangilio;
+    achilia pato;
+}
+
+// Historia ya pato ghafi la dunia kama chati ya mstari.
+w0 skrini_historia_ya_pato(Mchezo* g, n64 x, n64 y, n64 w) {
+    sura_paneli(x, y, w, 250, "PATO GHAFI LA DUNIA -- HISTORIA");
+    TakwimuHistoria* h = mchezo_pata_gdp_historia(g);
+    kama (h == 0 || h->idadi < 2) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo("Historia itaonekana baada ya zamu mbili.", x + 16, y + 110, 14);
+        rudisha;
+    }
+    n64 n = h->idadi;
+    kama (n > 240) { n = 240; }
+    n64* thamani = tenga(8 * n);
+    n64 mwanzo = h->idadi - n;
+    n64 i = 0;
+    wakati (i < n) {
+        d64 s = h->sampuli[mwanzo + i];
+        n64 v = s * 1000000.0;          // sampuli ni milioni
+        thamani[i] = v;
+        i = i + 1;
+    }
+    sura_chati_mstari(x + 16, y + 48, w - 32, 180, thamani, n);
+    achilia thamani;
+}
+
+w0 skrini_muhtasari_chora(Mchezo* g, Turubai* t) {
+    sura_anzisha(t);
+    turubai_brashi(t, SURA_USULI, 255);
+    turubai_jaza(t, 0, 0, t->upana, t->kimo);
+    skrini_upau_wa_juu(g, t);
+    skrini_urambazaji(t, 0);
+
+    n64 x = SKRINI_UPANA_WA_PEMBENI + 25;
+    n64 y = SKRINI_UPAU_WA_JUU + 25;
+    n64 w = t->upana - x - 24;
+
+    // kadi nne
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 watu = 0;
+    n64 pato = 0;
+    n64 i = 0;
+    wakati (i < tm->idadi) {
+        TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, i);
+        watu = watu + tn->idadi_ya_watu;
+        pato = pato + skrini_pato_la_taifa(tn);
+        i = i + 1;
+    }
+    n64 pengo = 16;
+    n64 wk = (w - 3 * pengo) / 4;
+    n8 chombo[48];
+    sura_namba(chombo, tm->idadi);
+    sura_kadi(x, y, wk, "MATAIFA", chombo, 0);
+    sura_namba_fupi(chombo, watu);
+    sura_kadi(x + wk + pengo, y, wk, "IDADI YA WATU", chombo, 0);
+    sura_namba_fupi(chombo, pato);
+    sura_kadi(x + 2 * (wk + pengo), y, wk, "PATO GHAFI LA DUNIA", chombo, 0);
+    n64 kila_mtu = 0;
+    kama (watu > 0) { kila_mtu = pato / watu; }
+    sura_namba(chombo, kila_mtu);
+    sura_kadi(x + 3 * (wk + pengo), y, wk, "PATO KWA KILA MTU", chombo, 0);
+
+    skrini_jedwali_la_mataifa(g, x, y + 92 + pengo, w);
+    n64 safu = tm->idadi;
+    kama (safu > SKRINI_SAFU_ZA_JEDWALI) { safu = SKRINI_SAFU_ZA_JEDWALI; }
+    n64 y_chati = y + 92 + pengo + 76 + safu * SKRINI_KIMO_CHA_SAFU + pengo;
+    skrini_historia_ya_pato(g, x, y_chati, w);
+}

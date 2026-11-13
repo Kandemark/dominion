@@ -1,0 +1,61 @@
+husisha { msingi/msingi_civ.swa }
+husisha { moduli/onyesho/baiti_ghafi.swa }
+
+// ingizo.swa -- kusoma matukio ghafi ya kibodi/kipanya kutoka
+// /dev/input/eventN (`struct input_event` -- ABI thabiti ya kernel,
+// HAKUNA maktaba ya nje). Kila tukio ni baiti 24 kwenye x86-64:
+//   0  time (struct timeval, baiti 16 -- hatuzitumii)
+//   16 type (u16)   -- EV_KEY=1, EV_REL=2, EV_ABS=3, EV_SYN=0
+//   18 code (u16)   -- namba ya kitufe/mhimili (mfano KEY_ESC=1,
+//                       BTN_LEFT=272, REL_X=0, REL_Y=1)
+//   20 value (s32)  -- EV_KEY: 0=achiliwa,1=bonyezwa,2=rudia;
+//                       EV_REL: mabadiliko ya nafasi
+// Offsets zimepatikana kwa `offsetof` halisi dhidi ya
+// <linux/input.h> iliyosakinishwa, si kukisiwa.
+
+n64 KIFAA_UKUBWA_TUKIO = 24;
+n64 KIFAA_EV_SYN = 0;
+n64 KIFAA_EV_KEY = 1;
+n64 KIFAA_EV_REL = 2;
+n64 KIFAA_EV_ABS = 3;
+
+n64 kifaa_fungua(n8* njia) {
+    // O_RDONLY=0, na O_NONBLOCK=2048 -- bila hii, kusoma bila tukio
+    // jipya huzuia (block) mchakato mzima milele. Kwa kuwa
+    // mfumo_fungua ya kumbukumbu.swa haichukui bendera ghafi za
+    // ziada, tunatumia wito_wa_mfumo moja kwa moja hapa.
+    rudisha wito_wa_mfumo(2, njia, 2048, 0, 0, 0, 0);
+}
+
+w0 kifaa_funga(n64 fd) {
+    mfumo_funga(fd);
+}
+
+// Jaribu kusoma tukio MOJA (baiti 24) kutoka kifaa (fd inayotarajiwa
+// kuwa imefunguliwa na O_NONBLOCK). Hurudisha 1 ikiwa tukio
+// limesomwa kikamilifu kwenye `nje` (lazima iwe na nafasi ya
+// KIFAA_UKUBWA_TUKIO angalau), 0 ikiwa hakuna tukio la sasa
+// (EAGAIN -- kawaida kabisa, si hitilafu), au -1 kwa hitilafu halisi
+// nyingine.
+n64 kifaa_soma_tukio(n64 fd, n8* nje) {
+    n64 n = mfumo_soma(fd, nje, KIFAA_UKUBWA_TUKIO);
+    kama (n == KIFAA_UKUBWA_TUKIO) { rudisha 1; }
+    kama (n < 0) {
+        n64 hasi = 0 - n;
+        kama (hasi == 11) { rudisha 0; }  // EAGAIN -- hakuna tukio bado
+        rudisha -1;
+    }
+    rudisha 0;
+}
+
+n64 kifaa_tukio_aina(n8* t) { rudisha pata_u16(t, 16); }
+n64 kifaa_tukio_kanuni(n8* t) { rudisha pata_u16(t, 18); }
+
+n64 kifaa_tukio_thamani(n8* t) {
+    // value ni s32 (yenye ishara) -- pata_u32 huipanua bila ishara,
+    // hivyo lazima tuipanue kwa ishara kwa mkono kama bit 31 imewekwa
+    // (mfano REL_X/REL_Y hasi -- kipanya kikienda kushoto/juu).
+    n64 v = pata_u32(t, 20);
+    kama (v >= 2147483648) { v = v - 4294967296; }
+    rudisha v;
+}

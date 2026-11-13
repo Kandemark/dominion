@@ -1,0 +1,213 @@
+husisha { moduli/skrini/muhtasari.swa }
+
+// uchumi.swa -- skrini ya uchumi wa taifa moja: kadi nne (pato ghafi na
+// mabadiliko yake kwa zamu 10, tija, ukosefu wa kazi, mapato ya kodi),
+// historia ya pato ghafi la taifa, uzalishaji dhidi ya matumizi, na nafasi
+// ya taifa kati ya mataifa yote kwa kila kipimo.
+//
+// Kila namba ni ya uigaji (TaifaNchi.uchumi, historia ya kila taifa ya
+// Mchezo) -- hakuna thamani ya mfano.
+
+// Nafasi (1 = juu) ya thamani ya taifa `taifa` kati ya mataifa yote, kwa
+// kipimo `aina`: 0 pato ghafi, 1 tija, 2 watu, 3 ardhi.
+n64 skrini_thamani_ya_kipimo(TaifaNchi* t, n64 aina) {
+    kama (aina == 0) { rudisha skrini_pato_la_taifa(t); }
+    kama (aina == 1) { n64 v = t->pato_kwa_kila_mtu; rudisha v; }
+    kama (aina == 2) { rudisha t->idadi_ya_watu; }
+    rudisha t->uchumi.vipande_vya_ardhi;
+}
+
+n64 skrini_nafasi_kwa_kipimo(TaifaMfumo* tm, n64 taifa, n64 aina) {
+    TaifaNchi* t = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
+    n64 v = skrini_thamani_ya_kipimo(t, aina);
+    n64 nafasi = 1;
+    n64 i = 0;
+    wakati (i < tm->idadi) {
+        TaifaNchi* o = dunia_taifa_mfumo_pata_kwa_faharisi(tm, i);
+        kama (skrini_thamani_ya_kipimo(o, aina) > v) { nafasi = nafasi + 1; }
+        i = i + 1;
+    }
+    rudisha nafasi;
+}
+
+// Mabadiliko ya pato kwa elfu kumi (100 = 1%) kati ya sampuli ya mwisho na
+// ile ya zamu `nyuma` kabla yake; 0 ikiwa historia haitoshi.
+n64 skrini_mabadiliko(TakwimuHistoria* h, n64 nyuma) {
+    kama (h == 0 || h->idadi < 2) { rudisha 0; }
+    n64 a = h->idadi - 1 - nyuma;
+    kama (a < 0) { a = 0; }
+    d64 kale = h->sampuli[a];
+    d64 sasa = h->sampuli[h->idadi - 1];
+    kama (kale <= 0.0) { rudisha 0; }
+    d64 m = ((sasa - kale) / kale) * 10000.0;
+    n64 v = m;
+    rudisha v;
+}
+
+// Safu ya uzalishaji dhidi ya matumizi: lebo, thamani, na pau inayoonyesha
+// uwiano (asilimia 100 = katikati ya pau).
+w0 skrini_safu_ya_uwiano(n8* lebo, d64 uzalishaji, d64 matumizi, n64 x, n64 y, n64 w) {
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(lebo, x, y, 13);
+    n64 kwa_elfu = 500;
+    kama (matumizi > 0.0) {
+        d64 u = (uzalishaji / matumizi) * 500.0;
+        kwa_elfu = u;
+    }
+    n64 rangi = SURA_CHANYA;
+    kama (kwa_elfu < 500) { rangi = SURA_HASI; }
+    sura_pau(x + 150, y + 5, w - 230, 8, kwa_elfu, rangi);
+    // alama ya 100%
+    turubai_brashi(sura_t, SURA_MAANDISHI, 160);
+    turubai_jaza(sura_t, x + 150 + (w - 230) / 2, y + 1, 1, 16);
+    n8 chombo[32];
+    sura_asilimia(chombo, kwa_elfu * 20, 0);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kulia(chombo, x + w, y, 13);
+}
+
+w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
+    sura_anzisha(t);
+    turubai_brashi(t, SURA_USULI, 255);
+    turubai_jaza(t, 0, 0, t->upana, t->kimo);
+    skrini_upau_wa_juu(g, t);
+    skrini_urambazaji(t, 1);
+
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
+    kama (tn == 0) { rudisha; }
+    TakwimuHistoria* h = mchezo_pata_historia_ya_taifa(g, taifa);
+
+    n64 x = SKRINI_UPANA_WA_PEMBENI + 25;
+    n64 y = SKRINI_UPAU_WA_JUU + 25;
+    n64 w = t->upana - x - 24;
+    n64 pengo = 16;
+
+    // kichwa: jina la taifa
+    turubai_brashi(t, tn->rangi, 255);
+    turubai_mviringo(t, x, y + 6, 24, 16, 4);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(tn->jina, x + 36, y, 22);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo("Uchumi", x + 40 + maandishi_upana(sura_nene, tn->jina, 22), y + 6, 15);
+    y = y + 44;
+
+    // kadi nne
+    n64 wk = (w - 3 * pengo) / 4;
+    n8 chombo[48];
+    sura_namba_fupi(chombo, skrini_pato_la_taifa(tn));
+    sura_kadi(x, y, wk, "PATO GHAFI", chombo, skrini_mabadiliko(h, 10));
+    n64 tija = tn->pato_kwa_kila_mtu;
+    sura_namba(chombo, tija);
+    sura_kadi(x + wk + pengo, y, wk, "PATO KWA KILA MTU", chombo, 0);
+    d64 ukosefu = tn->uchumi.ukosefu_wa_kazi * 10000.0;
+    n64 ukosefu_n = ukosefu;
+    sura_asilimia(chombo, ukosefu_n, 0);
+    sura_kadi(x + 2 * (wk + pengo), y, wk, "UKOSEFU WA KAZI", chombo, 0);
+    d64 kodi = tn->uchumi.mapato_ya_kodi * 1000000.0;
+    n64 kodi_n = kodi;
+    sura_namba_fupi(chombo, kodi_n);
+    sura_kadi(x + 3 * (wk + pengo), y, wk, "MAPATO YA KODI", chombo, 0);
+    y = y + 92 + pengo;
+
+    // historia (kushoto) na uzalishaji (kulia)
+    n64 w_kushoto = (w * 3) / 5;
+    n64 w_kulia = w - w_kushoto - pengo;
+    n64 kimo_cha_safu = 300;
+    sura_paneli(x, y, w_kushoto, kimo_cha_safu, "PATO GHAFI -- HISTORIA");
+    kama (h == 0 || h->idadi < 2) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo("Historia itaonekana baada ya zamu mbili.", x + 16, y + 140, 14);
+    } sivyo {
+        n64 n = h->idadi;
+        kama (n > 240) { n = 240; }
+        n64* thamani = tenga(8 * n);
+        n64 mwanzo = h->idadi - n;
+        n64 i = 0;
+        wakati (i < n) {
+            d64 s = h->sampuli[mwanzo + i];
+            n64 v = s * 1000000.0;
+            thamani[i] = v;
+            i = i + 1;
+        }
+        sura_chati_mstari(x + 16, y + 48, w_kushoto - 32, kimo_cha_safu - 72, thamani, n);
+        achilia thamani;
+    }
+
+    n64 xr = x + w_kushoto + pengo;
+    sura_paneli(xr, y, w_kulia, kimo_cha_safu, "UZALISHAJI DHIDI YA MATUMIZI");
+    n64 py = y + 52;
+    skrini_safu_ya_uwiano("Chakula", tn->uchumi.uzalishaji_wa_chakula, tn->uchumi.matumizi_ya_chakula, xr + 16, py, w_kulia - 32);
+    py = py + 34;
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo("Nguvukazi", xr + 16, py, 13);
+    d64 nk = tn->uchumi.nguvukazi;
+    n64 nk_n = nk;
+    sura_namba_fupi(chombo, nk_n);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kulia(chombo, xr + w_kulia - 16, py, 13);
+    py = py + 26;
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo("Mshahara wa wastani", xr + 16, py, 13);
+    d64 msh = tn->uchumi.mshahara_wa_wastani;
+    n64 msh_n = msh;
+    sura_namba(chombo, msh_n);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kulia(chombo, xr + w_kulia - 16, py, 13);
+    py = py + 26;
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo("Nishati (GWh kwa mwaka)", xr + 16, py, 13);
+    d64 nis = tn->uchumi.uzalishaji_wa_nishati;
+    n64 nis_n = nis;
+    sura_namba(chombo, nis_n);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kulia(chombo, xr + w_kulia - 16, py, 13);
+    py = py + 26;
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo("Pato la viwanda", xr + 16, py, 13);
+    d64 vw = tn->uchumi.uzalishaji_wa_viwanda * 1000000.0;
+    n64 vw_n = vw;
+    sura_namba_fupi(chombo, vw_n);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kulia(chombo, xr + w_kulia - 16, py, 13);
+    py = py + 26;
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo("Malighafi", xr + 16, py, 13);
+    d64 mg = tn->uchumi.malighafi * 1000000.0;
+    n64 mg_n = mg;
+    sura_namba_fupi(chombo, mg_n);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kulia(chombo, xr + w_kulia - 16, py, 13);
+    py = py + 26;
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo("Ardhi (vipande)", xr + 16, py, 13);
+    sura_namba(chombo, tn->uchumi.vipande_vya_ardhi);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kulia(chombo, xr + w_kulia - 16, py, 13);
+    y = y + kimo_cha_safu + pengo;
+
+    // nafasi kati ya mataifa yote
+    sura_paneli(x, y, w, 120, "NAFASI KATI YA MATAIFA YOTE");
+    n64 wn = (w - 32) / 4;
+    n64 k = 0;
+    wakati (k < 4) {
+        n64 xn = x + 16 + k * wn;
+        n8* jina = "Pato ghafi";
+        kama (k == 1) { jina = "Pato kwa kila mtu"; }
+        kama (k == 2) { jina = "Watu"; }
+        kama (k == 3) { jina = "Ardhi"; }
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(jina, xn, y + 44, 13);
+        n64 nafasi = skrini_nafasi_kwa_kipimo(tm, taifa, k);
+        n8 namba[24];
+        n8 jumla[24];
+        sura_namba(namba, nafasi);
+        sura_namba(jumla, tm->idadi);
+        mfuatano_umbiza(chombo, 48, "%s / %s", namba, jumla, 0, 0, 0, 0);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_nene(chombo, xn, y + 66, 22);
+        // pau: juu zaidi = ndefu zaidi
+        sura_pau(xn, y + 100, wn - 32, 6, ((tm->idadi - nafasi + 1) * 1000) / tm->idadi, SURA_LAFUDHI);
+        k = k + 1;
+    }
+}

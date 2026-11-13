@@ -1,0 +1,38 @@
+husisha { moduli/skrini/muhtasari.swa }
+
+// jaribio_muhtasari.swa -- chora skrini ya muhtasari kutoka mchezo halisi
+// baada ya zamu kadhaa, na uandike fremu ghafi (BGRA) kwenye njia iliyopewa.
+//   jaribio_muhtasari <njia> [zamu]
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) { andika("SHINDWA: mchezo_anzisha\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    n64 zamu = 40;
+    kama (idadi_ya_hoja > 2) { zamu = mfuatano_hadi_n64(hoja_za_mstari[2]); }
+    n64 i = 0;
+    wakati (i < zamu) {
+        mchezo_sasisha(g);
+        mchezo_maliza_zamu(g);
+        i = i + 1;
+    }
+    Turubai* t = turubai_unda(1600, 900);
+    skrini_muhtasari_chora(g, t);
+    kama (idadi_ya_hoja > 1) {
+        n64 fd = mfumo_fungua(hoja_za_mstari[1], 577, 420);
+        mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
+        mfumo_funga(fd);
+    }
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 watu = 0;
+    n64 k = 0;
+    wakati (k < tm->idadi) {
+        TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, k);
+        watu = watu + tn->idadi_ya_watu;
+        k = k + 1;
+    }
+    andika("zamu %d, mataifa %d, watu %d\n", g->zamu_ya_sasa, tm->idadi, watu, 0, 0, 0);
+    rudisha 0;
+}

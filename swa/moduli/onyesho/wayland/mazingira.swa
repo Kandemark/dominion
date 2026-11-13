@@ -1,0 +1,51 @@
+husisha { msingi/maktaba/mfuatano.swa }
+
+// mazingira.swa -- ufikiaji wa environment variables (envp) kutoka
+// argv PEKEE, bila kugusa _start/mkusanyaji. anza(argc, argv) ndiyo
+// saini PEKEE inayotambulika na mkusanyaji (angalia
+// msingi/mkusanyaji/kiendeshaji.swa, lugha-swa/swa) -- Linux x86-64 ABI
+// huweka envp[0] KWENYE STACK mara moja BAADA ya kiingilio cha NULL
+// kinachomalizia argv (baada ya argv[argc-1] kuna argv[argc]==0,
+// kisha envp[0] huanza hapo hapo). Hakuna wito wa mfumo unaohitajika
+// -- ni hesabu ya anwani tu, imethibitishwa KWELI dhidi ya shell
+// halisi (HOME/WAYLAND_DISPLAY/XDG_RUNTIME_DIR zote zililingana) kabla
+// ya kuendelea na Wayland yenyewe -- angalia ujumbe wa commit kwa
+// maelezo ya uthibitisho.
+//
+// KUMBUKA MGONGANO WA MAJINA: kiambishi "mazingira_" (bila
+// "wayland_") TAYARI kinatumika na swa/moduli/mazingira/ (tafsiri ya
+// src/core/environment/ -- hali ya hewa/jiografia ya ulimwengu wa
+// mchezo, HAIHUSIANI KABISA na OS environment variables). Kazi hapa
+// zinatumia kiambishi KAMILI "wayland_mazingira_" kuepuka mgongano --
+// angalia ../../../KANUNI-MAJINA.md.
+
+// wayland_mazingira_pata_envp -- tembea argv[i] hadi argv[i]==0
+// (NULL inayomalizia argv), kisha rudisha anwani (i+1) nafasi mbele
+// ya argv (kila nafasi ni kielekezi cha baiti 8) -- hapo ndipo envp
+// huanza kwenye ABI ya Linux x86-64.
+n8** wayland_mazingira_pata_envp(n8** argv) {
+    n64 i = 0;
+    wakati (argv[i] != 0) {
+        i = i + 1;
+    }
+    n8** envp = argv + (i + 1);
+    rudisha envp;
+}
+
+// wayland_mazingira_tafuta -- tafuta env var yenye jina hilo ndani ya
+// envp (safu ya n8* inayomalizia na 0), ikilinganisha mfuatano
+// "JINA=" mwanzoni mwa kila kiingilio. Hurudisha kielekezi kwenda
+// SEHEMU BAADA ya ishara ya '=' (thamani halisi), au 0 kama jina
+// halipo.
+n8* wayland_mazingira_tafuta(n8** envp, n8* jina) {
+    n64 ujina = urefu_wa_mfuatano(jina);
+    n64 i = 0;
+    wakati (envp[i] != 0) {
+        n8* kiingilio = envp[i];
+        kama (linganisha_mfuatano_n(kiingilio, jina, ujina) == 0 && kiingilio[ujina] == 61) {
+            rudisha kiingilio + ujina + 1;
+        }
+        i = i + 1;
+    }
+    rudisha 0;
+}

@@ -1,0 +1,86 @@
+// uhai.swa — tafsiri ya src/core/population/population_vitality.c
+// (na .h) kwenda Swa. Afya, magonjwa, na elimu ya idadi ya watu.
+//
+// Kiambishi: uhai_ — angalia ../../KANUNI-MAJINA.md (population/).
+// disease name (char[STRING_SHORT_LEN]) imekuwa n8 iliyowekwa kwa
+// ukubwa uliopangwa (32 herufi), sawa na jina la faili katika
+// moduli nyingine. rand()%100 imebadilishwa kuwa civ_nasibu_chini_ya
+// (LCG ya msingi_civ.swa) badala ya kutegemea libc.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/lugha_dominion.swa }
+
+muundo UhaiUgonjwa {
+    n8 jina_0; n8 jina_1; n8 jina_2; n8 jina_3; n8 jina_4; n8 jina_5;
+    n8 jina_6; n8 jina_7; n8 jina_8; n8 jina_9; n8 jina_10; n8 jina_11;
+    n8 jina_12; n8 jina_13; n8 jina_14; n8 jina_15;
+    d64 kiwango_cha_kuambukiza;
+    d64 uwezo_wa_kuua;
+    d64 ukali;
+    n32 unafanya_kazi;
+};
+
+muundo UhaiMfumo {
+    d64 afya_ya_jumla;
+    d64 kiwango_cha_elimu;
+    UhaiUgonjwa mlipuko;
+    n32 kuna_mlipuko;
+    d64 matarajio_ya_maisha;
+    d64 kiwango_cha_kujua_kusoma;
+};
+
+w0 uhai_anzisha(UhaiMfumo* v) {
+    v->afya_ya_jumla = 0.8;
+    v->kiwango_cha_elimu = 0.2;
+    v->kuna_mlipuko = 0;
+    v->matarajio_ya_maisha = 40.0;
+    v->kiwango_cha_kujua_kusoma = 0.05;
+    v->mlipuko.unafanya_kazi = 0;
+}
+
+w0 uhai_sasisha(UhaiMfumo* v, d64 muda) {
+    v->kiwango_cha_elimu = v->kiwango_cha_elimu + 0.001 * muda;
+    v->kiwango_cha_elimu = finya_d64(v->kiwango_cha_elimu, 0.0, 1.0);
+
+    kama (v->kuna_mlipuko != 0) {
+        v->afya_ya_jumla = v->afya_ya_jumla - v->mlipuko.ukali * 0.05 * muda;
+
+        n32 nasibu = civ_nasibu_chini_ya(100);
+        kama (nasibu < 5) {
+            v->kuna_mlipuko = 0;
+            andika(d_tafsiri("m6"), 0,0,0,0,0,0);
+        }
+    } sivyo {
+        v->afya_ya_jumla = v->afya_ya_jumla + 0.01 * muda;
+    }
+
+    v->afya_ya_jumla = finya_d64(v->afya_ya_jumla, 0.05, 1.0);
+}
+
+CivMatokeo uhai_anzisha_mlipuko(UhaiMfumo* v, d64 uwezo_wa_kuua) {
+    v->kuna_mlipuko = 1;
+    v->mlipuko.uwezo_wa_kuua = uwezo_wa_kuua;
+    v->mlipuko.ukali = uwezo_wa_kuua * 2.0;
+    v->mlipuko.unafanya_kazi = 1;
+
+    andika(d_tafsiri("m5"), 0,0,0,0,0,0);
+
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    rudisha r;
+}
+
+d64 uhai_hesabu_kigezo_cha_vifo(UhaiMfumo* v) {
+    d64 kigezo = 1.0;
+
+    kama (v->afya_ya_jumla < 0.5) {
+        kigezo = kigezo + (0.5 - v->afya_ya_jumla) * 2.0;
+    }
+
+    kama (v->kuna_mlipuko != 0) {
+        kigezo = kigezo * (1.0 + v->mlipuko.uwezo_wa_kuua);
+    }
+
+    rudisha kigezo;
+}

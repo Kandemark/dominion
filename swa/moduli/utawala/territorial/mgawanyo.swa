@@ -1,0 +1,134 @@
+// mgawanyo.swa — tafsiri ya src/core/governance/territorial/subdivision.c
+// (na .h) kwenda Swa. Muundo wa kiutawala wa kieneo (majimbo,
+// makoloni, mikoa, ardhi iliyotekwa).
+//
+// Kiambishi: utawala_mgawanyo_ — angalia ../../../KANUNI-MAJINA.md.
+// items[] (safu ya mgawanyo, malloc+realloc) imekuwa kikomo
+// kisichobadilika cha mgawanyo 8, mtindo uleule wa taasisi.swa.
+// tile_indices[] (safu ya n32 inayokua) na settlement_ids[] (safu ya
+// n8* inayokua) ZIMEBAKI ZINAZOKUA HALISI (si kikomo kisichobadilika)
+// kwa sababu ni FIELDS za AINA YA KIELEKEZI CHA MSINGI (n32*/n64*),
+// SI fields za safu-ya-ukubwa-maalum wala fields za kielekezi-kwenda-
+// muundo — kwa hiyo hazigongani na mdudu wowote unaojulikana
+// (fixed-array-field parse failure, wala #186). tile_indices ni n32*
+// ya kawaida; settlement_ids ni n64* ikihifadhi kila n8* kama
+// anwani (mtindo wa #185, kama dini_zote kwenye dini.swa).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+n32 UTAWALA_MGAWANYO_JIMBO = 0;
+n32 UTAWALA_MGAWANYO_KOLONI = 1;
+n32 UTAWALA_MGAWANYO_MKOA = 2;
+n32 UTAWALA_MGAWANYO_ILIYOTEKWA = 3;
+
+n32 UTAWALA_MGAWANYO_UPEO = 8;
+
+muundo UtawalaMgawanyo {
+    n8* kitambulisho;
+    n8* jina;
+    n32 aina;
+    d64 uhuru;
+    d64 uthabiti;
+
+    n32* vipande_vya_ardhi;
+    n32 idadi_ya_vipande;
+    n32 uwezo_wa_vipande;
+
+    n64* makazi_ndani;
+    n32 idadi_ya_makazi;
+    n32 uwezo_wa_makazi;
+};
+
+muundo UtawalaMgawanyoMfumo {
+    UtawalaMgawanyo mgawanyo_0; UtawalaMgawanyo mgawanyo_1;
+    UtawalaMgawanyo mgawanyo_2; UtawalaMgawanyo mgawanyo_3;
+    UtawalaMgawanyo mgawanyo_4; UtawalaMgawanyo mgawanyo_5;
+    UtawalaMgawanyo mgawanyo_6; UtawalaMgawanyo mgawanyo_7;
+    n32 idadi;
+};
+
+UtawalaMgawanyo* utawala_mgawanyo_pata(UtawalaMgawanyoMfumo* m, n32 idx) {
+    kama (idx == 0) { rudisha &m->mgawanyo_0; }
+    kama (idx == 1) { rudisha &m->mgawanyo_1; }
+    kama (idx == 2) { rudisha &m->mgawanyo_2; }
+    kama (idx == 3) { rudisha &m->mgawanyo_3; }
+    kama (idx == 4) { rudisha &m->mgawanyo_4; }
+    kama (idx == 5) { rudisha &m->mgawanyo_5; }
+    kama (idx == 6) { rudisha &m->mgawanyo_6; }
+    rudisha &m->mgawanyo_7;
+}
+
+UtawalaMgawanyoMfumo* utawala_mgawanyo_mfumo_unda() {
+    UtawalaMgawanyoMfumo* m = tenga(ukubwa(UtawalaMgawanyoMfumo));
+    m->idadi = 0;
+    rudisha m;
+}
+
+w0 utawala_mgawanyo_mfumo_uharibu(UtawalaMgawanyoMfumo* m) {
+    achilia m;
+}
+
+UtawalaMgawanyo* utawala_mgawanyo_unda(UtawalaMgawanyoMfumo* m, n8* jina, n32 aina) {
+    kama (m == 0) { rudisha 0; }
+    kama (m->idadi >= UTAWALA_MGAWANYO_UPEO) { rudisha 0; }
+
+    UtawalaMgawanyo* s = utawala_mgawanyo_pata(m, m->idadi);
+    s->kitambulisho = jina;
+    s->jina = jina;
+    s->aina = aina;
+    kama (aina == UTAWALA_MGAWANYO_KOLONI) { s->uhuru = 0.6; } sivyo { s->uhuru = 0.1; }
+    s->uthabiti = 1.0;
+
+    s->uwezo_wa_vipande = 64;
+    s->vipande_vya_ardhi = tenga(ukubwa(n32) * s->uwezo_wa_vipande);
+    s->idadi_ya_vipande = 0;
+
+    s->makazi_ndani = 0;
+    s->idadi_ya_makazi = 0;
+    s->uwezo_wa_makazi = 0;
+
+    m->idadi = m->idadi + 1;
+    rudisha s;
+}
+
+w0 utawala_mgawanyo_ongeza_kipande(UtawalaMgawanyo* s, n32 faharisi_ya_kipande) {
+    kama (s == 0) { rudisha; }
+    kama (s->idadi_ya_vipande >= s->uwezo_wa_vipande) {
+        s->uwezo_wa_vipande = s->uwezo_wa_vipande * 2;
+        s->vipande_vya_ardhi = badili(s->vipande_vya_ardhi, ukubwa(n32) * s->uwezo_wa_vipande);
+    }
+    s->vipande_vya_ardhi[s->idadi_ya_vipande] = faharisi_ya_kipande;
+    s->idadi_ya_vipande = s->idadi_ya_vipande + 1;
+}
+
+w0 utawala_mgawanyo_ongeza_makazi(UtawalaMgawanyo* s, n8* kitambulisho_cha_makazi) {
+    kama (s == 0 || kitambulisho_cha_makazi == 0) { rudisha; }
+    kama (s->makazi_ndani == 0) {
+        s->uwezo_wa_makazi = 8;
+        s->makazi_ndani = tenga(ukubwa(n64) * s->uwezo_wa_makazi);
+        s->idadi_ya_makazi = 0;
+    }
+    kama (s->idadi_ya_makazi >= s->uwezo_wa_makazi) {
+        s->uwezo_wa_makazi = s->uwezo_wa_makazi * 2;
+        s->makazi_ndani = badili(s->makazi_ndani, ukubwa(n64) * s->uwezo_wa_makazi);
+    }
+    s->makazi_ndani[s->idadi_ya_makazi] = kitambulisho_cha_makazi;
+    s->idadi_ya_makazi = s->idadi_ya_makazi + 1;
+}
+
+n8* utawala_mgawanyo_pata_makazi(UtawalaMgawanyo* s, n32 idx) {
+    rudisha s->makazi_ndani[idx];
+}
+
+w0 utawala_mgawanyo_sasisha(UtawalaMgawanyoMfumo* m, d64 muda) {
+    kama (m == 0) { rudisha; }
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        UtawalaMgawanyo* s = utawala_mgawanyo_pata(m, i);
+        d64 uthabiti_lengwa = 1.0 - (s->uhuru * 0.2);
+        kama (s->aina == UTAWALA_MGAWANYO_ILIYOTEKWA) { uthabiti_lengwa = 0.4; }
+        s->uthabiti = s->uthabiti + (uthabiti_lengwa - s->uthabiti) * 0.05 * muda;
+        i = i + 1;
+    }
+}

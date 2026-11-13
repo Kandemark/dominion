@@ -1,0 +1,30 @@
+husisha { moduli/skrini/uchumi.swa }
+
+// jaribio_uchumi.swa -- chora skrini ya uchumi wa taifa la mchezaji kutoka mchezo halisi
+// baada ya zamu kadhaa, na uandike fremu ghafi (BGRA) kwenye njia iliyopewa.
+//   jaribio_uchumi <njia> [zamu]
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) { andika("SHINDWA: mchezo_anzisha\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    n64 zamu = 40;
+    kama (idadi_ya_hoja > 2) { zamu = mfuatano_hadi_n64(hoja_za_mstari[2]); }
+    n64 i = 0;
+    wakati (i < zamu) {
+        mchezo_sasisha(g);
+        mchezo_maliza_zamu(g);
+        i = i + 1;
+    }
+    Turubai* t = turubai_unda(1600, 900);
+    skrini_uchumi_chora(g, t, mchezo_pata_taifa(g)->faharisi_ya_taifa_la_mchezaji);
+    kama (idadi_ya_hoja > 1) {
+        n64 fd = mfumo_fungua(hoja_za_mstari[1], 577, 420);
+        mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
+        mfumo_funga(fd);
+    }
+    andika("zamu %d, mataifa %d\n", g->zamu_ya_sasa, mchezo_pata_taifa(g)->idadi, 0, 0, 0, 0);
+    rudisha 0;
+}

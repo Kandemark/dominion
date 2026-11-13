@@ -1,0 +1,67 @@
+husisha { moduli/matukio/mchezo_matukio.swa }
+
+// jaribio_mchezo_matukio.swa -- jaribio la mkono dhidi ya
+// mchezo_matukio.swa (tafsiri ya events/game_events.c) PEKEE, bila
+// kupitia mchezo.swa (angalia lugha-swa/swa#295). Linathibitisha
+// THAMANI HALISI.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    civ_nasibu_panda(21);
+
+    MatukioTukioMfumo* matukio = matukio_tukio_mfumo_unda();
+    Sarafu* sarafu = tenga(ukubwa(Sarafu));
+    sarafu_anzisha(sarafu, "Dinari");
+
+    d64 kiwango_kabla = sarafu->kiwango_cha_ubadilishaji;
+    d64 mfumuko_kabla = sarafu->kiashiria_cha_mfumuko;
+    n32 matukio_kabla = matukio->idadi_ya_matukio;
+
+    CivMatokeo r1 = matukio_mchezo_simamisha_mgogoro_wa_uchumi(matukio, sarafu);
+    jaribio_thibitisha(r1.hitilafu == CIV_SAWA, "mgogoro_wa_uchumi inafaulu");
+
+    n32 kiwango_kimeshuka = (sarafu->kiwango_cha_ubadilishaji > kiwango_kabla * 0.7 - 0.001 &&
+                             sarafu->kiwango_cha_ubadilishaji < kiwango_kabla * 0.7 + 0.001);
+    jaribio_thibitisha(kiwango_kimeshuka, "kiwango cha ubadilishaji kimeshuka kwa 30% (x0.7)");
+
+    n32 mfumuko_umepanda = (sarafu->kiashiria_cha_mfumuko > mfumuko_kabla + 0.049 &&
+                            sarafu->kiashiria_cha_mfumuko < mfumuko_kabla + 0.051);
+    jaribio_thibitisha(mfumuko_umepanda, "kiashiria cha mfumuko kimeongezeka kwa 0.05");
+
+    n32 tukio_limeongezwa = (matukio->idadi_ya_matukio == matukio_kabla + 1);
+    jaribio_thibitisha(tukio_limeongezwa, "tukio la mgogoro limeongezwa kwenye matukio");
+
+    MazingiraMajangaMfumo* majanga = mazingira_majanga_unda();
+    n32 majanga_kabla = majanga->idadi_ya_majanga;
+    n32 matukio_kabla2 = matukio->idadi_ya_matukio;
+
+    CivMatokeo r2 = matukio_mchezo_sababisha_maafa(matukio, majanga, MAZINGIRA_JANGA_TETEMEKO);
+    jaribio_thibitisha(r2.hitilafu == CIV_SAWA, "sababisha_maafa inafaulu");
+    n32 janga_limeongezwa = (majanga->idadi_ya_majanga == majanga_kabla + 1);
+    jaribio_thibitisha(janga_limeongezwa, "janga limeongezwa kwenye mfumo wa majanga");
+    n32 tukio_la_pili_limeongezwa = (matukio->idadi_ya_matukio == matukio_kabla2 + 1);
+    jaribio_thibitisha(tukio_la_pili_limeongezwa, "tukio la janga limeongezwa kwenye matukio");
+
+    // Kielekezi cha majanga 0: inapaswa kurudisha KIELEKEZI_TUPU,
+    // bila kuanguka.
+    MazingiraMajangaMfumo* majanga_tupu = 0;
+    CivMatokeo r3 = matukio_mchezo_sababisha_maafa(matukio, majanga_tupu, MAZINGIRA_JANGA_MAFURIKO);
+    jaribio_thibitisha(r3.hitilafu == CIV_HITILAFU_KIELEKEZI_TUPU, "sababisha_maafa bila msimamizi inarudisha KIELEKEZI_TUPU");
+
+    mazingira_majanga_uharibu(majanga);
+    matukio_tukio_mfumo_uharibu(matukio);
+    achilia sarafu;
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

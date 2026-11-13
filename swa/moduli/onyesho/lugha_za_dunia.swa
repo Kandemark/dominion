@@ -1,0 +1,187 @@
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+// lugha_za_dunia.swa -- familia za lugha za dunia ya Dominion, na majina
+// yanayozaliwa kutoka kwa kila lugha.
+//
+// Dunia si ya utamaduni mmoja. Kila lugha ina sauti zake (silabi), miisho
+// yake ya majina ya mahali, na mara ngapi mwisho huongezwa. Lugha za familia
+// moja hushiriki ladha (Valeriani na Ostiani ni Kilatini; Hjaldi na Varengi
+// ni Kinordi), hivyo majina ya mataifa jirani ya familia moja yanafanana
+// bila kuwa sawa.
+//
+//   familia        lugha                  mfano wa ladha
+//   Kilatini       Valeriani, Ostiani     Valeria, Castellino, Torensis
+//   Kinordi        Hjaldi, Varengi        Grimheim, Berwald, Thorvik
+//   Kislavi        Volgari, Karpeti       Miroslavgrad, Kravica, Dobrany
+//   Kizahari       Zahari, Qadiri         Sultabad, Qarastan, Nurain
+//   Kimashariki    Tenshoki, Hanlu        Kirashima, Moyama, Lungwei
+//   Kiselti        Gaelin                 Dunmor, Glenwyn, Aberlin
+//   Kinyota        Xenari, Orbiti         Vexion, Kaelyx, Tessara
+//   Kibantu        Kiasili, Kusini        Mbeyani, Kilunda, Ndlovini
+//
+// Majina ni ya kubuni; lugha hizi hazinakili lugha halisi -- zinaazima
+// ladha ya sauti tu.
+
+n64 LUGHA_IDADI = 15;
+
+n8* lugha_jina(n64 l) {
+    kama (l == 0) { rudisha "Valeriani"; }
+    kama (l == 1) { rudisha "Ostiani"; }
+    kama (l == 2) { rudisha "Hjaldi"; }
+    kama (l == 3) { rudisha "Varengi"; }
+    kama (l == 4) { rudisha "Volgari"; }
+    kama (l == 5) { rudisha "Karpeti"; }
+    kama (l == 6) { rudisha "Zahari"; }
+    kama (l == 7) { rudisha "Qadiri"; }
+    kama (l == 8) { rudisha "Tenshoki"; }
+    kama (l == 9) { rudisha "Hanlu"; }
+    kama (l == 10) { rudisha "Gaelin"; }
+    kama (l == 11) { rudisha "Xenari"; }
+    kama (l == 12) { rudisha "Orbiti"; }
+    kama (l == 13) { rudisha "Kiasili"; }
+    rudisha "Kusini";
+}
+
+n64 lugha_familia(n64 l) {
+    kama (l <= 1) { rudisha 0; }
+    kama (l <= 3) { rudisha 1; }
+    kama (l <= 5) { rudisha 2; }
+    kama (l <= 7) { rudisha 3; }
+    kama (l <= 9) { rudisha 4; }
+    kama (l == 10) { rudisha 5; }
+    kama (l <= 12) { rudisha 6; }
+    rudisha 7;
+}
+
+n8* lugha_familia_jina(n64 f) {
+    kama (f == 0) { rudisha "Kilatini"; }
+    kama (f == 1) { rudisha "Kinordi"; }
+    kama (f == 2) { rudisha "Kislavi"; }
+    kama (f == 3) { rudisha "Kizahari"; }
+    kama (f == 4) { rudisha "Kimashariki"; }
+    kama (f == 5) { rudisha "Kiselti"; }
+    kama (f == 6) { rudisha "Kinyota"; }
+    rudisha "Kibantu";
+}
+
+// Silabi za mwanzo/kati za lugha (maneno yametenganishwa kwa nafasi).
+n8* lugha_silabi(n64 l) {
+    kama (l == 0) { rudisha "va le ri tor cas sa mar cor pe li ta vi lu mi ne dor sen au fla ser ven"; }
+    kama (l == 1) { rudisha "os ti ne ro ve cas te gre mo bel lo ri ci al fio ra pi ma"; }
+    kama (l == 2) { rudisha "hal dor bjor sve thor ul grim ar vald ey sig ran stein frey hro"; }
+    kama (l == 3) { rudisha "var gar wul ber ric hel mund od wil ger hart lot brand al"; }
+    kama (l == 4) { rudisha "vol go mir sla ve kra so bo dob ste li ra zor vla bel"; }
+    kama (l == 5) { rudisha "kar pe ti zo dra no vi mo bry ko le sta ja ry"; }
+    kama (l == 6) { rudisha "za har shi mah ra sul ta dir ba si nur ka zim far"; }
+    kama (l == 7) { rudisha "qa ra ha mid sa bir ja lal ka sim tu ri ma"; }
+    kama (l == 8) { rudisha "ka shi ro ten mi ya to ki na su ha ra ku mo ri se"; }
+    kama (l == 9) { rudisha "han lu zhen qi ming xi bao long wei an shu tai feng"; }
+    kama (l == 10) { rudisha "dun glen ab er cael bran lin tir mor ca ros dal ar"; }
+    kama (l == 11) { rudisha "xan ve zor kae te qua ri a zy vo ne ka li sa"; }
+    kama (l == 12) { rudisha "or bi tal ce nex sy lo vi kron tae ae ri sol"; }
+    kama (l == 13) { rudisha "ka ma ri to su le no va be di sa lo ne ru mi ta ze ko pa ni"; }
+    rudisha "ma ku lu ndla zi tho ba nge si wa mbo khu le";
+}
+
+// Miisho ya majina ya mahali.
+n8* lugha_miisho(n64 l) {
+    kama (l == 0) { rudisha "ia um us ensis ona ium ara"; }
+    kama (l == 1) { rudisha "o ia ino etta ano ella"; }
+    kama (l == 2) { rudisha "heim vik stad fjord dal sund"; }
+    kama (l == 3) { rudisha "burg wald feld mark ingen haus"; }
+    kama (l == 4) { rudisha "grad ov ava ica insk ovo"; }
+    kama (l == 5) { rudisha "ets ina ovo ice any"; }
+    kama (l == 6) { rudisha "abad stan iya ar ain ira"; }
+    kama (l == 7) { rudisha "stan iyya un an ah"; }
+    kama (l == 8) { rudisha "shima oto yama kawa ji no"; }
+    kama (l == 9) { rudisha "wei an ning zhou shan"; }
+    kama (l == 10) { rudisha "mor wyn ach ead in"; }
+    kama (l == 11) { rudisha "ion ex yx ara os is"; }
+    kama (l == 12) { rudisha "is a on ex ar ia"; }
+    kama (l == 13) { rudisha "n r s ra ni la ndo ri mo sh na go"; }
+    rudisha "ini ane eni wa zi lo";
+}
+
+// Mara ngapi mwisho huongezwa, kwa robo (0..4).
+n64 lugha_uwezekano_wa_mwisho(n64 l) {
+    kama (l == 9) { rudisha 2; }       // Hanlu: majina mafupi ya silabi
+    rudisha 3;
+}
+
+n64 lugha_idadi_ya_maneno(n8* orodha) {
+    n64 n = 1;
+    n64 i = 0;
+    wakati (orodha[i] != 0) {
+        kama (orodha[i] == 32) { n = n + 1; }
+        i = i + 1;
+    }
+    rudisha n;
+}
+
+// Ongeza neno la k la `orodha` kwenye s kuanzia s[n]; hurudisha n mpya.
+n64 lugha_ongeza_neno(n8* s, n64 n, n8* orodha, n64 k) {
+    n64 i = 0;
+    n64 neno = 0;
+    wakati (orodha[i] != 0 && neno < k) {
+        kama (orodha[i] == 32) { neno = neno + 1; }
+        i = i + 1;
+    }
+    wakati (orodha[i] != 0 && orodha[i] != 32) {
+        s[n] = orodha[i];
+        n = n + 1;
+        i = i + 1;
+    }
+    rudisha n;
+}
+
+// Heshi ndogo ya kujitegemea (lugha haitegemei atlasi).
+n64 lugha_heshi(n64 a, n64 b, n64 c) {
+    n64 moja = 1;
+    n64 kinyago = (moja << 32) - 1;     // halisi ya n32 haisogezwi kwa 32 (swa#399)
+    n64 n = (a * 374761393 + b * 668265263 + c * 1013904223) & kinyago;
+    n = ((n ^ (n >> 13)) * 1274126177) & kinyago;
+    n = (n ^ (n >> 16)) & kinyago;
+    rudisha n & 65535;
+}
+
+// Jina kutoka lugha `l`: silabi `silabi`, kisha mwisho kwa uwezekano wa
+// lugha. Vokali mbili zinazofanana zikikutana kati ya silabi, moja huondolewa
+// ("Valeria" si "Valeeria"). Herufi ya kwanza ni kubwa. Hutegemea mbegu na
+// kitambulisho pekee.
+n8* lugha_tunga_jina(n64 l, n64 mbegu, n64 kitambulisho, n64 silabi) {
+    n8* s = tenga(48);
+    n8* orodha = lugha_silabi(l);
+    n64 idadi = lugha_idadi_ya_maneno(orodha);
+    n64 n = 0;
+    n64 i = 0;
+    n64 iliyopita = 0 - 1;
+    wakati (i < silabi) {
+        n64 h = lugha_heshi(kitambulisho, i * 31 + 7, mbegu + 555 + l * 101);
+        n64 chaguo = h % idadi;
+        kama (chaguo == iliyopita) { chaguo = (chaguo + 1) % idadi; }     // si "Wilwil..."
+        iliyopita = chaguo;
+        n64 kabla = n;
+        n = lugha_ongeza_neno(s, n, orodha, chaguo);
+        kama (kabla > 0 && n > kabla && s[kabla] == s[kabla - 1]) {
+            // ondoa herufi iliyorudiwa kwenye mshono
+            n64 k = kabla;
+            wakati (k < n - 1) { s[k] = s[k + 1]; k = k + 1; }
+            n = n - 1;
+        }
+        i = i + 1;
+    }
+    n64 h = lugha_heshi(kitambulisho, 99, mbegu + 556 + l * 101);
+    kama ((h & 3) < lugha_uwezekano_wa_mwisho(l)) {
+        n8* miisho = lugha_miisho(l);
+        n64 kabla = n;
+        n = lugha_ongeza_neno(s, n, miisho, (h >> 2) % lugha_idadi_ya_maneno(miisho));
+        kama (kabla > 0 && n > kabla && s[kabla] == s[kabla - 1]) {
+            n64 k = kabla;
+            wakati (k < n - 1) { s[k] = s[k + 1]; k = k + 1; }
+            n = n - 1;
+        }
+    }
+    s[n] = 0;
+    kama (s[0] >= 97 && s[0] <= 122) { s[0] = s[0] - 32; }
+    rudisha s;
+}

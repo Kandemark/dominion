@@ -1,0 +1,250 @@
+husisha { moduli/skrini/muhtasari.swa }
+
+// ramani.swa -- skrini ya ramani: atlasi ya dunia ya mchezo ndani ya fremu
+// ya mchezo (upau wa juu, urambazaji), taifa lililochaguliwa likiangaziwa,
+// kipimo cha umbali, na paneli ya taarifa ya taifa hilo kulia.
+//
+// Ramani huchorwa moja kwa moja kwenye bafa ya skrini kupitia turubai ya
+// pili iliyofungwa juu ya sehemu yake (turubai_funga yenye hatua ile ile),
+// hivyo hakuna nakala ya pikseli.
+
+n64 SKRINI_RAMANI_PANELI = 340;
+n64 SKRINI_RAMANI_KM_KWA_KIZIO = 625;    // kizio 1 = 360/64 shahada ~ km 625
+
+Fonti* skrini_serifu = 0;
+Turubai* skrini_ramani_eneo = 0;
+
+// Akiba ya fremu kamili ya mwisho ya ramani (eneo la ramani pekee), kwa
+// hakikisho la haraka wakati ramani inaburutwa.
+n8* skrini_akiba = 0;
+n64 skrini_akiba_ukubwa = 0;
+n64 skrini_akiba_w = 0;
+n64 skrini_akiba_h = 0;
+n64 skrini_akiba_x = 0;         // kitovu cha dunia cha fremu iliyohifadhiwa
+n64 skrini_akiba_y = 0;
+n64 skrini_akiba_kipimo = 0;
+
+// Nafasi (1 = kubwa zaidi) ya taifa kwa pato ghafi.
+n64 skrini_nafasi_ya_taifa(TaifaMfumo* tm, n64 taifa) {
+    TaifaNchi* t = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
+    n64 p = skrini_pato_la_taifa(t);
+    n64 nafasi = 1;
+    n64 i = 0;
+    wakati (i < tm->idadi) {
+        TaifaNchi* o = dunia_taifa_mfumo_pata_kwa_faharisi(tm, i);
+        kama (skrini_pato_la_taifa(o) > p) { nafasi = nafasi + 1; }
+        i = i + 1;
+    }
+    rudisha nafasi;
+}
+
+// Kipimo cha umbali: urefu wa duara (100, 200, 500, ...) km unaotoshea
+// kwenye pikseli ~120, na upau wake.
+w0 skrini_kipimo_cha_umbali(Turubai* t, n64 x, n64 y, n64 kipimo) {
+    // km kwa pikseli 120
+    n64 km = (120 * kipimo * SKRINI_RAMANI_KM_KWA_KIZIO) / 1024;
+    n64 duara = 10;
+    wakati (duara * 10 <= km) { duara = duara * 10; }
+    n64 hatua = duara;
+    kama (duara * 5 <= km) { hatua = duara * 5; } sivyo { kama (duara * 2 <= km) { hatua = duara * 2; } }
+    n64 px = (hatua * 1024) / (kipimo * SKRINI_RAMANI_KM_KWA_KIZIO);
+    turubai_brashi(t, 16777215, 200);
+    turubai_mviringo(t, x - 8, y - 8, px + 96, 30, 6);
+    turubai_brashi(t, ATLASI_RANGI_MAANDISHI, 255);
+    turubai_jaza(t, x, y + 8, px, 2);
+    turubai_jaza(t, x, y + 3, 2, 7);
+    turubai_jaza(t, x + px - 2, y + 3, 2, 7);
+    n8 chombo[32];
+    n8 namba[24];
+    sura_namba(namba, hatua);
+    mfuatano_umbiza(chombo, 32, "%s km", namba, 0, 0, 0, 0, 0);
+    maandishi_chora(t, sura_kati, chombo, x + px + 8, y - 1, 12);
+}
+
+// Safu ya taarifa: lebo kushoto, thamani kulia.
+w0 skrini_safu_ya_taarifa(n8* lebo, n8* thamani, n64 x, n64 y, n64 w) {
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(lebo, x, y, 13);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kulia(thamani, x + w, y, 13);
+}
+
+w0 skrini_ramani_paneli(Mchezo* g, Turubai* t, n64 taifa) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    Miji* mj = mchezo_pata_miji(g);
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
+    n64 x = t->upana - SKRINI_RAMANI_PANELI;
+    n64 y = SKRINI_UPAU_WA_JUU + 1;
+    turubai_brashi(t, SURA_PANELI, 255);
+    turubai_jaza(t, x, y, SKRINI_RAMANI_PANELI, t->kimo - y);
+    turubai_brashi(t, SURA_MPAKA, 255);
+    turubai_jaza(t, x, y, 1, t->kimo - y);
+    kama (tn == 0) { rudisha; }
+    n64 px = x + 24;
+    n64 pw = SKRINI_RAMANI_PANELI - 48;
+    n64 py = y + 24;
+
+    turubai_brashi(t, tn->rangi, 255);
+    turubai_mviringo(t, px, py + 4, 28, 20, 4);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(tn->jina, px + 40, py, 22);
+    py = py + 40;
+    n8 chombo[64];
+    n8 namba[32];
+    sura_rangi(SURA_HAFIFU);
+    mfuatano_umbiza(chombo, 64, "Mji mkuu: %s", mj->jina[taifa], 0, 0, 0, 0, 0);
+    sura_lebo(chombo, px, py, 13);
+    py = py + 36;
+
+    sura_namba_fupi(namba, tn->idadi_ya_watu);
+    skrini_safu_ya_taarifa("Watu", namba, px, py, pw);
+    py = py + 26;
+    sura_namba_fupi(namba, skrini_pato_la_taifa(tn));
+    skrini_safu_ya_taarifa("Pato ghafi", namba, px, py, pw);
+    py = py + 26;
+    n8 nafasi[32];
+    sura_namba(namba, skrini_nafasi_ya_taifa(tm, taifa));
+    n8 jumla[16];
+    sura_namba(jumla, tm->idadi);
+    mfuatano_umbiza(nafasi, 32, "%s / %s", namba, jumla, 0, 0, 0, 0);
+    skrini_safu_ya_taarifa("Nafasi kwa pato", nafasi, px, py, pw);
+    py = py + 26;
+    // kipande 1 = shahada 1 x 1 ~ km 111 x 111 (bila kurekebisha latitudo)
+    n64 eneo_km2 = tn->uchumi.vipande_vya_ardhi * 12321;
+    sura_namba(namba, eneo_km2);
+    mfuatano_umbiza(chombo, 64, "%s km2", namba, 0, 0, 0, 0, 0);
+    skrini_safu_ya_taarifa("Eneo", chombo, px, py, pw);
+    py = py + 26;
+    sura_namba(namba, tn->idadi_ya_mgawanyo);
+    skrini_safu_ya_taarifa("Mikoa", namba, px, py, pw);
+    py = py + 26;
+    n64 lugha = mj->lugha_ya_taifa[taifa];
+    mfuatano_umbiza(chombo, 64, "%s (%s)", lugha_jina(lugha), lugha_familia_jina(lugha_familia(lugha)), 0, 0, 0, 0);
+    skrini_safu_ya_taarifa("Lugha", chombo, px, py, pw);
+    py = py + 40;
+
+    sura_kichwa_cha_safuwima("VIASHIRIA", px, py, 0);
+    py = py + 24;
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo("Teknolojia", px, py, 13);
+    sura_pau(px + 110, py + 5, pw - 110, 8, (tn->kielezo_cha_teknolojia * 1000) / 500, SURA_BAHARI);
+    py = py + 24;
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo("Uchumi", px, py, 13);
+    sura_pau(px + 110, py + 5, pw - 110, 8, (tn->kielezo_cha_uchumi * 1000) / 500, SURA_CHANYA);
+    py = py + 24;
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo("Jeshi", px, py, 13);
+    sura_pau(px + 110, py + 5, pw - 110, 8, (tn->kielezo_cha_kijeshi * 1000) / 500, SURA_HASI);
+    py = py + 24;
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo("Utamaduni", px, py, 13);
+    sura_pau(px + 110, py + 5, pw - 110, 8, (tn->kielezo_cha_utamaduni * 1000) / 500, SURA_LAFUDHI);
+    py = py + 40;
+
+    sura_kichwa_cha_safuwima("MIJI MIKUBWA", px, py, 0);
+    py = py + 24;
+    n64 daraja = 3;
+    n64 imeonyeshwa = 0;
+    wakati (daraja >= 1) {
+        n64 i = 0;
+        wakati (i < mj->idadi && imeonyeshwa < 8) {
+            kama (mj->taifa[i] == taifa && mj->daraja[i] == daraja) {
+                turubai_brashi(t, SURA_MAANDISHI, 255);
+                turubai_duara256(t, (px + 5) * 256, (py + 9) * 256, 300 + daraja * 120);
+                sura_rangi(SURA_MAANDISHI);
+                kama (daraja >= 2) { sura_lebo_kati(mj->jina[i], px + 20, py, 13); }
+                sivyo { sura_lebo(mj->jina[i], px + 20, py, 13); }
+                sura_rangi(SURA_HAFIFU);
+                kama (daraja == 3) { sura_lebo_kulia("mji mkuu", px + pw, py, 12); }
+                sivyo { kama (mj->bandari[i]) { sura_lebo_kulia("bandari", px + pw, py, 12); } }
+                py = py + 22;
+                imeonyeshwa = imeonyeshwa + 1;
+            }
+            i = i + 1;
+        }
+        daraja = daraja - 1;
+    }
+}
+
+// Chora skrini ya ramani. (kitovu_x, kitovu_y) ni nukta ya dunia ya
+// atlasi katikati ya ramani; kipimo ni vizio vya dunia kwa pikseli.
+w0 skrini_ramani_chora(Mchezo* g, Turubai* t, n64 kitovu_x, n64 kitovu_y, n64 kipimo, n64 taifa) {
+    sura_anzisha(t);
+    kama (skrini_serifu == 0) { skrini_serifu = maandishi_pakia("rasilimali/fonti/NotoSerif-Italic.ttf"); }
+    kama (skrini_ramani_eneo == 0) { skrini_ramani_eneo = tenga(ukubwa(Turubai)); }
+    turubai_brashi(t, SURA_USULI, 255);
+    turubai_jaza(t, 0, 0, t->upana, t->kimo);
+    skrini_upau_wa_juu(g, t);
+    skrini_urambazaji(t, 7);
+
+    Atlasi* a = mchezo_pata_atlasi(g);
+    Miji* mj = mchezo_pata_miji(g);
+    n64 x = SKRINI_UPANA_WA_PEMBENI + 1;
+    n64 y = SKRINI_UPAU_WA_JUU + 1;
+    n64 w = t->upana - x - SKRINI_RAMANI_PANELI;
+    n64 h = t->kimo - y;
+    Turubai* e = skrini_ramani_eneo;
+    turubai_funga(e, t->pikseli + y * t->hatua + x * 4, t->hatua, w, h);
+    n64 x0 = kitovu_x - (w / 2) * kipimo;
+    n64 y0 = kitovu_y - (h / 2) * kipimo;
+    atlasi_chora_msingi(a, e, x0, y0, kipimo);
+    atlasi_angazia(a, e, taifa, 40);
+    atlasi_chora_juu(a, mj, e, x0, y0, kipimo, sura_nene, sura_kati, sura_kawaida, skrini_serifu);
+    skrini_kipimo_cha_umbali(e, 24, h - 40, kipimo);
+
+    // hifadhi eneo la ramani kwa hakikisho la kuburuta
+    kama (skrini_akiba_ukubwa < w * h * 4) {
+        kama (skrini_akiba != 0) { achilia skrini_akiba; }
+        skrini_akiba_ukubwa = w * h * 4;
+        skrini_akiba = tenga(skrini_akiba_ukubwa);
+    }
+    n64 j = 0;
+    wakati (j < h) {
+        nakili(skrini_akiba + j * w * 4, e->pikseli + j * e->hatua, w * 4);
+        j = j + 1;
+    }
+    skrini_akiba_w = w;
+    skrini_akiba_h = h;
+    skrini_akiba_x = kitovu_x;
+    skrini_akiba_y = kitovu_y;
+    skrini_akiba_kipimo = kipimo;
+
+    skrini_ramani_paneli(g, t, taifa);
+}
+
+// Hakikisho la haraka: fremu ya mwisho iliyohifadhiwa, imesogezwa kwa
+// tofauti ya kitovu (pikseli nzima), na bahari kwenye sehemu mpya
+// iliyofunuliwa. Hurudisha 0 ikiwa akiba haifai (ukubwa au kipimo
+// kimebadilika) -- mwitaji achore kikamilifu.
+n32 skrini_ramani_hakikisho(Mchezo* g, Turubai* t, n64 kitovu_x, n64 kitovu_y, n64 kipimo, n64 taifa) {
+    n64 x = SKRINI_UPANA_WA_PEMBENI + 1;
+    n64 y = SKRINI_UPAU_WA_JUU + 1;
+    n64 w = t->upana - x - SKRINI_RAMANI_PANELI;
+    n64 h = t->kimo - y;
+    kama (skrini_akiba == 0 || kipimo != skrini_akiba_kipimo || w != skrini_akiba_w || h != skrini_akiba_h) { rudisha 0; }
+    sura_anzisha(t);
+    turubai_brashi(t, SURA_USULI, 255);
+    turubai_jaza(t, 0, 0, t->upana, t->kimo);
+    skrini_upau_wa_juu(g, t);
+    skrini_urambazaji(t, 7);
+    // pikseli (i,j) ya sasa = pikseli (i+dx, j+dy) ya akiba
+    n64 dx = (kitovu_x - skrini_akiba_x) / kipimo;
+    n64 dy = (kitovu_y - skrini_akiba_y) / kipimo;
+    turubai_brashi(t, ATLASI_RANGI_BAHARI, 255);
+    turubai_jaza(t, x, y, w, h);
+    n64 i0 = 0;
+    kama (dx < 0) { i0 = 0 - dx; }
+    n64 i1 = w;
+    kama (dx > 0) { i1 = w - dx; }
+    n64 j = 0;
+    wakati (j < h) {
+        n64 js = j + dy;
+        kama (js >= 0 && js < h && i1 > i0) {
+            nakili(t->pikseli + (y + j) * t->hatua + (x + i0) * 4, skrini_akiba + js * w * 4 + (i0 + dx) * 4, (i1 - i0) * 4);
+        }
+        j = j + 1;
+    }
+    skrini_ramani_paneli(g, t, taifa);
+    rudisha 1;
+}

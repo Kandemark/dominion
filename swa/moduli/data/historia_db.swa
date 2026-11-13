@@ -1,0 +1,374 @@
+// historia_db.swa — tafsiri ya src/core/data/history_db.c (na .h)
+// kwenda Swa. Journal ya matukio ya kihistoria (event-sourced
+// chronicles) -- uumbaji wa dunia, matetemeko, ukuaji wa makazi,
+// n.k, yanayorekodiwa kwa mpangilio na kuweza kuhifadhiwa/kusomwa
+// tena kwenye faili.
+//
+// Kiambishi: historia_db_ — saraka ya chanzo (data/) haikuwa kwenye
+// ramani ya ../../KANUNI-MAJINA.md (ramani ina saraka kuu tu kama
+// economy/governance/culture) -- imeongezwa kama ingizo jipya huko
+// kando na tafsiri hii.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - civ_event_t.context (char[128]) na .data (uint8_t[256], blob
+//     ya binary ya ukubwa usiobadilika) ni FIXED-SIZE ARRAY FIELDS
+//     ndani ya struct -- hazipitiki moja kwa moja kwenye Swa (angalia
+//     kanuni za mradi). Zimekuwa n8* mbili (muktadha/data)
+//     zilizotengwa kwa UREFU HALISI unaohitajika kwa kila tukio
+//     (tenga(urefu+1)/tenga(ukubwa_wa_data)) badala ya nafasi
+//     isiyobadilika -- KIUHALISIA ni uboreshaji (hakuna upotevu wa
+//     kumbukumbu kwa matukio yenye muktadha mfupi), sio upunguzaji
+//     wa uwezo; ukubwa_wa_data bado umebanwa kwa 256 (kama C) kwa
+//     ulinganifu wa tabia.
+//   - civ_journal_t.journal (civ_event_t[], safu INAYOKUA KWA THAMANI
+//     kupitia CIV_REALLOC) imekuwa safu ya n64 za anwani (#185),
+//     kila HistoriaTukio hutengwa peke yake kwa tenga().
+//   - civ_journal_t.db_path (char[256], strncpy) imekuwa n8* moja
+//     kwa moja (kielekezi cha mwitaji, bila nakala ya ndani) --
+//     mtindo uleule wa kitambulisho/jina kwenye moduli nyingine za
+//     mradi huu.
+//   - FILE*/fopen/fwrite/fread (stdio ya C) zimekuwa faili.swa
+//     (syscalls ghafi open/read/write/close) -- Dominion haitegemei
+//     libc tena (angalia maelezo ya faili.swa).
+//   - civ_journal_file_header_t (magic+version+event_count, packed
+//     struct ya C inayoandikwa kwa fwrite moja MOJA KWA MOJA kwenye
+//     kumbukumbu) imebadilishwa kuwa umbizo letu LENYEWE la
+//     length-prefixed (alama(u32)+toleo(u32)+idadi(u64), kisha kwa
+//     kila tukio: nambari_ya_mfuatano(u64)+muhuri(u32)+aina(u32)+
+//     urefu_wa_muktadha(u32)+muktadha+ukubwa_wa_data(u32)+data) --
+//     SI SAMBAMBA KIBAITI na faili za zamani za civ_event_t (ambazo
+//     hazipo bado -- hii ni tafsiri mpya, hakuna faili za kuhifadhi
+//     tena), kwa sababu muundo wetu wa ndani (safu ya vielekezi, si
+//     safu ya thamani zenye urefu-usiobadilika) hauwezi kuandikwa
+//     kwa fwrite moja kama C. weka_u32/weka_u64/pata_u32/pata_u64
+//     za ndani ni nakala ndogo za mtindo uleule wa
+//     onyesho/baiti_ghafi.swa (little-endian, & 255 mara moja baada
+//     ya kusoma kila baiti kuepuka upanuzi-wa-ishara wa n8) -- hazijafanywa
+//     husisha ya onyesho/baiti_ghafi.swa moja kwa moja kwa makusudi
+//     (journal ya data haipaswi kutegemea safu ya onyesho/DRM
+//     kimuundo, ijapokuwa kazi zenyewe ni za jumla).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/faili.swa }
+
+// ---------- Aina za tukio (badala ya civ_journal_event_type_t) ----------
+n32 HISTORIA_TUKIO_MWANZO_WA_DUNIA = 0;         // WORLD_GEN_START
+n32 HISTORIA_TUKIO_MABADILIKO_YA_TEKTONIKI = 1; // TECTONIC_SHIFT
+n32 HISTORIA_TUKIO_MMOMONYOKO = 2;              // EROSION_PASS
+n32 HISTORIA_TUKIO_BIOME_IMEKAMILIKA = 3;       // BIOME_FINALIZED
+n32 HISTORIA_TUKIO_MCHEZAJI_AMEZALIWA = 4;      // PLAYER_SPAWN
+n32 HISTORIA_TUKIO_MAKAZI_YAMEANZISHWA = 5;     // SETTLEMENT_FOUNDED
+n32 HISTORIA_TUKIO_MAKAZI_YAMEKUA = 6;          // SETTLEMENT_GROWTH
+n32 HISTORIA_TUKIO_SERA_IMEBADILIKA = 7;        // POLICY_CHANGED
+n32 HISTORIA_TUKIO_JANGA_LA_ASILI = 8;          // NATURAL_DISASTER
+n32 HISTORIA_TUKIO_KUMBUKUMBU_YA_JUMLA = 9;     // GENERIC_LOG
+
+n32 HISTORIA_DB_UKUBWA_JUU_WA_DATA = 256;
+n32 HISTORIA_DB_ALAMA_YA_UMBIZO = 1835101267; // alama yetu wenyewe, si sambamba na C
+
+muundo HistoriaTukio {
+    n64 nambari_ya_mfuatano; // sequence_id
+    n32 muhuri_wa_wakati;    // timestamp (sekunde, umebanwa kwa n32)
+    n32 aina;
+    n8* muktadha;            // nakala ya ndani, urefu wowote (angalia wigo)
+    n8* data;                // nakala ya ndani, hadi baiti 256
+    n32 ukubwa_wa_data;
+};
+
+muundo HistoriaDB {
+    n64* matukio; // safu ya anwani za HistoriaTukio*, #185
+    n32 idadi_ya_matukio;
+    n32 uwezo;
+    n8* njia_ya_db; // 0 kama hakuna uhifadhi wa faili unaotakiwa
+    n32 toleo_la_umbizo;
+};
+
+// ---------- weka/pata za ndani (little-endian) ----------
+w0 historia_db_andika_u32(n8* f, n32 v) {
+    n8* buf = tenga(4);
+    buf[0] = v & 255;
+    buf[1] = (v >> 8) & 255;
+    buf[2] = (v >> 16) & 255;
+    buf[3] = (v >> 24) & 255;
+    faili_andika(buf, 1, 4, f);
+    achilia buf;
+}
+
+w0 historia_db_andika_u64(n8* f, n64 v) {
+    n8* buf = tenga(8);
+    n64 i = 0;
+    wakati (i < 8) {
+        buf[i] = (v >> (i * 8)) & 255;
+        i = i + 1;
+    }
+    faili_andika(buf, 1, 8, f);
+    achilia buf;
+}
+
+n32 historia_db_soma_u32(n8* f) {
+    n8* buf = tenga(4);
+    n64 n = faili_soma(buf, 1, 4, f);
+    n32 v = 0;
+    kama (n == 4) {
+        n64 a = buf[0] & 255;
+        n64 b = buf[1] & 255;
+        n64 c = buf[2] & 255;
+        n64 d = buf[3] & 255;
+        n64 jumla = a | (b << 8) | (c << 16) | (d << 24);
+        v = jumla;
+    }
+    achilia buf;
+    rudisha v;
+}
+
+n64 historia_db_soma_u64(n8* f) {
+    n8* buf = tenga(8);
+    n64 n = faili_soma(buf, 1, 8, f);
+    n64 v = 0;
+    kama (n == 8) {
+        n64 i = 0;
+        wakati (i < 8) {
+            n64 b = buf[i] & 255;
+            v = v | (b << (i * 8));
+            i = i + 1;
+        }
+    }
+    achilia buf;
+    rudisha v;
+}
+
+HistoriaTukio* historia_db_pata(HistoriaDB* j, n32 idx) { rudisha j->matukio[idx]; }
+
+w0 historia_db_hakikisha_nafasi(HistoriaDB* j, n32 uwezo_wa_chini) {
+    kama (j == 0) { rudisha; }
+    kama (uwezo_wa_chini <= j->uwezo) { rudisha; }
+
+    n32 uwezo_mpya = j->uwezo;
+    kama (uwezo_mpya == 0) { uwezo_mpya = 256; }
+    wakati (uwezo_mpya < uwezo_wa_chini) {
+        uwezo_mpya = uwezo_mpya * 2;
+    }
+
+    kama (j->matukio == 0) {
+        j->matukio = tenga(ukubwa(n64) * uwezo_mpya);
+    } sivyo {
+        j->matukio = badili(j->matukio, ukubwa(n64) * uwezo_mpya);
+    }
+    j->uwezo = uwezo_mpya;
+}
+
+HistoriaDB* historia_db_unda(n8* njia) {
+    HistoriaDB* j = tenga(ukubwa(HistoriaDB));
+    j->matukio = 0;
+    j->idadi_ya_matukio = 0;
+    j->uwezo = 0;
+    j->toleo_la_umbizo = 1;
+    historia_db_hakikisha_nafasi(j, 1024);
+    j->njia_ya_db = njia;
+    rudisha j;
+}
+
+CivMatokeo historia_db_safisha(HistoriaDB* j) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (j == 0) { rudisha r; }
+    kama (j->njia_ya_db == 0) { rudisha r; }
+
+    n8* f = faili_fungua(j->njia_ya_db, "w");
+    kama (f == 0) {
+        r.hitilafu = CIV_HITILAFU_IO;
+        r.ujumbe = "Imeshindwa kufungua faili la journal";
+        rudisha r;
+    }
+
+    historia_db_andika_u32(f, HISTORIA_DB_ALAMA_YA_UMBIZO);
+    historia_db_andika_u32(f, j->toleo_la_umbizo);
+    n64 idadi64 = j->idadi_ya_matukio;
+    historia_db_andika_u64(f, idadi64);
+
+    n32 i = 0;
+    wakati (i < j->idadi_ya_matukio) {
+        HistoriaTukio* t = historia_db_pata(j, i);
+        historia_db_andika_u64(f, t->nambari_ya_mfuatano);
+        historia_db_andika_u32(f, t->muhuri_wa_wakati);
+        historia_db_andika_u32(f, t->aina);
+
+        n32 urefu_wa_muktadha = 0;
+        kama (t->muktadha != 0) {
+            n64 ur = urefu_wa_mfuatano(t->muktadha);
+            n32 ur32 = ur;
+            urefu_wa_muktadha = ur32;
+        }
+        historia_db_andika_u32(f, urefu_wa_muktadha);
+        kama (urefu_wa_muktadha > 0) {
+            faili_andika(t->muktadha, 1, urefu_wa_muktadha, f);
+        }
+
+        historia_db_andika_u32(f, t->ukubwa_wa_data);
+        kama (t->ukubwa_wa_data > 0 && t->data != 0) {
+            faili_andika(t->data, 1, t->ukubwa_wa_data, f);
+        }
+
+        i = i + 1;
+    }
+
+    faili_funga(f);
+    r.ujumbe = "Journal imehifadhiwa";
+    rudisha r;
+}
+
+w0 historia_db_uharibu(HistoriaDB* j) {
+    kama (j == 0) { rudisha; }
+    historia_db_safisha(j);
+
+    n32 i = 0;
+    wakati (i < j->idadi_ya_matukio) {
+        HistoriaTukio* t = historia_db_pata(j, i);
+        kama (t->muktadha != 0) { achilia t->muktadha; }
+        kama (t->data != 0) { achilia t->data; }
+        achilia t;
+        i = i + 1;
+    }
+    kama (j->matukio != 0) { achilia j->matukio; }
+    achilia j;
+}
+
+CivMatokeo historia_db_andika(HistoriaDB* j, n32 aina, n8* muktadha, n8* data, n32 ukubwa_wa_data) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (j == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Journal ni tupu";
+        rudisha r;
+    }
+
+    historia_db_hakikisha_nafasi(j, j->idadi_ya_matukio + 1);
+
+    HistoriaTukio* tukio = tenga(ukubwa(HistoriaTukio));
+    n32 nafasi_mpya = j->idadi_ya_matukio;
+    j->idadi_ya_matukio = j->idadi_ya_matukio + 1;
+    tukio->nambari_ya_mfuatano = j->idadi_ya_matukio;
+
+    n64 muda = civ_muda_sasa();
+    n32 muda_n32 = muda;
+    tukio->muhuri_wa_wakati = muda_n32;
+    tukio->aina = aina;
+
+    n32 ukubwa_halisi = ukubwa_wa_data;
+    kama (ukubwa_halisi > HISTORIA_DB_UKUBWA_JUU_WA_DATA) {
+        ukubwa_halisi = HISTORIA_DB_UKUBWA_JUU_WA_DATA;
+    }
+    tukio->ukubwa_wa_data = ukubwa_halisi;
+
+    kama (muktadha != 0) {
+        n64 urefu = urefu_wa_mfuatano(muktadha);
+        n8* nakala = tenga(urefu + 1);
+        nakili_mfuatano(nakala, muktadha);
+        tukio->muktadha = nakala;
+    } sivyo {
+        tukio->muktadha = 0;
+    }
+
+    kama (data != 0 && ukubwa_halisi > 0) {
+        n8* nakala_data = tenga(ukubwa_halisi);
+        nakili(nakala_data, data, ukubwa_halisi);
+        tukio->data = nakala_data;
+    } sivyo {
+        tukio->data = 0;
+    }
+
+    j->matukio[nafasi_mpya] = tukio;
+
+    n32 mabaki = j->idadi_ya_matukio % 256;
+    kama (mabaki == 0) {
+        rudisha historia_db_safisha(j);
+    }
+    rudisha r;
+}
+
+CivMatokeo historia_db_pakia(HistoriaDB* j, n8* njia) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (j == 0 || njia == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Hoja batili";
+        rudisha r;
+    }
+
+    n8* f = faili_fungua(njia, "r");
+    kama (f == 0) {
+        r.hitilafu = CIV_HITILAFU_IO;
+        r.ujumbe = "Journal haipatikani";
+        rudisha r;
+    }
+
+    n32 alama = historia_db_soma_u32(f);
+    kama (alama != HISTORIA_DB_ALAMA_YA_UMBIZO) {
+        faili_funga(f);
+        r.hitilafu = CIV_HITILAFU_DATA_MBAYA;
+        r.ujumbe = "Umbizo la journal halitambuliki";
+        rudisha r;
+    }
+
+    n32 toleo = historia_db_soma_u32(f);
+    n64 idadi64 = historia_db_soma_u64(f);
+    n32 idadi = idadi64;
+
+    historia_db_hakikisha_nafasi(j, idadi);
+
+    n32 i = 0;
+    wakati (i < idadi) {
+        HistoriaTukio* t = tenga(ukubwa(HistoriaTukio));
+        t->nambari_ya_mfuatano = historia_db_soma_u64(f);
+        n32 muhuri = historia_db_soma_u32(f);
+        t->muhuri_wa_wakati = muhuri;
+        n32 aina_t = historia_db_soma_u32(f);
+        t->aina = aina_t;
+
+        n32 urefu_wa_muktadha = historia_db_soma_u32(f);
+        kama (urefu_wa_muktadha > 0) {
+            n8* buf = tenga(urefu_wa_muktadha + 1);
+            faili_soma(buf, 1, urefu_wa_muktadha, f);
+            buf[urefu_wa_muktadha] = 0;
+            t->muktadha = buf;
+        } sivyo {
+            t->muktadha = 0;
+        }
+
+        n32 ukubwa_data = historia_db_soma_u32(f);
+        t->ukubwa_wa_data = ukubwa_data;
+        kama (ukubwa_data > 0) {
+            n8* bufd = tenga(ukubwa_data);
+            faili_soma(bufd, 1, ukubwa_data, f);
+            t->data = bufd;
+        } sivyo {
+            t->data = 0;
+        }
+
+        j->matukio[i] = t;
+        i = i + 1;
+    }
+    j->idadi_ya_matukio = idadi;
+    j->toleo_la_umbizo = toleo;
+    j->njia_ya_db = njia;
+
+    faili_funga(f);
+    r.ujumbe = "Journal imepakiwa";
+    rudisha r;
+}
+
+n64 historia_db_hesabu_kwa_aina(HistoriaDB* j, n32 aina) {
+    kama (j == 0) { rudisha 0; }
+    n64 idadi = 0;
+    n32 i = 0;
+    wakati (i < j->idadi_ya_matukio) {
+        HistoriaTukio* t = historia_db_pata(j, i);
+        kama (t->aina == aina) { idadi = idadi + 1; }
+        i = i + 1;
+    }
+    rudisha idadi;
+}

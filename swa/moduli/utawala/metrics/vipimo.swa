@@ -1,0 +1,91 @@
+// vipimo.swa — tafsiri ya
+// src/core/governance/metrics/societal_metrics.c (na .h) kwenda
+// Swa. Ripoti ya afya ya jamii inayounganisha serikali, utamaduni,
+// na itikadi.
+//
+// Kiambishi: utawala_vipimo_ — angalia ../../../KANUNI-MAJINA.md.
+// dominant_title (iliyokuwa ikitokana na gov->common_title_pattern,
+// field isiyokuwepo kwenye UtawaliHali iliyotafsiriwa) sasa
+// inatumia utawala_zalisha_cheo() moja kwa moja (kazi iliyopo
+// tayari kwenye maendeleo.swa, inayofanya kazi ileile).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/lugha_dominion.swa }
+husisha { moduli/utawala/maendeleo.swa }
+husisha { moduli/utamaduni/kitambulisho.swa }
+husisha { moduli/utamaduni/itikadi.swa }
+
+muundo UtawalaVipimoAfya {
+    d64 kielezo_cha_utulivu;
+    d64 kielezo_cha_mshikamano;
+    d64 kielezo_cha_rushwa;
+    d64 kielezo_cha_ukali;
+
+    d64 kasi_ya_mageuzi;
+    d64 kielezo_cha_kidunia;    // secularism: 0=dini, 1=kidunia
+    d64 kielezo_cha_uhai;        // vitality
+    d64 mshikamano_wa_kiuchumi;
+    d64 heshima_ya_kimataifa;
+    d64 kielezo_cha_pato;        // gdp
+    d64 utulivu_wa_viwanda;
+
+    n8* cheo_kikuu;               // dominant_title
+    n8* kitambulisho_cha_taifa;   // national_identity_id
+};
+
+UtawalaVipimoAfya utawala_vipimo_hesabu_afya(UtawaliHali* serikali,
+                                               UtamaduniKitambulisho* utamaduni,
+                                               UtamaduniItikadi* itikadi) {
+    UtawalaVipimoAfya afya;
+    afya.kielezo_cha_utulivu = 0.0;
+    afya.kielezo_cha_mshikamano = 0.0;
+    afya.kielezo_cha_rushwa = 0.0;
+    afya.kielezo_cha_ukali = 0.0;
+    afya.kasi_ya_mageuzi = 0.0;
+    afya.kielezo_cha_kidunia = 0.0;
+    afya.kielezo_cha_uhai = 0.0;
+    afya.mshikamano_wa_kiuchumi = 0.0;
+    afya.heshima_ya_kimataifa = 0.0;
+    afya.kielezo_cha_pato = 0.0;
+    afya.utulivu_wa_viwanda = 0.0;
+    afya.cheo_kikuu = 0;
+    afya.kitambulisho_cha_taifa = 0;
+
+    kama (serikali == 0 || utamaduni == 0 || itikadi == 0) { rudisha afya; }
+
+    afya.kielezo_cha_utulivu = serikali->utulivu;
+    afya.kielezo_cha_mshikamano = utamaduni->mshikamano;
+    afya.kielezo_cha_rushwa = serikali->rushwa;
+    afya.kielezo_cha_ukali = itikadi->ukali;
+    afya.kielezo_cha_kidunia = 0.5;
+    afya.kielezo_cha_uhai = 0.8;
+    afya.mshikamano_wa_kiuchumi = 0.9;
+    afya.heshima_ya_kimataifa = 0.5;
+    afya.kielezo_cha_pato = 1.0;
+    afya.utulivu_wa_viwanda = 0.8;
+
+    afya.kasi_ya_mageuzi = (afya.kielezo_cha_ukali + (1.0 - afya.kielezo_cha_utulivu)) * 0.5;
+
+    afya.cheo_kikuu = utawala_zalisha_cheo(serikali);
+    afya.kitambulisho_cha_taifa = utamaduni->kitambulisho;
+
+    rudisha afya;
+}
+
+w0 utawala_vipimo_onyesha(UtawalaVipimoAfya* afya) {
+    kama (afya == 0) { rudisha; }
+    andika(d_tafsiri("m14"), 0,0,0,0,0,0);
+    andika(d_tafsiri("m15"), afya->kitambulisho_cha_taifa, 0,0,0,0,0);
+    andika(d_tafsiri("m16"), afya->cheo_kikuu, 0,0,0,0,0);
+    andika("------------------------------\n", 0,0,0,0,0,0);
+}
+
+d64 utawala_vipimo_sasisha_athari_ya_kisheria(UtawalaVipimoAfya* afya, n8* kitambulisho_cha_huluki, n32 ngazi) {
+    kama (afya == 0 || kitambulisho_cha_huluki == 0) { rudisha 0.0; }
+    // BANNED=3, TERRORIST=4 kwenye C ya asili
+    kama (ngazi >= 3) {
+        afya->kielezo_cha_ukali = finya_d64(afya->kielezo_cha_ukali + 0.15, 0.0, 1.0);
+        afya->kielezo_cha_utulivu = finya_d64(afya->kielezo_cha_utulivu - 0.1, 0.0, 1.5);
+    }
+    rudisha afya->kielezo_cha_ukali;
+}

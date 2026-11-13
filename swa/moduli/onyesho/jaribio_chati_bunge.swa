@@ -1,0 +1,168 @@
+husisha { moduli/onyesho/chati.swa }
+
+// jaribio_chati_bunge.swa -- huthibitisha chati_bunge (chati ya
+// "hemicycle"/bunge) na chati_mstari_eleza (maelezo kwenye chati ya
+// mstari), Awamu J ya mradi wa "Ramani Halisi + Uhuishaji + Dirisha
+// la Kisasa", dhidi ya data YA KUJULIKANA, kwa kusoma pikseli HALISI
+// kwenye framebuffer -- si tu "haikuanguka".
+
+n32 anza() {
+    // ===== 1. chati_bunge =====
+    n64 canvas_w = 400;
+    n64 canvas_h = 250;
+    n64 pitch = canvas_w * 4;
+
+    n8* fb1 = tenga(pitch * canvas_h);
+    weka_sifuri(fb1, pitch * canvas_h);
+
+    n64 idadi_kwa_chama[3];
+    idadi_kwa_chama[0] = 10;
+    idadi_kwa_chama[1] = 5;
+    idadi_kwa_chama[2] = 3;
+    // jumla = 18
+
+    ChatiBungeHoja hb;
+    hb.fb = fb1;
+    hb.pitch = pitch;
+    hb.canvas_w = canvas_w;
+    hb.canvas_h = canvas_h;
+    hb.cx = 200;
+    hb.cy = 220;
+    hb.radius = 150;
+    hb.idadi_kwa_chama = idadi_kwa_chama;
+    hb.idadi_ya_vyama = 3;
+
+    chati_bunge(&hb);
+
+    // 1a. "eneo la duara moja" -- SI fomula ya pi*r*r (hiyo ni
+    //     makadirio tu kwa radius ndogo), bali idadi HALISI ya
+    //     pikseli zinazochorwa na mchoro_duara kwa radius HIYO HIYO
+    //     (4px) -- tunaipima moja kwa moja kwa kuchora duara MOJA la
+    //     rejea kwenye bafa tofauti, kisha kuhesabu pikseli zake.
+    //     Njia hii ni ya KUAMINIKA kwa sababu haitegemei makisio ya
+    //     kihisabati -- inatumia KAZI HIYO HIYO (mchoro_duara)
+    //     inayotumiwa na chati_bunge yenyewe.
+    n64 rejea_w = 20;
+    n64 rejea_h = 20;
+    n64 rejea_pitch = rejea_w * 4;
+    n8* fb_rejea = tenga(rejea_pitch * rejea_h);
+    weka_sifuri(fb_rejea, rejea_pitch * rejea_h);
+    mchoro_duara(fb_rejea, rejea_pitch, rejea_w, rejea_h, 10, 10, 4, 1);
+
+    n64 eneo_duara_moja = 0;
+    n64 ry = 0;
+    wakati (ry < rejea_h) {
+        n64 rx = 0;
+        wakati (rx < rejea_w) {
+            kama (mchoro_pata_pikseli(fb_rejea, rejea_pitch, rx, ry) != 0) { eneo_duara_moja = eneo_duara_moja + 1; }
+            rx = rx + 1;
+        }
+        ry = ry + 1;
+    }
+
+    kama (eneo_duara_moja == 0) { andika_kosa("FAIL: chati_bunge -- eneo_duara_moja=0 (kipimo cha rejea kimeshindwa)\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+
+    // 1b. hesabu pikseli HALISI za kila rangi (chama) kwenye bafa
+    //     nzima ya chati_bunge, kisha gawanya na eneo_duara_moja
+    //     kupata idadi HASA ya dots za rangi hiyo.
+    n64 rangi0 = mchoro_rangi_ya_faharisi(0);
+    n64 rangi1 = mchoro_rangi_ya_faharisi(1);
+    n64 rangi2 = mchoro_rangi_ya_faharisi(2);
+
+    n64 idadi0 = 0;
+    n64 idadi1 = 0;
+    n64 idadi2 = 0;
+    n64 jumla_pikseli_zenye_rangi = 0;
+
+    n64 yy = 0;
+    wakati (yy < canvas_h) {
+        n64 xx = 0;
+        wakati (xx < canvas_w) {
+            n64 px = mchoro_pata_pikseli(fb1, pitch, xx, yy);
+            kama (px == rangi0) { idadi0 = idadi0 + 1; jumla_pikseli_zenye_rangi = jumla_pikseli_zenye_rangi + 1; }
+            sivyo { kama (px == rangi1) { idadi1 = idadi1 + 1; jumla_pikseli_zenye_rangi = jumla_pikseli_zenye_rangi + 1; }
+            sivyo { kama (px == rangi2) { idadi2 = idadi2 + 1; jumla_pikseli_zenye_rangi = jumla_pikseli_zenye_rangi + 1; }
+            sivyo { kama (px != 0) { andika_kosa("FAIL: chati_bunge -- pikseli isiyotarajiwa (%d) kwenye (%d,%d)\n", px, xx, yy, 0, 0, 0); rudisha 1; } } } }
+            xx = xx + 1;
+        }
+        yy = yy + 1;
+    }
+
+    n64 makadirio0 = idadi0 / eneo_duara_moja;
+    n64 makadirio1 = idadi1 / eneo_duara_moja;
+    n64 makadirio2 = idadi2 / eneo_duara_moja;
+    n64 jumla_dots = jumla_pikseli_zenye_rangi / eneo_duara_moja;
+
+    andika("chati_bunge: eneo_duara_moja=%d dots(0)=%d dots(1)=%d dots(2)=%d jumla=%d\n", eneo_duara_moja, makadirio0, makadirio1, makadirio2, jumla_dots, 0);
+
+    // thibitisha HASA hakuna mabaki (dots hazipishani/overlap) --
+    // kugawanya kunatakiwa kuwa SAWASAWA, bila baki.
+    kama ((idadi0 % eneo_duara_moja) != 0) { andika_kosa("FAIL: chati_bunge -- pikseli za rangi0 (%d) si kizidishi HASA cha eneo_duara_moja (%d)\n", idadi0, eneo_duara_moja, 0, 0, 0, 0); rudisha 1; }
+    kama ((idadi1 % eneo_duara_moja) != 0) { andika_kosa("FAIL: chati_bunge -- pikseli za rangi1 (%d) si kizidishi HASA cha eneo_duara_moja (%d)\n", idadi1, eneo_duara_moja, 0, 0, 0, 0); rudisha 1; }
+    kama ((idadi2 % eneo_duara_moja) != 0) { andika_kosa("FAIL: chati_bunge -- pikseli za rangi2 (%d) si kizidishi HASA cha eneo_duara_moja (%d)\n", idadi2, eneo_duara_moja, 0, 0, 0, 0); rudisha 1; }
+
+    kama (makadirio0 != 10) { andika_kosa("FAIL: chati_bunge -- rangi0 ina dots %d (ilitarajiwa 10)\n", makadirio0, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (makadirio1 != 5) { andika_kosa("FAIL: chati_bunge -- rangi1 ina dots %d (ilitarajiwa 5)\n", makadirio1, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (makadirio2 != 3) { andika_kosa("FAIL: chati_bunge -- rangi2 ina dots %d (ilitarajiwa 3)\n", makadirio2, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (jumla_dots != 18) { andika_kosa("FAIL: chati_bunge -- jumla ya dots zote ni %d (ilitarajiwa 18)\n", jumla_dots, 0, 0, 0, 0, 0); rudisha 1; }
+
+    // 1c. eneo la NJE ya nusu-duara (kona ya juu ya bafa, nje ya
+    //     radius na nje ya cy) LAZIMA libaki rangi ya nyuma.
+    n64 kona = mchoro_pata_pikseli(fb1, pitch, 2, 2);
+    kama (kona != 0) { andika_kosa("FAIL: chati_bunge -- kona ya juu-kushoto ya bafa imeguswa (=%d, ilitarajiwa 0)\n", kona, 0, 0, 0, 0, 0); rudisha 1; }
+
+    // ===== 2. chati_mstari_eleza =====
+    n8* fb2 = tenga(pitch * canvas_h);
+    weka_sifuri(fb2, pitch * canvas_h);
+
+    d64 sampuli[5];
+    sampuli[0] = 10.0;
+    sampuli[1] = 50.0;
+    sampuli[2] = 20.0;
+    sampuli[3] = 80.0;   // thamani ya JUU zaidi -- pointi ya 4 (faharisi 3)
+    sampuli[4] = 40.0;
+
+    ChatiMstariHoja hm;
+    hm.fb = fb2;
+    hm.pitch = pitch;
+    hm.canvas_w = canvas_w;
+    hm.canvas_h = canvas_h;
+    hm.x = 10;
+    hm.y = 10;
+    hm.w = 250;
+    hm.h = 150;
+    hm.sampuli = sampuli;
+    hm.idadi = 5;
+
+    chati_mstari(&hm);
+    chati_mstari_eleza(&hm, 3, "MAX");
+
+    // kokotoa kwa mkono nafasi ya pointi ya faharisi=3 (thamani=80,
+    // ya JUU zaidi -- kipimo=1.0 HASA), HASA kama jaribio_chati.swa
+    // ilivyofanya kwa chati_mstari -- chati_mstari_eleza inatumia
+    // fomula HIYO HIYO ndani yake.
+    n64 x_juu = hm.x + ((3 * hm.w) / (hm.idadi - 1));
+    n64 y_juu = hm.y;  // kipimo=1.0 -- y_i LAZIMA iwe HASA y ya juu ya eneo
+    n64 y_lebo = y_juu - 8;  // chati_mstari_eleza inaandika "juu kidogo" (pengo 8px)
+
+    // tafuta pikseli ISIYO SIFURI karibu na (x_juu, y_lebo) -- fonti
+    // ya 8x16 inachora eneo la herufi, si pikseli moja HASA.
+    n32 imepatikana = 0;
+    n64 dy = 0 - 2;
+    wakati (dy <= 18) {
+        n64 dx = 0 - 2;
+        wakati (dx <= 26) {
+            n64 lx = x_juu + dx;
+            n64 ly = y_lebo + dy;
+            kama (lx >= 0 && lx < canvas_w && ly >= 0 && ly < canvas_h) {
+                kama (mchoro_pata_pikseli(fb2, pitch, lx, ly) != 0) { imepatikana = 1; }
+            }
+            dx = dx + 1;
+        }
+        dy = dy + 1;
+    }
+    kama (imepatikana == 0) { andika_kosa("FAIL: chati_mstari_eleza -- hakuna pikseli (maandishi) karibu na nafasi iliyokokotolewa (%d,%d)\n", x_juu, y_lebo, 0, 0, 0, 0); rudisha 1; }
+
+    andika("PASS chati_bunge/chati_mstari_eleza (pikseli halisi zote sahihi)\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

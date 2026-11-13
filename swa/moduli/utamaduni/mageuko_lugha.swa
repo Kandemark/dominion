@@ -1,0 +1,473 @@
+// mageuko_lugha.swa — tafsiri ya src/core/culture/language_evolution.c
+// (na .h) kwenda Swa. Mageuko ya lugha — fonolojia, sarufi, msamiati,
+// ufanano, lahaja, na kukopa maneno kati ya lugha.
+//
+// Kiambishi: utamaduni_mageuko_ — angalia ../../KANUNI-MAJINA.md
+// (culture/ -> utamaduni_ kwa jumla, lakini faili hili linatumia
+// kiambishi kidogo "mageuko_" kuepuka mgongano na dini.swa/kuenea.swa/
+// itikadi.swa/uigaji.swa, mtindo uleule wa dini.swa).
+//
+// MUHIMU: hii ni faili TOFAUTI na uandishi.swa (writing_system.c) --
+// zote mbili ziko ndani ya culture/ lakini ni mifumo miwili tofauti
+// kabisa ya C (civ_language_t dhidi ya civ_writing_system_t).
+// civ_language_t.writing_system_id ni kiungo tu (kitambulisho) kati
+// yao, si utegemezi wa moja kwa moja (hakuna husisha ya uandishi.swa
+// hapa).
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - id/name/parent_id/writing_system_id (char[] ndani ya struct)
+//     zimekuwa n8* -- kielekezi cha mwitaji kinapokelewa moja kwa
+//     moja, hakuna nakala ya ndani (mtindo uleule wa dini.swa).
+//   - phonology.consonants/vowels (char[STRING_SHORT_LEN] inayoweza
+//     kuandikwa) zimekuwa n8* pia -- civ_language_evolve_vocabulary
+//     inasoma/kuandika herufi MOJA MOJA ndani ya neno (si ndani ya
+//     "vowels" yenyewe), kwa hiyo n8* + uwekaji wa index (s[i] = c)
+//     unatosha kabisa, haihitaji buffer ya ukubwa maalum.
+//   - grammar.has_gender/has_cases (bool) zimekuwa n32 (0/1).
+//   - vocabulary[]/loanwords[] (safu zinazokua za civ_vocab_entry_t)
+//     zimekuwa safu za n64* za vielekezi vya
+//     UtamaduniMageukoLughaNeno* (mtindo wa #185, dini.swa).
+//   - dialects[4][STRING_SHORT_LEN] (safu ya majina ya lahaja za
+//     karibu) HAIKULETWA -- haitumiki/haiandikwi mahali popote kwenye
+//     language_evolution.c mwenyewe (field ipo tu kwenye .h,
+//     dialect_count pia haijawahi kuongezwa -- imethibitishwa kwa
+//     kutafuta faili zima); hakuna la kutafsiri.
+//   - vitality_score/is_extinct (civ_float_t/bool) HAVIKULETWA --
+//     vipo kwenye .h lakini havijawahi kusomwa wala kuandikwa popote
+//     ndani ya language_evolution.c (sawa na dialects[] hapo juu).
+//   - creation_time/last_evolution (time_t) HAVIKULETWA -- saa ya
+//     ukuta, si mantiki ya uigaji (mtindo uleule wa dini.swa/
+//     majanga.swa/moduli nyingine nyingi za mradi huu).
+//   - lang_rng_float() (LCG ya ndani yenye hali yake ya "static"
+//     tofauti na mfumo mzima) imebadilishwa kutumia
+//     civ_nasibu_chini_ya (hali MOJA ya nasibu ya ulimwengu mzima,
+//     kama moduli nyingine zote za mradi huu) badala ya kuiga hali
+//     ya pili inayofanana lakini TOFAUTI -- civ_nasibu_chini_ya
+//     tayari inatumia viwango vilevile vya LCG (1103515245/12345),
+//     kwa hiyo ubora wa nasibu ni uleule, badiliko ni la ufuatiliaji
+//     wa hali pekee.
+//   - rand()%6 ya civ_language_evolve_grammar (uchaguzi wa
+//     word_order mpya) imehifadhiwa KAMA ILIVYO, IKIWEMO HITILAFU
+//     YA ASILI: chanzo cha C kina `(int)lang_rng_float() * 6` --
+//     kuzungushia KABLA ya kuzidisha (si `(int)(lang_rng_float()*6)`)
+//     -- kwa kuwa lang_rng_float() < 1.0 KILA WAKATI, (int) yake ni
+//     SIFURI KILA WAKATI, hivyo zidisho na 6 ni sifuri KILA WAKATI
+//     (= CIV_SYNTAX_SVO). Hii ni MDUDU HALISI WA C ya asili (operator
+//     precedence), umehifadhiwa kwa makusudi kwa USAHIHI wa tafsiri
+//     (angalia sheria ya mradi: thamani halisi, si "kilichokusudiwa").
+//     Matokeo: mpangilio_wa_maneno HAUBADILIKI KAMWE kwenye mazoezi,
+//     unabaki SVO (0) -- jaribio la pekee linathibitisha hili moja
+//     kwa moja kama THAMANI SAHIHI, si pengo.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+n32 UTAMADUNI_MAGEUKO_MOF_PEKEE = 0;
+n32 UTAMADUNI_MAGEUKO_MOF_KUUNGANISHA = 1;
+n32 UTAMADUNI_MAGEUKO_MOF_MCHANGANYIKO = 2;
+n32 UTAMADUNI_MAGEUKO_MOF_POLISINTHETIKI = 3;
+
+n32 UTAMADUNI_MAGEUKO_MPANGILIO_SVO = 0;
+n32 UTAMADUNI_MAGEUKO_MPANGILIO_SOV = 1;
+n32 UTAMADUNI_MAGEUKO_MPANGILIO_VSO = 2;
+n32 UTAMADUNI_MAGEUKO_MPANGILIO_VOS = 3;
+n32 UTAMADUNI_MAGEUKO_MPANGILIO_OVS = 4;
+n32 UTAMADUNI_MAGEUKO_MPANGILIO_OSV = 5;
+
+muundo UtamaduniMageukoFonolojia {
+    n8* konsonanti;
+    n8* vokali;
+    d64 uwiano_wa_pua;      // nasal_ratio
+    d64 uwiano_wa_kuzomea;  // fricative_ratio
+};
+
+muundo UtamaduniMageukoSarufi {
+    n32 mofolojia;            // morphology
+    n32 mpangilio_wa_maneno;  // word_order
+    n32 ina_jinsia;           // has_gender
+    n32 ina_hali;             // has_cases
+    n32 idadi_ya_hali;        // case_count
+};
+
+muundo UtamaduniMageukoLughaNeno {
+    n8* kitambulisho_dhana; // concept_id
+    n8* neno;               // word
+};
+
+muundo UtamaduniMageukoLugha {
+    n8* kitambulisho;
+    n8* jina;
+    n8* mzazi_id;
+    n8* mfumo_uandishi_id;
+
+    UtamaduniMageukoFonolojia fonolojia;
+    UtamaduniMageukoSarufi sarufi;
+
+    n64* msamiati;          // safu ya UtamaduniMageukoLughaNeno*
+    n32 idadi_ya_msamiati;
+    n32 uwezo_wa_msamiati;
+
+    n64* mikopo;            // loanwords, safu ya Neno*
+    n32 idadi_ya_mikopo;
+    n32 uwezo_wa_mikopo;
+
+    d64 utata;          // complexity, 0..1
+    d64 fahari;         // prestige, 0..1
+    d64 wazungumzaji;   // speakers (idadi iliyosawazishwa)
+};
+
+muundo UtamaduniMageukoMfumo {
+    n64* lugha_zote;        // safu ya UtamaduniMageukoLugha*
+    n32 idadi;
+    n32 uwezo;
+    d64 kiwango_cha_mageuko;       // evolution_rate
+    d64 kizingiti_cha_mgawanyiko;  // divergence_threshold
+};
+
+// ---------- RNG ya ndani (d64 katika [0,1)) ----------
+d64 utamaduni_mageuko_nasibu_f() {
+    n32 v = civ_nasibu_chini_ya(32768);
+    d64 v_d = v;
+    rudisha v_d / 32768.0;
+}
+
+// ---------- Mfumo ----------
+
+UtamaduniMageukoMfumo* utamaduni_mageuko_mfumo_unda() {
+    UtamaduniMageukoMfumo* m = tenga(ukubwa(UtamaduniMageukoMfumo));
+    kama (m == 0) { rudisha 0; }
+    m->uwezo = 32;
+    m->idadi = 0;
+    m->lugha_zote = tenga(ukubwa(n64) * m->uwezo);
+    m->kiwango_cha_mageuko = 0.001;
+    m->kizingiti_cha_mgawanyiko = 0.3;
+    rudisha m;
+}
+
+UtamaduniMageukoLugha* utamaduni_mageuko_mfumo_pata(UtamaduniMageukoMfumo* m, n32 idx) {
+    rudisha m->lugha_zote[idx];
+}
+
+w0 utamaduni_mageuko_uharibu(UtamaduniMageukoLugha* l) {
+    kama (l == 0) { rudisha; }
+    n32 i = 0;
+    wakati (i < l->idadi_ya_msamiati) {
+        UtamaduniMageukoLughaNeno* n = l->msamiati[i];
+        achilia n;
+        i = i + 1;
+    }
+    achilia l->msamiati;
+
+    n32 j = 0;
+    wakati (j < l->idadi_ya_mikopo) {
+        UtamaduniMageukoLughaNeno* n2 = l->mikopo[j];
+        achilia n2;
+        j = j + 1;
+    }
+    achilia l->mikopo;
+}
+
+w0 utamaduni_mageuko_mfumo_uharibu(UtamaduniMageukoMfumo* m) {
+    kama (m == 0) { rudisha; }
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        UtamaduniMageukoLugha* l = utamaduni_mageuko_mfumo_pata(m, i);
+        utamaduni_mageuko_uharibu(l);
+        achilia l;
+        i = i + 1;
+    }
+    achilia m->lugha_zote;
+    achilia m;
+}
+
+// ---------- Lugha moja ----------
+
+UtamaduniMageukoLugha* utamaduni_mageuko_unda(n8* kitambulisho, n8* jina, n8* mzazi_id) {
+    kama (kitambulisho == 0 || jina == 0) { rudisha 0; }
+
+    UtamaduniMageukoLugha* l = tenga(ukubwa(UtamaduniMageukoLugha));
+    kama (l == 0) { rudisha 0; }
+
+    l->kitambulisho = kitambulisho;
+    l->jina = jina;
+    l->mzazi_id = mzazi_id;
+    l->mfumo_uandishi_id = 0;
+
+    l->fonolojia.konsonanti = "ptkmns";
+    l->fonolojia.vokali = "aiu";
+    l->fonolojia.uwiano_wa_pua = 0.2;
+    l->fonolojia.uwiano_wa_kuzomea = 0.2;
+
+    l->sarufi.mofolojia = UTAMADUNI_MAGEUKO_MOF_PEKEE;
+    l->sarufi.mpangilio_wa_maneno = UTAMADUNI_MAGEUKO_MPANGILIO_SVO;
+    l->sarufi.ina_jinsia = 0;
+    l->sarufi.ina_hali = 0;
+    l->sarufi.idadi_ya_hali = 0;
+
+    l->uwezo_wa_msamiati = 64;
+    l->idadi_ya_msamiati = 0;
+    l->msamiati = tenga(ukubwa(n64) * l->uwezo_wa_msamiati);
+
+    l->uwezo_wa_mikopo = 16;
+    l->idadi_ya_mikopo = 0;
+    l->mikopo = tenga(ukubwa(n64) * l->uwezo_wa_mikopo);
+
+    l->utata = 0.5;
+    l->fahari = 0.5;
+    l->wazungumzaji = 1.0;
+
+    rudisha l;
+}
+
+// civ_language_evolve_phonology: mabadiliko ya nasibu ya uwiano wa
+// pua pale nguvu > 0.05 (kipimo pekee kilichotumika kwenye C).
+w0 utamaduni_mageuko_badilika_fonolojia(UtamaduniMageukoLugha* l, d64 nguvu) {
+    kama (nguvu > 0.05) {
+        d64 mkengeuko = (utamaduni_mageuko_nasibu_f() - 0.5) * 0.1;
+        l->fonolojia.uwiano_wa_pua = l->fonolojia.uwiano_wa_pua + mkengeuko;
+    }
+}
+
+// civ_language_evolve_grammar: angalia maoni ya juu kuhusu mdudu wa
+// asili wa C (int ya kuzungushia KABLA ya kuzidisha) uliohifadhiwa
+// kwa makusudi.
+w0 utamaduni_mageuko_badilika_sarufi(UtamaduniMageukoLugha* l, d64 nguvu) {
+    kama (nguvu > 0.1) {
+        kama (utamaduni_mageuko_nasibu_f() < 0.01) {
+            n32 sehemu_ya_int = utamaduni_mageuko_nasibu_f();
+            l->sarufi.mpangilio_wa_maneno = sehemu_ya_int * 6;
+        }
+    }
+}
+
+// Kazi ndogo: hamisha herufi ya KWANZA ndani ya "neno" inayopatikana
+// kwenye "vokali" kwenda vokali inayofuata kwenye orodha ya vokali
+// (sawa na strpbrk+strcspn ya C: civ_language_evolve_vocabulary).
+// Hakuna badiliko ikiwa vokali hiyo ni ya mwisho kwenye orodha.
+w0 utamaduni_mageuko_herekeza_neno(n8* neno, n8* vokali) {
+    kama (neno == 0 || vokali == 0) { rudisha; }
+    n64 urefu_neno = urefu_wa_mfuatano(neno);
+    n64 urefu_vokali = urefu_wa_mfuatano(vokali);
+    n64 i = 0;
+    wakati (i < urefu_neno) {
+        n32 j = tafuta_herufi(vokali, neno[i]);
+        kama (j >= 0) {
+            n64 j64 = j;
+            kama (j64 < urefu_vokali - 1) {
+                neno[i] = vokali[j64 + 1];
+            }
+            rudisha;
+        }
+        i = i + 1;
+    }
+}
+
+w0 utamaduni_mageuko_badilika_msamiati(UtamaduniMageukoLugha* l, d64 nguvu) {
+    n32 i = 0;
+    wakati (i < l->idadi_ya_msamiati) {
+        UtamaduniMageukoLughaNeno* n = l->msamiati[i];
+        kama (utamaduni_mageuko_nasibu_f() < nguvu) {
+            utamaduni_mageuko_herekeza_neno(n->neno, l->fonolojia.vokali);
+        }
+        i = i + 1;
+    }
+}
+
+CivMatokeo utamaduni_mageuko_badilika(UtamaduniMageukoLugha* l, d64 muda) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (l == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    d64 kiwango_cha_mageuko = 0.001;
+
+    d64 badiliko_la_utata =
+        (l->wazungumzaji * l->fahari - l->utata) * kiwango_cha_mageuko * muda;
+    l->utata = finya_d64(l->utata + badiliko_la_utata, 0.0, 1.0);
+
+    d64 badiliko_la_fahari =
+        (l->wazungumzaji * l->utata - l->fahari) * kiwango_cha_mageuko * muda * 0.5;
+    l->fahari = finya_d64(l->fahari + badiliko_la_fahari, 0.0, 1.0);
+
+    d64 nguvu = kiwango_cha_mageuko * muda;
+    utamaduni_mageuko_badilika_fonolojia(l, nguvu);
+    utamaduni_mageuko_badilika_sarufi(l, nguvu);
+    utamaduni_mageuko_badilika_msamiati(l, nguvu);
+
+    rudisha r;
+}
+
+CivMatokeo utamaduni_mageuko_mfumo_badilika(UtamaduniMageukoMfumo* m, d64 muda) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        UtamaduniMageukoLugha* l = utamaduni_mageuko_mfumo_pata(m, i);
+        utamaduni_mageuko_badilika(l, muda);
+        i = i + 1;
+    }
+    rudisha r;
+}
+
+d64 utamaduni_mageuko_kipimo_cha_ufanano(UtamaduniMageukoLugha* a, UtamaduniMageukoLugha* b) {
+    kama (a == 0 || b == 0) { rudisha 0.0; }
+
+    d64 ufanano_wa_mzazi = 0.0;
+    n32 a_ana_mzazi = (a->mzazi_id != 0 && urefu_wa_mfuatano(a->mzazi_id) > 0);
+    n32 b_ana_mzazi = (b->mzazi_id != 0 && urefu_wa_mfuatano(b->mzazi_id) > 0);
+
+    kama (a_ana_mzazi != 0 && linganisha_mfuatano(a->mzazi_id, b->kitambulisho) == 0) {
+        ufanano_wa_mzazi = 0.6;
+    } sivyo { kama (b_ana_mzazi != 0 && linganisha_mfuatano(b->mzazi_id, a->kitambulisho) == 0) {
+        ufanano_wa_mzazi = 0.6;
+    } sivyo { kama (a_ana_mzazi != 0 && b_ana_mzazi != 0 && linganisha_mfuatano(a->mzazi_id, b->mzazi_id) == 0) {
+        ufanano_wa_mzazi = 0.4;
+    } } }
+
+    d64 tofauti_ya_utata = a->utata - b->utata;
+    kama (tofauti_ya_utata < 0.0) { tofauti_ya_utata = 0.0 - tofauti_ya_utata; }
+    d64 ufanano_wa_utata = 1.0 - tofauti_ya_utata;
+
+    rudisha finya_d64(ufanano_wa_mzazi + ufanano_wa_utata * 0.4, 0.0, 1.0);
+}
+
+n8* utamaduni_mageuko_pata_neno(UtamaduniMageukoLugha* l, n8* dhana_id) {
+    kama (l == 0 || dhana_id == 0) { rudisha 0; }
+    n32 i = 0;
+    wakati (i < l->idadi_ya_msamiati) {
+        UtamaduniMageukoLughaNeno* n = l->msamiati[i];
+        kama (linganisha_mfuatano(n->kitambulisho_dhana, dhana_id) == 0) {
+            rudisha n->neno;
+        }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+CivMatokeo utamaduni_mageuko_ongeza_neno(UtamaduniMageukoLugha* l, n8* dhana_id, n8* neno) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (l == 0 || dhana_id == 0 || neno == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    kama (l->idadi_ya_msamiati >= l->uwezo_wa_msamiati) {
+        l->uwezo_wa_msamiati = l->uwezo_wa_msamiati * 2;
+        l->msamiati = badili(l->msamiati, ukubwa(n64) * l->uwezo_wa_msamiati);
+    }
+
+    UtamaduniMageukoLughaNeno* n = tenga(ukubwa(UtamaduniMageukoLughaNeno));
+    n->kitambulisho_dhana = dhana_id;
+    n->neno = neno;
+    l->msamiati[l->idadi_ya_msamiati] = n;
+    l->idadi_ya_msamiati = l->idadi_ya_msamiati + 1;
+
+    rudisha r;
+}
+
+CivMatokeo utamaduni_mageuko_mfumo_ongeza(UtamaduniMageukoMfumo* m, UtamaduniMageukoLugha* l) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0 || l == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    kama (m->idadi >= m->uwezo) {
+        m->uwezo = m->uwezo * 2;
+        m->lugha_zote = badili(m->lugha_zote, ukubwa(n64) * m->uwezo);
+    }
+
+    m->lugha_zote[m->idadi] = l;
+    m->idadi = m->idadi + 1;
+
+    rudisha r;
+}
+
+UtamaduniMageukoLugha* utamaduni_mageuko_mfumo_tafuta(UtamaduniMageukoMfumo* m, n8* id) {
+    kama (m == 0 || id == 0) { rudisha 0; }
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        UtamaduniMageukoLugha* l = utamaduni_mageuko_mfumo_pata(m, i);
+        kama (linganisha_mfuatano(l->kitambulisho, id) == 0) { rudisha l; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+UtamaduniMageukoLugha* utamaduni_mageuko_kutoka(UtamaduniMageukoMfumo* m, UtamaduniMageukoLugha* mzazi,
+                                                  n8* id_mpya, n8* jina_mpya) {
+    kama (m == 0 || mzazi == 0 || id_mpya == 0 || jina_mpya == 0) { rudisha 0; }
+
+    UtamaduniMageukoLugha* mtoto = utamaduni_mageuko_unda(id_mpya, jina_mpya, mzazi->kitambulisho);
+    kama (mtoto == 0) { rudisha 0; }
+
+    d64 mkengeuko = (utamaduni_mageuko_nasibu_f() - 0.5) * 0.2;
+    mtoto->utata = finya_d64(mzazi->utata + mkengeuko, 0.0, 1.0);
+    mtoto->fahari = mzazi->fahari * 0.8;
+    mtoto->wazungumzaji = mzazi->wazungumzaji * 0.1;
+
+    utamaduni_mageuko_mfumo_ongeza(m, mtoto);
+    rudisha mtoto;
+}
+
+UtamaduniMageukoLugha* utamaduni_mageuko_gawanya_lahaja(UtamaduniMageukoMfumo* m, UtamaduniMageukoLugha* mzazi,
+                                                          n8* jina_lahaja) {
+    kama (m == 0 || mzazi == 0 || jina_lahaja == 0) { rudisha 0; }
+
+    n8* id_lahaja = tenga(ukubwa(n8) * 64);
+    unganisha_mfuatano(id_lahaja, mzazi->kitambulisho, "_dia");
+
+    UtamaduniMageukoLugha* lahaja = utamaduni_mageuko_kutoka(m, mzazi, id_lahaja, jina_lahaja);
+    kama (lahaja != 0) {
+        lahaja->utata = mzazi->utata;
+        lahaja->fahari = mzazi->fahari * 0.9;
+    }
+    rudisha lahaja;
+}
+
+CivMatokeo utamaduni_mageuko_azima_neno(UtamaduniMageukoLugha* lengwa, UtamaduniMageukoLugha* chanzo, n8* dhana_id) {
+    kama (lengwa == 0 || chanzo == 0 || dhana_id == 0) {
+        CivMatokeo r;
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "kielekezi tupu";
+        rudisha r;
+    }
+
+    n8* neno = utamaduni_mageuko_pata_neno(chanzo, dhana_id);
+    kama (neno == 0) {
+        CivMatokeo r;
+        r.hitilafu = CIV_HITILAFU_HAIJAPATIKANA;
+        r.ujumbe = "neno la chanzo halikupatikana";
+        rudisha r;
+    }
+
+    kama (lengwa->idadi_ya_mikopo >= lengwa->uwezo_wa_mikopo) {
+        lengwa->uwezo_wa_mikopo = lengwa->uwezo_wa_mikopo * 2;
+        lengwa->mikopo = badili(lengwa->mikopo, ukubwa(n64) * lengwa->uwezo_wa_mikopo);
+    }
+
+    UtamaduniMageukoLughaNeno* n = tenga(ukubwa(UtamaduniMageukoLughaNeno));
+    n->kitambulisho_dhana = dhana_id;
+    n->neno = neno;
+    lengwa->mikopo[lengwa->idadi_ya_mikopo] = n;
+    lengwa->idadi_ya_mikopo = lengwa->idadi_ya_mikopo + 1;
+
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = "neno limeazimwa";
+    rudisha r;
+}

@@ -1,0 +1,167 @@
+husisha { moduli/mchezo.swa }
+
+// jaribio_gdp_historia.swa -- jaribio la mwisho-hadi-mwisho la Awamu D
+// ya mradi wa "injini ya 2D yenye nguvu + injini ya taswira ya
+// takwimu" (Awamu A/B/C -- maumbo/mchoro.swa, rangi/mchoro.swa,
+// chati.swa -- zimekamilika tayari, angalia 8de967c/95c84bb/06dc2d0).
+// Awamu D inaongeza chanzo cha data cha namba-kwa-muda cha KWANZA
+// (data/takwimu_historia.swa, TakwimuHistoria) kinacholisha moja kwa
+// moja chati_mstari (Awamu C): gdp_historia_addr kwenye Mchezo
+// inarekodi GDP YA JUMLA YA DUNIA (jumla ya uchumi.pato_ghafi ya
+// mataifa YOTE, SI GDP ya taifa moja) kwa KILA zamu iliyomalizika
+// (mchezo_maliza_zamu, SI mchezo_sasisha -- angalia mchezo.swa kwa
+// sababu kamili).
+//
+// Jaribio hili huita mchezo_unda()+mchezo_anzisha() HALISI (mifumo
+// 47), kisha mizunguko KADHAA HALISI ya mchezo_sasisha(g) na
+// mchezo_maliza_zamu(g), kisha kuthibitisha:
+//   1) idadi ya sampuli (gdp_historia->idadi) ni HASA sawa na idadi
+//      ya mara mchezo_maliza_zamu ilivyoitwa (= idadi ya zamu
+//      zilizomalizika) -- SI tu "zipo".
+//   2) sampuli ya KWANZA na ya MWISHO zinalingana HASA (ulinganisho
+//      wa d64 moja kwa moja, si "karibu na 0") na GDP ya jumla
+//      HALISI iliyopimwa papo hapo na jaribio hili lenyewe (kitanzi
+//      huru cha dunia_taifa_mfumo_pata_kwa_faharisi + uchumi.pato_ghafi,
+//      SI wito wa kazi ya uzalishaji mchezo_hesabu_gdp_jumla -- ni
+//      utekelezaji TOFAUTI wa mantiki ile ile, ili kuepuka
+//      kuthibitisha kazi dhidi ya nafsi yake).
+//   3) mchezo_uharibu(g) haianguki (gdp_historia imeachiliwa salama
+//      ndani ya mchezo_zima_mifumo_huru).
+//
+// Dunia ni atlasi (dunia_atlasi.swa): ramani ya vipande ina nchi kavu
+// halisi, kila kipande cha nchi kavu kina mmiliki, na kila zamu mataifa
+// hukua (dunia_atlasi_songesha_zamu) kabla sampuli ya GDP kuchukuliwa.
+// Hivyo sampuli ya zamu ni GDP baada ya mchezo_maliza_zamu, na
+// historia inapanda. Mbegu ile ile hutoa historia ile ile.
+
+n32 gh_yalioshindwa = 0;
+
+w0 gh_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        gh_yalioshindwa = gh_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+// gh_dbg_d64: chapisha d64 kwa usahihi wa desimali 3 (kuzidisha kwa
+// 1000, kuonyesha kama n64) -- %f haiungwi mkono na andika (muundo
+// uleule kama jaribio_mchezo_kamili.swa/jaribio_mchezo.swa).
+w0 gh_dbg_d64(n8* jina, d64 v) {
+    n64 v_x1000 = v * 1000.0;
+    andika("  [dbg] %s*1000 = %d\n", jina, v_x1000, 0, 0, 0, 0);
+}
+
+// gh_gdp_jumla_moja_kwa_moja: utekelezaji HURU (ulioandikwa upya
+// hapa, si wito wa mchezo_hesabu_gdp_jumla ya mchezo.swa) wa
+// kitanzi kile kile cha kujumlisha uchumi.pato_ghafi ya mataifa
+// yote -- kusudi ni kuthibitisha sampuli zilizohifadhiwa dhidi ya
+// kipimo HURU, si kuthibitisha kazi dhidi ya nafsi yake.
+d64 gh_gdp_jumla_moja_kwa_moja(Mchezo* g) {
+    d64 jumla = 0.0;
+    kama (g == 0) { rudisha jumla; }
+    TaifaMfumo* taifa = mchezo_pata_taifa(g);
+    kama (taifa == 0) { rudisha jumla; }
+    n32 i = 0;
+    wakati (i < taifa->idadi) {
+        TaifaNchi* t = dunia_taifa_mfumo_pata_kwa_faharisi(taifa, i);
+        kama (t != 0) {
+            jumla = jumla + t->uchumi.pato_ghafi;
+        }
+        i = i + 1;
+    }
+    rudisha jumla;
+}
+
+n32 anza() {
+    Mchezo* g = mchezo_unda();
+    n32 g_sio_tupu = (g != 0);
+    gh_thibitisha(g_sio_tupu, "mchezo_unda inarudisha kielekezi");
+
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    gh_thibitisha(r.hitilafu == CIV_SAWA, "mchezo_anzisha HALISI inarudi CIV_SAWA (mifumo 47)");
+
+    TakwimuHistoria* h = mchezo_pata_gdp_historia(g);
+    n32 h_sio_tupu = (h != 0);
+    gh_thibitisha(h_sio_tupu, "mchezo_pata_gdp_historia si tupu baada ya mchezo_anzisha");
+    gh_thibitisha(h->idadi == 0, "gdp_historia huanza na idadi=0 (hakuna zamu iliyomalizika bado)");
+    gh_thibitisha(h->uwezo == 64, "gdp_historia huanza na uwezo=64 (bafa ya awali, kabla ya kuongezeka)");
+
+    DuniaRamani* ramani = mchezo_pata_ramani(g);
+    gh_thibitisha(ramani->idadi_ya_vipande_vya_ardhi > 0, "ramani ya mchezo ina nchi kavu (imejazwa kutoka atlasi)");
+
+    n32 idadi_ya_zamu = 5;
+    n32 mizunguko_kwa_zamu = 3;
+
+    d64 gdp_ya_zamu_ya_kwanza = 0.0;
+    d64 gdp_ya_zamu_ya_mwisho = 0.0;
+
+    n32 z = 0;
+    wakati (z < idadi_ya_zamu) {
+        n32 m = 0;
+        wakati (m < mizunguko_kwa_zamu) {
+            mchezo_sasisha(g);
+            m = m + 1;
+        }
+        // mchezo_maliza_zamu husogeza mataifa, hukokotoa uchumi upya, kisha
+        // huchukua sampuli -- hivyo GDP iliyopimwa PAPO HAPO baada yake
+        // ni HASA ile iliyohifadhiwa.
+        mchezo_maliza_zamu(g);
+        d64 gdp_sasa = gh_gdp_jumla_moja_kwa_moja(g);
+        kama (z == 0) { gdp_ya_zamu_ya_kwanza = gdp_sasa; }
+        kama (z == idadi_ya_zamu - 1) { gdp_ya_zamu_ya_mwisho = gdp_sasa; }
+        z = z + 1;
+    }
+
+    gh_dbg_d64("gdp_ya_zamu_ya_kwanza (jaribio)", gdp_ya_zamu_ya_kwanza);
+    gh_dbg_d64("sampuli[0] (hifadhiwa)", h->sampuli[0]);
+    gh_dbg_d64("gdp_ya_zamu_ya_mwisho (jaribio)", gdp_ya_zamu_ya_mwisho);
+    n32 idx_ya_mwisho = h->idadi - 1;
+    gh_dbg_d64("sampuli[idadi-1] (hifadhiwa)", h->sampuli[idx_ya_mwisho]);
+
+    gh_thibitisha(h->idadi == idadi_ya_zamu, "idadi ya sampuli == idadi ya zamu zilizomalizika (mchezo_maliza_zamu iliyoitwa mara 5)");
+    gh_thibitisha(h->uwezo >= h->idadi, "uwezo >= idadi daima (hakikisha_nafasi inafanya kazi)");
+    gh_thibitisha(h->sampuli[0] == gdp_ya_zamu_ya_kwanza, "sampuli[0] inalingana HASA na GDP ya jumla iliyopimwa papo hapo (zamu ya 1)");
+    gh_thibitisha(h->sampuli[idx_ya_mwisho] == gdp_ya_zamu_ya_mwisho, "sampuli ya mwisho inalingana HASA na GDP ya jumla iliyopimwa papo hapo (zamu ya 5)");
+    gh_thibitisha(h->sampuli[0] > 0.0, "GDP ya jumla ni chanya (mataifa yanamiliki nchi kavu)");
+
+    // Watu hukua kila zamu na viwango vya uchumi husogea, hivyo GDP ya
+    // dunia baada ya zamu 5 iko juu ya ile ya zamu ya kwanza.
+    gh_thibitisha(h->sampuli[idx_ya_mwisho] > h->sampuli[0], "GDP ya jumla inapanda zamu hadi zamu (mataifa hukua)");
+
+    // Uthabiti: mchezo wa pili wenye mbegu ile ile hutoa sampuli zile zile.
+    Mchezo* g2 = mchezo_unda();
+    MchezoUsanidi usanidi2;
+    mchezo_usanidi_chaguomsingi(&usanidi2);
+    mchezo_anzisha(g2, &usanidi2);
+    z = 0;
+    wakati (z < idadi_ya_zamu) {
+        n32 m2 = 0;
+        wakati (m2 < mizunguko_kwa_zamu) {
+            mchezo_sasisha(g2);
+            m2 = m2 + 1;
+        }
+        mchezo_maliza_zamu(g2);
+        z = z + 1;
+    }
+    TakwimuHistoria* h2 = mchezo_pata_gdp_historia(g2);
+    n32 sawa = (h2->idadi == h->idadi);
+    n32 k = 0;
+    wakati (sawa && k < h->idadi) {
+        kama (h2->sampuli[k] != h->sampuli[k]) { sawa = 0; }
+        k = k + 1;
+    }
+    gh_thibitisha(sawa, "mchezo wa pili wenye mbegu ile ile una historia ile ile ya GDP (THABITI)");
+    mchezo_uharibu(g2);
+
+    mchezo_uharibu(g);
+    andika("mchezo_uharibu(g) imekamilika bila kuanguka (gdp_historia imeachiliwa salama)\n", 0, 0, 0, 0, 0, 0);
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", gh_yalioshindwa, 0, 0, 0, 0, 0);
+    kama (gh_yalioshindwa > 0) { rudisha 1; }
+    andika("DONE\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

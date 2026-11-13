@@ -1,0 +1,219 @@
+// itikadi.swa — tafsiri ya src/core/culture/ideology_system.c (na .h)
+// kwenda Swa. Itikadi zinazoibuka kutoka kwa wigo wa thamani (si
+// aina zilizowekwa mapema).
+//
+// Kiambishi: utamaduni_itikadi_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - id/name (char[N]) zimekuwa n8*, hazihifadhi nakala.
+//   - sera (civ_policy_t) haijaletwa kikamilifu — chanzo cha C
+//     kina nafasi za policies[]/policy_count/policy_capacity lakini
+//     HAKUNA kazi yoyote ya kuongeza/kusimamia sera kwenye .c hii
+//     (ni "scaffolding" tu, haijatumika). Nafasi zimeachwa (idadi=0)
+//     kwa uwezo wa baadaye, bila kuongeza mantiki isiyokuwepo.
+//   - rand() imekuwa civ_nasibu_chini_ya (LCG ya msingi_civ.swa).
+//   - sqrt() imebadilishwa na civ_mzizi (mbinu ya Newton, angalia
+//     msingi_civ.swa) — lugha-swa/swa#183.
+//   - values[] (safu inayokua) inatumia muundo wa n64* (angalia
+//     kitambulisho.swa kuhusu lugha-swa/swa#185).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+muundo UtamaduniItikadiThamani {
+    n8* mhimili;   // axis
+    d64 thamani;   // value, -1.0 hadi 1.0
+};
+
+muundo UtamaduniItikadi {
+    n8* kitambulisho;
+    n8* jina;
+
+    n64* thamani_zote;     // n64* ya vielekezi vya UtamaduniItikadiThamani*
+    n32 idadi_ya_thamani;
+    n32 uwezo_wa_thamani;
+
+    n8* mzazi_itikadi_id;
+    n32 idadi_ya_madhehebu;   // sect_count
+
+    d64 mshikamano;    // coherence
+    d64 ukali;         // radicalism
+};
+
+muundo UtamaduniItikadiMfumo {
+    n64* itikadi_zote;     // n64* ya vielekezi vya UtamaduniItikadi*
+    n32 idadi;
+    n32 uwezo;
+};
+
+UtamaduniItikadiMfumo* utamaduni_itikadi_mfumo_unda() {
+    UtamaduniItikadiMfumo* mfumo = tenga(ukubwa(UtamaduniItikadiMfumo));
+    mfumo->uwezo = 16;
+    mfumo->idadi = 0;
+    mfumo->itikadi_zote = tenga(ukubwa(n64) * mfumo->uwezo);
+    rudisha mfumo;
+}
+
+UtamaduniItikadi* utamaduni_itikadi_mfumo_pata(UtamaduniItikadiMfumo* mfumo, n32 idx) {
+    rudisha mfumo->itikadi_zote[idx];
+}
+
+UtamaduniItikadi* utamaduni_itikadi_unda(n8* jina) {
+    UtamaduniItikadi* itikadi = tenga(ukubwa(UtamaduniItikadi));
+    itikadi->jina = jina;
+    itikadi->kitambulisho = 0;
+    itikadi->mzazi_itikadi_id = 0;
+    itikadi->idadi_ya_madhehebu = 0;
+    itikadi->uwezo_wa_thamani = 4;
+    itikadi->idadi_ya_thamani = 0;
+    itikadi->thamani_zote = tenga(ukubwa(n64) * itikadi->uwezo_wa_thamani);
+    itikadi->mshikamano = 1.0;
+    itikadi->ukali = 0.0;
+    rudisha itikadi;
+}
+
+w0 utamaduni_itikadi_sasisha_vipimo(UtamaduniItikadi* itikadi) {
+    kama (itikadi->idadi_ya_thamani == 0) { rudisha; }
+
+    d64 jumla_ya_ukubwa = 0.0;
+    n32 i = 0;
+    wakati (i < itikadi->idadi_ya_thamani) {
+        UtamaduniItikadiThamani* th = itikadi->thamani_zote[i];
+        d64 thamani_abs = th->thamani;
+        kama (thamani_abs < 0.0) { thamani_abs = 0.0 - thamani_abs; }
+        jumla_ya_ukubwa = jumla_ya_ukubwa + thamani_abs;
+        i = i + 1;
+    }
+
+    n32 idadi_n = itikadi->idadi_ya_thamani;
+    d64 idadi_d = idadi_n;
+    itikadi->ukali = jumla_ya_ukubwa / idadi_d;
+    itikadi->mshikamano = 1.0;
+}
+
+n32 utamaduni_itikadi_weka_thamani(UtamaduniItikadi* itikadi, n8* mhimili, d64 thamani) {
+    d64 thamani_f = finya_d64(thamani, -1.0, 1.0);
+
+    n32 i = 0;
+    wakati (i < itikadi->idadi_ya_thamani) {
+        UtamaduniItikadiThamani* th = itikadi->thamani_zote[i];
+        kama (linganisha_mfuatano(th->mhimili, mhimili) == 0) {
+            th->thamani = thamani_f;
+            utamaduni_itikadi_sasisha_vipimo(itikadi);
+            rudisha CIV_SAWA;
+        }
+        i = i + 1;
+    }
+
+    kama (itikadi->idadi_ya_thamani >= itikadi->uwezo_wa_thamani) {
+        itikadi->uwezo_wa_thamani = itikadi->uwezo_wa_thamani * 2;
+        itikadi->thamani_zote = badili(itikadi->thamani_zote, ukubwa(n64) * itikadi->uwezo_wa_thamani);
+    }
+
+    UtamaduniItikadiThamani* th_mpya = tenga(ukubwa(UtamaduniItikadiThamani));
+    th_mpya->mhimili = mhimili;
+    th_mpya->thamani = thamani_f;
+    itikadi->thamani_zote[itikadi->idadi_ya_thamani] = th_mpya;
+    itikadi->idadi_ya_thamani = itikadi->idadi_ya_thamani + 1;
+
+    utamaduni_itikadi_sasisha_vipimo(itikadi);
+    rudisha CIV_SAWA;
+}
+
+d64 utamaduni_itikadi_pata_thamani(UtamaduniItikadi* itikadi, n8* mhimili) {
+    n32 i = 0;
+    wakati (i < itikadi->idadi_ya_thamani) {
+        UtamaduniItikadiThamani* th = itikadi->thamani_zote[i];
+        kama (linganisha_mfuatano(th->mhimili, mhimili) == 0) {
+            rudisha th->thamani;
+        }
+        i = i + 1;
+    }
+    rudisha 0.0;
+}
+
+n32 utamaduni_itikadi_badilika(UtamaduniItikadi* itikadi, n8* mhimili, d64 mabadiliko) {
+    d64 sasa = utamaduni_itikadi_pata_thamani(itikadi, mhimili);
+    rudisha utamaduni_itikadi_weka_thamani(itikadi, mhimili, sasa + mabadiliko);
+}
+
+d64 utamaduni_itikadi_umbali(UtamaduniItikadi* a, UtamaduniItikadi* b) {
+    d64 umbali_mraba = 0.0;
+
+    n32 i = 0;
+    wakati (i < a->idadi_ya_thamani) {
+        UtamaduniItikadiThamani* th_a = a->thamani_zote[i];
+        d64 thamani_b = utamaduni_itikadi_pata_thamani(b, th_a->mhimili);
+        d64 tofauti = th_a->thamani - thamani_b;
+        umbali_mraba = umbali_mraba + tofauti * tofauti;
+        i = i + 1;
+    }
+
+    i = 0;
+    wakati (i < b->idadi_ya_thamani) {
+        UtamaduniItikadiThamani* th_b = b->thamani_zote[i];
+        n32 iko_kwa_a = 0;
+        n32 j = 0;
+        wakati (j < a->idadi_ya_thamani && iko_kwa_a == 0) {
+            UtamaduniItikadiThamani* th_a = a->thamani_zote[j];
+            kama (linganisha_mfuatano(th_b->mhimili, th_a->mhimili) == 0) {
+                iko_kwa_a = 1;
+            }
+            j = j + 1;
+        }
+        kama (iko_kwa_a == 0) {
+            umbali_mraba = umbali_mraba + th_b->thamani * th_b->thamani;
+        }
+        i = i + 1;
+    }
+
+    rudisha civ_mzizi(umbali_mraba);
+}
+
+UtamaduniItikadi* utamaduni_itikadi_gawanyika(UtamaduniItikadiMfumo* mfumo,
+                                                UtamaduniItikadi* mzazi, n8* jina) {
+    UtamaduniItikadi* mtoto = utamaduni_itikadi_unda(jina);
+    mtoto->mzazi_itikadi_id = mzazi->kitambulisho;
+
+    n32 i = 0;
+    wakati (i < mzazi->idadi_ya_thamani) {
+        UtamaduniItikadiThamani* th = mzazi->thamani_zote[i];
+        n32 nasibu_n = civ_nasibu_chini_ya(100);
+        n32 nasibu_shifted = nasibu_n - 50;
+        d64 nasibu_d = nasibu_shifted;
+        d64 tofauti = nasibu_d * 0.01;
+        utamaduni_itikadi_weka_thamani(mtoto, th->mhimili, th->thamani + tofauti);
+        i = i + 1;
+    }
+
+    kama (mfumo->idadi >= mfumo->uwezo) {
+        mfumo->uwezo = mfumo->uwezo * 2;
+        mfumo->itikadi_zote = badili(mfumo->itikadi_zote, ukubwa(n64) * mfumo->uwezo);
+    }
+    mfumo->itikadi_zote[mfumo->idadi] = mtoto;
+    mfumo->idadi = mfumo->idadi + 1;
+
+    rudisha mtoto;
+}
+
+w0 utamaduni_itikadi_teleza(UtamaduniItikadi* itikadi, d64 rushwa, d64 uthabiti) {
+    kama (rushwa > 0.5) {
+        utamaduni_itikadi_badilika(itikadi, "Mamlaka", 0.05 * rushwa);
+    }
+
+    kama (uthabiti < 0.4) {
+        n32 i = 0;
+        wakati (i < itikadi->idadi_ya_thamani) {
+            UtamaduniItikadiThamani* th = itikadi->thamani_zote[i];
+            n32 nasibu_n = civ_nasibu_chini_ya(100);
+            n32 nasibu_shifted = nasibu_n - 50;
+            d64 nasibu_d = nasibu_shifted;
+            d64 mabadiliko = nasibu_d * 0.001 * (1.0 - uthabiti);
+            th->thamani = finya_d64(th->thamani + mabadiliko, -1.0, 1.0);
+            i = i + 1;
+        }
+    }
+
+    utamaduni_itikadi_sasisha_vipimo(itikadi);
+}

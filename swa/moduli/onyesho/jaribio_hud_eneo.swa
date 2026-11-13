@@ -1,0 +1,175 @@
+husisha { moduli/onyesho/hud.swa }
+
+// jaribio_hud_eneo.swa -- jaribio la kudumu la kazi za "_eneo" mpya
+// (Awamu F ya "Ramani Halisi + Uhuishaji + Dirisha la Kisasa"):
+// onyesho_hud_chora_mstari_eneo, onyesho_hud_chora_kutoka_mchezo_eneo,
+// onyesho_hud_chora_taifa_kina_eneo. Angalia maelezo kamili juu ya
+// hud.swa (sehemu "NYONGEZA (Awamu F ...)") kwa KANUNI YA ANWANI --
+// eneo (x,y,w,h) linatibiwa kama canvas yake YENYEWE, hivyo linakatwa
+// (clip) kwenye mpaka wa ENEO pekee, SI wa bafa nzima.
+//
+// MTINDO WA UTHIBITISHO MKUU: tenga bafa KUBWA (1000x500 XRGB8888),
+// ita kazi za _eneo kwa eneo DOGO upande wa KULIA wa bafa (mfano
+// x=700,y=0,w=300,h=400), kisha thibitisha (a) angalau pikseli MOJA
+// NDANI ya eneo imeguswa (!= 0), na (b) pikseli ILIYO MBALI KABISA
+// NJE ya eneo (kona ya kushoto ya bafa) BADO ni sifuri -- hii ndiyo
+// tofauti muhimu kutoka onyesho_hud_chora_kutoka_mchezo ya ZAMANI
+// (ambayo ingedhania canvas nzima ni 480x280 kutoka 0,0, hivyo
+// isingeweza hata kuandika kwenye eneo lililo mbali na asili).
+//
+// Mchezo HALISI (mifumo 47) unaundwa kwa mchezo_unda/mchezo_anzisha,
+// ardhi inapandwa na mataifa yanadai maeneo (muundo HASA ule ule wa
+// jaribio_hud_mchezo_halisi.swa -- bila hatua hii GDP ingebaki 0.0
+// milele, angalia maelezo pale), kisha mizunguko kadhaa ya
+// mchezo_sasisha huendeshwa ili hali iwe HALISI, si chaguo-msingi tuli.
+
+n32 jhe_yalioshindwa = 0;
+
+w0 jhe_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jhe_yalioshindwa = jhe_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+// jhe_eneo_lina_pikseli: skani mstatili (x0,y0)-(x0+w0,y0+h0) ya bafa
+// -- rudisha 1 kama KUNA angalau pikseli MOJA != 0 ndani yake.
+n32 jhe_eneo_lina_pikseli(n8* fb, n64 pitch, n64 x0, n64 y0, n64 w0, n64 h0) {
+    n64 yy = y0;
+    wakati (yy < y0 + h0) {
+        n64 xx = x0;
+        wakati (xx < x0 + w0) {
+            kama (mchoro_pata_pikseli(fb, pitch, xx, yy) != 0) { rudisha 1; }
+            xx = xx + 1;
+        }
+        yy = yy + 1;
+    }
+    rudisha 0;
+}
+
+n32 anza() {
+    onyesho_fonti_pakia();
+
+    // ---------- Unda Mchezo HALISI (mifumo 47) ----------
+    Mchezo* g = mchezo_unda();
+    n32 g_sio_tupu = (g != 0);
+    jhe_thibitisha(g_sio_tupu, "mchezo_unda inarudisha kielekezi");
+
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    jhe_thibitisha(r.hitilafu == CIV_SAWA, "mchezo_anzisha HALISI inarudi CIV_SAWA (mifumo 47)");
+
+    // Mbegu ya ardhi (dunia_ramani_unda huweka kila kipande kuwa MAJI
+    // kwa chaguo-msingi -- angalia maelezo sawa kwenye
+    // jaribio_hud_mchezo_halisi.swa) -- bila hii GDP ingebaki 0.0.
+    DuniaRamani* ramani_jh = mchezo_pata_ramani(g);
+    n32 y_seed = 0;
+    wakati (y_seed < ramani_jh->urefu) {
+        n32 x_seed = 0;
+        wakati (x_seed < ramani_jh->upana) {
+            DuniaRamaniKipande* kp = dunia_ramani_pata_kipande(ramani_jh, x_seed, y_seed);
+            kama (kp != 0) {
+                kp->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_NYASI;
+                kp->rutuba = 0.5;
+                kp->mwinuko = 0.3;
+            }
+            x_seed = x_seed + 1;
+        }
+        y_seed = y_seed + 1;
+    }
+    TaifaMfumo* taifa_jh = mchezo_pata_taifa(g);
+    dunia_taifa_mfumo_dai_maeneo_yote(taifa_jh, ramani_jh);
+
+    n32 idadi_ya_mizunguko = 6;
+    n32 i = 0;
+    wakati (i < idadi_ya_mizunguko) {
+        mchezo_sasisha(g);
+        i = i + 1;
+    }
+    mchezo_maliza_zamu(g);
+    mchezo_maliza_zamu(g);
+
+    // ---------- Bafa KUBWA (1000x500), eneo DOGO upande wa kulia ----------
+    n64 canvas_w = 1000;
+    n64 canvas_h = 500;
+    n64 pitch = canvas_w * 4;
+    n8* fb = tenga(pitch * canvas_h);
+    weka_sifuri(fb, pitch * canvas_h);
+
+    n64 eneo_x = 700;
+    n64 eneo_y = 0;
+    n64 eneo_w = 300;
+    n64 eneo_h = 400;
+
+    // ===== 1. onyesho_hud_chora_kutoka_mchezo_eneo =====
+    onyesho_hud_chora_kutoka_mchezo_eneo(g, fb, pitch, eneo_x, eneo_y, eneo_w, eneo_h);
+
+    // (a) ndani ya eneo, karibu na kichwa "DOMINION" (x local=8, y
+    //     local=8 -> absolute x=708, y=8) -- skani glyph nzima ya
+    //     herufi ya kwanza (8x16) kuepuka kutegemea pikseli moja HASA.
+    n32 ndani_kichwa = jhe_eneo_lina_pikseli(fb, pitch, eneo_x + 8, eneo_y + 8, 8, 16);
+    jhe_thibitisha(ndani_kichwa, "onyesho_hud_chora_kutoka_mchezo_eneo: pikseli NDANI ya eneo (karibu DOMINION, x=708,y=8) imeguswa");
+
+    // (b) pikseli ILIYO NJE ya eneo KABISA (kona ya kushoto ya bafa,
+    //     mbali na eneo la x=700+) LAZIMA ibaki sifuri -- hii ndiyo
+    //     inayothibitisha kuwa fb_eneo (kielekezi kilichosogezwa)
+    //     hakijavuja nje ya eneo lake.
+    n64 nje1 = mchoro_pata_pikseli(fb, pitch, 10, 10);
+    jhe_thibitisha(nje1 == 0, "onyesho_hud_chora_kutoka_mchezo_eneo: pikseli NJE ya eneo (x=10,y=10) BADO ni sifuri");
+
+    // (c) eneo lote la KUSHOTO ya eneo (x < eneo_x) ni sifuri kabisa --
+    //     ukaguzi mpana zaidi ya pikseli moja tu.
+    n32 kushoto_kimeguswa = jhe_eneo_lina_pikseli(fb, pitch, 0, 0, eneo_x, canvas_h);
+    jhe_thibitisha(kushoto_kimeguswa == 0, "onyesho_hud_chora_kutoka_mchezo_eneo: eneo LOTE la kushoto ya eneo (x<700) halijaguswa");
+
+    achilia fb;
+
+    // ===== 2. onyesho_hud_chora_taifa_kina_eneo (eneo TOFAUTI) =====
+    n8* fb2 = tenga(pitch * canvas_h);
+    weka_sifuri(fb2, pitch * canvas_h);
+
+    n64 eneo2_x = 50;
+    n64 eneo2_y = 300;
+    n64 eneo2_w = 250;
+    n64 eneo2_h = 180;
+
+    onyesho_hud_chora_taifa_kina_eneo(g, 0, fb2, pitch, eneo2_x, eneo2_y, eneo2_w, eneo2_h);
+
+    // (a) ndani ya eneo2, karibu na kichwa "UNDANI WA TAIFA" (x
+    //     local=8, y local=8 -> absolute x=58, y=308).
+    n32 ndani_taifa = jhe_eneo_lina_pikseli(fb2, pitch, eneo2_x + 8, eneo2_y + 8, 8, 16);
+    jhe_thibitisha(ndani_taifa, "onyesho_hud_chora_taifa_kina_eneo: pikseli NDANI ya eneo (karibu UNDANI WA TAIFA, x=58,y=308) imeguswa");
+
+    // (b) pikseli NJE kabisa ya eneo2 (mfano juu kabisa ya bafa,
+    //     mbali na eneo2_y=300) BADO ni sifuri.
+    n64 nje2 = mchoro_pata_pikseli(fb2, pitch, 58, 10);
+    jhe_thibitisha(nje2 == 0, "onyesho_hud_chora_taifa_kina_eneo: pikseli NJE ya eneo (x=58,y=10) BADO ni sifuri");
+
+    // (c) safu nzima JUU ya eneo2 (y < eneo2_y) haijaguswa kabisa.
+    n32 juu_kimeguswa = jhe_eneo_lina_pikseli(fb2, pitch, 0, 0, canvas_w, eneo2_y);
+    jhe_thibitisha(juu_kimeguswa == 0, "onyesho_hud_chora_taifa_kina_eneo: eneo LOTE juu ya eneo2 (y<300) halijaguswa");
+
+    achilia fb2;
+
+    // ---------- Ulinganifu wa nyuma: kazi za ZAMANI (SI eneo)
+    // bado zinafanya kazi bila kubadilika (uthibitisho kwamba
+    // hazijaguswa) ----------
+    n64 pitch0 = ONYESHO_HUD_UPANA * 4;
+    n8* fb0 = tenga(pitch0 * ONYESHO_HUD_KIMO);
+    weka_sifuri(fb0, pitch0 * ONYESHO_HUD_KIMO);
+    onyesho_hud_chora_kutoka_mchezo(g, fb0, pitch0);
+    n32 kichwa0_kimeguswa = jhe_eneo_lina_pikseli(fb0, pitch0, ONYESHO_HUD_X_KINGO, 8, 8, 16);
+    jhe_thibitisha(kichwa0_kimeguswa, "onyesho_hud_chora_kutoka_mchezo (ZAMANI, bila eneo) bado inachora sahihi kwenye canvas yake ya kudumu 480x280");
+    achilia fb0;
+
+    mchezo_uharibu(g);
+    andika("mchezo_uharibu(g) imekamilika bila kuanguka\n", 0, 0, 0, 0, 0, 0);
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", jhe_yalioshindwa, 0, 0, 0, 0, 0);
+    kama (jhe_yalioshindwa > 0) { rudisha 1; }
+    andika("DONE\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

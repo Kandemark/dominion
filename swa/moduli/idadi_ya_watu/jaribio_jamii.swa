@@ -1,0 +1,79 @@
+husisha { moduli/idadi_ya_watu/jamii.swa }
+
+// jaribio_jamii.swa -- jaribio la mkono dhidi ya JamiiMsimamizi
+// (jamii.swa, tafsiri ya race_system.c) PEKEE, bila kupitia
+// mchezo.swa (angalia lugha-swa/swa#292). Linathibitisha THAMANI
+// HALISI.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    JamiiMsimamizi* m = jamii_msimamizi_unda();
+    jaribio_thibitisha(m->idadi_ya_jamii == 0, "msimamizi huanza bila jamii");
+
+    n8* eneo_hakuna = 0;
+    Jamii* binadamu = jamii_ibuka(m, "Binadamu", eneo_hakuna);
+    n32 binadamu_sio_tupu = (binadamu != 0);
+    jaribio_thibitisha(binadamu_sio_tupu, "jamii_ibuka inarudisha kielekezi");
+    jaribio_thibitisha(m->idadi_ya_jamii == 1, "idadi_ya_jamii imeongezeka baada ya kuibuka");
+    jaribio_thibitisha(linganisha_mfuatano(binadamu->jina, "Binadamu") == 0, "jina la jamii limewekwa sahihi");
+    jaribio_thibitisha(binadamu->uthabiti_wa_kijenetiki > 0.89 && binadamu->uthabiti_wa_kijenetiki < 0.91, "uthabiti_wa_kijenetiki huanza 0.9");
+    jaribio_thibitisha(binadamu->idadi_ya_sifa == 0, "jamii mpya huanza bila sifa");
+
+    // Ongeza sifa mbili kwa jamii ya binadamu kwa mkono (kuiga
+    // uzalishaji wa DNA ambao haujaletwa kwenye faili hili).
+    JamiiSifaYaDNA* sifa0 = jamii_pata_sifa(binadamu, 0);
+    sifa0->kiwango_cha_kujitokeza = 0.6;
+    sifa0->kubwa_zaidi = 1;
+    JamiiSifaYaDNA* sifa1 = jamii_pata_sifa(binadamu, 1);
+    sifa1->kiwango_cha_kujitokeza = 0.4;
+    sifa1->kubwa_zaidi = 0;
+    binadamu->idadi_ya_sifa = 2;
+
+    Jamii* elf = jamii_ibuka(m, "Elfu", eneo_hakuna);
+    jaribio_thibitisha(m->idadi_ya_jamii == 2, "jamii ya pili imeongezwa");
+    JamiiSifaYaDNA* esifa0 = jamii_pata_sifa(elf, 0);
+    esifa0->kiwango_cha_kujitokeza = 0.8;
+    esifa0->kubwa_zaidi = 0;
+    elf->idadi_ya_sifa = 1;
+    elf->uthabiti_wa_kijenetiki = 0.7;
+
+    // Changanya binadamu na elf -- mtoto anapaswa kuwa na sifa
+    // zilizohesabiwa kama wastani wa sifa za wazazi (kiwango cha
+    // chini kabisa kati ya idadi za sifa za wazazi = 1).
+    Jamii* mchanganyiko = jamii_changanya(m, binadamu, elf, "NusuElfu");
+    n32 mchanganyiko_sio_tupu = (mchanganyiko != 0);
+    jaribio_thibitisha(mchanganyiko_sio_tupu, "jamii_changanya inarudisha kielekezi");
+    jaribio_thibitisha(m->idadi_ya_jamii == 3, "jamii ya tatu (mchanganyiko) imeongezwa");
+    jaribio_thibitisha(mchanganyiko->idadi_ya_sifa == 1, "mchanganyiko unapata sifa 1 (kiwango cha chini cha wazazi)");
+
+    JamiiSifaYaDNA* msifa0 = jamii_pata_sifa(mchanganyiko, 0);
+    // (0.6 + 0.8) * 0.5 = 0.7
+    jaribio_thibitisha(msifa0->kiwango_cha_kujitokeza > 0.69 && msifa0->kiwango_cha_kujitokeza < 0.71, "kiwango_cha_kujitokeza cha mchanganyiko ni wastani wa wazazi");
+    jaribio_thibitisha(msifa0->kubwa_zaidi == 1, "sifa kubwa_zaidi ya mzazi mmoja inaenea kwa mtoto");
+
+    // uthabiti_wa_kijenetiki wa mtoto = (0.9+0.7)*0.45 = 0.72
+    jaribio_thibitisha(mchanganyiko->uthabiti_wa_kijenetiki > 0.71 && mchanganyiko->uthabiti_wa_kijenetiki < 0.73, "uthabiti_wa_kijenetiki wa mchanganyiko ni sahihi");
+
+    // eneo_asilia_id ya mtoto inapaswa kurithiwa kutoka mzazi_a (zote
+    // mbili ni tupu kwa sababu hatukupitisha eneo kwa jamii_ibuka).
+    n32 mtoto_eneo_ni_tupu = (mchanganyiko->eneo_asilia_id == 0);
+    jaribio_thibitisha(mtoto_eneo_ni_tupu, "eneo_asilia_id linarithiwa kutoka mzazi_a (tupu)");
+
+    // jamii_pata inarudisha kielekezi sahihi kwa faharisi (thibitisha
+    // kwa thamani ya jina, si kulinganisha vielekezi moja kwa moja).
+    Jamii* kwa_faharisi_0 = jamii_pata(m, 0);
+    jaribio_thibitisha(linganisha_mfuatano(kwa_faharisi_0->jina, "Binadamu") == 0, "jamii_pata(0) inarudisha jamii ya kwanza iliyoundwa");
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

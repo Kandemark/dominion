@@ -1,0 +1,83 @@
+husisha { moduli/siasa/siasa.swa }
+
+// jaribio_siasa.swa -- jaribio la mkono dhidi ya SiasaMfumo
+// (siasa.swa, tafsiri ya politics/politics.c) PEKEE, bila kupitia
+// mchezo.swa (angalia lugha-swa/swa#295). Linathibitisha THAMANI
+// HALISI.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    civ_nasibu_panda(3);
+
+    SiasaMfumo* s = siasa_mfumo_unda();
+    n32 s_sio_tupu = (s != 0);
+    jaribio_thibitisha(s_sio_tupu, "mfumo_unda si tupu");
+    n32 uhalali_sahihi = (s->uhalali > 0.69 && s->uhalali < 0.71);
+    jaribio_thibitisha(uhalali_sahihi, "uhalali chaguomsingi 0.7");
+    n32 utulivu_sahihi = (s->utulivu > 0.69 && s->utulivu < 0.71);
+    jaribio_thibitisha(utulivu_sahihi, "utulivu chaguomsingi 0.7");
+
+    // Bila kikundi (0): sasisha inapaswa kufaulu bila kubadilisha
+    // utulivu, uhalali ukisogea kuelekea utulivu wake wa sasa (0.7
+    // == 0.7, hivyo hakuna badiliko).
+    SiasaKikundiMfumo* kikundi_tupu = 0;
+    CivMatokeo r1 = siasa_mfumo_sasisha(s, kikundi_tupu, 10.0);
+    jaribio_thibitisha(r1.hitilafu == CIV_SAWA, "sasisha (bila kikundi) inafaulu");
+    n32 uhalali_bado_07 = (s->uhalali > 0.69 && s->uhalali < 0.71);
+    jaribio_thibitisha(uhalali_bado_07, "uhalali haubadiliki bila kikundi (0.7==0.7)");
+
+    // Weka uhalali chini kabisa, kisha sasisha na kikundi chenye
+    // utulivu wa juu (hakuna vikundi == utulivu 1.0, angalia
+    // kikundi.swa) -- uhalali unapaswa KUPANDA kuelekea 1.0.
+    siasa_mfumo_weka_uhalali(s, 0.2);
+    SiasaKikundiMfumo kikundi = siasa_kikundi_mfumo_unda();
+    d64 uhalali_kabla = s->uhalali;
+    CivMatokeo r2 = siasa_mfumo_sasisha(s, &kikundi, 50.0);
+    jaribio_thibitisha(r2.hitilafu == CIV_SAWA, "sasisha (na kikundi tupu) inafaulu");
+    n32 utulivu_kikundi_tupu = (siasa_mfumo_pata_utulivu(s) > 0.99);
+    jaribio_thibitisha(utulivu_kikundi_tupu, "utulivu wa kikundi tupu ni 1.0");
+    n32 uhalali_umepanda = (s->uhalali > uhalali_kabla);
+    jaribio_thibitisha(uhalali_umepanda, "uhalali umepanda kuelekea utulivu wa juu");
+
+    // Ongeza kikundi chenye nguvu kubwa (kinachopunguza utulivu),
+    // sasisha mara kadhaa, uhalali unapaswa KUSHUKA.
+    SiasaKikundi k1 = siasa_kikundi_unda("k1", "Kikundi Chenye Nguvu", SIASA_ITIKADI_MKALI);
+    k1.nguvu = 0.9;
+    k1.uungwaji_mkono = 0.9;
+    k1.ushawishi = 0.9;
+    siasa_kikundi_mfumo_ongeza(&kikundi, &k1);
+    SiasaKikundi k2 = siasa_kikundi_unda("k2", "Kikundi Dhaifu", SIASA_ITIKADI_HURU);
+    k2.nguvu = 0.05;
+    siasa_kikundi_mfumo_ongeza(&kikundi, &k2);
+
+    d64 utulivu_mbili = siasa_kikundi_mfumo_utulivu(&kikundi);
+    n32 utulivu_mbili_mdogo = (utulivu_mbili < 0.5);
+    jaribio_thibitisha(utulivu_mbili_mdogo, "utulivu na kikundi kimoja chenye nguvu kubwa ni chini ya 0.5");
+
+    d64 uhalali_kabla2 = s->uhalali;
+    n32 i = 0;
+    wakati (i < 20) {
+        siasa_mfumo_sasisha(s, &kikundi, 10.0);
+        i = i + 1;
+    }
+    n32 uhalali_umeshuka = (s->uhalali < uhalali_kabla2);
+    jaribio_thibitisha(uhalali_umeshuka, "uhalali umeshuka baada ya mizunguko mingi na kikundi chenye utulivu mdogo");
+    n32 uhalali_bado_ndani_ya_mipaka = (s->uhalali >= 0.0 && s->uhalali <= 1.0);
+    jaribio_thibitisha(uhalali_bado_ndani_ya_mipaka, "uhalali unabaki ndani ya [0,1]");
+
+    siasa_kikundi_mfumo_uharibu(&kikundi);
+    siasa_mfumo_uharibu(s);
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

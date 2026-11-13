@@ -1,0 +1,200 @@
+// ramani.swa — tafsiri ya src/core/world/map_generator.c (na .h)
+// kwenda Swa. Muundo wa ramani ya dunia (vipande, sifa za mazingira)
+// na usimamizi wake wa msingi.
+//
+// Kiambishi: dunia_ramani_ — angalia ../../KANUNI-MAJINA.md.
+//
+// MUHIMU -- uzalishaji wa ardhi (terrain generation) HAUJALETWA:
+// civ_map_generate()/civ_map_genesis()/atlas_shape_signal() za chanzo
+// cha C zinatumia sinf()/cosf() za kweli (mawimbi ya bandia ya
+// mabara) -- hizi ni TOFAUTI na civ_kielelezi (exp) na civ_mzizi
+// (sqrt) zilizopo kwenye msingi_civ.swa; hakuna sin/cos halisi bado
+// (lugha-swa/swa#183, bado wazi kwa kazi hizi mahususi). Kazi
+// nyingine zote za faili hili la C ZENYEWE ni "stubs" tupu
+// (civ_map_simulate_erosion/generate_rivers/generate_resources/
+// tile_distance/count_terrain/count_land_use zote zinarudisha
+// thamani ya kudumu bila kufanya kazi yoyote halisi -- "disabled for
+// atlas mode" -- hii SI upungufu wa tafsiri, ni tabia HALISI ya C ya
+// sasa) -- kazi hizi zimeletwa KAMA STUBS, zikilingana kabisa na
+// tabia ya chanzo.
+//
+// Tofauti nyingine za kimakusudi:
+//   - tiles[] (safu bapa ya C, calloc moja) imekuwa n64* ya
+//     vielekezi (#185, angalia dini.swa) -- KUMBUKA: hii inamaanisha
+//     ramani kubwa (mfano 2048x1024 chaguo-msingi la C = zaidi ya
+//     vipande milioni 2) ingehitaji tenga() milioni 2 tofauti --
+//     JARIBU KWA VIPIMO VIDOGO (mfano 20x20) kwa sasa; ramani kubwa
+//     zinahitaji muundo tofauti (safu ya kweli ya thamani) ambao
+//     Swa haiwezi kufikia salama bado.
+//   - owner_id (char[STRING_SHORT_LEN]) imekuwa n8* (haihifadhi
+//     nakala, sawa na moduli nyingine za mradi huu).
+//   - civ_map_calculate_stats/civ_map_init zinarudisha CivMatokeo
+//     badala ya bool/civ_result_t ya kipekee, kwa uthabiti na
+//     msingi_civ.swa.
+
+husisha { msingi/msingi_civ.swa }
+husisha { moduli/mazingira/jiografia.swa }
+
+n32 DUNIA_RAMANI_UPANA_MDOGO_ZAIDI = 16;
+n32 DUNIA_RAMANI_UREFU_MDOGO_ZAIDI = 16;
+
+muundo DuniaRamaniKipande {
+    n32 x;
+    n32 y;
+    d64 mwinuko;
+    d64 unyevu;
+    d64 joto;
+    n32 ardhi;
+    n32 matumizi_ya_ardhi;
+    d64 uoto_msongamano;
+    d64 rutuba;
+    d64 rasilimali;
+    n32 kina_mto;
+    n32 kina_rasilimali;
+    n32 kimechunguzwa;
+    n32 kinaonekana;
+    n8* mmiliki_id;
+    n32 rangi_ya_kisiasa;
+    d64 ushawishi_wa_kisiasa;
+    d64 msongamano_wa_watu;
+    d64 ushawishi_wa_kiutamaduni;
+};
+
+muundo DuniaRamani {
+    n64* vipande;
+    n32 upana;
+    n32 urefu;
+    d64 kiwango_cha_bahari;
+    n32 mbegu;
+    n32 idadi_ya_vipande_vya_ardhi;
+    n32 idadi_ya_vipande_vya_mto;
+    n32 idadi_ya_vipande_vya_mlima;
+};
+
+DuniaRamaniKipande* dunia_ramani_pata_kipande(DuniaRamani* ramani, n32 x, n32 y) {
+    kama (ramani == 0 || x < 0 || x >= ramani->upana || y < 0 || y >= ramani->urefu) { rudisha 0; }
+    n32 faharisi = y * ramani->upana + x;
+    rudisha ramani->vipande[faharisi];
+}
+
+DuniaRamani* dunia_ramani_unda(n32 upana, n32 urefu, n32 mbegu) {
+    DuniaRamani* ramani = tenga(ukubwa(DuniaRamani));
+    ramani->upana = upana;
+    ramani->urefu = urefu;
+    ramani->mbegu = mbegu;
+    ramani->kiwango_cha_bahari = 0.35;
+    ramani->idadi_ya_vipande_vya_ardhi = 0;
+    ramani->idadi_ya_vipande_vya_mto = 0;
+    ramani->idadi_ya_vipande_vya_mlima = 0;
+
+    n32 jumla = upana * urefu;
+    ramani->vipande = tenga(ukubwa(n64) * jumla);
+
+    n32 y = 0;
+    wakati (y < urefu) {
+        n32 x = 0;
+        wakati (x < upana) {
+            DuniaRamaniKipande* kipande = tenga(ukubwa(DuniaRamaniKipande));
+            kipande->x = x;
+            kipande->y = y;
+            kipande->mwinuko = 0.0;
+            kipande->unyevu = 0.0;
+            kipande->joto = 0.0;
+            kipande->ardhi = MAZINGIRA_ARDHI_TAMBARARE;
+            kipande->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_MAJI;
+            kipande->uoto_msongamano = 0.0;
+            kipande->rutuba = 0.0;
+            kipande->rasilimali = 0.0;
+            kipande->kina_mto = 0;
+            kipande->kina_rasilimali = 0;
+            kipande->kimechunguzwa = 0;
+            kipande->kinaonekana = 0;
+            kipande->mmiliki_id = 0;
+            kipande->rangi_ya_kisiasa = 0;
+            kipande->ushawishi_wa_kisiasa = 0.0;
+            kipande->msongamano_wa_watu = 0.0;
+            kipande->ushawishi_wa_kiutamaduni = 0.0;
+
+            n32 faharisi = y * upana + x;
+            ramani->vipande[faharisi] = kipande;
+            x = x + 1;
+        }
+        y = y + 1;
+    }
+    rudisha ramani;
+}
+
+w0 dunia_ramani_uharibu(DuniaRamani* ramani) {
+    kama (ramani == 0) { rudisha; }
+    achilia ramani->vipande;
+    achilia ramani;
+}
+
+n32 dunia_ramani_ni_nafasi_sahihi(DuniaRamani* ramani, n32 x, n32 y) {
+    kama (ramani == 0) { rudisha 0; }
+    kama (x < 0 || x >= ramani->upana || y < 0 || y >= ramani->urefu) { rudisha 0; }
+    rudisha 1;
+}
+
+DuniaRamaniKipande* dunia_ramani_pata_kipande_kilicho_karibu(DuniaRamani* ramani,
+                                                                DuniaRamaniKipande* kipande,
+                                                                n32 dx, n32 dy) {
+    kama (ramani == 0 || kipande == 0) { rudisha 0; }
+    n32 nx = kipande->x + dx;
+    kama (nx < 0) { nx = nx + ramani->upana; }
+    nx = nx - (nx / ramani->upana) * ramani->upana;
+    n32 ny = kipande->y + dy;
+    kama (ny < 0 || ny >= ramani->urefu) { rudisha 0; }
+    rudisha dunia_ramani_pata_kipande(ramani, nx, ny);
+}
+
+CivMatokeo dunia_ramani_thibitisha(DuniaRamani* ramani) {
+    CivMatokeo r;
+    r.ujumbe = 0;
+    kama (ramani != 0 && ramani->vipande != 0) {
+        r.hitilafu = CIV_SAWA;
+    } sivyo {
+        r.hitilafu = CIV_HITILAFU_HALI_MBAYA;
+        r.ujumbe = "Ramani iliyoharibika";
+    }
+    rudisha r;
+}
+
+// Zifuatazo zote ni "stubs" zinazolingana KABISA na tabia ya
+// civ_map_simulate_erosion/generate_rivers/generate_resources/
+// tile_distance/count_terrain/count_land_use za C -- hazifanyi
+// kazi yoyote halisi kwenye chanzo cha C chenyewe ("disabled for
+// atlas mode").
+
+CivMatokeo dunia_ramani_iga_mmomonyoko(DuniaRamani* ramani, n32 marudio) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = "Mmomonyoko umezimwa kwa hali ya atlasi";
+    rudisha r;
+}
+
+CivMatokeo dunia_ramani_zalisha_mito(DuniaRamani* ramani) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = "Mito imezimwa kwa hali ya atlasi";
+    rudisha r;
+}
+
+CivMatokeo dunia_ramani_zalisha_rasilimali(DuniaRamani* ramani) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = "Rasilimali zimezimwa kwa hali ya atlasi";
+    rudisha r;
+}
+
+d64 dunia_ramani_umbali_wa_kipande(DuniaRamaniKipande* a, DuniaRamaniKipande* b) {
+    rudisha 0.0;
+}
+
+n32 dunia_ramani_hesabu_ardhi(DuniaRamani* ramani, n32 aina_ya_ardhi) {
+    rudisha 0;
+}
+
+n32 dunia_ramani_hesabu_matumizi_ya_ardhi(DuniaRamani* ramani, n32 matumizi) {
+    rudisha 0;
+}
