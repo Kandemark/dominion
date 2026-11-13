@@ -1,0 +1,446 @@
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/onyesho/wayland/mazingira.swa }
+husisha { moduli/onyesho/wayland/soketi.swa }
+husisha { moduli/onyesho/wayland/waya.swa }
+husisha { moduli/onyesho/wayland/shm.swa }
+
+// dirisha.swa -- dirisha halisi la Wayland kwa programu: uso wa xdg wenye
+// bafa mbili za kumbukumbu ya pamoja (mmap -- mchoro huenda moja kwa moja
+// kwenye kumbukumbu anayoisoma compositor), ingizo la kweli kutoka wl_seat
+// (kielekezi, vitufe, gurudumu, kibodi), kubadilisha ukubwa kutoka
+// xdg_toplevel.configure, na kielekezi cha compositor mwenyewe kupitia
+// wp_cursor_shape_v1 (kikiwepo).
+//
+// Matumizi:
+//   Dirisha* d = dirisha_fungua(envp, 1600, 900, "Dominion");
+//   wakati (d->imefungwa == 0) {
+//       dirisha_soma(d, kusubiri_ms);          // matukio -> foleni
+//       wakati (dirisha_tukio(d)) { ... d->t_aina, d->t_a, d->t_b ... }
+//       kama (inahitaji_kuchora && d->fremu_tayari) {
+//           n8* p = dirisha_bafa(d);           // upana x kimo XRGB, hatua d->hatua
+//           ... chora ...
+//           dirisha_onyesha(d);
+//       }
+//   }
+//
+// Ujumbe wa Wayland: kichwa cha baiti 8 (kitu, (ukubwa << 16) | opcode)
+// kisha hoja za baiti 4. Maombi ya namba pekee hujengwa kwenye bafa moja
+// ya kutuma (dirisha_ombi); yenye mfuatano (bind, set_title) hutumia
+// wajenzi wa waya.swa.
+
+n64 DIRISHA_MWENDO = 1;          // a = x, b = y (pikseli)
+n64 DIRISHA_KITUFE = 2;          // a = kitufe (272 kushoto, 273 kulia, 274 kati), b = 1 bonyeza / 0 achia
+n64 DIRISHA_GURUDUMU = 3;        // a = hatua (+ chini / - juu), kwa 1/256
+n64 DIRISHA_KIBODI = 4;          // a = msimbo wa evdev, b = 1 bonyeza / 0 achia
+n64 DIRISHA_UKUBWA = 5;          // a = upana, b = kimo (bafa mpya tayari)
+n64 DIRISHA_FUNGA = 6;
+n64 DIRISHA_TOKA = 7;            // kielekezi kimetoka dirishani
+
+n64 DIRISHA_FOLENI = 512;
+
+// Vitambulisho vya vitu: mteja huvichagua, lakini libwayland hukubali
+// kitambulisho kipya kikiwa ndicho kinachofuata kwa mpangilio tu -- hivyo
+// kila kitu kipya hupata d->id_inayofuata wakati kinapoundwa.
+n64 DIRISHA_ID_REGISTRY = 2;
+n64 DIRISHA_ID_SYNC = 3;
+
+muundo Dirisha {
+    n64 fd;
+    n64 compositor_id;
+    n64 shm_id;
+    n64 wmbase_id;
+    n64 surface_id;
+    n64 xdg_surface_id;
+    n64 toplevel_id;
+    n64 seat_id;
+    n64 pointer_id;
+    n64 keyboard_id;
+    n64 fremu_id;
+    n64 umbo_id;
+    n64 umbo_kifaa_id;
+    n64 upana;
+    n64 kimo;
+    n64 hatua;
+    // kumbukumbu ya pamoja: bafa mbili mfululizo
+    n64 shm_fd;
+    n8* shm;
+    n64 shm_ukubwa;
+    n64 pool_id;
+    n64 bafa_id_0;
+    n64 bafa_id_1;
+    n64 bafa_hai;           // 0 au 1: bafa inayochorwa sasa
+    n64 bafa_0_ina_compositor;
+    n64 bafa_1_ina_compositor;
+    n64 id_inayofuata;
+    // hali
+    n64 imefungwa;
+    n64 imesanidiwa;        // configure ya kwanza imepokelewa
+    n64 sync_imekamilika;   // globals zote zimefika
+    n64 fremu_tayari;       // compositor yuko tayari kwa fremu mpya
+    n64 upana_mpya;         // kutoka xdg_toplevel.configure (0 = hakuna)
+    n64 kimo_mpya;
+    n64 kielekezi_x;
+    n64 kielekezi_y;
+    n64 kielekezi_serial;
+    // globals (jina na toleo kutoka wl_registry.global)
+    n64 comp_jina;
+    n64 comp_toleo;
+    n64 shm_jina;
+    n64 wmbase_jina;
+    n64 wmbase_toleo;
+    n64 seat_jina;
+    n64 seat_toleo;
+    n64 umbo_jina;
+    // mapokezi
+    n8* bafa;
+    n64 jumla;
+    n64 nafasi;
+    n8* tuma;               // bafa ya kujenga maombi
+    // foleni ya matukio
+    n64* f_aina;
+    n64* f_a;
+    n64* f_b;
+    n64 f_kichwa;
+    n64 f_mkia;
+    // tukio la sasa (dirisha_tukio)
+    n64 t_aina;
+    n64 t_a;
+    n64 t_b;
+}
+
+// ---------- kutuma ----------
+
+// Ombi lenye hoja za namba pekee (hadi 6).
+w0 dirisha_ombi(Dirisha* d, n64 kitu, n64 opcode, n64 idadi, n64 a1, n64 a2, n64 a3, n64 a4, n64 a5, n64 a6) {
+    n64 ukubwa = 8 + idadi * 4;
+    n8* b = d->tuma;
+    weka_u32(b, 0, kitu);
+    weka_u32(b, 4, (ukubwa << 16) | opcode);
+    kama (idadi > 0) { weka_u32(b, 8, a1); }
+    kama (idadi > 1) { weka_u32(b, 12, a2); }
+    kama (idadi > 2) { weka_u32(b, 16, a3); }
+    kama (idadi > 3) { weka_u32(b, 20, a4); }
+    kama (idadi > 4) { weka_u32(b, 24, a5); }
+    kama (idadi > 5) { weka_u32(b, 28, a6); }
+    wayland_soketi_tuma(d->fd, b, ukubwa);
+}
+
+n64 dirisha_id_mpya(Dirisha* d) {
+    n64 id = d->id_inayofuata;
+    d->id_inayofuata = id + 1;
+    rudisha id;
+}
+
+// Funga global kwa kitambulisho kipya; hurudisha kitambulisho hicho.
+n64 dirisha_bind(Dirisha* d, n64 jina, n8* kiolesura, n64 toleo) {
+    n64 id = dirisha_id_mpya(d);
+    n8* msg = wayland_waya_jenga_bind(DIRISHA_ID_REGISTRY, jina, kiolesura, toleo, id);
+    wayland_soketi_tuma(d->fd, msg, wayland_waya_bind_ukubwa(kiolesura));
+    achilia msg;
+    rudisha id;
+}
+
+// ---------- foleni ----------
+
+w0 dirisha_weka_tukio(Dirisha* d, n64 aina, n64 a, n64 b) {
+    n64 baada = (d->f_kichwa + 1) % DIRISHA_FOLENI;
+    kama (baada == d->f_mkia) { rudisha; }           // imejaa: tukio linaachwa
+    d->f_aina[d->f_kichwa] = aina;
+    d->f_a[d->f_kichwa] = a;
+    d->f_b[d->f_kichwa] = b;
+    d->f_kichwa = baada;
+}
+
+// Toa tukio moja kwenye t_aina/t_a/t_b. Hurudisha 0 ikiwa foleni ni tupu.
+n32 dirisha_tukio(Dirisha* d) {
+    kama (d->f_mkia == d->f_kichwa) { rudisha 0; }
+    d->t_aina = d->f_aina[d->f_mkia];
+    d->t_a = d->f_a[d->f_mkia];
+    d->t_b = d->f_b[d->f_mkia];
+    d->f_mkia = (d->f_mkia + 1) % DIRISHA_FOLENI;
+    rudisha 1;
+}
+
+// ---------- bafa ----------
+
+// Unda (au unda upya) kumbukumbu ya pamoja na bafa mbili kwa ukubwa wa
+// d->upana x d->kimo.
+n32 dirisha_unda_bafa(Dirisha* d) {
+    kama (d->shm != 0) {
+        dirisha_ombi(d, d->bafa_id_0, 0, 0, 0, 0, 0, 0, 0, 0);     // wl_buffer.destroy
+        dirisha_ombi(d, d->bafa_id_1, 0, 0, 0, 0, 0, 0, 0, 0);
+        dirisha_ombi(d, d->pool_id, 1, 0, 0, 0, 0, 0, 0, 0);       // wl_shm_pool.destroy
+        mfumo_ondoa_ramani_kumbukumbu(d->shm, d->shm_ukubwa);
+        mfumo_funga(d->shm_fd);
+    }
+    d->hatua = d->upana * 4;
+    n64 moja = d->hatua * d->kimo;
+    d->shm_ukubwa = moja * 2;
+    d->shm_fd = wayland_shm_unda(d->shm_ukubwa);
+    kama (d->shm_fd < 0) { rudisha 0; }
+    d->shm = mfumo_ramani_kumbukumbu(0, d->shm_ukubwa, 3, 1, d->shm_fd);   // PROT_READ|WRITE, MAP_SHARED
+    kama (d->shm == 0 || d->shm < 0) { rudisha 0; }
+    // wl_shm.create_pool(new_id, fd, size): fd hupita kama ujumbe wa udhibiti
+    d->pool_id = dirisha_id_mpya(d);
+    n8* b = d->tuma;
+    weka_u32(b, 0, d->shm_id);
+    weka_u32(b, 4, (16 << 16) | 0);
+    weka_u32(b, 8, d->pool_id);
+    weka_u32(b, 12, d->shm_ukubwa);
+    wayland_soketi_tuma_na_fd(d->fd, b, 16, d->shm_fd);
+    // wl_shm_pool.create_buffer(new_id, offset, w, h, stride, XRGB8888=1)
+    d->bafa_id_0 = dirisha_id_mpya(d);
+    dirisha_ombi(d, d->pool_id, 0, 6, d->bafa_id_0, 0, d->upana, d->kimo, d->hatua, 1);
+    d->bafa_id_1 = dirisha_id_mpya(d);
+    dirisha_ombi(d, d->pool_id, 0, 6, d->bafa_id_1, moja, d->upana, d->kimo, d->hatua, 1);
+    d->bafa_hai = 0;
+    d->bafa_0_ina_compositor = 0;
+    d->bafa_1_ina_compositor = 0;
+    rudisha 1;
+}
+
+// Bafa ambayo programu inaweza kuchora sasa (XRGB8888, hatua d->hatua).
+n8* dirisha_bafa(Dirisha* d) {
+    kama (d->bafa_hai == 0) { rudisha d->shm; }
+    rudisha d->shm + d->hatua * d->kimo;
+}
+
+// Onyesha bafa iliyochorwa: attach + damage + frame + commit, kisha badili
+// kwenda bafa nyingine kwa fremu inayofuata.
+w0 dirisha_onyesha(Dirisha* d) {
+    n64 id = d->bafa_id_0;
+    kama (d->bafa_hai == 1) { id = d->bafa_id_1; }
+    dirisha_ombi(d, d->surface_id, 1, 3, id, 0, 0, 0, 0, 0);                  // attach
+    dirisha_ombi(d, d->surface_id, 9, 4, 0, 0, d->upana, d->kimo, 0, 0);      // damage_buffer
+    d->fremu_id = dirisha_id_mpya(d);
+    dirisha_ombi(d, d->surface_id, 3, 1, d->fremu_id, 0, 0, 0, 0, 0);         // frame
+    dirisha_ombi(d, d->surface_id, 6, 0, 0, 0, 0, 0, 0, 0);                   // commit
+    kama (d->bafa_hai == 0) { d->bafa_0_ina_compositor = 1; d->bafa_hai = 1; }
+    sivyo { d->bafa_1_ina_compositor = 1; d->bafa_hai = 0; }
+    d->fremu_tayari = 0;
+}
+
+// ---------- kupokea ----------
+
+n64 dirisha_i32(n8* b, n64 m) {
+    n64 v = pata_u32(b, m);
+    kama (v >= 2147483648) { v = v - 4294967296; }
+    rudisha v;
+}
+
+w0 dirisha_shughulikia(Dirisha* d, n64 kitu, n64 op, n64 m) {
+    n8* b = d->bafa;
+    kama (kitu == 1 && op == 0) {
+        // wl_display.error(kitu, msimbo, ujumbe)
+        andika_kosa("dirisha: kosa la itifaki kitu %d msimbo %d: %s\n", pata_u32(b, m + 8), pata_u32(b, m + 12), b + m + 20, 0, 0, 0);
+        d->imefungwa = 1;
+        rudisha;
+    }
+    kama (kitu == DIRISHA_ID_REGISTRY && op == 0) {
+        // hifadhi tu; kufunga hufanyika baada ya sync, kwa mpangilio
+        n64 jina = wayland_waya_global_name(b, m);
+        n8* kiolesura = wayland_waya_global_interface_ptr(b, m);
+        n64 toleo = wayland_waya_global_version(b, m);
+        kama (linganisha_mfuatano(kiolesura, "wl_compositor") == 0) { d->comp_jina = jina; d->comp_toleo = toleo; }
+        kama (linganisha_mfuatano(kiolesura, "wl_shm") == 0) { d->shm_jina = jina; }
+        kama (linganisha_mfuatano(kiolesura, "xdg_wm_base") == 0) { d->wmbase_jina = jina; d->wmbase_toleo = toleo; }
+        kama (linganisha_mfuatano(kiolesura, "wl_seat") == 0 && d->seat_jina < 0) { d->seat_jina = jina; d->seat_toleo = toleo; }
+        kama (linganisha_mfuatano(kiolesura, "wp_cursor_shape_manager_v1") == 0) { d->umbo_jina = jina; }
+        rudisha;
+    }
+    kama (kitu == DIRISHA_ID_SYNC && op == 0) { d->sync_imekamilika = 1; rudisha; }
+    kama (kitu == d->wmbase_id && op == 0) {
+        dirisha_ombi(d, d->wmbase_id, 3, 1, pata_u32(b, m + 8), 0, 0, 0, 0, 0);   // pong
+        rudisha;
+    }
+    kama (kitu == d->xdg_surface_id && op == 0) {
+        dirisha_ombi(d, d->xdg_surface_id, 4, 1, pata_u32(b, m + 8), 0, 0, 0, 0, 0);  // ack_configure
+        kama (d->imesanidiwa == 0) { d->imesanidiwa = 1; d->fremu_tayari = 1; }
+        // ukubwa mpya (ikiwa upo) hutumika baada ya ack
+        kama (d->upana_mpya > 0 && d->kimo_mpya > 0 && (d->upana_mpya != d->upana || d->kimo_mpya != d->kimo)) {
+            d->upana = d->upana_mpya;
+            d->kimo = d->kimo_mpya;
+            dirisha_unda_bafa(d);
+            d->fremu_tayari = 1;
+            dirisha_weka_tukio(d, DIRISHA_UKUBWA, d->upana, d->kimo);
+        }
+        rudisha;
+    }
+    kama (kitu == d->toplevel_id && op == 0) {
+        d->upana_mpya = dirisha_i32(b, m + 8);
+        d->kimo_mpya = dirisha_i32(b, m + 12);
+        rudisha;
+    }
+    kama (kitu == d->toplevel_id && op == 1) {
+        d->imefungwa = 1;
+        dirisha_weka_tukio(d, DIRISHA_FUNGA, 0, 0);
+        rudisha;
+    }
+    kama (kitu == d->fremu_id && op == 0) {
+        d->fremu_tayari = 1;
+        rudisha;
+    }
+    kama (kitu == d->bafa_id_0 && op == 0) { d->bafa_0_ina_compositor = 0; rudisha; }
+    kama (kitu == d->bafa_id_1 && op == 0) { d->bafa_1_ina_compositor = 0; rudisha; }
+    kama (kitu == d->seat_id && op == 0) {
+        n64 uwezo = pata_u32(b, m + 8);
+        kama ((uwezo & 1) != 0 && d->pointer_id == 0) {
+            d->pointer_id = dirisha_id_mpya(d);
+            dirisha_ombi(d, d->seat_id, 0, 1, d->pointer_id, 0, 0, 0, 0, 0);
+            kama (d->umbo_id != 0) {
+                d->umbo_kifaa_id = dirisha_id_mpya(d);
+                dirisha_ombi(d, d->umbo_id, 1, 2, d->umbo_kifaa_id, d->pointer_id, 0, 0, 0, 0);
+            }
+        }
+        kama ((uwezo & 2) != 0 && d->keyboard_id == 0) {
+            d->keyboard_id = dirisha_id_mpya(d);
+            dirisha_ombi(d, d->seat_id, 1, 1, d->keyboard_id, 0, 0, 0, 0, 0);
+        }
+        rudisha;
+    }
+    kama (kitu == d->pointer_id) {
+        kama (op == 0) {
+            // enter(serial, surface, x, y): weka umbo la kawaida la kielekezi
+            d->kielekezi_serial = pata_u32(b, m + 8);
+            d->kielekezi_x = dirisha_i32(b, m + 16) >> 8;
+            d->kielekezi_y = dirisha_i32(b, m + 20) >> 8;
+            kama (d->umbo_kifaa_id != 0) {
+                dirisha_ombi(d, d->umbo_kifaa_id, 1, 2, d->kielekezi_serial, 1, 0, 0, 0, 0);
+            }
+            dirisha_weka_tukio(d, DIRISHA_MWENDO, d->kielekezi_x, d->kielekezi_y);
+        }
+        kama (op == 1) { dirisha_weka_tukio(d, DIRISHA_TOKA, 0, 0); }
+        kama (op == 2) {
+            d->kielekezi_x = dirisha_i32(b, m + 12) >> 8;
+            d->kielekezi_y = dirisha_i32(b, m + 16) >> 8;
+            dirisha_weka_tukio(d, DIRISHA_MWENDO, d->kielekezi_x, d->kielekezi_y);
+        }
+        kama (op == 3) { dirisha_weka_tukio(d, DIRISHA_KITUFE, pata_u32(b, m + 16), pata_u32(b, m + 20)); }
+        kama (op == 4 && pata_u32(b, m + 12) == 0) {
+            // axis wima: thamani kwa 1/256
+            dirisha_weka_tukio(d, DIRISHA_GURUDUMU, dirisha_i32(b, m + 16), 0);
+        }
+        rudisha;
+    }
+    kama (kitu == d->keyboard_id && op == 3) {
+        dirisha_weka_tukio(d, DIRISHA_KIBODI, pata_u32(b, m + 16), pata_u32(b, m + 20));
+        rudisha;
+    }
+}
+
+// Soma kila kilichopo kwenye soketi na ushughulikie matukio. Ikiwa hakuna
+// kitu na kusubiri_ms > 0, lala kidogo na ujaribu tena hadi muda huo.
+w0 dirisha_soma(Dirisha* d, n64 kusubiri_ms) {
+    n64 imesubiri = 0;
+    n64 kitu_kimekuja = 0;
+    wakati (d->imefungwa == 0) {
+        n64 n = wayland_soketi_pokea(d->fd, d->bafa + d->jumla, 65536 - d->jumla);
+        kama (n == 0) { d->imefungwa = 1; rudisha; }
+        kama (n > 0) {
+            kitu_kimekuja = 1;
+            d->jumla = d->jumla + n;
+            n64 endelea_kusoma = 1;
+            wakati (endelea_kusoma && d->jumla - d->nafasi >= 8) {
+                n64 kitu = pata_u32(d->bafa, d->nafasi);
+                n64 neno = pata_u32(d->bafa, d->nafasi + 4);
+                n64 ukubwa = neno >> 16;
+                n64 op = neno & 65535;
+                kama (ukubwa < 8 || d->jumla - d->nafasi < ukubwa) { endelea_kusoma = 0; }
+                sivyo {
+                    dirisha_shughulikia(d, kitu, op, d->nafasi);
+                    d->nafasi = d->nafasi + ukubwa;
+                }
+            }
+            kama (d->nafasi > 0) {
+                n64 baki = d->jumla - d->nafasi;
+                nakili(d->bafa, d->bafa + d->nafasi, baki);
+                d->jumla = baki;
+                d->nafasi = 0;
+            }
+        } sivyo {
+            // hakuna data (EAGAIN)
+            kama (kitu_kimekuja || imesubiri >= kusubiri_ms) { rudisha; }
+            wayland_soketi_lala_ms(4);
+            imesubiri = imesubiri + 4;
+        }
+    }
+}
+
+// ---------- kufungua ----------
+
+Dirisha* dirisha_fungua(n8** envp, n64 upana, n64 kimo, n8* kichwa) {
+    n8* xdg = wayland_mazingira_tafuta(envp, "XDG_RUNTIME_DIR");
+    n8* wd = wayland_mazingira_tafuta(envp, "WAYLAND_DISPLAY");
+    kama (xdg == 0 || wd == 0) { andika_kosa("dirisha: XDG_RUNTIME_DIR/WAYLAND_DISPLAY haipo\n", 0, 0, 0, 0, 0, 0); rudisha 0; }
+    n8* njia = tenga(512);
+    weka_sifuri(njia, 512);
+    kama (wd[0] == 47) { nakili_mfuatano(njia, wd); }
+    sivyo {
+        n8* kati = tenga(512);
+        unganisha_mfuatano(kati, xdg, "/");
+        unganisha_mfuatano(njia, kati, wd);
+        achilia kati;
+    }
+    Dirisha* d = tenga(ukubwa(Dirisha));
+    weka_sifuri(d, ukubwa(Dirisha));
+    d->fd = wayland_soketi_fungua();
+    kama (d->fd < 0 || wayland_soketi_unganisha(d->fd, njia) < 0) {
+        andika_kosa("dirisha: kuunganisha na %s kumeshindwa\n", njia, 0, 0, 0, 0, 0);
+        rudisha 0;
+    }
+    d->upana = upana;
+    d->kimo = kimo;
+    d->bafa = tenga(65536);
+    d->tuma = tenga(256);
+    d->f_aina = tenga(8 * DIRISHA_FOLENI);
+    d->f_a = tenga(8 * DIRISHA_FOLENI);
+    d->f_b = tenga(8 * DIRISHA_FOLENI);
+    d->comp_jina = 0 - 1;
+    d->shm_jina = 0 - 1;
+    d->wmbase_jina = 0 - 1;
+    d->seat_jina = 0 - 1;
+    d->umbo_jina = 0 - 1;
+    d->id_inayofuata = 4;
+
+    // registry, kisha sync: globals zote hufika kabla ya done
+    dirisha_ombi(d, 1, 1, 1, DIRISHA_ID_REGISTRY, 0, 0, 0, 0, 0);
+    dirisha_ombi(d, 1, 0, 1, DIRISHA_ID_SYNC, 0, 0, 0, 0, 0);
+    wayland_soketi_weka_zisizozuia(d->fd);
+    n64 jaribio = 0;
+    wakati (d->sync_imekamilika == 0 && d->imefungwa == 0 && jaribio < 100) { dirisha_soma(d, 20); jaribio = jaribio + 1; }
+
+    kama (d->comp_jina < 0 || d->shm_jina < 0 || d->wmbase_jina < 0) {
+        andika_kosa("dirisha: compositor haina wl_compositor/wl_shm/xdg_wm_base\n", 0, 0, 0, 0, 0, 0);
+        rudisha 0;
+    }
+    n64 v = d->comp_toleo;
+    kama (v > 4) { v = 4; }
+    d->compositor_id = dirisha_bind(d, d->comp_jina, "wl_compositor", v);
+    d->shm_id = dirisha_bind(d, d->shm_jina, "wl_shm", 1);
+    v = d->wmbase_toleo;
+    kama (v > 2) { v = 2; }
+    d->wmbase_id = dirisha_bind(d, d->wmbase_jina, "xdg_wm_base", v);
+    kama (d->umbo_jina >= 0) { d->umbo_id = dirisha_bind(d, d->umbo_jina, "wp_cursor_shape_manager_v1", 1); }
+    kama (d->seat_jina >= 0) {
+        v = d->seat_toleo;
+        kama (v > 5) { v = 5; }
+        d->seat_id = dirisha_bind(d, d->seat_jina, "wl_seat", v);
+    }
+    d->surface_id = dirisha_id_mpya(d);
+    dirisha_ombi(d, d->compositor_id, 0, 1, d->surface_id, 0, 0, 0, 0, 0);
+    d->xdg_surface_id = dirisha_id_mpya(d);
+    dirisha_ombi(d, d->wmbase_id, 2, 2, d->xdg_surface_id, d->surface_id, 0, 0, 0, 0);
+    d->toplevel_id = dirisha_id_mpya(d);
+    dirisha_ombi(d, d->xdg_surface_id, 1, 1, d->toplevel_id, 0, 0, 0, 0, 0);
+    n8* msg = wayland_waya_jenga_set_title(d->toplevel_id, kichwa);
+    wayland_soketi_tuma(d->fd, msg, wayland_waya_set_title_ukubwa(kichwa));
+    achilia msg;
+    dirisha_ombi(d, d->toplevel_id, 7, 2, 960, 600, 0, 0, 0, 0);     // set_min_size
+    dirisha_ombi(d, d->surface_id, 6, 0, 0, 0, 0, 0, 0, 0);          // commit (bila bafa)
+    kama (dirisha_unda_bafa(d) == 0) { andika_kosa("dirisha: kumbukumbu ya pamoja imeshindwa\n", 0, 0, 0, 0, 0, 0); rudisha 0; }
+    jaribio = 0;
+    wakati (d->imesanidiwa == 0 && d->imefungwa == 0 && jaribio < 250) { dirisha_soma(d, 20); jaribio = jaribio + 1; }
+    kama (d->imesanidiwa == 0) { andika_kosa("dirisha: hakuna configure kutoka kwa compositor\n", 0, 0, 0, 0, 0, 0); rudisha 0; }
+    rudisha d;
+}
