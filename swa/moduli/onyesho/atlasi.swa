@@ -414,3 +414,24 @@ w0 atlasi_uharibu(Atlasi* a) {
     achilia a->seli_orodha;
     achilia a;
 }
+
+// Angazia taifa moja juu ya tabaka la msingi lililochorwa: ndani yake
+// hupata rangi yake kwa uwazi `uwazi` (0..256), mengine hubaki yalivyo.
+// Hutumia atlasi_wamiliki ya fremu hii.
+w0 atlasi_angazia(Atlasi* a, Turubai* t, n64 taifa, n64 uwazi) {
+    kama (taifa < 0 || taifa >= a->idadi || atlasi_wamiliki == 0) { rudisha; }
+    n64 rangi = a->rangi[taifa];
+    n64 j = 0;
+    wakati (j < t->kimo) {
+        n64 i = 0;
+        wakati (i < t->upana) {
+            kama (atlasi_wamiliki[j * t->upana + i] == taifa) {
+                n64 mahali = j * t->hatua + i * 4;
+                n64 chini = pata_u32(t->pikseli, mahali) & 16777215;
+                weka_u32(t->pikseli, mahali, atlasi_changanya_rangi(chini, rangi, uwazi));
+            }
+            i = i + 1;
+        }
+        j = j + 1;
+    }
+}
