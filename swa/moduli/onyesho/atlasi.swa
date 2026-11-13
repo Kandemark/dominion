@@ -285,6 +285,118 @@ w0 atlasi_umbali(n64* d, n64 w, n64 h) {
     }
 }
 
+// ---------- sampuli za gridi ----------
+//
+// Mwinuko na mmiliki ni ghali (kelele ya tabaka 14, utafutaji wa seli 25).
+// Badala ya kila pikseli, huhesabiwa kwenye kona za vitalu vya pikseli
+// ATLASI_HATUA x ATLASI_HATUA. Kitalu ambacho kona zake zote ziko upande
+// mmoja wa usawa wa bahari (kwa nafasi ya ATLASI_UKINGO) hujazwa kwa
+// mchanganyiko wa mstari-mbili; kitalu chenye kona za mataifa sawa hupata
+// mmiliki huyo. Vitalu vya pwani na mipaka tu ndivyo huhesabiwa pikseli
+// kwa pikseli -- sehemu ndogo ya skrini.
+
+n64 ATLASI_HATUA = 4;
+n64 ATLASI_UKINGO = 1800;
+
+// Jaza e (w x h) kwa mwinuko; e[j*w+i] ni nukta ya dunia (x0+i*k, y0+j*k).
+w0 atlasi_jaza_mwinuko(Atlasi* a, n64* e, n64 w, n64 h, n64 x0, n64 y0, n64 kipimo) {
+    n64 s = ATLASI_HATUA;
+    n64 gw = (w + s - 1) / s + 1;
+    n64 gh = (h + s - 1) / s + 1;
+    n64* g = tenga(8 * gw * gh);
+    n64 gy = 0;
+    wakati (gy < gh) {
+        n64 gx = 0;
+        wakati (gx < gw) {
+            g[gy * gw + gx] = atlasi_mwinuko(a, x0 + gx * s * kipimo, y0 + gy * s * kipimo);
+            gx = gx + 1;
+        }
+        gy = gy + 1;
+    }
+    n64 juu = ATLASI_USAWA_WA_BAHARI + ATLASI_UKINGO;
+    n64 chini = ATLASI_USAWA_WA_BAHARI - ATLASI_UKINGO;
+    gy = 0;
+    wakati (gy < gh - 1) {
+        n64 gx = 0;
+        wakati (gx < gw - 1) {
+            n64 c00 = g[gy * gw + gx];
+            n64 c10 = g[gy * gw + gx + 1];
+            n64 c01 = g[(gy + 1) * gw + gx];
+            n64 c11 = g[(gy + 1) * gw + gx + 1];
+            n64 sawa = 0;
+            kama (c00 > juu && c10 > juu && c01 > juu && c11 > juu) { sawa = 1; }
+            kama (c00 < chini && c10 < chini && c01 < chini && c11 < chini) { sawa = 1; }
+            n64 fy = 0;
+            wakati (fy < s && gy * s + fy < h) {
+                n64 j = gy * s + fy;
+                n64 fx = 0;
+                wakati (fx < s && gx * s + fx < w) {
+                    n64 i = gx * s + fx;
+                    kama (sawa) {
+                        e[j * w + i] = (c00 * (s - fx) * (s - fy) + c10 * fx * (s - fy)
+                                      + c01 * (s - fx) * fy + c11 * fx * fy) / (s * s);
+                    } sivyo {
+                        e[j * w + i] = atlasi_mwinuko(a, x0 + i * kipimo, y0 + j * kipimo);
+                    }
+                    fx = fx + 1;
+                }
+                fy = fy + 1;
+            }
+            gx = gx + 1;
+        }
+        gy = gy + 1;
+    }
+    achilia g;
+}
+
+// Jaza o (w x h) kwa mmiliki wa kila pikseli ya nchi kavu (nchi kavu ni
+// e > usawa wa bahari; e ina mpaka wa pikseli 1 kila upande, upana w+2),
+// au -1 kwa maji.
+w0 atlasi_jaza_wamiliki(Atlasi* a, n64* o, n64* e, n64 w, n64 h, n64 x0, n64 y0, n64 kipimo) {
+    n64 s = ATLASI_HATUA;
+    n64 gw = (w + s - 1) / s + 1;
+    n64 gh = (h + s - 1) / s + 1;
+    n64* g = tenga(8 * gw * gh);
+    n64 gy = 0;
+    wakati (gy < gh) {
+        n64 gx = 0;
+        wakati (gx < gw) {
+            g[gy * gw + gx] = atlasi_mmiliki(a, x0 + gx * s * kipimo, y0 + gy * s * kipimo);
+            gx = gx + 1;
+        }
+        gy = gy + 1;
+    }
+    n64 mw = w + 2;
+    gy = 0;
+    wakati (gy < gh - 1) {
+        n64 gx = 0;
+        wakati (gx < gw - 1) {
+            n64 c = g[gy * gw + gx];
+            n64 sawa = 0;
+            kama (c >= 0 && g[gy * gw + gx + 1] == c && g[(gy + 1) * gw + gx] == c && g[(gy + 1) * gw + gx + 1] == c) { sawa = 1; }
+            n64 fy = 0;
+            wakati (fy < s && gy * s + fy < h) {
+                n64 j = gy * s + fy;
+                n64 fx = 0;
+                wakati (fx < s && gx * s + fx < w) {
+                    n64 i = gx * s + fx;
+                    kama (e[(j + 1) * mw + i + 1] > ATLASI_USAWA_WA_BAHARI) {
+                        kama (sawa) { o[j * w + i] = c; }
+                        sivyo { o[j * w + i] = atlasi_mmiliki(a, x0 + i * kipimo, y0 + j * kipimo); }
+                    } sivyo {
+                        o[j * w + i] = 0 - 1;
+                    }
+                    fx = fx + 1;
+                }
+                fy = fy + 1;
+            }
+            gx = gx + 1;
+        }
+        gy = gy + 1;
+    }
+    achilia g;
+}
+
 // Chora bahari, nchi kavu, pwani, mipaka na kanda za mataifa kwenye turubai.
 // (x0,y0) ni nukta ya dunia ya kona ya juu-kushoto; kipimo ni vizio vya
 // dunia (1/1024) kwa pikseli moja -- kidogo = karibu zaidi. Huacha ramani ya
@@ -297,32 +409,20 @@ w0 atlasi_chora_msingi(Atlasi* a, Turubai* t, n64 x0, n64 y0, n64 kipimo) {
     n64 n = w * h;
     n64 mw = w + 2;
     n64* mwinuko = tenga(8 * mw * (h + 2));
-    n64 j = 0;
-    wakati (j < h + 2) {
-        n64 i = 0;
-        wakati (i < mw) {
-            mwinuko[j * mw + i] = atlasi_mwinuko(a, x0 + (i - 1) * kipimo, y0 + (j - 1) * kipimo);
-            i = i + 1;
-        }
-        j = j + 1;
-    }
+    atlasi_jaza_mwinuko(a, mwinuko, mw, h + 2, x0 - kipimo, y0 - kipimo, kipimo);
     kama (atlasi_wamiliki != 0) { achilia atlasi_wamiliki; }
     atlasi_wamiliki = tenga(8 * n);
+    atlasi_jaza_wamiliki(a, atlasi_wamiliki, mwinuko, w, h, x0, y0, kipimo);
     n64* pwani = tenga(8 * n);      // umbali hadi maji (kwa nchi kavu)
     n64* mpaka = tenga(8 * n);      // umbali hadi taifa jingine
     n64 mbali = 1 << 30;
-    j = 0;
+    n64 j = 0;
     wakati (j < h) {
         n64 i = 0;
         wakati (i < w) {
             n64 k = j * w + i;
-            kama (mwinuko[(j + 1) * mw + i + 1] > ATLASI_USAWA_WA_BAHARI) {
-                atlasi_wamiliki[k] = atlasi_mmiliki(a, x0 + i * kipimo, y0 + j * kipimo);
-                pwani[k] = mbali;
-            } sivyo {
-                atlasi_wamiliki[k] = 0 - 1;
-                pwani[k] = 0;
-            }
+            kama (atlasi_wamiliki[k] >= 0 || mwinuko[(j + 1) * mw + i + 1] > ATLASI_USAWA_WA_BAHARI) { pwani[k] = mbali; }
+            sivyo { pwani[k] = 0; }
             i = i + 1;
         }
         j = j + 1;
