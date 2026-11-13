@@ -1,0 +1,138 @@
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { moduli/onyesho/turubai.swa }
+
+// jaribio_turubai.swa -- thamani halisi za pikseli za turubai.swa, si
+// "haikuanguka" tu. Ikipewa njia kama hoja, huandika fremu ghafi (BGRA)
+// ya skrini ya mfano ili ubora uonekane kwa jicho.
+
+n32 makosa = 0;
+
+w0 thibitisha(n8* jina, n64 halisi, n64 tarajiwa) {
+    kama (halisi == tarajiwa) {
+        andika("SAWA: %s\n", jina, 0, 0, 0, 0, 0);
+    } sivyo {
+        andika("SHINDWA: %s -- %d, ilitarajiwa %d\n", jina, halisi, tarajiwa, 0, 0, 0);
+        makosa = makosa + 1;
+    }
+}
+
+n64 pikseli(Turubai* t, n64 x, n64 y) {
+    rudisha pata_u32(t->pikseli, y * t->hatua + x * 4) & 16777215;
+}
+
+w0 jaribu_thamani() {
+    Turubai* t = turubai_unda(64, 64);
+
+    // jaza kamili
+    turubai_brashi(t, 16711680, 255);
+    turubai_jaza(t, 4, 4, 8, 8);
+    thibitisha("jaza: ndani ni nyekundu", pikseli(t, 4, 4), 16711680);
+    thibitisha("jaza: nje haijaguswa", pikseli(t, 12, 4), 0);
+
+    // uwazi: nyeupe 50% juu ya nyeusi = 128 kwa kila chaneli (255*128/255)
+    turubai_brashi(t, 16777215, 128);
+    turubai_jaza(t, 20, 4, 4, 4);
+    thibitisha("uwazi 128 juu ya nyeusi", pikseli(t, 20, 4), 8421504);
+
+    // kukata: hakuna pikseli nje ya eneo
+    turubai_kata(t, 30, 30, 4, 4);
+    turubai_brashi(t, 65280, 255);
+    turubai_jaza(t, 0, 0, 64, 64);
+    thibitisha("kata: ndani imejazwa", pikseli(t, 31, 31), 65280);
+    thibitisha("kata: kushoto haijaguswa", pikseli(t, 29, 31), 0);
+    thibitisha("kata: chini haijaguswa", pikseli(t, 31, 34), 0);
+    turubai_kata_yote(t);
+
+    // pembe ya mviringo: kona kabisa iko nje ya tao, katikati iko ndani,
+    // na pikseli ya ukingo ina thamani ya kati (kingo laini)
+    turubai_brashi(t, 16777215, 255);
+    turubai_mviringo(t, 40, 40, 20, 20, 8);
+    thibitisha("mviringo: kona iko tupu", pikseli(t, 40, 40), 0);
+    thibitisha("mviringo: katikati imejaa", pikseli(t, 50, 50), 16777215);
+    // (43,41): kitovu chake kiko pikseli 7.9 kutoka kitovu cha pembe (48,48)
+    // -- ndani ya unene wa nusu-pikseli wa ukingo wa r=8.
+    n64 ukingo = pikseli(t, 43, 41) & 255;
+    n64 laini = 0;
+    kama (ukingo > 0 && ukingo < 255) { laini = 1; }
+    thibitisha("mviringo: ukingo ni laini (si 0 wala 255)", laini, 1);
+
+    // ulinganifu: pembe nne zina funiko lile lile
+    thibitisha("mviringo: ulinganifu kushoto-kulia", pikseli(t, 43, 41), pikseli(t, 56, 41));
+    thibitisha("mviringo: ulinganifu juu-chini", pikseli(t, 43, 41), pikseli(t, 43, 58));
+
+    thibitisha("kipeuo 0", turubai_kipeuo(0), 0);
+    thibitisha("kipeuo 144", turubai_kipeuo(144), 12);
+    thibitisha("kipeuo 145 (sakafu)", turubai_kipeuo(145), 12);
+    thibitisha("kipeuo 2^40", turubai_kipeuo(1099511627776), 1048576);
+}
+
+// Skrini ya mfano: paneli, safu za jedwali, pau na mstari wa chati.
+w0 chora_mfano(Turubai* t) {
+    turubai_brashi(t, 987674, 255);
+    turubai_mteremko(t, 0, 0, t->upana, t->kimo, 1513770);
+
+    // paneli ya kushoto
+    turubai_brashi(t, 1711147, 255);
+    turubai_mviringo(t, 24, 24, 420, 352, 14);
+    turubai_brashi(t, 3355986, 255);
+    turubai_mpaka(t, 24, 24, 420, 352, 14);
+
+    // safu za jedwali, kila ya pili ina kivuli
+    n64 i = 0;
+    wakati (i < 8) {
+        kama (i % 2 == 0) {
+            turubai_brashi(t, 16777215, 10);
+            turubai_mviringo(t, 36, 70 + i * 36, 396, 32, 6);
+        }
+        // nukta ya rangi ya taifa
+        turubai_brashi(t, 3447003 + i * 1118481, 255);
+        turubai_duara(t, 56, 86 + i * 36, 7);
+        // pau ya thamani
+        turubai_brashi(t, 3066993, 230);
+        turubai_mviringo(t, 250, 80 + i * 36, 40 + i * 18, 12, 6);
+        i = i + 1;
+    }
+
+    // paneli ya kulia: chati ya mstari
+    turubai_brashi(t, 1711147, 255);
+    turubai_mviringo(t, 468, 24, 588, 352, 14);
+    turubai_brashi(t, 3355986, 255);
+    turubai_mpaka(t, 468, 24, 588, 352, 14);
+    turubai_kata(t, 480, 36, 564, 328);
+    // mistari ya gridi
+    turubai_brashi(t, 16777215, 18);
+    i = 0;
+    wakati (i < 6) {
+        turubai_jaza(t, 492, 80 + i * 50, 540, 1);
+        i = i + 1;
+    }
+    // mstari wa data
+    turubai_brashi(t, 15844367, 255);
+    n64 px = 492;
+    n64 py = 300;
+    i = 1;
+    wakati (i <= 12) {
+        n64 nx = 492 + i * 45;
+        n64 ny = 300 - (i * i * 3) / 2 - ((i * 37) % 23);
+        turubai_mstari(t, px, py, nx, ny, 640);
+        turubai_duara(t, nx, ny, 4);
+        px = nx;
+        py = ny;
+        i = i + 1;
+    }
+    turubai_kata_yote(t);
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    jaribu_thamani();
+    kama (idadi_ya_hoja > 1) {
+        Turubai* t = turubai_unda(1080, 400);
+        chora_mfano(t);
+        n64 fd = mfumo_fungua(hoja_za_mstari[1], 577, 420);
+        mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
+        mfumo_funga(fd);
+    }
+    andika("[muhtasari] yaliyoshindwa: %d\n", makosa, 0, 0, 0, 0, 0);
+    kama (makosa > 0) { rudisha 1; }
+    rudisha 0;
+}
