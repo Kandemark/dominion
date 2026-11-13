@@ -61,20 +61,28 @@ w0 skrini_urambazaji(Turubai* t, n64 hai) {
     sura_urambazaji("Ramani", 12, y + 280, SKRINI_UPANA_WA_PEMBENI - 24, hai == 7);
 }
 
-// Jedwali la mataifa ndani ya (x,y,w,h), limepangwa kwa pato ghafi.
+n64 SKRINI_SAFU_ZA_JEDWALI = 9;
+n64 SKRINI_KIMO_CHA_SAFU = 38;
+
+// Jedwali la mataifa: mataifa YOTE yamepangwa kwa pato ghafi, safu
+// SKRINI_SAFU_ZA_JEDWALI za juu zinaonyeshwa; ikiwa taifa la mchezaji
+// haliko kati yao, safu ya mwisho ni lake (pamoja na nafasi yake halisi).
 w0 skrini_jedwali_la_mataifa(Mchezo* g, n64 x, n64 y, n64 w) {
     TaifaMfumo* tm = mchezo_pata_taifa(g);
-    n64 n = tm->idadi;
-    kama (n > 64) { n = 64; }
-    n64 kimo_cha_safu = 38;
-    sura_paneli(x, y, w, 76 + n * kimo_cha_safu, "MATAIFA");
+    n64 idadi = tm->idadi;
+    n64 n = idadi;
+    kama (n > SKRINI_SAFU_ZA_JEDWALI) { n = SKRINI_SAFU_ZA_JEDWALI; }
+    n64 kimo_cha_safu = SKRINI_KIMO_CHA_SAFU;
+    n8 kichwa[64];
+    mfuatano_umbiza(kichwa, 64, "MATAIFA -- %d BORA KWA PATO GHAFI, KATI YA %d", n, idadi, 0, 0, 0, 0);
+    sura_paneli(x, y, w, 76 + n * kimo_cha_safu, kichwa);
 
     // mpangilio: faharasa zilizopangwa kwa pato ghafi (kubwa kwanza)
-    n64 mpangilio[64];
-    n64 pato[64];
+    n64* mpangilio = tenga(8 * idadi + 8);
+    n64* pato = tenga(8 * idadi + 8);
     n64 i = 0;
     n64 pato_kuu = 1;
-    wakati (i < n) {
+    wakati (i < idadi) {
         TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, i);
         n64 p = skrini_pato_la_taifa(tn);
         n64 j = i;
@@ -108,15 +116,25 @@ w0 skrini_jedwali_la_mataifa(Mchezo* g, n64 x, n64 y, n64 w) {
     sura_kichwa_cha_safuwima("JESHI", x_viashiria + 220, yk, 0);
     sura_kichwa_cha_safuwima("UTAMADUNI", x_viashiria + 330, yk, 0);
 
+    // nafasi ya taifa la mchezaji
+    n64 nafasi_ya_mchezaji = 0;
+    i = 0;
+    wakati (i < idadi) {
+        kama (mpangilio[i] == tm->faharisi_ya_taifa_la_mchezaji) { nafasi_ya_mchezaji = i; }
+        i = i + 1;
+    }
+
     n8 chombo[48];
     i = 0;
     wakati (i < n) {
-        n64 f = mpangilio[i];
+        n64 r = i;
+        kama (i == n - 1 && nafasi_ya_mchezaji >= n) { r = nafasi_ya_mchezaji; }
+        n64 f = mpangilio[r];
         TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, f);
         n64 ys = y + 66 + i * kimo_cha_safu;
         sura_safu(x + 8, ys, w - 16, kimo_cha_safu - 4, i, f == tm->faharisi_ya_taifa_la_mchezaji);
         n64 ym = ys + 8;
-        sura_namba(chombo, i + 1);
+        sura_namba(chombo, r + 1);
         sura_rangi(SURA_HAFIFU);
         sura_lebo(chombo, x + 20, ym, 14);
         turubai_brashi(sura_t, tn->rangi, 255);
@@ -125,10 +143,11 @@ w0 skrini_jedwali_la_mataifa(Mchezo* g, n64 x, n64 y, n64 w) {
         sura_lebo_kati(tn->jina, x_taifa + 24, ym, 14);
         sura_namba_fupi(chombo, tn->idadi_ya_watu);
         sura_lebo_kulia(chombo, x_watu, ym, 14);
-        sura_namba_fupi(chombo, pato[i]);
+        sura_namba_fupi(chombo, pato[r]);
         sura_lebo_kulia(chombo, x_pato, ym, 14);
-        sura_pau(x_pau, ys + 13, 120, 8, (pato[i] * 1000) / pato_kuu, SURA_LAFUDHI);
-        n64 kila_mtu = tn->pato_kwa_kila_mtu;
+        sura_pau(x_pau, ys + 13, 120, 8, (pato[r] * 1000) / pato_kuu, SURA_LAFUDHI);
+        n64 kila_mtu = 0;
+        kama (tn->idadi_ya_watu > 0) { kila_mtu = pato[r] / tn->idadi_ya_watu; }
         sura_namba(chombo, kila_mtu);
         sura_rangi(SURA_MAANDISHI);
         sura_lebo_kulia(chombo, x_kila_mtu, ym, 14);
@@ -138,6 +157,8 @@ w0 skrini_jedwali_la_mataifa(Mchezo* g, n64 x, n64 y, n64 w) {
         sura_pau(x_viashiria + 330, ys + 13, 90, 8, (tn->kielezo_cha_utamaduni * 1000) / 500, SURA_LAFUDHI);
         i = i + 1;
     }
+    achilia mpangilio;
+    achilia pato;
 }
 
 // Historia ya pato ghafi la dunia kama chati ya mstari.
@@ -201,6 +222,8 @@ w0 skrini_muhtasari_chora(Mchezo* g, Turubai* t) {
     sura_kadi(x + 3 * (wk + pengo), y, wk, "PATO KWA KILA MTU", chombo, 0);
 
     skrini_jedwali_la_mataifa(g, x, y + 92 + pengo, w);
-    n64 y_chati = y + 92 + pengo + 76 + tm->idadi * 38 + pengo;
+    n64 safu = tm->idadi;
+    kama (safu > SKRINI_SAFU_ZA_JEDWALI) { safu = SKRINI_SAFU_ZA_JEDWALI; }
+    n64 y_chati = y + 92 + pengo + 76 + safu * SKRINI_KIMO_CHA_SAFU + pengo;
     skrini_historia_ya_pato(g, x, y_chati, w);
 }
