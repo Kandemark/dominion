@@ -6,16 +6,14 @@ husisha { moduli/mchezo.swa }
 // historia ya pato ghafi, na viashiria vya taifa la mchezaji.
 //
 // Kila namba inasomwa kutoka Mchezo -- hakuna thamani ya mfano. Pato ghafi
-// la taifa ni pato kwa kila mtu x idadi ya watu.
+// ni uchumi.pato_ghafi ya uigaji (watu x tija), ile ile ya historia ya GDP.
 
 n64 SKRINI_UPAU_WA_JUU = 56;
 n64 SKRINI_UPANA_WA_PEMBENI = 208;
 
-// Pato ghafi la taifa kwa vizio kamili.
+// Pato ghafi la taifa kwa vizio kamili (uchumi.pato_ghafi ni milioni).
 n64 skrini_pato_la_taifa(TaifaNchi* t) {
-    d64 pato = t->pato_kwa_kila_mtu;
-    d64 watu = t->idadi_ya_watu;
-    d64 jumla = pato * watu;
+    d64 jumla = t->uchumi.pato_ghafi * 1000000.0;
     n64 v = jumla;
     rudisha v;
 }

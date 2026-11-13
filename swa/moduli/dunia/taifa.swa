@@ -1015,20 +1015,29 @@ w0 dunia_taifa_uchumi_kutoka_jumla(TaifaNchi* t, n32 vipande_vya_ardhi, n32 vipa
     d64 kipengele_cha_tekno = 1.0 + tech_d * 0.002;
     d64 kipengele_cha_uchumi = 1.0 + econ_d * 0.002;
 
-    d64 pato_msingi = vipande_ardhi_d * 0.5 * kipengele_cha_tekno * kipengele_cha_uchumi;
+    // Tija (pato kwa kila mtu, $) hutokana na teknolojia, uchumi, rutuba
+    // ya ardhi inayomilikiwa, ugumu wa ardhi ya juu, rasilimali, na
+    // msongamano: chini ya vipande 4 vya ardhi kwa kila watu milioni,
+    // ardhi haitoshi na tija hushuka. Pato ghafi (milioni) = watu x tija.
+    // Skrini na historia ya GDP hutumia namba hii hii.
     d64 jumla_rasilimali_d = rp->jumla;
-    d64 zawadi_ya_rasilimali = jumla_rasilimali_d * 0.01;
-    d64 pato = pato_msingi + zawadi_ya_rasilimali;
-    kama (pato < 1.0) { pato = 1.0; }
+    d64 tija = 2500.0 * kipengele_cha_tekno * kipengele_cha_uchumi * (0.55 + wastani_wa_rutuba);
+    tija = tija * (1.1 - 0.4 * wastani_wa_mwinuko);
+    tija = tija + jumla_rasilimali_d * 2.0;
+    d64 ardhi_kwa_milioni = vipande_ardhi_d * 1000000.0 / idadi_d;
+    kama (ardhi_kwa_milioni < 4.0) { tija = tija * (0.6 + 0.1 * ardhi_kwa_milioni); }
+    kama (tija < 200.0) { tija = 200.0; }
+    d64 pato = idadi_d * tija / 1000000.0;
 
     t->uchumi.pato_ghafi = pato;
-    t->uchumi.pato_kwa_kila_mtu = pato * 1000000.0 / idadi_d;
+    t->uchumi.pato_kwa_kila_mtu = tija;
+    t->pato_kwa_kila_mtu = tija;
     t->uchumi.ukuaji_wa_pato = 0.01 + econ_d * 0.0001;
     t->uchumi.mfumuko = 0.02;
     d64 kigawe = kipengele_cha_uchumi + 0.5;
     t->uchumi.ukosefu_wa_kazi = 0.04 + (1.0 / kigawe) * 0.04;
     t->uchumi.nguvukazi = idadi_d * 0.45;
-    t->uchumi.mshahara_wa_wastani = 20000.0 + pato * 0.5;
+    t->uchumi.mshahara_wa_wastani = tija * 0.45;
 
     t->uchumi.uzalishaji_wa_chakula = vipande_ardhi_d * wastani_wa_rutuba * 500.0 * kipengele_cha_tekno;
     t->uchumi.matumizi_ya_chakula = idadi_d * 2500.0 * 365.0 / 1000000.0;

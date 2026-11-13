@@ -181,8 +181,6 @@ w0 dunia_atlasi_unda_mataifa(TaifaMfumo* m, DuniaRamani* r, Atlasi* a, Miji* mj)
         t->kielezo_cha_utamaduni = 60 + dunia_atlasi_sifa(a, i, 4, 380);
         d64 gharama = dunia_atlasi_sifa(a, i, 5, 100);
         t->gharama_ya_maisha = 0.7 + gharama / 200.0;
-        d64 pato_mtu = dunia_atlasi_sifa(a, i, 6, 9500);
-        t->pato_kwa_kila_mtu = 500.0 + pato_mtu;
         // mikoa: miji ya taifa hili (mji mkuu na miji, si vijiji), hadi 16
         t->idadi_ya_mgawanyo = 0;
         n64 c = 0;
