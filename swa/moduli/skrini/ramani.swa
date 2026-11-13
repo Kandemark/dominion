@@ -117,6 +117,10 @@ w0 skrini_ramani_paneli(Mchezo* g, Turubai* t, n64 taifa) {
     py = py + 26;
     sura_namba(namba, tn->idadi_ya_mgawanyo);
     skrini_safu_ya_taarifa("Mikoa", namba, px, py, pw);
+    py = py + 26;
+    n64 lugha = mj->lugha_ya_taifa[taifa];
+    mfuatano_umbiza(chombo, 64, "%s (%s)", lugha_jina(lugha), lugha_familia_jina(lugha_familia(lugha)), 0, 0, 0, 0);
+    skrini_safu_ya_taarifa("Lugha", chombo, px, py, pw);
     py = py + 40;
 
     sura_kichwa_cha_safuwima("VIASHIRIA", px, py, 0);

@@ -300,10 +300,10 @@ muundo MchezoUsanidi {
     n32 kiwango_cha_juu_cha_kumbukumbu_matukio;
 };
 
-n64 MCHEZO_MBEGU_YA_DUNIA = 7;
-// Mataifa 36 ya ukubwa tofauti sana (falme kubwa na dola ndogo), na nchi
+n64 MCHEZO_MBEGU_YA_DUNIA = 3;         // mabara mawili yenye nguvu
+// Mataifa 60 kwenye mabara mawili, ya ukubwa tofauti sana (falme kubwa na dola ndogo), na nchi
 // pori kati yao -- si gridi ya mataifa sawa.
-n64 MCHEZO_IDADI_YA_MATAIFA = 36;
+n64 MCHEZO_IDADI_YA_MATAIFA = 60;
 
 muundo MchezoUtendaji {
     n64 idadi_ya_sasisho;
@@ -825,7 +825,7 @@ CivMatokeo mchezo_anzisha(Mchezo* g, MchezoUsanidi* usanidi) {
     // Ramani ya vipande 360x180 (shahada moja kwa kipande) hujazwa
     // kutoka atlasi -- nchi kavu, mwinuko, hali ya hewa, matumizi ya
     // ardhi -- hivyo uigaji na ramani inayochorwa ni dunia moja.
-    Atlasi* atlasi = atlasi_unda(MCHEZO_MBEGU_YA_DUNIA, MCHEZO_IDADI_YA_MATAIFA, 64, 36);
+    Atlasi* atlasi = atlasi_unda(MCHEZO_MBEGU_YA_DUNIA, MCHEZO_IDADI_YA_MATAIFA, 104, 40);
     Miji* miji = atlasi_unda_miji(atlasi);
     mchezo_weka_atlasi(g, atlasi);
     mchezo_weka_miji(g, miji);

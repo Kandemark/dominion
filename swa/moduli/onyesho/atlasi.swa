@@ -27,7 +27,7 @@ husisha { moduli/onyesho/turubai.swa }
 // Usawa wa bahari huwekwa na atlasi_unda ili sehemu ya nchi kavu iwe
 // ATLASI_NCHI_KAVU_ASILIMIA ya dunia kwa kila mbegu.
 n64 ATLASI_USAWA_WA_BAHARI = 33400;
-n64 ATLASI_NCHI_KAVU_ASILIMIA = 42;
+n64 ATLASI_NCHI_KAVU_ASILIMIA = 38;
 n64 ATLASI_UPEO_WA_MATAIFA = 512;
 n64 ATLASI_SELI = 4096;                  // upande wa seli ya gridi ya miji mikuu (vizio 4)
 
@@ -104,7 +104,27 @@ n64 atlasi_tabaka(n64 x, n64 y, n64 mbegu, n64 matabaka) {
 // ya pili ili ghuba na rasi zisiwe za mviringo tu.
 n64 ATLASI_BARA_UZITO = 5;          // uzito wa uwanja wa bara dhidi ya undani (kati ya 9)
 
+// Umbali (r^2, 1024 = ukingo) wa nukta (px,py) kutoka kitovu cha bara
+// `b`, kwa vizio vya duaradufu ya bara hilo. Bara la kwanza ni kubwa,
+// magharibi; la pili dogo kidogo, mashariki. Vitovu hutikiswa kwa mbegu.
+n64 atlasi_bara_r2(Atlasi* a, n64 b, n64 px, n64 py) {
+    n64 upana = a->upana * 1024;
+    n64 kimo = a->kimo * 1024;
+    n64 tx = ((atlasi_heshi(b, 1, a->mbegu + 4040) - 32768) * 40) / 32768;    // -40..40 kwa elfu
+    n64 ty = ((atlasi_heshi(b, 2, a->mbegu + 4040) - 32768) * 70) / 32768;
+    n64 cx = 285 + tx;
+    n64 cy = 490 + ty / 2;
+    n64 rx = 255;
+    n64 ry = 360;
+    kama (b == 1) { cx = 745 + tx; cy = 500 + ty / 2; rx = 215; ry = 330; }
+    n64 dx = ((px - (upana * cx) / 1000) * 1024) / ((upana * rx) / 1000);
+    n64 dy = ((py - (kimo * cy) / 1000) * 1024) / ((kimo * ry) / 1000);
+    rudisha (dx * dx + dy * dy) / 1024;
+}
+
 n64 atlasi_mwinuko(Atlasi* a, n64 x, n64 y) {
+    // nje ya dunia ni bahari (ramani ikisogezwa hadi kingo)
+    kama (x < 0 || y < 0 || x > a->upana * 1024 || y > a->kimo * 1024) { rudisha 0; }
     n64 wx = x + ((atlasi_tabaka(x >> 2, y >> 2, a->mbegu + 31, 3) - 32768) >> 2);
     n64 wy = y + ((atlasi_tabaka(x >> 2, y >> 2, a->mbegu + 47, 3) - 32768) >> 2);
     n64 undani = atlasi_tabaka(wx >> 4, wy >> 4, a->mbegu, 8);
@@ -112,21 +132,38 @@ n64 atlasi_mwinuko(Atlasi* a, n64 x, n64 y) {
     // mabara makubwa badala ya visiwa vilivyotawanyika
     n64 bara = atlasi_tabaka((wx * 2) / 5 >> 4, (wy * 2) / 5 >> 4, a->mbegu + 9000, 3);
     n64 e = (bara * ATLASI_BARA_UZITO + undani * (9 - ATLASI_BARA_UZITO)) / 9;
-    // kingo za dunia ni bahari: duaradufu iliyopindwa na kelele kubwa
-    // (vizio +-12), yenye mteremko mpole ili kelele ya undani iamue pwani; pwani za nje zinapinda badala ya kufuata mstari
-    // wa kingo za dunia
+    // Mabara mawili: kila moja ni duaradufu iliyopindwa na kelele kubwa
+    // (vizio +-8); nukta iko "ndani" kwa kiasi cha duaradufu iliyo karibu
+    // zaidi. Nje ya hapo bahari hupanda kwa mteremko mpole, ili kelele ya
+    // undani iamue pwani na pwani zipinde. Kati ya mabara ni bahari wazi.
     n64 upana = a->upana * 1024;
     n64 kimo = a->kimo * 1024;
-    n64 px = x + ((atlasi_tabaka(x >> 4, y >> 4, a->mbegu + 9100, 4) - 32768) * 3) / 8;
-    n64 py = y + ((atlasi_tabaka(x >> 4, y >> 4, a->mbegu + 9200, 4) - 32768) * 3) / 8;
-    n64 dx = ((px - upana / 2) * 1024) / (upana / 2);        // -1024..1024 kwenye kingo
-    n64 dy = ((py - kimo / 2) * 1024) / (kimo / 2);
-    n64 r2 = (dx * dx + dy * dy) / 1024;                      // 1024 = kingo za duaradufu
+    n64 px = x + (atlasi_tabaka(x >> 4, y >> 4, a->mbegu + 9100, 4) - 32768) / 4;
+    n64 py = y + (atlasi_tabaka(x >> 4, y >> 4, a->mbegu + 9200, 4) - 32768) / 4;
+    n64 r2 = atlasi_bara_r2(a, 0, px, py);
+    n64 r2b = atlasi_bara_r2(a, 1, px, py);
+    n64 kuinua = 7000;                  // bara la magharibi
+    kama (r2b < r2) { r2 = r2b; kuinua = 12000; }   // la mashariki ni dogo: linahitaji zaidi
     n64 mwanzo = 400;                                          // r^2 ambapo kushuka huanza (~r 0.63)
     kama (r2 > mwanzo) {
         n64 f = r2 - mwanzo;
         kama (f > 900) { f = 900; }
         e = e - (f * 9000) / (1024 - mwanzo);                  // mstari, si mraba: mteremko mpole
+    } sivyo {
+        // ndani ya bara: kuinua kwa upole hadi kitovu, ili kila bara lipo
+        // hata pale kelele ya bara ilipo chini
+        e = e + ((mwanzo - r2) * kuinua) / mwanzo;
+    }
+    // ukingo laini wa dunia (vizio 4): pwani hupinda kabla ya kingo, si
+    // kukatwa kwa mstari nyoofu
+    n64 d = x;
+    kama (upana - x < d) { d = upana - x; }
+    kama (y < d) { d = y; }
+    kama (kimo - y < d) { d = kimo - y; }
+    n64 ukingo = 4096;
+    kama (d < ukingo) {
+        n64 f = ukingo - d;
+        e = e - (f * f / ukingo) * 20000 / ukingo;
     }
     kama (e < 0) { e = 0; }
     rudisha e;

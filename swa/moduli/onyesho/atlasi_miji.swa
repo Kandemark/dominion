@@ -1,6 +1,7 @@
 husisha { msingi/maktaba/kumbukumbu.swa }
 husisha { moduli/onyesho/atlasi.swa }
 husisha { moduli/onyesho/maandishi.swa }
+husisha { moduli/onyesho/lugha_za_dunia.swa }
 
 // atlasi_miji.swa -- tabaka za juu za atlasi: miji, barabara na majina.
 //
@@ -48,6 +49,7 @@ muundo Miji {
     n64* bandari;           // 1 = mji wa pwani
     n64* jina;              // n8* za majina
     n64* taifa_jina;
+    n64* lugha_ya_taifa;    // lugha_za_dunia.swa
     n64 barabara;
     n64* ba;                // mji wa mwanzo
     n64* bb;                // mji wa mwisho
@@ -80,63 +82,77 @@ muundo Miji {
 }
 
 // ---------- majina ----------
+//
+// Majina hutoka lugha_za_dunia.swa. Kila taifa lina lugha ya kitovu cha
+// utamaduni kilicho karibu zaidi na mji wake mkuu (vitovu ATLASI_VITOVU),
+// hivyo familia za lugha hukaa pamoja kijiografia na mipaka ya tamaduni
+// hupita kati ya mataifa. Miji huitwa kwa lugha ya taifa lake; kanda, maziwa
+// na bahari kwa lugha ya taifa lililo karibu zaidi.
 
-n8* atlasi_silabi() {
-    rudisha "ka ma ri to su le no va be di sa lo ne ru mi ta ze ko pa ni go ha ve lu shi nda mbe ra te fi dro kwa nya ki bo tsa vi mo";
+n64 ATLASI_VITOVU = 10;
+
+// Lugha ya taifa ambalo mji wake mkuu uko karibu zaidi na (x,y).
+n64 atlasi_lugha_karibu(Atlasi* a, Miji* m, n64 x, n64 y) {
+    n64 bora = 0 - 1;
+    n64 mshindi = 0;
+    n64 t = 0;
+    wakati (t < a->idadi) {
+        n64 dx = x - a->mji_x[t];
+        n64 dy = y - a->mji_y[t];
+        n64 d = dx * dx + dy * dy;
+        kama (bora < 0 || d < bora) { bora = d; mshindi = t; }
+        t = t + 1;
+    }
+    rudisha m->lugha_ya_taifa[mshindi];
 }
 
-n8* atlasi_miisho() {
-    rudisha "n r s ra ni la ndo ri mo sh na go";
-}
-
-n64 atlasi_idadi_ya_maneno(n8* orodha) {
-    n64 n = 1;
-    n64 i = 0;
-    wakati (orodha[i] != 0) {
-        kama (orodha[i] == 32) { n = n + 1; }
-        i = i + 1;
+// Vitovu vya utamaduni: mataifa ATLASI_VITOVU yaliyochaguliwa kwa heshi,
+// kila moja lugha tofauti. Kila taifa huchukua lugha ya kitovu kilicho
+// karibu zaidi na mji wake mkuu.
+w0 atlasi_gawa_lugha(Atlasi* a, Miji* m) {
+    n64 v = ATLASI_VITOVU;
+    kama (v > a->idadi) { v = a->idadi; }
+    n64* kitovu = tenga(8 * v);
+    n64* lugha = tenga(8 * v);
+    n64 c = 0;
+    wakati (c < v) {
+        // kitovu: taifa ambalo halijachaguliwa
+        n64 t = atlasi_heshi(c, 7, a->mbegu + 3131) % a->idadi;
+        n64 rudia = 1;
+        wakati (rudia) {
+            rudia = 0;
+            n64 k = 0;
+            wakati (k < c) { kama (kitovu[k] == t) { rudia = 1; } k = k + 1; }
+            kama (rudia) { t = (t + 1) % a->idadi; }
+        }
+        kitovu[c] = t;
+        // lugha: tofauti na zilizochaguliwa
+        n64 l = atlasi_heshi(c, 9, a->mbegu + 3131) % LUGHA_IDADI;
+        rudia = 1;
+        wakati (rudia) {
+            rudia = 0;
+            n64 k = 0;
+            wakati (k < c) { kama (lugha[k] == l) { rudia = 1; } k = k + 1; }
+            kama (rudia) { l = (l + 1) % LUGHA_IDADI; }
+        }
+        lugha[c] = l;
+        c = c + 1;
     }
-    rudisha n;
-}
-
-// Ongeza neno la k la `orodha` (maneno yametenganishwa kwa nafasi) kwenye
-// s kuanzia s[n]; hurudisha n mpya.
-n64 atlasi_ongeza_neno(n8* s, n64 n, n8* orodha, n64 k) {
-    n64 i = 0;
-    n64 neno = 0;
-    wakati (orodha[i] != 0 && neno < k) {
-        kama (orodha[i] == 32) { neno = neno + 1; }
-        i = i + 1;
+    n64 t = 0;
+    wakati (t < a->idadi) {
+        n64 bora = 0 - 1;
+        c = 0;
+        wakati (c < v) {
+            n64 dx = a->mji_x[t] - a->mji_x[kitovu[c]];
+            n64 dy = a->mji_y[t] - a->mji_y[kitovu[c]];
+            n64 d = dx * dx + dy * dy;
+            kama (bora < 0 || d < bora) { bora = d; m->lugha_ya_taifa[t] = lugha[c]; }
+            c = c + 1;
+        }
+        t = t + 1;
     }
-    wakati (orodha[i] != 0 && orodha[i] != 32) {
-        s[n] = orodha[i];
-        n = n + 1;
-        i = i + 1;
-    }
-    rudisha n;
-}
-
-// Jina la silabi `silabi` (+ mwisho wa hiari), herufi ya kwanza kubwa.
-// Hutegemea mbegu na kitambulisho pekee -- jina lile lile kila mara.
-n8* atlasi_jina(n64 mbegu, n64 kitambulisho, n64 silabi) {
-    n8* s = tenga(40);
-    n8* orodha = atlasi_silabi();
-    n64 idadi = atlasi_idadi_ya_maneno(orodha);
-    n64 n = 0;
-    n64 i = 0;
-    wakati (i < silabi) {
-        n64 h = atlasi_heshi(kitambulisho, i * 31 + 7, mbegu + 555);
-        n = atlasi_ongeza_neno(s, n, orodha, h % idadi);
-        i = i + 1;
-    }
-    n64 h = atlasi_heshi(kitambulisho, 99, mbegu + 556);
-    kama ((h & 3) != 0) {
-        n8* miisho = atlasi_miisho();
-        n = atlasi_ongeza_neno(s, n, miisho, (h >> 2) % atlasi_idadi_ya_maneno(miisho));
-    }
-    s[n] = 0;
-    kama (s[0] >= 97 && s[0] <= 122) { s[0] = s[0] - 32; }
-    rudisha s;
+    achilia kitovu;
+    achilia lugha;
 }
 
 // Nakala ya herufi kubwa (ASCII) ya s.
@@ -322,6 +338,8 @@ Miji* atlasi_unda_miji(Atlasi* a) {
     m->bandari = tenga(8 * ATLASI_UPEO_WA_MIJI);
     m->jina = tenga(8 * ATLASI_UPEO_WA_MIJI);
     m->taifa_jina = tenga(8 * ATLASI_UPEO_WA_MATAIFA);
+    m->lugha_ya_taifa = tenga(8 * ATLASI_UPEO_WA_MATAIFA);
+    atlasi_gawa_lugha(a, m);
     m->barabara = 0;
     m->ba = tenga(8 * ATLASI_UPEO_WA_BARABARA);
     m->bb = tenga(8 * ATLASI_UPEO_WA_BARABARA);
@@ -331,7 +349,7 @@ Miji* atlasi_unda_miji(Atlasi* a) {
 
     n64 t = 0;
     wakati (t < a->idadi) {
-        m->taifa_jina[t] = atlasi_jina(a->mbegu, 100000 + t, 2 + (atlasi_heshi(t, 5, a->mbegu) & 1));
+        m->taifa_jina[t] = lugha_tunga_jina(m->lugha_ya_taifa[t], a->mbegu, 100000 + t, 2 + (atlasi_heshi(t, 5, a->mbegu) & 1));
         atlasi_ongeza_mji(m, a->mji_x[t], a->mji_y[t], t, 3);
         t = t + 1;
     }
@@ -365,7 +383,7 @@ Miji* atlasi_unda_miji(Atlasi* a) {
     }
     n64 i = 0;
     wakati (i < m->idadi) {
-        m->jina[i] = atlasi_jina(a->mbegu, i, 2 + (atlasi_heshi(i, 3, a->mbegu + 1) % 3) / 2);
+        m->jina[i] = lugha_tunga_jina(m->lugha_ya_taifa[m->taifa[i]], a->mbegu, i, 2 + (atlasi_heshi(i, 3, a->mbegu + 1) % 3) / 2);
         kama (m->daraja[i] >= 1 && atlasi_karibu_na_maji(a, m->x[i], m->y[i], 380)) { m->bandari[i] = 1; }
         i = i + 1;
     }
@@ -394,6 +412,7 @@ w0 atlasi_miji_uharibu(Miji* m, n64 mataifa) {
     achilia m->bandari;
     achilia m->jina;
     achilia m->taifa_jina;
+    achilia m->lugha_ya_taifa;
     achilia m->ba;
     achilia m->bb;
     achilia m->bdaraja;
@@ -692,7 +711,8 @@ w0 atlasi_unda_kanda(Atlasi* a, Miji* m) {
                 m->kanda_x[r] = kx * ATLASI_SELI_YA_MAJI + ATLASI_SELI_YA_MAJI / 2;
                 m->kanda_y[r] = ky * ATLASI_SELI_YA_MAJI + ATLASI_SELI_YA_MAJI / 2;
                 m->kanda_ukubwa[r] = idadi;
-                n8* msingi = atlasi_jina(a->mbegu, 80000 + makundi, 2);
+                n64 lk = atlasi_lugha_karibu(a, m, m->kanda_x[r], m->kanda_y[r]);
+                n8* msingi = lugha_tunga_jina(lk, a->mbegu, 80000 + makundi, 2);
                 n8* jina = tenga(64);
                 kama (t == 1) { unganisha_mfuatano(jina, "Tundra ya ", msingi); }
                 kama (t == 2) { unganisha_mfuatano(jina, "Jangwa la ", msingi); }
@@ -1039,10 +1059,10 @@ w0 atlasi_chora_maji(Atlasi* a, Miji* m, Turubai* t, Fonti* f, n64 x0, n64 y0, n
                 n8* msingi = 0;
                 kama (ziwa) {
                     ufunguo = 1000000 + kundi;
-                    msingi = atlasi_jina(a->mbegu, 70000 + kundi, 2);
+                    msingi = lugha_tunga_jina(atlasi_lugha_karibu(a, m, wx, wy), a->mbegu, 70000 + kundi, 2);
                 } sivyo {
                     ufunguo = (wx / 12288) * 977 + (wy / 12288) * 131 + 50000;
-                    msingi = atlasi_jina(a->mbegu, ufunguo, 2);
+                    msingi = lugha_tunga_jina(atlasi_lugha_karibu(a, m, wx, wy), a->mbegu, ufunguo, 2);
                 }
                 // jina moja kwa kila ufunguo kwa fremu
                 n64 tayari = 0;
