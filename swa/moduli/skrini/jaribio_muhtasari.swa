@@ -25,6 +25,14 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
         mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
         mfumo_funga(fd);
     }
-    andika("zamu %d, mataifa %d\n", g->zamu_ya_sasa, mchezo_pata_taifa(g)->idadi, 0, 0, 0, 0);
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 watu = 0;
+    n64 k = 0;
+    wakati (k < tm->idadi) {
+        TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, k);
+        watu = watu + tn->idadi_ya_watu;
+        k = k + 1;
+    }
+    andika("zamu %d, mataifa %d, watu %d\n", g->zamu_ya_sasa, tm->idadi, watu, 0, 0, 0);
     rudisha 0;
 }

@@ -214,9 +214,11 @@ w0 dunia_atlasi_unda_mataifa(TaifaMfumo* m, DuniaRamani* r, Atlasi* a, Miji* mj)
     // mmiliki wa kila kipande cha nchi kavu, na sanduku la eneo la kila
     // taifa (eneo_0) kwa kazi zinazouliza kwa longitudo/latitudo
     n32* vipande = tenga(4 * n + 4);
+    d64* rutuba = tenga(8 * n + 8);
     i = 0;
     wakati (i < n) {
         vipande[i] = 0;
+        rutuba[i] = 0.0;
         TaifaNchi* t = m->mataifa[i];
         t->eneo_0.lon_chini = 180.0;
         t->eneo_0.lon_juu = 0.0 - 180.0;
@@ -239,6 +241,7 @@ w0 dunia_atlasi_unda_mataifa(TaifaMfumo* m, DuniaRamani* r, Atlasi* a, Miji* mj)
                     k->rangi_ya_kisiasa = t->rangi;
                     k->ushawishi_wa_kisiasa = 1.0;
                     vipande[o] = vipande[o] + 1;
+                    rutuba[o] = rutuba[o] + k->rutuba;
                     d64 x_d = x;
                     d64 lon = (x_d + 0.5) - 180.0;
                     kama (lon < t->eneo_0.lon_chini) { t->eneo_0.lon_chini = lon - 0.5; }
@@ -251,17 +254,24 @@ w0 dunia_atlasi_unda_mataifa(TaifaMfumo* m, DuniaRamani* r, Atlasi* a, Miji* mj)
         }
         y = y + 1;
     }
-    // idadi ya watu hufuata ukubwa wa ardhi na msongamano wa kila taifa
+    // idadi ya watu ya mwanzo: 75%..115% ya watu ambao ardhi ya taifa
+    // inaweza kuwalisha (fomula ile ile ya dunia_taifa_uchumi_kutoka_jumla)
+    // -- mataifa machache huanza na upungufu mdogo, mengine na ziada
     i = 0;
     wakati (i < n) {
         TaifaNchi* t = m->mataifa[i];
         kama (vipande[i] > 0) { t->idadi_ya_maeneo = 1; } sivyo { t->idadi_ya_maeneo = 0; }
-        n64 kwa_kipande = 60000 + dunia_atlasi_sifa(a, i, 7, 140000);
-        n64 v = vipande[i];
-        t->idadi_ya_watu = v * kwa_kipande + 400000 + dunia_atlasi_sifa(a, i, 8, 1600000);
+        d64 tech_d = t->kielezo_cha_teknolojia;
+        d64 v = vipande[i];
+        d64 uwezo = 50000.0 * (0.3 * v + 2.0 * rutuba[i]) * (1.0 + tech_d * 0.002);
+        d64 sehemu = dunia_atlasi_sifa(a, i, 7, 41);
+        d64 watu = uwezo * (0.75 + sehemu / 100.0) + 200000.0;
+        n64 watu_n = watu;
+        t->idadi_ya_watu = watu_n;
         i = i + 1;
     }
     achilia vipande;
+    achilia rutuba;
 }
 
 // Kila zamu: idadi ya watu hukua, na viwango vya uchumi na teknolojia
@@ -274,16 +284,17 @@ w0 dunia_atlasi_songesha_zamu(TaifaMfumo* m, Atlasi* a, n32 zamu) {
     n32 i = 0;
     wakati (i < m->idadi) {
         TaifaNchi* t = m->mataifa[i];
-        // ukuaji wa watu: 0.2%..1.4% kwa zamu (1/100000); chakula
-        // kisipotosha, ukuaji hupungua kwa uwiano wa upungufu na unaweza
-        // kuwa hasi (njaa)
-        n64 kasi = 200 + dunia_atlasi_sifa(a, i, 9, 1200);
+        // ukuaji wa watu kwa zamu (mwezi mmoja), kwa 1/100000: 0.02%..0.25%
+        // (karibu 0.2%..3% kwa mwaka); chakula kisipotosha, ukuaji
+        // hupungua kwa uwiano wa upungufu na unaweza kuwa hasi (njaa,
+        // hadi -0.3% kwa mwezi)
+        n64 kasi = 20 + dunia_atlasi_sifa(a, i, 9, 230);
         d64 chakula = t->uchumi.uzalishaji_wa_chakula;
         d64 matumizi = t->uchumi.matumizi_ya_chakula;
         kama (matumizi > 0.0 && chakula < matumizi) {
             d64 uwiano = chakula / matumizi;            // 0..1
             d64 kasi_d = kasi;
-            d64 kasi_mpya = kasi_d * uwiano - (1.0 - uwiano) * 800.0;
+            d64 kasi_mpya = kasi_d * uwiano - (1.0 - uwiano) * 300.0;
             kasi = kasi_mpya;
         }
         t->idadi_ya_watu = t->idadi_ya_watu + (t->idadi_ya_watu * kasi) / 100000;
