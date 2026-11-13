@@ -227,8 +227,27 @@ n32 atlasi_ongeza_barabara(Atlasi* a, Miji* m, n64 i, n64 j, n64 daraja) {
     rudisha 1;
 }
 
+// Je, kuna mji wa tatu (daraja >= daraja_chini) ulio karibu na i NA j
+// kuliko i na j walivyo kwa kila mmoja? Ikiwa upo, barabara i-j ni
+// njia ya mzunguko -- safari hupita mji huo (grafu ya ujirani linganishi).
+n32 atlasi_kuna_mji_kati(Miji* m, n64 i, n64 j, n64 daraja_chini, n64 d_ij) {
+    n64 k = 0;
+    wakati (k < m->idadi) {
+        kama (k != i && k != j && m->daraja[k] >= daraja_chini) {
+            n64 ax = m->x[k] - m->x[i];
+            n64 ay = m->y[k] - m->y[i];
+            n64 bx = m->x[k] - m->x[j];
+            n64 by = m->y[k] - m->y[j];
+            kama (ax * ax + ay * ay < d_ij && bx * bx + by * by < d_ij) { rudisha 1; }
+        }
+        k = k + 1;
+    }
+    rudisha 0;
+}
+
 // Unganisha kila mji (wa daraja >= daraja_chini) na majirani wake `k`
-// walio karibu zaidi, wa daraja hilo pia, ndani ya umbali `upeo`.
+// walio karibu zaidi, wa daraja hilo pia, ndani ya umbali `upeo` --
+// isipokuwa pale mji mwingine uko katikati yao (atlasi_kuna_mji_kati).
 w0 atlasi_unganisha(Atlasi* a, Miji* m, n64 daraja_chini, n64 k, n64 upeo, n64 daraja) {
     n64* bora = tenga(8 * 8);
     n64* bora_d = tenga(8 * 8);
@@ -262,7 +281,9 @@ w0 atlasi_unganisha(Atlasi* a, Miji* m, n64 daraja_chini, n64 k, n64 upeo, n64 d
             }
             n64 q = 0;
             wakati (q < n) {
-                atlasi_ongeza_barabara(a, m, i, bora[q], daraja);
+                kama (atlasi_kuna_mji_kati(m, i, bora[q], daraja_chini, bora_d[q]) == 0) {
+                    atlasi_ongeza_barabara(a, m, i, bora[q], daraja);
+                }
                 q = q + 1;
             }
         }
@@ -329,8 +350,8 @@ Miji* atlasi_unda_miji(Atlasi* a) {
     }
     atlasi_unda_maji(a, m);
     // barabara kuu kwanza (majiji na miji mikuu), kisha za kawaida
-    atlasi_unganisha(a, m, 2, 3, 5600, 1);
-    atlasi_unganisha(a, m, 0, 3, 2400, 0);
+    atlasi_unganisha(a, m, 2, 4, 5600, 1);
+    atlasi_unganisha(a, m, 0, 4, 2400, 0);
     rudisha m;
 }
 
