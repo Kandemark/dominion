@@ -274,8 +274,18 @@ w0 dunia_atlasi_songesha_zamu(TaifaMfumo* m, Atlasi* a, n32 zamu) {
     n32 i = 0;
     wakati (i < m->idadi) {
         TaifaNchi* t = m->mataifa[i];
-        // ukuaji wa watu: 0.2%..1.4% kwa zamu (1/100000)
+        // ukuaji wa watu: 0.2%..1.4% kwa zamu (1/100000); chakula
+        // kisipotosha, ukuaji hupungua kwa uwiano wa upungufu na unaweza
+        // kuwa hasi (njaa)
         n64 kasi = 200 + dunia_atlasi_sifa(a, i, 9, 1200);
+        d64 chakula = t->uchumi.uzalishaji_wa_chakula;
+        d64 matumizi = t->uchumi.matumizi_ya_chakula;
+        kama (matumizi > 0.0 && chakula < matumizi) {
+            d64 uwiano = chakula / matumizi;            // 0..1
+            d64 kasi_d = kasi;
+            d64 kasi_mpya = kasi_d * uwiano - (1.0 - uwiano) * 800.0;
+            kasi = kasi_mpya;
+        }
         t->idadi_ya_watu = t->idadi_ya_watu + (t->idadi_ya_watu * kasi) / 100000;
         // uchumi: -1..+3 kwa zamu, kwa kasi ya taifa na mtikisiko wa zamu
         n32 mtikisiko = atlasi_heshi(i, zamu, a->mbegu + 5151) % 5;

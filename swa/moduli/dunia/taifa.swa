@@ -1039,19 +1039,44 @@ w0 dunia_taifa_uchumi_kutoka_jumla(TaifaNchi* t, n32 vipande_vya_ardhi, n32 vipa
     t->uchumi.nguvukazi = idadi_d * 0.45;
     t->uchumi.mshahara_wa_wastani = tija * 0.45;
 
-    t->uchumi.uzalishaji_wa_chakula = vipande_ardhi_d * wastani_wa_rutuba * 500.0 * kipengele_cha_tekno;
+    // Chakula (kcal milioni kwa mwaka): kipande kimoja cha ardhi hulisha
+    // watu 50,000 x (0.3 + 2 x rutuba) x teknolojia; matumizi ni kcal 2,500
+    // kwa siku kwa kila mtu. Uwiano chini ya 1 ni upungufu.
+    d64 wanaolishwa = vipande_ardhi_d * 50000.0 * (0.3 + 2.0 * wastani_wa_rutuba) * kipengele_cha_tekno;
+    t->uchumi.uzalishaji_wa_chakula = wanaolishwa * 2500.0 * 365.0 / 1000000.0;
     t->uchumi.matumizi_ya_chakula = idadi_d * 2500.0 * 365.0 / 1000000.0;
 
+    // Nishati (GWh kwa mwaka): MWh 1 kwa kila $3,000 ya tija kwa kila mtu,
+    // pamoja na rasilimali za nishati.
     d64 rasilimali_nishati_d = rp->mafuta + rp->gesi_asilia + rp->makaa;
-    t->uchumi.uzalishaji_wa_nishati = vipande_ardhi_d * 0.1 * kipengele_cha_tekno + rasilimali_nishati_d * 0.5;
+    t->uchumi.uzalishaji_wa_nishati = idadi_d * tija / 3000.0 / 1000.0 + rasilimali_nishati_d * 0.5;
     kama (t->uchumi.uzalishaji_wa_nishati < 1.0) { t->uchumi.uzalishaji_wa_nishati = 1.0; }
 
-    t->uchumi.malighafi = jumla_rasilimali_d * 10.0 * kipengele_cha_tekno;
-    kama (t->uchumi.malighafi < 1.0) { t->uchumi.malighafi = 1.0; }
-
-    t->uchumi.uzalishaji_wa_viwanda = t->uchumi.malighafi * 1.5 * kipengele_cha_uchumi;
+    // Malighafi na viwanda (milioni $): sehemu za pato ghafi; teknolojia
+    // huongeza sehemu ya viwanda.
+    t->uchumi.malighafi = pato * 0.08 + jumla_rasilimali_d * 10.0;
+    t->uchumi.uzalishaji_wa_viwanda = pato * (0.15 + tech_d * 0.0003);
 
     t->uchumi.mapato_ya_kodi = pato * 0.2;
+}
+
+// Faharasa ya taifa lenye nafasi `nafasi` (0 = kubwa zaidi) kwa pato ghafi.
+n32 dunia_taifa_kwa_nafasi_ya_pato(TaifaMfumo* m, n32 nafasi) {
+    n32 bora = 0;
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        TaifaNchi* t = m->mataifa[i];
+        n32 juu_yake = 0;
+        n32 j = 0;
+        wakati (j < m->idadi) {
+            TaifaNchi* o = m->mataifa[j];
+            kama (o->uchumi.pato_ghafi > t->uchumi.pato_ghafi) { juu_yake = juu_yake + 1; }
+            j = j + 1;
+        }
+        kama (juu_yake == nafasi) { bora = i; }
+        i = i + 1;
+    }
+    rudisha bora;
 }
 
 w0 dunia_taifa_hesabu_uchumi_wote(TaifaMfumo* m, DuniaRamani* ramani,

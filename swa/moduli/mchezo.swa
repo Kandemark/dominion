@@ -442,6 +442,9 @@ muundo Mchezo {
     // vipande na mataifa hujazwa kutoka hapa, na onyesho huchora hii hii.
     n64 atlasi_addr;
     n64 miji_addr;
+    // historia ya pato ghafi ya kila taifa: n64* ya TakwimuHistoria*,
+    // moja kwa kila taifa, sampuli moja kwa kila zamu
+    n64 historia_ya_mataifa_addr;
 
     // i18n (lugha_dominion.swa) -- TOFAUTI na mageuko_lugha_addr.
     n64 lugha_addr;
@@ -646,6 +649,15 @@ w0 mchezo_weka_atlasi(Mchezo* g, Atlasi* v) { g->atlasi_addr = v; }
 Miji* mchezo_pata_miji(Mchezo* g) { rudisha g->miji_addr; }
 w0 mchezo_weka_miji(Mchezo* g, Miji* v) { g->miji_addr = v; }
 
+// Historia ya pato ghafi ya taifa moja (au 0).
+TakwimuHistoria* mchezo_pata_historia_ya_taifa(Mchezo* g, n64 taifa) {
+    n64* safu = g->historia_ya_mataifa_addr;
+    kama (safu == 0) { rudisha 0; }
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    kama (taifa < 0 || taifa >= tm->idadi) { rudisha 0; }
+    rudisha safu[taifa];
+}
+
 LughaMfumo* mchezo_pata_lugha_mfumo(Mchezo* g) { rudisha g->lugha_addr; }
 w0 mchezo_weka_lugha_mfumo(Mchezo* g, LughaMfumo* v) { g->lugha_addr = v; }
 
@@ -741,6 +753,7 @@ Mchezo* mchezo_unda() {
     g->gdp_historia_addr = 0;
     g->atlasi_addr = 0;
     g->miji_addr = 0;
+    g->historia_ya_mataifa_addr = 0;
     g->utendaji.idadi_ya_sasisho = 0;
     g->utendaji.muda_wa_wastani_wa_sasisho = 0.0;
     g->utendaji.muda_wa_mwisho_wa_sasisho = 0.0;
@@ -799,6 +812,9 @@ CivMatokeo mchezo_anzisha(Mchezo* g, MchezoUsanidi* usanidi) {
     DuniaRasilimaliRamani* rm_ya_mwanzo = 0;
     TaifaUchumi* jumla_ya_mwanzo = 0;
     dunia_taifa_hesabu_uchumi_wote(taifa, ramani_mpya, rm_ya_mwanzo, jumla_ya_mwanzo);
+    // Taifa la mchezaji: la robo ya juu kwa pato ghafi -- lenye uzito wa
+    // kutosha kuwa na maamuzi ya maana, si kubwa kuliko yote.
+    taifa->faharisi_ya_taifa_la_mchezaji = dunia_taifa_kwa_nafasi_ya_pato(taifa, taifa->idadi / 4);
 
     // Nguzo ya uchumi (moduli 20) — hakuna upakiaji wa data ya
     // jiografia halisi bado, hivyo baadhi ya hoja za "jiografia"
@@ -975,6 +991,15 @@ CivMatokeo mchezo_anzisha(Mchezo* g, MchezoUsanidi* usanidi) {
     // ya kwanza huongezwa na mchezo_maliza_zamu, si hapa (angalia
     // maelezo kamili karibu na mchezo_hesabu_gdp_jumla chini).
     mchezo_weka_gdp_historia(g, takwimu_historia_unda());
+    TaifaMfumo* taifa_ya_historia = mchezo_pata_taifa(g);
+    n64* historia_ya_mataifa = tenga(8 * taifa_ya_historia->idadi + 8);
+    n32 ih = 0;
+    wakati (ih < taifa_ya_historia->idadi) {
+        historia_ya_mataifa[ih] = takwimu_historia_unda();
+        ih = ih + 1;
+    }
+    historia_ya_mataifa[ih] = 0;        // mwisho wa safu (mchezo_zima hutembea hadi hapa)
+    g->historia_ya_mataifa_addr = historia_ya_mataifa;
 
     g->hali_ya_mchezo = MCHEZO_HALI_INAENDESHA;
     g->inafanya_kazi = 1;
@@ -1484,6 +1509,16 @@ w0 mchezo_zima_mifumo_huru(Mchezo* g) {
     // hii, kisha achilia g).
     TakwimuHistoria* gdp_historia_zima = mchezo_pata_gdp_historia(g);
     kama (gdp_historia_zima != 0) { takwimu_historia_uharibu(gdp_historia_zima); }
+    n64* historia_ya_mataifa_zima = g->historia_ya_mataifa_addr;
+    kama (historia_ya_mataifa_zima != 0) {
+        n64 iz = 0;
+        wakati (historia_ya_mataifa_zima[iz] != 0) {
+            takwimu_historia_uharibu(historia_ya_mataifa_zima[iz]);
+            iz = iz + 1;
+        }
+        achilia historia_ya_mataifa_zima;
+        g->historia_ya_mataifa_addr = 0;
+    }
 
     LughaMfumo* lugha_zima = mchezo_pata_lugha_mfumo(g);
     kama (lugha_zima != 0) { d_lugha_funga(lugha_zima); }
@@ -1554,6 +1589,17 @@ CivMatokeo mchezo_maliza_zamu(Mchezo* g) {
     // (ambayo huendesha kwa kila dt, si kila zamu) -- kwa hiyo idadi
     // ya sampuli (gdp_historia->idadi) ni HASA sawa na idadi ya mara
     // mchezo_maliza_zamu imeitwa (= idadi ya zamu zilizomalizika).
+    n64* historia_ya_mataifa = g->historia_ya_mataifa_addr;
+    TaifaMfumo* taifa_ya_sampuli = mchezo_pata_taifa(g);
+    kama (historia_ya_mataifa != 0 && taifa_ya_sampuli != 0) {
+        n32 is = 0;
+        wakati (is < taifa_ya_sampuli->idadi) {
+            TaifaNchi* ts = dunia_taifa_mfumo_pata_kwa_faharisi(taifa_ya_sampuli, is);
+            d64 pato_la_taifa = ts->uchumi.pato_ghafi;
+            takwimu_historia_ongeza(historia_ya_mataifa[is], pato_la_taifa);
+            is = is + 1;
+        }
+    }
     TakwimuHistoria* gdp_historia = mchezo_pata_gdp_historia(g);
     kama (gdp_historia != 0) {
         d64 gdp_jumla = mchezo_hesabu_gdp_jumla(g);
