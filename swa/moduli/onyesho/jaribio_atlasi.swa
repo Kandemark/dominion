@@ -1,21 +1,33 @@
 husisha { msingi/maktaba/mfuatano.swa }
-husisha { moduli/onyesho/atlasi.swa }
+husisha { moduli/onyesho/atlasi_miji.swa }
 
-// jaribio_atlasi.swa -- chora tabaka la msingi la atlasi na uandike fremu
-// ghafi.   jaribio_atlasi <njia> [mbegu] [kipimo]
+// jaribio_atlasi.swa -- chora atlasi kamili (msingi, miji, barabara,
+// majina) na uandike fremu ghafi (BGRA).
+//   jaribio_atlasi <njia> [mbegu] [kipimo] [x0 y0]
 
 n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     n64 mbegu = 7;
     n64 kipimo = 5;
     kama (idadi_ya_hoja > 2) { mbegu = mfuatano_hadi_n64(hoja_za_mstari[2]); }
     kama (idadi_ya_hoja > 3) { kipimo = mfuatano_hadi_n64(hoja_za_mstari[3]); }
+    maandishi_anzisha();
+    Fonti* nene = maandishi_pakia("rasilimali/fonti/NotoSans-Bold.ttf");
+    Fonti* kati = maandishi_pakia("rasilimali/fonti/NotoSans-Medium.ttf");
+    Fonti* kawaida = maandishi_pakia("rasilimali/fonti/NotoSans-Regular.ttf");
+    Fonti* serifu = maandishi_pakia("rasilimali/fonti/NotoSerif-Italic.ttf");
+    kama (nene == 0 || kati == 0 || kawaida == 0 || serifu == 0) {
+        andika_kosa("fonti hazikupatikana: endesha kutoka saraka ya swa/ (rasilimali/fonti)\n", 0, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
     Atlasi* a = atlasi_unda(mbegu, 160, 64, 36);
-    andika("mataifa %d\n", a->idadi, 0, 0, 0, 0, 0);
+    Miji* m = atlasi_unda_miji(a);
+    andika("mataifa %d miji %d barabara %d\n", a->idadi, m->idadi, m->barabara, 0, 0, 0);
     Turubai* t = turubai_unda(1600, 900);
     n64 x0 = 1024;
     n64 y0 = 512;
     kama (idadi_ya_hoja > 5) { x0 = mfuatano_hadi_n64(hoja_za_mstari[4]); y0 = mfuatano_hadi_n64(hoja_za_mstari[5]); }
     atlasi_chora_msingi(a, t, x0, y0, kipimo);
+    atlasi_chora_juu(a, m, t, x0, y0, kipimo, nene, kati, kawaida, serifu);
     kama (idadi_ya_hoja > 1) {
         n64 fd = mfumo_fungua(hoja_za_mstari[1], 577, 420);
         mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
