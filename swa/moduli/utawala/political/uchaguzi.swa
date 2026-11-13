@@ -1,0 +1,330 @@
+// uchaguzi.swa — tafsiri ya
+// src/core/governance/political/elections.c (na .h) kwenda Swa.
+// Chaguzi — kupiga kura, kampeni, mizunguko ya uchaguzi
+// inayojiendesha yenyewe.
+//
+// Kiambishi: utawala_uchaguzi_ — angalia ../../../KANUNI-MAJINA.md
+// (sehemu ndogo ya utawala_/political/, sawa na rushwa.swa na
+// vurugu.swa).
+//
+// MUHIMU: civ_election_update ya asili ina JUMLA YA VIGEZO 8
+// (es/dt/idadi_ya_watu/rushwa/uwakilishi/furaha/imani_ya_kiuchumi/
+// kusoma_kuandika), 6 kati yao d64 — mfano mwingine wa mdudu #184
+// (angalia vurugu.swa kwa maelezo kamili). Vigezo vya "mazingira"
+// vimefungwa kwenye UtawalaUchaguziMazingira, hivyo
+// utawala_uchaguzi_sasisha ina vigezo 4 tu.
+//
+// candidates[]/elections[] (safu zinazokua za C) zimekuwa safu za
+// n64* za vielekezi (#185, mfano dini.swa). ID ya mgombea
+// (iliyoundwa na snprintf "CAND_%d") imekuwa n32 ya faharisi badala
+// ya mfuatano (mtindo wa biashara_nje.swa). rand() imekuwa
+// civ_nasibu_chini_ya (msingi_civ.swa).
+
+husisha { msingi/msingi_civ.swa }
+
+n32 UTAWALA_UCHAGUZI_FPTP = 0;
+n32 UTAWALA_UCHAGUZI_UWIANO = 1;
+n32 UTAWALA_UCHAGUZI_MCHANGANYIKO = 2;
+n32 UTAWALA_UCHAGUZI_USIO_WA_MOJA_KWA_MOJA = 3;
+n32 UTAWALA_UCHAGUZI_DUARA_MBILI = 4;
+n32 UTAWALA_UCHAGUZI_UPIGAJI_WA_CHAGUO = 5;
+n32 UTAWALA_UCHAGUZI_KURA_YA_BAHATI = 6;
+
+n32 UTAWALA_UCHAGUZI_WAGOMBEA_UWEZO_AWALI = 8;
+n32 UTAWALA_UCHAGUZI_CHAGUZI_UWEZO_AWALI = 4;
+
+muundo UtawalaUchaguziMazingira {
+    d64 rushwa;
+    d64 uwakilishi;
+    d64 furaha_ya_wananchi;
+    d64 imani_ya_kiuchumi;
+    d64 kusoma_kuandika;
+};
+
+muundo UtawalaMgombea {
+    n32 faharisi;
+    n8* jina;
+    n8* npc_id;
+    n8* chama_id;
+    d64 nguvu_ya_kampeni;
+    d64 jukwaa_la_sera;
+    d64 uungwaji_mkono_wa_umma;
+    d64 fedha;
+    n32 midahalo_iliyoshinda;
+    n32 ni_wa_sasa;   // incumbent, 0/1
+};
+
+muundo UtawalaUchaguzi {
+    n8* nafasi_id;
+    n8* jina_la_chombo;
+    n32 aina;
+    n64* wagombea;   // safu ya vielekezi vya UtawalaMgombea* (#185)
+    n32 idadi_ya_wagombea;
+    n32 uwezo_wa_wagombea;
+    n32 viti_jumla;
+    n32 wapiga_kura_wanaostahili;
+    d64 mahudhurio;          // turnout
+    d64 ushiriki_wa_wapiga_kura;   // voter_engagement
+    n32 zamu_hadi_uchaguzi;
+    n32 urefu_wa_mzunguko;
+    n32 unaendelea;
+    n32 umekamilika;
+};
+
+muundo UtawalaUchaguziMfumo {
+    n64* chaguzi;   // safu ya vielekezi vya UtawalaUchaguzi* (#185)
+    n32 idadi_ya_chaguzi;
+    n32 uwezo_wa_chaguzi;
+    d64 afya_ya_kidemokrasia;
+    d64 imani_ya_wapiga_kura;
+    d64 uadilifu_wa_uchaguzi;
+    n32 chaguzi_jumla_zilizofanyika;
+};
+
+UtawalaMgombea* utawala_uchaguzi_pata_mgombea(UtawalaUchaguzi* e, n32 idx) {
+    rudisha e->wagombea[idx];
+}
+
+UtawalaUchaguzi* utawala_uchaguzi_mfumo_pata(UtawalaUchaguziMfumo* es, n32 idx) {
+    rudisha es->chaguzi[idx];
+}
+
+UtawalaUchaguziMfumo* utawala_uchaguzi_mfumo_unda() {
+    UtawalaUchaguziMfumo* es = tenga(ukubwa(UtawalaUchaguziMfumo));
+    es->uwezo_wa_chaguzi = UTAWALA_UCHAGUZI_CHAGUZI_UWEZO_AWALI;
+    es->idadi_ya_chaguzi = 0;
+    es->chaguzi = tenga(ukubwa(n64) * es->uwezo_wa_chaguzi);
+    es->afya_ya_kidemokrasia = 0.50;
+    es->imani_ya_wapiga_kura = 0.55;
+    es->uadilifu_wa_uchaguzi = 0.60;
+    es->chaguzi_jumla_zilizofanyika = 0;
+    rudisha es;
+}
+
+w0 utawala_uchaguzi_mfumo_uharibu(UtawalaUchaguziMfumo* es) {
+    achilia es->chaguzi;
+    achilia es;
+}
+
+UtawalaUchaguzi* utawala_uchaguzi_panga(UtawalaUchaguziMfumo* es, n8* nafasi_id,
+                                          n8* jina_la_chombo, n32 aina,
+                                          n32 viti, n32 urefu_wa_mzunguko) {
+    kama (es == 0 || nafasi_id == 0) { rudisha 0; }
+    kama (es->idadi_ya_chaguzi >= es->uwezo_wa_chaguzi) {
+        es->uwezo_wa_chaguzi = es->uwezo_wa_chaguzi * 2;
+        es->chaguzi = badili(es->chaguzi, ukubwa(n64) * es->uwezo_wa_chaguzi);
+    }
+    UtawalaUchaguzi* e = tenga(ukubwa(UtawalaUchaguzi));
+    e->nafasi_id = nafasi_id;
+    e->jina_la_chombo = jina_la_chombo;
+    e->aina = aina;
+    e->viti_jumla = viti;
+    e->urefu_wa_mzunguko = urefu_wa_mzunguko;
+    e->zamu_hadi_uchaguzi = urefu_wa_mzunguko;
+    e->unaendelea = 1;
+    e->umekamilika = 0;
+    e->wapiga_kura_wanaostahili = 0;
+    e->mahudhurio = 0.0;
+    e->ushiriki_wa_wapiga_kura = 0.0;
+    e->uwezo_wa_wagombea = UTAWALA_UCHAGUZI_WAGOMBEA_UWEZO_AWALI;
+    e->idadi_ya_wagombea = 0;
+    e->wagombea = tenga(ukubwa(n64) * e->uwezo_wa_wagombea);
+    es->chaguzi[es->idadi_ya_chaguzi] = e;
+    es->idadi_ya_chaguzi = es->idadi_ya_chaguzi + 1;
+    rudisha e;
+}
+
+UtawalaMgombea* utawala_uchaguzi_ongeza_mgombea(UtawalaUchaguzi* e, n8* jina, n8* npc_id,
+                                                  n8* chama_id, n32 ni_wa_sasa) {
+    kama (e == 0 || jina == 0 || e->idadi_ya_wagombea >= e->uwezo_wa_wagombea) { rudisha 0; }
+    UtawalaMgombea* c = tenga(ukubwa(UtawalaMgombea));
+    c->faharisi = e->idadi_ya_wagombea;
+    c->jina = jina;
+    c->npc_id = npc_id;
+    c->chama_id = chama_id;
+    c->ni_wa_sasa = ni_wa_sasa;
+    c->midahalo_iliyoshinda = 0;
+
+    n32 bahati = civ_nasibu_chini_ya(20);
+    d64 bahati_d = bahati;
+    d64 nyongeza = bahati_d / 100.0;
+    kama (ni_wa_sasa != 0) {
+        c->uungwaji_mkono_wa_umma = 0.35 + nyongeza;
+    } sivyo {
+        c->uungwaji_mkono_wa_umma = 0.10 + nyongeza;
+    }
+
+    n32 bahati2 = civ_nasibu_chini_ya(40);
+    d64 bahati2_d = bahati2;
+    c->nguvu_ya_kampeni = 0.30 + bahati2_d / 100.0;
+
+    n32 bahati3 = civ_nasibu_chini_ya(40);
+    d64 bahati3_d = bahati3;
+    c->jukwaa_la_sera = 0.30 + bahati3_d / 100.0;
+
+    n32 bahati4 = civ_nasibu_chini_ya(900);
+    d64 bahati4_d = bahati4;
+    c->fedha = 100.0 + bahati4_d;
+
+    e->wagombea[e->idadi_ya_wagombea] = c;
+    e->idadi_ya_wagombea = e->idadi_ya_wagombea + 1;
+    rudisha c;
+}
+
+w0 utawala_uchaguzi_kampeni(UtawalaUchaguzi* e, d64 muda, d64 kusoma_kuandika, d64 uhuru_wa_vyombo_vya_habari) {
+    kama (e == 0) { rudisha; }
+    d64 uungwaji_jumla = 0.0;
+    n32 i = 0;
+    wakati (i < e->idadi_ya_wagombea) {
+        UtawalaMgombea* c = utawala_uchaguzi_pata_mgombea(e, i);
+
+        d64 athari_ya_kampeni = c->nguvu_ya_kampeni * 0.3
+            + (c->fedha / 1000.0) * 0.2
+            + c->jukwaa_la_sera * kusoma_kuandika * 0.2
+            + uhuru_wa_vyombo_vya_habari * 0.1;
+        kama (c->ni_wa_sasa != 0) {
+            athari_ya_kampeni = athari_ya_kampeni + 0.05;
+        }
+
+        d64 mabadiliko = athari_ya_kampeni * e->ushiriki_wa_wapiga_kura * 0.02;
+
+        n32 tukio_r = civ_nasibu_chini_ya(1000);
+        d64 tukio_r_d = tukio_r;
+        d64 tukio = (tukio_r_d / 1000.0 - 0.5) * 0.03;
+
+        c->uungwaji_mkono_wa_umma = c->uungwaji_mkono_wa_umma + mabadiliko + tukio;
+
+        c->fedha = c->fedha - 10.0;
+        kama (c->fedha < 0.0) { c->fedha = 0.0; }
+
+        kama (c->uungwaji_mkono_wa_umma < 0.01) { c->uungwaji_mkono_wa_umma = 0.01; }
+        uungwaji_jumla = uungwaji_jumla + c->uungwaji_mkono_wa_umma;
+        i = i + 1;
+    }
+
+    kama (uungwaji_jumla > 0.0 && e->idadi_ya_wagombea > 0) {
+        i = 0;
+        wakati (i < e->idadi_ya_wagombea) {
+            UtawalaMgombea* c = utawala_uchaguzi_pata_mgombea(e, i);
+            c->uungwaji_mkono_wa_umma = c->uungwaji_mkono_wa_umma / uungwaji_jumla;
+            i = i + 1;
+        }
+    }
+}
+
+w0 utawala_uchaguzi_hesabu_kura(UtawalaUchaguzi* e) {
+    // FPTP/duara-mbili: mshindi anaamuliwa na uungwaji_mkono_wa_umma
+    // (tayari umehesabiwa). Uwiano/mchanganyiko/n.k. zote hutumia
+    // uungwaji_mkono_wa_umma kama ishara ya msingi -- sawa na C.
+    kama (e == 0) { rudisha; }
+}
+
+UtawalaMgombea* utawala_uchaguzi_mshindi(UtawalaUchaguzi* e) {
+    kama (e == 0 || e->idadi_ya_wagombea == 0) { rudisha 0; }
+    UtawalaMgombea* bora = utawala_uchaguzi_pata_mgombea(e, 0);
+    n32 i = 1;
+    wakati (i < e->idadi_ya_wagombea) {
+        UtawalaMgombea* c = utawala_uchaguzi_pata_mgombea(e, i);
+        kama (c->uungwaji_mkono_wa_umma > bora->uungwaji_mkono_wa_umma) { bora = c; }
+        i = i + 1;
+    }
+    rudisha bora;
+}
+
+d64 utawala_uchaguzi_kiwango_cha_mahudhurio(UtawalaUchaguzi* e) {
+    kama (e == 0) { rudisha 0.0; }
+    rudisha e->mahudhurio;
+}
+
+d64 utawala_uchaguzi_ubora_wa_uwakilishi(UtawalaUchaguziMfumo* es) {
+    kama (es == 0) { rudisha 0.0; }
+    rudisha es->afya_ya_kidemokrasia * 0.5 + es->uadilifu_wa_uchaguzi * 0.5;
+}
+
+n32 utawala_uchaguzi_ghairi(UtawalaUchaguzi* e) {
+    kama (e == 0 || e->umekamilika != 0) { rudisha 0; }
+    e->unaendelea = 0;
+    e->umekamilika = 1;
+    e->mahudhurio = 0.0;
+    rudisha 1;
+}
+
+n32 utawala_uchaguzi_ahirisha(UtawalaUchaguzi* e, n32 zamu) {
+    kama (e == 0 || e->umekamilika != 0 || zamu <= 0) { rudisha 0; }
+    e->zamu_hadi_uchaguzi = e->zamu_hadi_uchaguzi + zamu;
+    rudisha 1;
+}
+
+n32 utawala_uchaguzi_umeathiriwa(UtawalaUchaguzi* e) {
+    kama (e == 0) { rudisha 0; }
+    kama (e->mahudhurio < 0.25) { rudisha 1; }
+    kama (e->unaendelea != 0 && e->umekamilika == 0 && e->ushiriki_wa_wapiga_kura < 0.15) { rudisha 1; }
+    rudisha 0;
+}
+
+d64 utawala_uchaguzi_uadilifu(UtawalaUchaguziMfumo* es) {
+    kama (es == 0) { rudisha 0.0; }
+    rudisha es->uadilifu_wa_uchaguzi;
+}
+
+w0 utawala_uchaguzi_kandamiza_mahudhurio(UtawalaUchaguzi* e, d64 kiwango_cha_kukandamiza) {
+    kama (e == 0) { rudisha; }
+    e->ushiriki_wa_wapiga_kura = e->ushiriki_wa_wapiga_kura - kiwango_cha_kukandamiza * 0.3;
+    kama (e->ushiriki_wa_wapiga_kura < 0.05) { e->ushiriki_wa_wapiga_kura = 0.05; }
+}
+
+n32 utawala_uchaguzi_yapaswa_kuahirishwa(UtawalaUchaguzi* e, d64 utulivu, d64 rushwa, n32 dharura) {
+    kama (e == 0 || e->umekamilika != 0) { rudisha 0; }
+    kama (dharura != 0) { rudisha 1; }
+    kama (utulivu < 0.20) { rudisha 1; }
+    kama (rushwa > 0.50 && e->ushiriki_wa_wapiga_kura < 0.20) { rudisha 1; }
+    rudisha 0;
+}
+
+w0 utawala_uchaguzi_sasisha(UtawalaUchaguziMfumo* es, d64 muda, n32 idadi_ya_watu_jumla,
+                              UtawalaUchaguziMazingira* m) {
+    kama (es == 0 || m == 0) { rudisha; }
+
+    es->afya_ya_kidemokrasia = m->uwakilishi * 0.35 + es->imani_ya_wapiga_kura * 0.25
+        + es->uadilifu_wa_uchaguzi * 0.25 + m->furaha_ya_wananchi * 0.15;
+
+    d64 lengo_la_imani = es->uadilifu_wa_uchaguzi * 0.5 + m->furaha_ya_wananchi * 0.3
+        + (1.0 - m->rushwa) * 0.2;
+    es->imani_ya_wapiga_kura = es->imani_ya_wapiga_kura + (lengo_la_imani - es->imani_ya_wapiga_kura) * 0.04 * muda;
+
+    es->uadilifu_wa_uchaguzi = m->uwakilishi * 0.4 + (1.0 - m->rushwa) * 0.4 + 0.2;
+    kama (es->uadilifu_wa_uchaguzi > 1.0) { es->uadilifu_wa_uchaguzi = 1.0; }
+
+    n32 idadi_d_watu = idadi_ya_watu_jumla;
+
+    n32 i = 0;
+    wakati (i < es->idadi_ya_chaguzi) {
+        UtawalaUchaguzi* e = utawala_uchaguzi_mfumo_pata(es, i);
+        kama (e->unaendelea == 0 || e->umekamilika != 0) {
+            i = i + 1;
+            endelea;
+        }
+
+        e->zamu_hadi_uchaguzi = e->zamu_hadi_uchaguzi - 1;
+        d64 idadi_d = idadi_d_watu;
+        d64 wapiga_kura_d = idadi_d * 0.6 * m->uwakilishi;
+        n32 wapiga_kura_n = wapiga_kura_d;
+        e->wapiga_kura_wanaostahili = wapiga_kura_n;
+
+        e->ushiriki_wa_wapiga_kura = m->imani_ya_kiuchumi * 0.25 + m->kusoma_kuandika * 0.25
+            + m->furaha_ya_wananchi * 0.25 + es->imani_ya_wapiga_kura * 0.15
+            + (1.0 - m->rushwa) * 0.10;
+        kama (e->ushiriki_wa_wapiga_kura < 0.15) { e->ushiriki_wa_wapiga_kura = 0.15; }
+        kama (e->ushiriki_wa_wapiga_kura > 0.95) { e->ushiriki_wa_wapiga_kura = 0.95; }
+
+        utawala_uchaguzi_kampeni(e, muda, m->kusoma_kuandika, es->uadilifu_wa_uchaguzi);
+
+        kama (e->zamu_hadi_uchaguzi <= 0) {
+            e->mahudhurio = e->ushiriki_wa_wapiga_kura * (0.7 + es->uadilifu_wa_uchaguzi * 0.3);
+            utawala_uchaguzi_hesabu_kura(e);
+            e->umekamilika = 1;
+            es->chaguzi_jumla_zilizofanyika = es->chaguzi_jumla_zilizofanyika + 1;
+        }
+        i = i + 1;
+    }
+}

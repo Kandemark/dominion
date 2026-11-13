@@ -1,0 +1,323 @@
+husisha { moduli/mchezo.swa }
+
+// jaribio_uhifadhi_mchezo.swa -- jaribio la round-trip LA KWANZA
+// HALISI la mchezo_hifadhi/mchezo_pakia dhidi ya Mchezo KAMILI
+// (mifumo 47, angalia mchezo.swa).
+//
+// MUUNDO: Mchezo HALISI (g) huundwa kwa mchezo_unda()+mchezo_anzisha(),
+// hupandwa na data ya ziada (ju_seed_ziada) kwa mifumo inayoanza
+// tupu, kisha hupitia mizunguko KADHAA HALISI ya mchezo_sasisha(g) +
+// mchezo_maliza_zamu(g) ili kuwe na hali HALISI, isiyo-ya-chaguo-
+// msingi ya kuhifadhi. Hali hiyo huhifadhiwa kwenye FAILI HALISI
+// (mchezo_hifadhi), kisha Mchezo TOFAUTI KABISA (g2, ulioundwa peke
+// yake kwa mchezo_unda()+mchezo_anzisha() wake mwenyewe) hupakia
+// faili hilo hilo (mchezo_pakia). Tunalinganisha SHAMBA KWA SHAMBA
+// kati ya g (chanzo) na g2 (baada ya kupakia), tukichapisha thamani
+// HALISI za pande zote mbili.
+//
+// MUHIMU KUHUSU USAHIHI: d64 zinapaswa kuwa SAWA KABISA KIBAITI (==)
+// kati ya g na g2 kwa sababu injini_uhifadhi_andika_d64/soma_d64
+// hufanya bit-reinterpret safi (memcpy ya baiti 8), SI mzunguko wa
+// desimali->mfuatano->desimali unaopoteza usahihi.
+//
+// KUMBUKA YA UKUBWA WA FAILI: ju_check_d64/n64 zinachanganya
+// uchapishaji na uthibitisho kwenye KAZI MOJA (badala ya mbili
+// tofauti) kimakusudi -- kamili ya mkusanyaji ina bafa_text[524288]
+// (baiti 512KB) ya KUDUMU kwa ajili ya msimbo wa mashine
+// unaozalishwa kwa KITENGO KIMOJA cha utafsiri (angalia
+// msingi/mkusanyaji/uzalishaji.swa kwenye lugha-swa/swa) -- jaribio
+// hili likiwa na Mchezo mzima (mifumo 47 + uhifadhi wake) HUSISHWA
+// NDANI YA kitengo kimoja hicho hicho, muundo wa kwanza wa faili
+// hili (wenye kazi mbili tofauti za kuchapisha+kuthibitisha kwa kila
+// shamba) ulivuka kikomo hicho KIMYA (angalia lugha-swa/swa#<TBD>,
+// imeripotiwa) -- matokeo yalikuwa ni msimbo ulioharibika (output
+// iliyochanganyika/herufi za ajabu), SI kosa la kukusanya la wazi.
+// Kuunganisha chapisha+thibitisha kwenye wito MMOJA kwa kila
+// ulinganisho kulipunguza idadi ya sehemu za wito za kutosha
+// kurudisha kitengo hiki chini ya kikomo.
+
+n32 ju_yalioshindwa = 0;
+
+w0 ju_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        ju_yalioshindwa = ju_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+w0 ju_check_d64(n8* jina, d64 chanzo, d64 pakuliwa) {
+    n64 a_x1000 = chanzo * 1000.0;
+    n64 b_x1000 = pakuliwa * 1000.0;
+    andika("  [dbg] %s: chanzo*1000=%d pakuliwa*1000=%d\n", jina, a_x1000, b_x1000, 0, 0, 0);
+    ju_thibitisha(chanzo == pakuliwa, jina);
+}
+
+w0 ju_check_n64(n8* jina, n64 chanzo, n64 pakuliwa) {
+    andika("  [dbg] %s: chanzo=%d pakuliwa=%d\n", jina, chanzo, pakuliwa, 0, 0, 0);
+    ju_thibitisha(chanzo == pakuliwa, jina);
+}
+
+n32 ju_mfuatano_sawa(n8* a, n8* b) {
+    kama (a == 0 && b == 0) { rudisha 1; }
+    kama (a == 0 || b == 0) { rudisha 0; }
+    n32 sawa = (linganisha_mfuatano(a, b) == 0);
+    rudisha sawa;
+}
+
+// ju_seed_ziada: mbegu za ziada kwa mifumo ambayo mchezo_anzisha
+// huiacha TUPU kimakusudi -- sawa na jk_seed_ziada ya
+// jaribio_mchezo_kamili.swa, pamoja na nyongeza chache (kikundi cha
+// siasa, uandishi) ili kuthibitisha round-trip ya safu za dynamic
+// zaidi ya moja.
+w0 ju_seed_ziada(Mchezo* g) {
+    DuniaMipakaHai* mipaka = mchezo_pata_mipaka_hai(g);
+    DuniaMpakaHoja hoja;
+    hoja.eneo_a = "A";
+    hoja.eneo_b = "B";
+    hoja.mwanzo_x = 0.0;
+    hoja.mwanzo_y = 0.0;
+    hoja.mwisho_x = 1.0;
+    hoja.mwisho_y = 1.0;
+    hoja.aina = DUNIA_MPAKA_UNAOBISHANIWA;
+    dunia_mpaka_hai_unda_kipande(mipaka, &hoja);
+
+    KitengoChiniMsimamizi* kitengo_m = mchezo_pata_kitengo_chini(g);
+    KitengoChini* kitengo = kitengo_chini_unda("mkoa_1", "Mkoa wa Kwanza", 0);
+    kitengo_chini_msimamizi_ongeza(kitengo_m, kitengo);
+
+    ViwandaMfumo* viwanda_s = mchezo_pata_viwanda(g);
+    viwanda_ongeza_kiwanda(viwanda_s, "Nguo", 100);
+
+    HistoriaDB* jarida = mchezo_pata_historia_db(g);
+    n8* ju_data_tupu = 0;
+    historia_db_andika(jarida, HISTORIA_TUKIO_KUMBUKUMBU_YA_JUMLA, "jaribio_uhifadhi", ju_data_tupu, 0);
+
+    UtamaduniMageukoMfumo* mageuko_m = mchezo_pata_mageuko_lugha(g);
+    n8* ju_hakuna_mzazi = 0;
+    UtamaduniMageukoLugha* lugha_ya_jaribio = utamaduni_mageuko_unda("lug_jk", "Lugha ya Jaribio", ju_hakuna_mzazi);
+    lugha_ya_jaribio->wazungumzaji = 7.0;
+    utamaduni_mageuko_mfumo_ongeza(mageuko_m, lugha_ya_jaribio);
+
+    SiasaKikundiMfumo* kikundi_m = mchezo_pata_kikundi(g);
+    SiasaKikundi kikundi_v = siasa_kikundi_unda("chama_1", "Chama cha Jaribio", 2);
+    siasa_kikundi_mfumo_ongeza(kikundi_m, &kikundi_v);
+
+    UtamaduniAndikoMsimamizi* uandishi_m = mchezo_pata_uandishi(g);
+    UtamaduniAndiko* andiko = uandishi_unda("andiko_1", "Alfabeti ya Jaribio", 0);
+    uandishi_msimamizi_ongeza(uandishi_m, andiko);
+}
+
+w0 ju_linganisha_msingi(Mchezo* g, Mchezo* g2) {
+    ju_thibitisha(g->zamu_ya_sasa == g2->zamu_ya_sasa, "zamu_ya_sasa");
+    ju_thibitisha(ju_mfuatano_sawa(g->usanidi.jina, g2->usanidi.jina), "usanidi.jina");
+
+    InjiniMudaMfumo* m1 = mchezo_pata_muda(g);
+    InjiniMudaMfumo* m2 = mchezo_pata_muda(g2);
+    ju_check_n64("muda.kalenda.jumla_ya_siku", m1->kalenda.jumla_ya_siku, m2->kalenda.jumla_ya_siku);
+
+    InjiniSaaKuu* s1 = mchezo_pata_saa_kuu(g);
+    InjiniSaaKuu* s2 = mchezo_pata_saa_kuu(g2);
+    ju_check_n64("saa_kuu.nambari_ya_zamu", s1->nambari_ya_zamu, s2->nambari_ya_zamu);
+
+    IdadiYaWatuMsimamizi* p1 = mchezo_pata_idadi_ya_watu(g);
+    IdadiYaWatuMsimamizi* p2 = mchezo_pata_idadi_ya_watu(g2);
+    ju_check_n64("idadi_ya_watu.idadi_jumla", p1->demografia.idadi_jumla, p2->demografia.idadi_jumla);
+    ju_thibitisha(p1->demografia.idadi_jumla > 0, "idadi_ya_watu.idadi_jumla > 0 (hali halisi)");
+
+    UtawalaSerikali* sk1 = mchezo_pata_serikali(g);
+    UtawalaSerikali* sk2 = mchezo_pata_serikali(g2);
+    ju_check_d64("serikali.ufanisi", sk1->ufanisi, sk2->ufanisi);
+}
+
+w0 ju_linganisha_uchumi1(Mchezo* g, Mchezo* g2) {
+    UchumiMkuuMfumo* u1 = mchezo_pata_uchumi_mkuu(g);
+    UchumiMkuuMfumo* u2 = mchezo_pata_uchumi_mkuu(g2);
+    ju_check_d64("uchumi_mkuu.pato_la_taifa", u1->ripoti_ya_mwisho.pato_la_taifa, u2->ripoti_ya_mwisho.pato_la_taifa);
+    ju_thibitisha(u1->ripoti_ya_mwisho.pato_la_taifa > 0.0, "uchumi_mkuu.pato_la_taifa > 0");
+
+    NguvukaziMfumo* ng1 = mchezo_pata_nguvukazi(g);
+    NguvukaziMfumo* ng2 = mchezo_pata_nguvukazi(g2);
+    ju_check_d64("nguvukazi.mshahara_wa_wastani", ng1->mshahara_wa_wastani_wa_taifa, ng2->mshahara_wa_wastani_wa_taifa);
+
+    KodiMfumo* k1 = mchezo_pata_kodi(g);
+    KodiMfumo* k2 = mchezo_pata_kodi(g2);
+    ju_check_d64("kodi.mapato_jumla", k1->mapato_jumla, k2->mapato_jumla);
+
+    BenkiMfumo* b1 = mchezo_pata_benki(g);
+    BenkiMfumo* b2 = mchezo_pata_benki(g2);
+    ju_check_d64("benki.riba_ya_msingi", b1->kiwango_cha_msingi_cha_riba, b2->kiwango_cha_msingi_cha_riba);
+
+    KilimoMfumo* ki1 = mchezo_pata_kilimo(g);
+    KilimoMfumo* ki2 = mchezo_pata_kilimo(g2);
+    ju_check_d64("kilimo.uzalishaji_wa_chakula", ki1->uzalishaji_wa_chakula, ki2->uzalishaji_wa_chakula);
+
+    MiundombinuMfumo* mi1 = mchezo_pata_miundombinu(g);
+    MiundombinuMfumo* mi2 = mchezo_pata_miundombinu(g2);
+    ju_check_d64("miundombinu.ubora_wa_jumla", mi1->ubora_wa_jumla, mi2->ubora_wa_jumla);
+
+    ViwandaMfumo* v1 = mchezo_pata_viwanda(g);
+    ViwandaMfumo* v2 = mchezo_pata_viwanda(g2);
+    ju_check_n64("viwanda.idadi_ya_viwanda", v1->idadi_ya_viwanda, v2->idadi_ya_viwanda);
+    ju_thibitisha(ju_mfuatano_sawa(v1->k_0.bidhaa, v2->k_0.bidhaa), "viwanda.k_0.bidhaa");
+    ju_check_d64("viwanda.pato_jumla", v1->pato_jumla_la_viwanda, v2->pato_jumla_la_viwanda);
+}
+
+w0 ju_linganisha_uchumi2(Mchezo* g, Mchezo* g2) {
+    NishatiMfumo* n1 = mchezo_pata_nishati(g);
+    NishatiMfumo* n2 = mchezo_pata_nishati(g2);
+    ju_check_d64("nishati.bei_ya_nishati", n1->bei_ya_nishati, n2->bei_ya_nishati);
+
+    ArdhiMfumo* a1 = mchezo_pata_ardhi(g);
+    ArdhiMfumo* a2 = mchezo_pata_ardhi(g2);
+    ju_check_d64("ardhi.msongamano_wa_watu", a1->msongamano_wa_watu, a2->msongamano_wa_watu);
+
+    Sarafu* s1 = mchezo_pata_sarafu(g);
+    Sarafu* s2 = mchezo_pata_sarafu(g2);
+    ju_check_d64("sarafu.kiwango_cha_ubadilishaji", s1->kiwango_cha_ubadilishaji, s2->kiwango_cha_ubadilishaji);
+
+    SokoFedhaInjini* sf1 = mchezo_pata_soko_fedha(g);
+    SokoFedhaInjini* sf2 = mchezo_pata_soko_fedha(g2);
+    SokoFedhaSarafu* usd1 = soko_fedha_pata_sarafu(sf1, "USD");
+    SokoFedhaSarafu* usd2 = soko_fedha_pata_sarafu(sf2, "USD");
+    ju_check_d64("soko_fedha.USD.kiwango_cha_sasa", usd1->kiwango_cha_sasa, usd2->kiwango_cha_sasa);
+
+    VipimoLainiMsimamizi* vl1 = mchezo_pata_vipimo_laini(g);
+    VipimoLainiMsimamizi* vl2 = mchezo_pata_vipimo_laini(g2);
+    ju_check_d64("vipimo_laini.furaha_msingi", vl1->furaha.furaha_msingi, vl2->furaha.furaha_msingi);
+
+    UhaiMfumo* uh1 = mchezo_pata_uhai(g);
+    UhaiMfumo* uh2 = mchezo_pata_uhai(g2);
+    ju_check_d64("uhai.kiwango_cha_elimu", uh1->kiwango_cha_elimu, uh2->kiwango_cha_elimu);
+}
+
+w0 ju_linganisha_dynamic1(Mchezo* g, Mchezo* g2) {
+    TaifaMfumo* t1 = mchezo_pata_taifa(g);
+    TaifaMfumo* t2 = mchezo_pata_taifa(g2);
+    ju_check_n64("taifa.idadi", t1->idadi, t2->idadi);
+    ju_thibitisha(t1->idadi > 0, "taifa.idadi > 0");
+    kama (t1->idadi > 0 && t2->idadi > 0) {
+        TaifaNchi* n1 = dunia_taifa_mfumo_pata_kwa_faharisi(t1, 0);
+        TaifaNchi* n2 = dunia_taifa_mfumo_pata_kwa_faharisi(t2, 0);
+        ju_thibitisha(ju_mfuatano_sawa(n1->jina, n2->jina), "taifa.mataifa[0].jina");
+        ju_check_d64("taifa.mataifa[0].pato_ghafi", n1->uchumi.pato_ghafi, n2->uchumi.pato_ghafi);
+    }
+
+    DiplomasiaMfumo* d1 = mchezo_pata_diplomasia(g);
+    DiplomasiaMfumo* d2 = mchezo_pata_diplomasia(g2);
+    ju_thibitisha(d1->uh_0.kiwango_cha_uhusiano == d2->uh_0.kiwango_cha_uhusiano, "diplomasia.uh_0.kiwango_cha_uhusiano");
+
+    DuniaMipakaHai* mp1 = mchezo_pata_mipaka_hai(g);
+    DuniaMipakaHai* mp2 = mchezo_pata_mipaka_hai(g2);
+    ju_check_n64("mipaka_hai.idadi", mp1->idadi, mp2->idadi);
+    d64 mvutano1 = dunia_mpaka_hai_pata_mvutano(mp1, "A", "B");
+    d64 mvutano2 = dunia_mpaka_hai_pata_mvutano(mp2, "A", "B");
+    ju_check_d64("mipaka_hai.mvutano(A,B)", mvutano1, mvutano2);
+    ju_thibitisha(mvutano1 > 0.0, "mipaka_hai.mvutano(A,B) > 0");
+}
+
+w0 ju_linganisha_dynamic2(Mchezo* g, Mchezo* g2) {
+    KitengoChiniMsimamizi* kc1 = mchezo_pata_kitengo_chini(g);
+    KitengoChiniMsimamizi* kc2 = mchezo_pata_kitengo_chini(g2);
+    ju_check_n64("kitengo_chini.idadi", kc1->idadi, kc2->idadi);
+    kama (kc1->idadi > 0 && kc2->idadi > 0) {
+        KitengoChini* kt1 = kitengo_chini_msimamizi_pata(kc1, 0);
+        KitengoChini* kt2 = kitengo_chini_msimamizi_pata(kc2, 0);
+        ju_check_d64("kitengo_chini[0].maendeleo", kt1->maendeleo, kt2->maendeleo);
+        ju_thibitisha(ju_mfuatano_sawa(kt1->jina, kt2->jina), "kitengo_chini[0].jina");
+    }
+
+    UtamaduniMageukoMfumo* ml1 = mchezo_pata_mageuko_lugha(g);
+    UtamaduniMageukoMfumo* ml2 = mchezo_pata_mageuko_lugha(g2);
+    ju_check_n64("mageuko_lugha.idadi", ml1->idadi, ml2->idadi);
+    kama (ml1->idadi > 0 && ml2->idadi > 0) {
+        UtamaduniMageukoLugha* lu1 = utamaduni_mageuko_mfumo_pata(ml1, 0);
+        UtamaduniMageukoLugha* lu2 = utamaduni_mageuko_mfumo_pata(ml2, 0);
+        ju_check_d64("mageuko_lugha[0].utata", lu1->utata, lu2->utata);
+        ju_check_d64("mageuko_lugha[0].wazungumzaji", lu1->wazungumzaji, lu2->wazungumzaji);
+    }
+
+    SiasaMfumo* si1 = mchezo_pata_siasa(g);
+    SiasaMfumo* si2 = mchezo_pata_siasa(g2);
+    ju_check_d64("siasa.uhalali", si1->uhalali, si2->uhalali);
+}
+
+w0 ju_linganisha_dynamic3(Mchezo* g, Mchezo* g2) {
+    SiasaKikundiMfumo* kk1 = mchezo_pata_kikundi(g);
+    SiasaKikundiMfumo* kk2 = mchezo_pata_kikundi(g2);
+    ju_check_n64("kikundi.idadi", kk1->idadi, kk2->idadi);
+    kama (kk1->idadi > 0 && kk2->idadi > 0) {
+        ju_thibitisha(ju_mfuatano_sawa(kk1->vikundi[0].jina, kk2->vikundi[0].jina), "kikundi.vikundi[0].jina");
+    }
+
+    HistoriaDB* hd1 = mchezo_pata_historia_db(g);
+    HistoriaDB* hd2 = mchezo_pata_historia_db(g2);
+    ju_check_n64("historia_db.idadi_ya_matukio", hd1->idadi_ya_matukio, hd2->idadi_ya_matukio);
+    ju_thibitisha(hd1->idadi_ya_matukio > 0, "historia_db.idadi_ya_matukio > 0");
+
+    JamiiMsimamizi* ja1 = mchezo_pata_jamii(g);
+    JamiiMsimamizi* ja2 = mchezo_pata_jamii(g2);
+    ju_thibitisha(ja1->idadi_ya_jamii == ja2->idadi_ya_jamii, "jamii.idadi_ya_jamii");
+    ju_thibitisha(ju_mfuatano_sawa(ja1->jamii_0.jina, ja2->jamii_0.jina), "jamii.jamii_0.jina");
+
+    TeknolojiaMfumo* tk1 = mchezo_pata_teknolojia(g);
+    TeknolojiaMfumo* tk2 = mchezo_pata_teknolojia(g2);
+    ju_check_n64("teknolojia.kiwango[0]", tk1->kiwango[0], tk2->kiwango[0]);
+
+    UtamaduniAndikoMsimamizi* ua1 = mchezo_pata_uandishi(g);
+    UtamaduniAndikoMsimamizi* ua2 = mchezo_pata_uandishi(g2);
+    ju_check_n64("uandishi.idadi", ua1->idadi, ua2->idadi);
+    kama (ua1->idadi > 0 && ua2->idadi > 0) {
+        ju_thibitisha(ju_mfuatano_sawa(ua1->maandiko[0]->jina, ua2->maandiko[0]->jina), "uandishi.maandiko[0].jina");
+    }
+}
+
+n32 anza() {
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    ju_thibitisha(r.hitilafu == CIV_SAWA, "mchezo_anzisha (chanzo g)");
+
+    ju_seed_ziada(g);
+
+    n32 idadi_ya_mizunguko = 10;
+    n32 i = 0;
+    wakati (i < idadi_ya_mizunguko) {
+        mchezo_sasisha(g);
+        i = i + 1;
+    }
+    mchezo_maliza_zamu(g);
+    mchezo_maliza_zamu(g);
+
+    andika("\n-- g baada ya mizunguko %d, kabla ya kuhifadhi --\n", idadi_ya_mizunguko, 0,0,0,0,0);
+
+    CivMatokeo hr = mchezo_hifadhi(g, "jaribio_roundtrip.save");
+    ju_thibitisha(hr.hitilafu == CIV_SAWA, "mchezo_hifadhi(g,...)");
+
+    Mchezo* g2 = mchezo_unda();
+    MchezoUsanidi usanidi2;
+    mchezo_usanidi_chaguomsingi(&usanidi2);
+    CivMatokeo r2 = mchezo_anzisha(g2, &usanidi2);
+    ju_thibitisha(r2.hitilafu == CIV_SAWA, "mchezo_anzisha (lengwa safi g2)");
+
+    CivMatokeo pr = mchezo_pakia(g2, "jaribio_roundtrip.save");
+    ju_thibitisha(pr.hitilafu == CIV_SAWA, "mchezo_pakia(g2,...)");
+
+    andika("\n-- kulinganisha g (chanzo) na g2 (baada ya pakia) --\n", 0,0,0,0,0,0);
+    ju_linganisha_msingi(g, g2);
+    ju_linganisha_uchumi1(g, g2);
+    ju_linganisha_uchumi2(g, g2);
+    ju_linganisha_dynamic1(g, g2);
+    ju_linganisha_dynamic2(g, g2);
+    ju_linganisha_dynamic3(g, g2);
+
+    mchezo_uharibu(g);
+    mchezo_uharibu(g2);
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", ju_yalioshindwa, 0, 0, 0, 0, 0);
+    kama (ju_yalioshindwa > 0) { rudisha 1; }
+    andika("DONE\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

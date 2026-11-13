@@ -1,0 +1,128 @@
+husisha { maktaba/kumbukumbu.swa }
+
+muundo Ramani {
+    n32* funguo;
+    n32* thamani;
+    n32 uwezo;
+    n32 idadi;
+};
+
+Ramani* ramani_mpya(n32 uwezo) {
+    Ramani* r = tenga(ukubwa(Ramani));
+    r->funguo = tenga(ukubwa(n32) * uwezo);
+    r->thamani = tenga(ukubwa(n32) * uwezo);
+    r->uwezo = uwezo;
+    r->idadi = 0;
+    n32 i = 0;
+    wakati (i < uwezo) {
+        r->funguo[i] = -1;
+        i = i + 1;
+    }
+    rudisha r;
+}
+
+w0 ramani_weka(Ramani* r, n32 funguo, n32 thamani) {
+    kama (r->idadi >= r->uwezo) {
+        rudisha;
+    }
+    // lugha-swa/swa#187: `%` hufuata alama ya funguo (kama C) -- funguo
+    // hasi (kawaida kutoka heshi_ya_mfuatano, ambayo inaweza kufurika hadi
+    // n32 hasi) hutoa idx hasi, ikisababisha ufikiaji WA NJE YA MIPAKA
+    // ya r->funguo[idx]/r->thamani[idx] -- uharibifu wa kimya wa rundo
+    // unaojitokeza baadaye kwenye wito usiohusiana. Hesabu sahihi ya
+    // "modulo isiyo hasi": idx + uwezo, si 0 - idx (mfano: funguo=-5,
+    // uwezo=16 -> idx=-5 -> idx+16=11, ndani ya mipaka [0,16)).
+    n32 faharasa = funguo % r->uwezo;
+    kama (faharasa < 0) { faharasa = faharasa + r->uwezo; }
+    n32 alama_ya_kufutwa = -1;
+    n32 hatua = 0;
+    wakati (hatua < r->uwezo) {
+        kama (r->funguo[faharasa] == funguo) {
+            r->thamani[faharasa] = thamani;
+            rudisha;
+        }
+        kama (r->funguo[faharasa] == -2 && alama_ya_kufutwa == -1) {
+            alama_ya_kufutwa = faharasa;
+        }
+        kama (r->funguo[faharasa] == -1) {
+            kama (alama_ya_kufutwa != -1) {
+                faharasa = alama_ya_kufutwa;
+            }
+            r->funguo[faharasa] = funguo;
+            r->thamani[faharasa] = thamani;
+            r->idadi = r->idadi + 1;
+            rudisha;
+        }
+        faharasa = (faharasa + 1) % r->uwezo;
+        hatua = hatua + 1;
+    }
+    kama (alama_ya_kufutwa != -1) {
+        r->funguo[alama_ya_kufutwa] = funguo;
+        r->thamani[alama_ya_kufutwa] = thamani;
+        r->idadi = r->idadi + 1;
+    }
+}
+
+n32 ramani_pata(Ramani* r, n32 funguo) {
+    // lugha-swa/swa#187 -- angalia maelezo kamili kwenye ramani_weka.
+    n32 faharasa = funguo % r->uwezo;
+    kama (faharasa < 0) { faharasa = faharasa + r->uwezo; }
+    n32 hatua = 0;
+    wakati (hatua < r->uwezo) {
+        kama (r->funguo[faharasa] == funguo) {
+            rudisha r->thamani[faharasa];
+        }
+        kama (r->funguo[faharasa] == -1) {
+            rudisha -1;
+        }
+        faharasa = (faharasa + 1) % r->uwezo;
+        hatua = hatua + 1;
+    }
+    rudisha -1;
+}
+
+n32 ramani_ina(Ramani* r, n32 funguo) {
+    // lugha-swa/swa#187 -- angalia maelezo kamili kwenye ramani_weka.
+    // (Site hii haikutajwa kwenye ripoti ya awali ya #187, lakini ina
+    // kasoro ile ile hasa.)
+    n32 faharasa = funguo % r->uwezo;
+    kama (faharasa < 0) { faharasa = faharasa + r->uwezo; }
+    n32 hatua = 0;
+    wakati (hatua < r->uwezo) {
+        kama (r->funguo[faharasa] == funguo) {
+            rudisha 1;
+        }
+        kama (r->funguo[faharasa] == -1) {
+            rudisha 0;
+        }
+        faharasa = (faharasa + 1) % r->uwezo;
+        hatua = hatua + 1;
+    }
+    rudisha 0;
+}
+
+w0 ramani_futa(Ramani* r, n32 funguo) {
+    // lugha-swa/swa#187 -- angalia maelezo kamili kwenye ramani_weka.
+    // (Site hii pia haikutajwa kwenye ripoti ya awali ya #187.)
+    n32 faharasa = funguo % r->uwezo;
+    kama (faharasa < 0) { faharasa = faharasa + r->uwezo; }
+    n32 hatua = 0;
+    wakati (hatua < r->uwezo) {
+        kama (r->funguo[faharasa] == funguo) {
+            r->funguo[faharasa] = -2;
+            r->idadi = r->idadi - 1;
+            rudisha;
+        }
+        kama (r->funguo[faharasa] == -1) {
+            rudisha;
+        }
+        faharasa = (faharasa + 1) % r->uwezo;
+        hatua = hatua + 1;
+    }
+}
+
+w0 ramani_huru(Ramani* r) {
+    achilia_eneo_la_utengaji(r->funguo);
+    achilia_eneo_la_utengaji(r->thamani);
+    achilia_eneo_la_utengaji(r);
+}

@@ -1,0 +1,91 @@
+// utamaduni.swa — tafsiri ya src/core/culture/culture.c (na .h)
+// kwenda Swa. Mratibu mkuu wa utamaduni (civ_culture_system_t) --
+// unaounganisha kitambulisho, kuenea, uigaji, na mageuko ya lugha
+// kwa mpangilio uleule wa civ_culture_system_update.
+//
+// Kiambishi: utamaduni_mfumo_ — angalia ../../KANUNI-MAJINA.md
+// (culture/ -> utamaduni_ kwa jumla; "mfumo_" ni kiambishi kidogo,
+// mtindo uleule wa siasa/siasa.swa dhidi ya siasa/kikundi.swa).
+//
+// MUHIMU — HII SI "UJENZI UPYA KAMILI" WA MFUMO, NI UCHANGANUZI WA
+// PENGO LA KWELI: civ_culture_system_t ni muundo-kiunzi TU
+// (kielekezi 5: identity_manager/diffusion/assimilation_tracker/
+// language_evolution/writing_system_manager) -- mifumo hiyo YOTE
+// TANO TAYARI imeundwa na KUSASISHWA moja kwa moja na mchezo.swa
+// (kitambulisho_addr/kuenea_addr/uigaji_addr/uandishi_addr, na sasa
+// mageuko_lugha_addr, angalia mchezo.swa). Kuunda UtamaduniMfumo*
+// inayomiliki NAKALA zake tofauti za mifumo hiyo ingesababisha HALI
+// MBILI zisizolingana za "ukweli" -- kwa hiyo faili hili HALIUNDI
+// muundo wa kumiliki, linatoa KAZI ZA KUPANGILIA (orchestration
+// functions) zinazopokea vielekezi vya mifumo ILIYOPO TAYARI.
+//
+// PENGO HALISI lililopatikana wakati wa kutafsiri (si duplicate):
+// civ_culture_system_update ina kitanzi
+// `for (i=0;i<identity_count;i++) civ_cultural_identity_update(&identities[i], dt)`
+// -- kitanzi hiki (kusasisha KILA kitambulisho kimoja kimoja, si
+// mfumo wa kuenea/uigaji unaofanya kazi juu ya mfumo MZIMA) HAKIKUWA
+// kimeunganishwa POPOTE kwenye mchezo.swa kabla ya faili hili --
+// kitambulisho.swa ina utamaduni_kitambulisho_sasisha(kimoja, dt)
+// lakini hakuna kazi ya "sasisha vyote" ya kiwango cha mfumo
+// iliyokuwepo. utamaduni_mfumo_sasisha_watambulisho_wote hapa chini
+// ndiyo kazi hiyo iliyokosekana -- NYONGEZA HALISI, si tafsiri
+// mara mbili ya kazi iliyopo.
+//
+// Tofauti nyingine za kimakusudi:
+//   - writing_system_manager (uandishi.swa/UtamaduniAndikoMsimamizi)
+//     HAIHUSIKI kwenye utamaduni_mfumo_sasisha -- civ_culture_system_update
+//     ya asili HAIITI civ_writing_system_manager_update wala kazi
+//     yoyote ya "sasisha" kwa writing_system_manager (haina moja
+//     kwenye chanzo cha C, uandishi.swa pia haina "msimamizi_sasisha",
+//     angalia maoni ya uandishi.swa -- sawa na itikadi/dini).
+
+husisha { msingi/msingi_civ.swa }
+husisha { moduli/utamaduni/kitambulisho.swa }
+husisha { moduli/utamaduni/kuenea.swa }
+husisha { moduli/utamaduni/uigaji.swa }
+husisha { moduli/utamaduni/mageuko_lugha.swa }
+
+// NYONGEZA HALISI (angalia maoni ya juu): kitanzi kinachokosekana
+// cha civ_culture_system_update -- kusasisha KILA kitambulisho.
+w0 utamaduni_mfumo_sasisha_watambulisho_wote(UtamaduniKitambulishoMfumo* m, d64 muda) {
+    kama (m == 0) { rudisha; }
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        UtamaduniKitambulisho* k = utamaduni_kitambulisho_mfumo_pata(m, i);
+        utamaduni_kitambulisho_sasisha(k, muda);
+        i = i + 1;
+    }
+}
+
+// utamaduni_mfumo_sasisha: mfuatano KAMILI na SAHIHI wa
+// civ_culture_system_update -- vitambulisho vyote (nyongeza halisi
+// hapo juu), kisha kuenea, kisha uigaji, kisha mageuko ya lugha.
+// Vielekezi vyovyote vilivyo 0 vinarukwa (sawa na matawi ya
+// "if (culture->X)" ya chanzo cha C).
+CivMatokeo utamaduni_mfumo_sasisha(UtamaduniKitambulishoMfumo* kitambulisho_m,
+                                     UtamaduniKuenea* kuenea,
+                                     UtamaduniUigajiTracker* uigaji,
+                                     UtamaduniMageukoMfumo* mageuko_lugha,
+                                     d64 muda) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (kitambulisho_m != 0) {
+        utamaduni_mfumo_sasisha_watambulisho_wote(kitambulisho_m, muda);
+    }
+
+    kama (kuenea != 0 && kitambulisho_m != 0) {
+        utamaduni_kuenea_chakata(kuenea, kitambulisho_m, muda);
+    }
+
+    kama (uigaji != 0 && kitambulisho_m != 0) {
+        utamaduni_uigaji_tracker_sasisha(uigaji, kitambulisho_m, muda);
+    }
+
+    kama (mageuko_lugha != 0) {
+        utamaduni_mageuko_mfumo_badilika(mageuko_lugha, muda);
+    }
+
+    rudisha r;
+}

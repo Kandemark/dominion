@@ -1,0 +1,192 @@
+// jiografia.swa — tafsiri ya src/core/environment/geography.c (na .h)
+// kwenda Swa. Jiografia na matumizi ya ardhi.
+//
+// Kiambishi: mazingira_jiografia_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - land_patches[] (safu inayokua ya muundo, kwa mkupuo/*patch)
+//     imekuwa safu ya n64 (anwani za MazingiraKipande* kwenye rundo),
+//     si safu ya thamani -- inaepuka #182(b), mtindo ulioothibitishwa
+//     (angalia dini.swa/#185).
+//   - civ_geography_calculate_distance (fomula ya Haversine) SASA
+//     IMELETWA: civ_sin/civ_cos/civ_atan2 ziliongezwa kwenye
+//     msingi_civ.swa (mfululizo wa Taylor wenye range-reduction,
+//     zimethibitishwa sahihi hadi tarakimu 5-6 dhidi ya thamani
+//     zinazojulikana za pembe za kawaida na pembe nje ya (-pi,pi)).
+//   - region_name (char[STRING_MEDIUM_LEN], nakala ya ndani) imekuwa
+//     n8* isiyohifadhi nakala, sawa na moduli nyingine za kikao hiki.
+//   - civ_geography_add_land_patch (hoja 7 kwenye C: geo + patch
+//     struct ikitolewa kwa nyanja 4 za d64 + 2 n32) ingekuwa mfano wa
+//     #184 -- hoja zake zimefungwa kwenye MazingiraKipandeHoja.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+n32 MAZINGIRA_MATUMIZI_MSITU = 0;
+n32 MAZINGIRA_MATUMIZI_KILIMO = 1;
+n32 MAZINGIRA_MATUMIZI_MJINI = 2;
+n32 MAZINGIRA_MATUMIZI_ARDHIOEVU = 3;
+n32 MAZINGIRA_MATUMIZI_NYASI = 4;
+n32 MAZINGIRA_MATUMIZI_JANGWA = 5;
+n32 MAZINGIRA_MATUMIZI_MAJI = 6;
+n32 MAZINGIRA_MATUMIZI_TUNDRA = 7;
+
+n32 MAZINGIRA_ARDHI_MLIMA = 0;
+n32 MAZINGIRA_ARDHI_KILIMA = 1;
+n32 MAZINGIRA_ARDHI_TAMBARARE = 2;
+n32 MAZINGIRA_ARDHI_BONDE = 3;
+n32 MAZINGIRA_ARDHI_UWANDA_JUU = 4;
+n32 MAZINGIRA_ARDHI_PWANI = 5;
+
+muundo MazingiraKuratibu {
+    d64 latitudo;
+    d64 longitudo;
+};
+
+muundo MazingiraKipande {
+    d64 latitudo;
+    d64 longitudo;
+    d64 eneo;
+    d64 mwinuko;
+    n32 matumizi_ya_ardhi;
+    n32 aina_ya_ardhi;
+    d64 ubora_wa_udongo;
+    d64 ufunikaji_wa_mimea;
+};
+
+// MazingiraKipandeHoja: hufunga hoja 6 za mazingira_jiografia_ongeza_kipande
+// (lat/lon/eneo/mwinuko/matumizi_ya_ardhi/aina_ya_ardhi -- jumla ya
+// vigezo ingekuwa 7 na 4 d64, mfano halisi wa #184) kwenye muundo
+// mmoja, kupitishwa kama kielekezi -- angalia nguvukazi.swa kwa
+// maelezo kamili ya mdudu huu.
+muundo MazingiraKipandeHoja {
+    d64 latitudo;
+    d64 longitudo;
+    d64 eneo;
+    d64 mwinuko;
+    n32 matumizi_ya_ardhi;
+    n32 aina_ya_ardhi;
+};
+
+muundo MazingiraJiografia {
+    n8* jina_la_mkoa;
+    d64 mpaka_kusini_mag_lat;
+    d64 mpaka_kusini_mag_lon;
+    d64 mpaka_kaskazini_mash_lat;
+    d64 mpaka_kaskazini_mash_lon;
+    n64* vipande;
+    n32 idadi_ya_vipande;
+    n32 uwezo_wa_vipande;
+};
+
+MazingiraJiografia* mazingira_jiografia_unda(n8* jina_la_mkoa, d64 kusini_mag_lat,
+                                               d64 kusini_mag_lon, d64 kaskazini_mash_lat,
+                                               d64 kaskazini_mash_lon) {
+    MazingiraJiografia* geo = tenga(ukubwa(MazingiraJiografia));
+    geo->jina_la_mkoa = jina_la_mkoa;
+    geo->mpaka_kusini_mag_lat = kusini_mag_lat;
+    geo->mpaka_kusini_mag_lon = kusini_mag_lon;
+    geo->mpaka_kaskazini_mash_lat = kaskazini_mash_lat;
+    geo->mpaka_kaskazini_mash_lon = kaskazini_mash_lon;
+    geo->uwezo_wa_vipande = 100;
+    geo->idadi_ya_vipande = 0;
+    geo->vipande = tenga(ukubwa(n64) * geo->uwezo_wa_vipande);
+    rudisha geo;
+}
+
+w0 mazingira_jiografia_uharibu(MazingiraJiografia* geo) {
+    n32 i = 0;
+    wakati (i < geo->idadi_ya_vipande) {
+        MazingiraKipande* k = geo->vipande[i];
+        achilia k;
+        i = i + 1;
+    }
+    achilia geo->vipande;
+    achilia geo;
+}
+
+n32 mazingira_jiografia_ndani_ya_mipaka(MazingiraJiografia* geo, d64 lat, d64 lon) {
+    kama (lat < geo->mpaka_kusini_mag_lat || lat > geo->mpaka_kaskazini_mash_lat) { rudisha 0; }
+    kama (lon < geo->mpaka_kusini_mag_lon || lon > geo->mpaka_kaskazini_mash_lon) { rudisha 0; }
+    rudisha 1;
+}
+
+CivMatokeo mazingira_jiografia_ongeza_kipande(MazingiraJiografia* geo, MazingiraKipandeHoja* hoja) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (mazingira_jiografia_ndani_ya_mipaka(geo, hoja->latitudo, hoja->longitudo) == 0) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        r.ujumbe = "Kipande kiko nje ya mipaka ya mkoa";
+        rudisha r;
+    }
+
+    kama (geo->idadi_ya_vipande >= geo->uwezo_wa_vipande) {
+        geo->uwezo_wa_vipande = geo->uwezo_wa_vipande * 2;
+        geo->vipande = badili(geo->vipande, ukubwa(n64) * geo->uwezo_wa_vipande);
+    }
+
+    MazingiraKipande* k = tenga(ukubwa(MazingiraKipande));
+    k->latitudo = hoja->latitudo;
+    k->longitudo = hoja->longitudo;
+    k->eneo = hoja->eneo;
+    k->mwinuko = hoja->mwinuko;
+    k->matumizi_ya_ardhi = hoja->matumizi_ya_ardhi;
+    k->aina_ya_ardhi = hoja->aina_ya_ardhi;
+    k->ubora_wa_udongo = 0.5;
+    k->ufunikaji_wa_mimea = 0.5;
+
+    geo->vipande[geo->idadi_ya_vipande] = k;
+    geo->idadi_ya_vipande = geo->idadi_ya_vipande + 1;
+
+    rudisha r;
+}
+
+// MAZINGIRA_RADIUSI_YA_DUNIA_KM: EARTH_RADIUS_KM ya chanzo cha C.
+d64 MAZINGIRA_RADIUSI_YA_DUNIA_KM = 6371.0;
+
+// mazingira_jiografia_umbali: fomula ya Haversine (umbali wa mzunguko
+// mkubwa/great-circle kati ya kuratibu mbili). Sawa moja kwa moja na
+// civ_geography_calculate_distance ya C, ukitumia civ_sin/civ_cos/
+// civ_atan2/civ_mzizi badala ya sin/cos/atan2/sqrt ya libc.
+d64 mazingira_jiografia_umbali(d64 lat1_d, d64 lon1_d, d64 lat2_d, d64 lon2_d) {
+    d64 pi = civ_pi();
+    d64 lat1 = lat1_d * pi / 180.0;
+    d64 lon1 = lon1_d * pi / 180.0;
+    d64 lat2 = lat2_d * pi / 180.0;
+    d64 lon2 = lon2_d * pi / 180.0;
+
+    d64 dlat = lat2 - lat1;
+    d64 dlon = lon2 - lon1;
+
+    d64 sin_dlat = civ_sin(dlat / 2.0);
+    d64 sin_dlon = civ_sin(dlon / 2.0);
+
+    d64 a_val = sin_dlat * sin_dlat
+        + civ_cos(lat1) * civ_cos(lat2) * sin_dlon * sin_dlon;
+    // Kifinyo cha [0,1] -- si kwenye C ya asili, kimeongezwa hapa
+    // kama ulinzi dhidi ya makosa madogo ya usahihi (mfululizo wa
+    // Taylor si sahihi kabisa) yanayoweza kusukuma a_val kidogo nje
+    // ya [0,1], jambo ambalo lingefanya civ_mzizi(1.0 - a_val)
+    // kurudisha 0.0 kimya kimya (civ_mzizi haina dhana ya NaN).
+    kama (a_val < 0.0) { a_val = 0.0; }
+    kama (a_val > 1.0) { a_val = 1.0; }
+
+    d64 c = 2.0 * civ_atan2(civ_mzizi(a_val), civ_mzizi(1.0 - a_val));
+
+    rudisha MAZINGIRA_RADIUSI_YA_DUNIA_KM * c;
+}
+
+d64 mazingira_jiografia_eneo_la_kilimo(MazingiraJiografia* geo) {
+    d64 jumla = 0.0;
+    n32 i = 0;
+    wakati (i < geo->idadi_ya_vipande) {
+        MazingiraKipande* k = geo->vipande[i];
+        kama (k->matumizi_ya_ardhi == MAZINGIRA_MATUMIZI_KILIMO) {
+            jumla = jumla + k->eneo;
+        }
+        i = i + 1;
+    }
+    rudisha jumla;
+}

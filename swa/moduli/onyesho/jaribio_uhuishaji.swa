@@ -1,0 +1,107 @@
+husisha { moduli/onyesho/uhuishaji.swa }
+
+// jaribio_uhuishaji.swa -- huthibitisha uhuishaji.swa (MchoroThamaniHuishwa
+// + uhuishaji_unda/weka_lengwa/sasisha/imekamilika/uharibu, Awamu H ya
+// mradi wa "Ramani Halisi + Uhuishaji + Dirisha la Kisasa") dhidi ya
+// data YA KUJULIKANA, ikilinganisha thamani za d64 HASA (si "karibu
+// na"), kokotoo hizi zikifanywa kwa mkono kabla ya kuandikwa hapa:
+//
+//   kasi=2.0, dt=0.1 -> kipimo = finya_d64(2.0*0.1, 0, 1) = 0.2
+//   (2.0*0.1 ni HASA 0.2 kwa usahihi maradufu -- kuzidisha kwa 2
+//   ni operesheni HASA kwenye IEEE754, si ya mzunguko).
+//   hatua 1: sasa = 0 + (100-0)*0.2 = 20.0 HASA
+//   hatua 2: sasa = 20 + (100-20)*0.2 = 36.0 HASA
+//   (100.0*0.2 == 20.0 HASA kwa IEEE754 maradufu -- kosa la
+//   kuzunguka la 0.2 (~1.11e-16) ni dogo kuliko nusu-ULP karibu na
+//   20, hivyo matokeo yaliyozungushwa sahihi ni 20.0 HASA, si
+//   takriban -- imethibitishwa kwa hesabu huru kabla ya kuandika
+//   jaribio hili).
+//
+// gh_dbg_d64 (jina limeazimwa kutoka jaribio_gdp_historia.swa, kioo
+// HASA cha muundo uleule) -- %f haiungwi mkono na andika.
+
+n32 uh_yalioshindwa = 0;
+
+w0 uh_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        uh_yalioshindwa = uh_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+w0 uh_dbg_d64(n8* jina, d64 v) {
+    n64 v_x1000 = v * 1000.0;
+    andika("  [dbg] %s*1000 = %d\n", jina, v_x1000, 0, 0, 0, 0);
+}
+
+n32 anza() {
+    // ===== 1. Hesabu HASA ya mkono: kasi=2.0, dt=0.1, hatua mbili =====
+    MchoroThamaniHuishwa* h1 = uhuishaji_unda(0.0, 2.0);
+
+    uh_thibitisha(h1->sasa == 0.0, "h1->sasa == 0.0 kabla ya weka_lengwa");
+
+    uhuishaji_weka_lengwa(h1, 100.0);
+    uh_thibitisha(h1->lengwa == 100.0, "h1->lengwa == 100.0 baada ya weka_lengwa");
+    uh_thibitisha(h1->sasa == 0.0, "h1->sasa HAIJABADILIKA papo hapo baada ya weka_lengwa (bado 0.0 HASA)");
+
+    uhuishaji_sasisha(h1, 0.1);
+    uh_dbg_d64("h1->sasa baada ya hatua 1", h1->sasa);
+    uh_thibitisha(h1->sasa == 20.0, "hatua 1: sasa == 20.0 HASA (0 + (100-0)*0.2)");
+    uh_thibitisha(h1->sasa > 0.0 && h1->sasa < 100.0, "hatua 1: sasa iko KATI YA 0 na 100 (imesogea, haijafika)");
+
+    uhuishaji_sasisha(h1, 0.1);
+    uh_dbg_d64("h1->sasa baada ya hatua 2", h1->sasa);
+    uh_thibitisha(h1->sasa == 36.0, "hatua 2: sasa == 36.0 HASA (20 + (100-20)*0.2)");
+    uh_thibitisha(h1->sasa > 0.0 && h1->sasa < 100.0, "hatua 2: sasa iko KATI YA 0 na 100 (bado haijafika)");
+
+    uhuishaji_uharibu(h1);
+
+    // ===== 2. uhuishaji_imekamilika: 0 mapema, 1 baada ya hatua nyingi =====
+    MchoroThamaniHuishwa* h2 = uhuishaji_unda(0.0, 2.0);
+    uhuishaji_weka_lengwa(h2, 100.0);
+
+    uh_thibitisha(uhuishaji_imekamilika(h2, 0.01) == 0, "imekamilika(tol=0.01) == 0 mapema (tofauti=100, bado mbali)");
+
+    n32 i = 0;
+    n32 bado_katikati = 1;
+    wakati (i < 50) {
+        uhuishaji_sasisha(h2, 0.1);
+        kama (h2->sasa <= 0.0 || h2->sasa >= 100.0) { bado_katikati = 0; }
+        i = i + 1;
+    }
+    uh_thibitisha(bado_katikati == 1, "sasa inabaki KATI YA 0 na 100 (bila kujumuisha ncha) kwenye hatua ZOTE 50");
+    uh_dbg_d64("h2->sasa baada ya hatua 50", h2->sasa);
+    uh_thibitisha(uhuishaji_imekamilika(h2, 0.01) == 1, "imekamilika(tol=0.01) == 1 baada ya hatua 50 (karibu sana na lengwa, tofauti~0.00143)");
+
+    uhuishaji_uharibu(h2);
+
+    // ===== 3. Kasi KUBWA (100.0): finya_d64 inazuia overshoot =====
+    // Bila finya_d64, kipimo isiyo na kikomo ingekuwa kasi*dt=100.0*0.1=10.0,
+    // ambayo ingetoa sasa=0+(50-0)*10.0=500.0 (MBALI SANA zaidi ya
+    // lengwa=50.0 -- kosa kubwa). finya_d64(10.0, 0.0, 1.0) inakata
+    // kipimo HASA kwenye 1.0, ikitoa sasa=0+(50-0)*1.0=50.0 HASA --
+    // sawa na lengwa, bila kuzidi.
+    MchoroThamaniHuishwa* h3 = uhuishaji_unda(0.0, 100.0);
+    uhuishaji_weka_lengwa(h3, 50.0);
+    uhuishaji_sasisha(h3, 0.1);
+    uh_dbg_d64("h3->sasa baada ya hatua 1 (kasi=100.0)", h3->sasa);
+    uh_thibitisha(h3->sasa == 50.0, "kasi=100.0, dt=0.1: hatua MOJA inafika HASA kwenye lengwa=50.0 (finya_d64 imezuia kipimo>1.0)");
+    uh_thibitisha(h3->sasa <= 50.0, "kasi=100.0: sasa HAIZIDI lengwa (hakuna overshoot -- ingekuwa 500.0 bila finya_d64)");
+
+    uhuishaji_uharibu(h3);
+
+    // ===== 4. uhuishaji_uharibu na kielekezi kiogo (0) hazianguki =====
+    MchoroThamaniHuishwa* h4 = 0;
+    uhuishaji_uharibu(h4);
+    uhuishaji_weka_lengwa(h4, 5.0);
+    uhuishaji_sasisha(h4, 0.1);
+    n32 kiogo_imekamilika = uhuishaji_imekamilika(h4, 0.01);
+    uh_thibitisha(kiogo_imekamilika == 0, "kazi zote zinakubali kielekezi kiogo (0) bila kuanguka");
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", uh_yalioshindwa, 0, 0, 0, 0, 0);
+    kama (uh_yalioshindwa > 0) { rudisha 1; }
+    andika("DONE\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

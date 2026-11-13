@@ -1,0 +1,79 @@
+husisha { moduli/onyesho/mchoro.swa }
+
+// jaribio_mchoro.swa -- huthibitisha mchoro.swa dhidi ya bafa ya
+// tenga() ya KAWAIDA (si dumb buffer halisi ya DRM -- kikao hiki cha
+// mazingira kina compositor ya Wayland inayoshikilia DRM master, kwa
+// hiyo mmap ya dumb buffer halisi inakataliwa kwa EACCES, angalia
+// jaribio_drm.swa kwa maelezo kamili). Hii inathibitisha vitendo vya
+// uchoraji VENYEWE ni sahihi (hesabu za offset/pitch/clip), hata kama
+// kiungo cha mwisho cha "kuandika kwenye dumb buffer halisi" bado
+// hakijathibitishwa moja kwa moja kwenye skrini katika mazingira haya.
+
+n32 anza() {
+    n64 canvas_w = 100;
+    n64 canvas_h = 50;
+    n64 pitch = canvas_w * 4;
+    n8* fb = tenga(pitch * canvas_h);
+    weka_sifuri(fb, pitch * canvas_h);
+
+    // mstatili 1: (10,10)-(29,29) rangi A
+    mchoro_piga_mstatili(fb, pitch, canvas_w, canvas_h, 10, 10, 20, 20, 4294901760);  // nyekundu
+    // mstatili 2 (jaribu wito wa pili kwenye kitanzi kimoja, kukamata
+    // uharibifu wowote wa stack kwa kazi zenye hoja nyingi -- #184
+    // haihusiani moja kwa moja (haina d64), lakini bado tunathibitisha)
+    mchoro_piga_mstatili(fb, pitch, canvas_w, canvas_h, 50, 10, 20, 20, 4278255360);  // kijani
+
+    n64 ndani_a = mchoro_pata_pikseli(fb, pitch, 15, 15);
+    n64 nje_a_kushoto = mchoro_pata_pikseli(fb, pitch, 9, 15);
+    n64 nje_a_juu = mchoro_pata_pikseli(fb, pitch, 15, 9);
+    kama (ndani_a != 4294901760) { andika_kosa("FAIL: ndani ya mstatili A =%d\n", ndani_a, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (nje_a_kushoto != 0) { andika_kosa("FAIL: nje ya A (kushoto) haikuwa 0, ni %d\n", nje_a_kushoto, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (nje_a_juu != 0) { andika_kosa("FAIL: nje ya A (juu) haikuwa 0, ni %d\n", nje_a_juu, 0, 0, 0, 0, 0); rudisha 1; }
+
+    n64 ndani_b = mchoro_pata_pikseli(fb, pitch, 55, 15);
+    kama (ndani_b != 4278255360) { andika_kosa("FAIL: ndani ya mstatili B =%d\n", ndani_b, 0, 0, 0, 0, 0); rudisha 1; }
+
+    // ukataji (clip): mstatili unaozidi ukingo wa kulia/chini haupaswi
+    // kuandika nje ya bafa (kama ingeandika nje, hii ingeharibu
+    // kumbukumbu iliyopo karibu au kuanguka)
+    mchoro_piga_mstatili(fb, pitch, canvas_w, canvas_h, 90, 40, 30, 30, 4278190335);  // buluu
+    n64 pembeni = mchoro_pata_pikseli(fb, pitch, 99, 49);
+    kama (pembeni != 4278190335) { andika_kosa("FAIL: pembe ya mwisho haikuandikwa, ni %d\n", pembeni, 0, 0, 0, 0, 0); rudisha 1; }
+
+    // mstari wa mlalo halisi (y0==y1) -- rahisi kuthibitisha kila pikseli
+    mchoro_chora_mstari(fb, pitch, canvas_w, canvas_h, 0, 40, 9, 40, 4294967295);  // nyeupe
+    n64 i = 0;
+    wakati (i < 10) {
+        n64 v = mchoro_pata_pikseli(fb, pitch, i, 40);
+        kama (v != 4294967295) { andika_kosa("FAIL: mstari mlalo pikseli %d =%d\n", i, v, 0, 0, 0, 0); rudisha 1; }
+        i = i + 1;
+    }
+    // hatua moja baada ya mwisho wa mstari haipaswi kuguswa
+    n64 baada = mchoro_pata_pikseli(fb, pitch, 10, 40);
+    kama (baada != 0) { andika_kosa("FAIL: baada ya mstari haikuwa 0, ni %d\n", baada, 0, 0, 0, 0, 0); rudisha 1; }
+
+    // bandika (blit): chanzo 4x4 chenye rangi tofauti kila pikseli ya
+    // mstari wa kwanza, iliyobaki 0
+    n64 chanzo_pitch = 4 * 4;
+    n8* chanzo = tenga(chanzo_pitch * 4);
+    weka_sifuri(chanzo, chanzo_pitch * 4);
+    mchoro_weka_pikseli(chanzo, chanzo_pitch, 0, 0, 111);
+    mchoro_weka_pikseli(chanzo, chanzo_pitch, 1, 0, 222);
+    mchoro_weka_pikseli(chanzo, chanzo_pitch, 2, 0, 333);
+    mchoro_weka_pikseli(chanzo, chanzo_pitch, 3, 0, 444);
+
+    mchoro_bandika(fb, pitch, canvas_w, canvas_h, 5, 5, chanzo, chanzo_pitch, 4, 4);
+    n64 b0 = mchoro_pata_pikseli(fb, pitch, 5, 5);
+    n64 b1 = mchoro_pata_pikseli(fb, pitch, 6, 5);
+    n64 b2 = mchoro_pata_pikseli(fb, pitch, 7, 5);
+    n64 b3 = mchoro_pata_pikseli(fb, pitch, 8, 5);
+    n64 b_chini = mchoro_pata_pikseli(fb, pitch, 5, 6);  // mstari wa 2 wa chanzo ulikuwa 0
+    kama (b0 != 111 || b1 != 222 || b2 != 333 || b3 != 444) {
+        andika_kosa("FAIL: bandika haikunakili sahihi: %d %d %d %d\n", b0, b1, b2, b3, 0, 0);
+        rudisha 1;
+    }
+    kama (b_chini != 0) { andika_kosa("FAIL: bandika mstari wa 2 haikuwa 0, ni %d\n", b_chini, 0, 0, 0, 0, 0); rudisha 1; }
+
+    andika("PASS mchoro.swa (dhidi ya bafa ya synthetic -- angalia jaribio_drm.swa kwa uthibitisho wa kernel halisi)\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

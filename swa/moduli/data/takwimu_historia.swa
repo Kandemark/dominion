@@ -1,0 +1,85 @@
+// takwimu_historia.swa — Awamu D ya mradi wa "injini ya 2D yenye
+// nguvu + injini ya taswira ya takwimu" (angalia mchezo.swa kwa
+// Awamu A/B/C -- maumbo/mchoro.swa, rangi/mchoro.swa, chati.swa).
+// HAINA chanzo cha C sambamba -- ni muundo MPYA uliobuniwa kwa ajili
+// ya mradi huu TU: safu inayokua ya namba-kwa-muda (time-series,
+// mfano GDP ya dunia kwa kila zamu) iliyotengenezwa ili ilishe
+// moja kwa moja chati_mstari (onyesho/chati.swa, Awamu C -- inategemea
+// d64* sampuli + n32 idadi).
+//
+// Kiambishi: takwimu_historia_ — saraka ya chanzo (data/) ina
+// kiambishi chake maalum (angalia KANUNI-MAJINA.md), sawa na
+// historia_db_ kwenye faili jirani (historia_db.swa).
+//
+// Muundo wa safu inayokua: KIOO HASA cha historia_db.swa
+// (HistoriaDB.matukio/idadi_ya_matukio/uwezo +
+// historia_db_hakikisha_nafasi) -- angalia faili hilo kwa maelezo
+// kamili ya muundo uliothibitishwa mara nne tayari kwenye mradi huu
+// (kitengo_chini.swa, ushindi.swa, kitengo.swa, tukio.swa, n.k.).
+// TOFAUTI MOJA ya kimakusudi: TakwimuHistoria.sampuli ni d64* BAPA
+// (thamani moja kwa moja kwa kila fahirisi), SI n64* ya anwani kama
+// HistoriaDB.matukio -- hakuna haja ya ugawaji wa pili (d64 ni
+// thamani rahisi, si muundo wenye urefu tofauti-tofauti kama
+// HistoriaTukio), na lugha-swa/swa#181 (d64* haifanyi kazi) ilikuwa
+// imeshatatuliwa (PR #221, 2026-09) kabla ya Awamu D hii kuandikwa
+// -- angalia chati.swa (Awamu C) ambayo tayari inatumia d64* bapa
+// sawasawa (ChatiMstariHoja.sampuli, ChatiPauHoja.thamani).
+
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+muundo TakwimuHistoria {
+    d64* sampuli;
+    n32 idadi;
+    n32 uwezo;
+};
+
+// takwimu_historia_hakikisha_nafasi: kioo HASA cha
+// historia_db_hakikisha_nafasi (historia_db.swa:143-159) -- uwezo
+// unaongezwa MARA MBILI (kupitia badili()) hadi utoshee
+// uwezo_wa_chini uliotakiwa.
+w0 takwimu_historia_hakikisha_nafasi(TakwimuHistoria* h, n32 uwezo_wa_chini) {
+    kama (h == 0) { rudisha; }
+    kama (uwezo_wa_chini <= h->uwezo) { rudisha; }
+
+    n32 uwezo_mpya = h->uwezo;
+    kama (uwezo_mpya == 0) { uwezo_mpya = 64; }
+    wakati (uwezo_mpya < uwezo_wa_chini) {
+        uwezo_mpya = uwezo_mpya * 2;
+    }
+
+    kama (h->sampuli == 0) {
+        h->sampuli = tenga(ukubwa(d64) * uwezo_mpya);
+    } sivyo {
+        h->sampuli = badili(h->sampuli, ukubwa(d64) * uwezo_mpya);
+    }
+    h->uwezo = uwezo_mpya;
+}
+
+TakwimuHistoria* takwimu_historia_unda() {
+    TakwimuHistoria* h = tenga(ukubwa(TakwimuHistoria));
+    h->sampuli = 0;
+    h->idadi = 0;
+    h->uwezo = 0;
+    takwimu_historia_hakikisha_nafasi(h, 64);
+    rudisha h;
+}
+
+// takwimu_historia_ongeza: kioo HASA cha historia_db_andika (hesabu
+// nafasi KWANZA kwa idadi+1, kisha andika kwenye nafasi mpya, kisha
+// ongeza idadi) -- angalia historia_db.swa:238-290.
+w0 takwimu_historia_ongeza(TakwimuHistoria* h, d64 thamani) {
+    kama (h == 0) { rudisha; }
+    takwimu_historia_hakikisha_nafasi(h, h->idadi + 1);
+    h->sampuli[h->idadi] = thamani;
+    h->idadi = h->idadi + 1;
+}
+
+// takwimu_historia_uharibu: hakuna vitu vilivyopachikwa (d64 ni
+// thamani bapa, si vielekezi) -- achilia safu moja kisha muundo
+// wenyewe, kioo rahisi cha dunia_taifa_mfumo_uharibu (taifa.swa)
+// bila kitanzi cha kuachilia vitu vya ndani (havihitajiki hapa).
+w0 takwimu_historia_uharibu(TakwimuHistoria* h) {
+    kama (h == 0) { rudisha; }
+    kama (h->sampuli != 0) { achilia h->sampuli; }
+    achilia h;
+}

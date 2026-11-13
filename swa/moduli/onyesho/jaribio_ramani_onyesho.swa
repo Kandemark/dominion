@@ -1,0 +1,239 @@
+husisha { moduli/mchezo.swa }
+husisha { moduli/onyesho/ramani_onyesho.swa }
+
+// jaribio_ramani_onyesho.swa -- jaribio la kudumu la onyesho_ramani_chora
+// (Awamu G1 ya "Ramani Halisi + Uhuishaji + Dirisha la Kisasa"). Mchezo
+// HALISI (mifumo 47) unaundwa kwa mchezo_unda()/mchezo_anzisha() (muundo
+// HASA ule ule wa jaribio_hud_mchezo_halisi.swa/jaribio_hud_eneo.swa),
+// ardhi inapandwa, mataifa yanadai maeneo, kisha ramani NZIMA inachorwa
+// kwenye bafa ya kutosha -- UTHIBITISHO WOTE ni dhidi ya PIKSELI HALISI
+// zilizochorwa, si dhidi ya mantiki ya ndani ya onyesho_ramani_chora
+// yenyewe (nafasi za skrini zinakokotolewa HAPA, kwa mkono, kwa fomula
+// HIYO HIYO iliyoandikwa kwenye maoni ya ramani_onyesho.swa -- SI kwa
+// kuita kazi ya ndani). Uthibitisho umegawanywa kwenye kazi ndogo ndogo
+// (jro_kagua_*) kwa makusudi -- si urembo, ni kuepuka kikomo cha
+// "vigezo vya ndani 64 kwa kila kazi" cha mkusanyaji.
+
+n32 jro_yalioshindwa = 0;
+
+w0 jro_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jro_yalioshindwa = jro_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+// (1) MWELEKEO: y_k=0 (Ncha ya Kaskazini, lat=+90) LAZIMA ichorwe
+// kwenye y NDOGO ya skrini; y_k=179 (Ncha ya Kusini, lat=-90) LAZIMA
+// ichorwe kwenye y KUBWA ya skrini -- rangi za ardhi (JANGWA/MJINI,
+// zilizowekwa na mwito kwa makusudi, bila umiliki) zinathibitishwa pia.
+w0 jro_kagua_mwelekeo(n8* fb, n64 pitch, n64 ramani_x, n64 ramani_y,
+                        n64 upana_wa_kipande, n64 kimo_wa_kipande,
+                        n32 kaskazini_x, n32 kaskazini_y, n32 kusini_x, n32 kusini_y) {
+    n64 abs_x_kaskazini = ramani_x + (kaskazini_x * upana_wa_kipande);
+    n64 abs_y_kaskazini = ramani_y + (kaskazini_y * kimo_wa_kipande);
+    n64 abs_x_kusini = ramani_x + (kusini_x * upana_wa_kipande);
+    n64 abs_y_kusini = ramani_y + (kusini_y * kimo_wa_kipande);
+
+    jro_thibitisha(abs_y_kaskazini < abs_y_kusini,
+                     "y ya skrini ya y_k=0 (Kaskazini) NI NDOGO kuliko y ya skrini ya y_k=179 (Kusini) -- MWELEKEO sahihi");
+
+    n64 rangi_kaskazini_halisi = mchoro_pata_pikseli(fb, pitch, abs_x_kaskazini, abs_y_kaskazini);
+    n64 rangi_kaskazini_tarajiwa = onyesho_ramani_rangi_ya_ardhi(MAZINGIRA_MATUMIZI_JANGWA);
+    jro_thibitisha(rangi_kaskazini_halisi == rangi_kaskazini_tarajiwa,
+                     "kipande cha y_k=0 (Ncha ya Kaskazini, lat=+90) kimechorwa kwenye y NDOGO ya pikseli na rangi sahihi ya JANGWA");
+
+    n64 rangi_kusini_halisi = mchoro_pata_pikseli(fb, pitch, abs_x_kusini, abs_y_kusini);
+    n64 rangi_kusini_tarajiwa = onyesho_ramani_rangi_ya_ardhi(MAZINGIRA_MATUMIZI_MJINI);
+    jro_thibitisha(rangi_kusini_halisi == rangi_kusini_tarajiwa,
+                     "kipande cha y_k=179 (Ncha ya Kusini, lat=-90) kimechorwa kwenye y KUBWA ya pikseli na rangi sahihi ya MJINI");
+}
+
+// (2) Kipande kinachojulikana kuwa MAJI kina rangi ya bluu HASA
+// iliyotarajiwa (ONYESHO_RAMANI_RANGI_MAJI, 0x1E5A8E).
+w0 jro_kagua_maji(n8* fb, n64 pitch, n64 ramani_x, n64 ramani_y,
+                     n64 upana_wa_kipande, n64 kimo_wa_kipande, n32 maji_x, n32 maji_y) {
+    n64 abs_x_maji = ramani_x + (maji_x * upana_wa_kipande);
+    n64 abs_y_maji = ramani_y + (maji_y * kimo_wa_kipande);
+    n64 rangi_maji_halisi = mchoro_pata_pikseli(fb, pitch, abs_x_maji, abs_y_maji);
+    jro_thibitisha(rangi_maji_halisi == ONYESHO_RAMANI_RANGI_MAJI,
+                     "kipande kinachojulikana kuwa MAJI kina rangi ya bluu HASA iliyotarajiwa (ONYESHO_RAMANI_RANGI_MAJI)");
+}
+
+// (3) Kipande kinachomilikiwa na taifa fulani kina rangi YA
+// MCHANGANYIKO (ardhi + rangi ya taifa, alpha 120/255) -- SI rangi
+// safi ya ardhi peke yake, SI rangi safi ya taifa peke yake.
+w0 jro_kagua_umiliki(DuniaRamani* ramani, TaifaMfumo* taifa, n8* fb, n64 pitch,
+                        n64 ramani_x, n64 ramani_y, n64 upana_wa_kipande, n64 kimo_wa_kipande,
+                        n32 jro_mx, n32 jro_my) {
+    DuniaRamaniKipande* kp_milikiwa = dunia_ramani_pata_kipande(ramani, jro_mx, jro_my);
+    TaifaNchi* mmiliki = dunia_taifa_tafuta_mmiliki(taifa, ramani, jro_mx, jro_my);
+    n32 mmiliki_sio_tupu = (mmiliki != 0);
+    jro_thibitisha(mmiliki_sio_tupu, "dunia_taifa_tafuta_mmiliki inapata TaifaNchi* halisi kwa kipande kilichodaiwa");
+    kama (mmiliki == 0) { rudisha; }
+
+    n32 faharisi_mmiliki = onyesho_ramani_pata_faharisi_ya_taifa(taifa, mmiliki);
+    jro_thibitisha(faharisi_mmiliki >= 0, "faharisi ya mmiliki imepatikana ndani ya TaifaMfumo");
+
+    n64 rangi_ardhi_hapa = onyesho_ramani_rangi_ya_ardhi(kp_milikiwa->matumizi_ya_ardhi);
+    n64 rangi_taifa_hapa = mchoro_rangi_ya_faharisi(faharisi_mmiliki);
+    n64 rangi_tarajiwa_mchanganyiko = mchoro_changanya_rangi(rangi_ardhi_hapa, rangi_taifa_hapa, ONYESHO_RAMANI_ALPHA_UMILIKI);
+
+    n64 abs_x_milikiwa = ramani_x + (jro_mx * upana_wa_kipande);
+    n64 abs_y_milikiwa = ramani_y + (jro_my * kimo_wa_kipande);
+    n64 rangi_milikiwa_halisi = mchoro_pata_pikseli(fb, pitch, abs_x_milikiwa, abs_y_milikiwa);
+
+    jro_thibitisha(rangi_milikiwa_halisi == rangi_tarajiwa_mchanganyiko,
+                     "kipande kinachomilikiwa kina rangi SAHIHI ya mchanganyiko (ardhi + rangi ya taifa, alpha 120)");
+    jro_thibitisha(rangi_milikiwa_halisi != rangi_ardhi_hapa,
+                     "kipande kinachomilikiwa SI rangi safi ya ardhi peke yake");
+    jro_thibitisha(rangi_milikiwa_halisi != rangi_taifa_hapa,
+                     "kipande kinachomilikiwa SI rangi safi ya taifa peke yake");
+}
+
+// (4) Mji mkuu wa taifa la 0 una duara la rangi sahihi kwenye nafasi
+// iliyokokotolewa KWA MKONO (SI kwa kuita onyesho_ramani_chora tena)
+// kutoka mji_mkuu_lon/mji_mkuu_lat HALISI za TaifaNchi.
+w0 jro_kagua_mji_mkuu(TaifaMfumo* taifa, DuniaRamani* ramani, n8* fb, n64 pitch,
+                         n64 ramani_x, n64 ramani_y, n64 upana_wa_kipande, n64 kimo_wa_kipande) {
+    TaifaNchi* t0 = dunia_taifa_mfumo_pata_kwa_faharisi(taifa, 0);
+    d64 upana_p1_d = ramani->upana - 1;
+    d64 urefu_p1_d = ramani->urefu - 1;
+    d64 x_k_d = (t0->mji_mkuu_lon + 180.0) / 360.0 * upana_p1_d;
+    d64 y_k_d = (90.0 - t0->mji_mkuu_lat) / 180.0 * urefu_p1_d;
+    n64 x_k_mkono = x_k_d;
+    n64 y_k_mkono = y_k_d;
+    n64 abs_x_mji = ramani_x + (x_k_mkono * upana_wa_kipande);
+    n64 abs_y_mji = ramani_y + (y_k_mkono * kimo_wa_kipande);
+
+    n64 rangi_mji_halisi = mchoro_pata_pikseli(fb, pitch, abs_x_mji, abs_y_mji);
+    n64 rangi_mji_tarajiwa = mchoro_rangi_ya_faharisi(0);
+    jro_thibitisha(rangi_mji_halisi == rangi_mji_tarajiwa,
+                     "mji mkuu wa taifa la 0 una duara la rangi sahihi kwenye nafasi iliyokokotolewa kwa mkono kutoka mji_mkuu_lon/lat halisi");
+}
+
+n32 anza() {
+    // ---------- Unda Mchezo HALISI (mifumo 47) ----------
+    Mchezo* g = mchezo_unda();
+    n32 g_sio_tupu = (g != 0);
+    jro_thibitisha(g_sio_tupu, "mchezo_unda inarudisha kielekezi");
+
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    jro_thibitisha(r.hitilafu == CIV_SAWA, "mchezo_anzisha HALISI inarudi CIV_SAWA (mifumo 47)");
+
+    DuniaRamani* ramani_jh = mchezo_pata_ramani(g);
+    jro_thibitisha(ramani_jh->upana == 360 && ramani_jh->urefu == 180,
+                     "ramani ya Mchezo halisi ni 360x180 (dunia nzima)");
+
+    // ---------- Mbegu ya ardhi: kila kipande -> NYASI (angalia maelezo
+    // sawa kwenye jaribio_hud_mchezo_halisi.swa/jaribio_hud_eneo.swa --
+    // dunia_ramani_unda huweka kila kipande kuwa MAJI kwa chaguo-msingi,
+    // bila ardhi mataifa hayawezi kudai chochote) ----------
+    n32 y_seed = 0;
+    wakati (y_seed < ramani_jh->urefu) {
+        n32 x_seed = 0;
+        wakati (x_seed < ramani_jh->upana) {
+            DuniaRamaniKipande* kp = dunia_ramani_pata_kipande(ramani_jh, x_seed, y_seed);
+            kama (kp != 0) {
+                kp->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_NYASI;
+                kp->rutuba = 0.5;
+                kp->mwinuko = 0.3;
+            }
+            x_seed = x_seed + 1;
+        }
+        y_seed = y_seed + 1;
+    }
+
+    // Mataifa yanadai ardhi iliyopo SASA (vile vile jaribio_hud_mchezo_
+    // halisi.swa/jaribio_hud_eneo.swa -- mchezo_anzisha iliita wito huu
+    // KABLA ya ardhi kuwepo, hivyo hakuna kilichodaiwa wakati huo).
+    TaifaMfumo* taifa_jh = mchezo_pata_taifa(g);
+    dunia_taifa_mfumo_dai_maeneo_yote(taifa_jh, ramani_jh);
+    jro_thibitisha(taifa_jh->idadi == 8, "mataifa 8 ya chaguo-msingi yameundwa ndani ya Mchezo halisi");
+
+    // ---------- Vipande MAHSUSI vya uthibitisho (vinawekwa NJE ya
+    // umiliki kwa makusudi -- rangi safi ya ardhi pekee, bila
+    // mchanganyiko wa tabaka la umiliki, ili kuthibitisha MWELEKEO na
+    // rangi za ardhi bila utata) ----------
+    n32 kaskazini_x = 50; n32 kaskazini_y = 0;      // y_k=0 -- Ncha ya KASKAZINI (lat=+90)
+    n32 kusini_x = 50;    n32 kusini_y = 179;        // y_k=179 -- Ncha ya KUSINI (lat=-90)
+    n32 maji_x = 200;     n32 maji_y = 90;           // kipande cha MAJI kinachojulikana
+
+    DuniaRamaniKipande* kp_kaskazini = dunia_ramani_pata_kipande(ramani_jh, kaskazini_x, kaskazini_y);
+    kp_kaskazini->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_JANGWA;
+    kp_kaskazini->mmiliki_id = 0;
+
+    DuniaRamaniKipande* kp_kusini = dunia_ramani_pata_kipande(ramani_jh, kusini_x, kusini_y);
+    kp_kusini->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_MJINI;
+    kp_kusini->mmiliki_id = 0;
+
+    DuniaRamaniKipande* kp_maji = dunia_ramani_pata_kipande(ramani_jh, maji_x, maji_y);
+    kp_maji->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_MAJI;
+    kp_maji->mmiliki_id = 0;
+
+    // Thibitisha KABLA ya kuchora kuwa kipande cha "maji" ni MAZINGIRA_
+    // MATUMIZI_MAJI HALISI (SI dhana).
+    jro_thibitisha(kp_maji->matumizi_ya_ardhi == MAZINGIRA_MATUMIZI_MAJI,
+                     "kipande cha jaribio (200,90) ni MAZINGIRA_MATUMIZI_MAJI HALISI kabla ya kuchora");
+
+    // ---------- Tafuta kipande kimoja KINACHOMILIKIWA na taifa fulani
+    // (baada ya madai + baada ya kurekebisha vipande 3 vya juu kuwa
+    // visivyomilikiwa) -- kwa uthibitisho wa tabaka la umiliki
+    // (mchanganyiko wa rangi) ----------
+    n32 jro_mx = 0 - 1; n32 jro_my = 0 - 1;
+    n32 yy = 0;
+    wakati (yy < ramani_jh->urefu && jro_mx < 0) {
+        n32 xx = 0;
+        wakati (xx < ramani_jh->upana && jro_mx < 0) {
+            DuniaRamaniKipande* kp_scan = dunia_ramani_pata_kipande(ramani_jh, xx, yy);
+            kama (kp_scan != 0 && kp_scan->mmiliki_id != 0) {
+                jro_mx = xx; jro_my = yy;
+            }
+            xx = xx + 1;
+        }
+        yy = yy + 1;
+    }
+    jro_thibitisha(jro_mx >= 0, "angalau kipande kimoja kimedaiwa (kina mmiliki_id) baada ya dunia_taifa_mfumo_dai_maeneo_yote");
+
+    // ---------- Chora ramani NZIMA kwenye bafa ya kutosha ----------
+    n64 canvas_w = 800;
+    n64 canvas_h = 420;
+    n64 pitch = canvas_w * 4;
+    n8* fb = tenga(pitch * canvas_h);
+    weka_sifuri(fb, pitch * canvas_h);
+
+    n64 ramani_x = 40;
+    n64 ramani_y = 30;
+    n64 upana_px = 720;   // 360 vipande * 2px
+    n64 kimo_px = 360;    // 180 vipande * 2px
+
+    onyesho_ramani_chora(ramani_jh, taifa_jh, fb, pitch, ramani_x, ramani_y, upana_px, kimo_px);
+
+    n64 upana_wa_kipande = upana_px / ramani_jh->upana;  // 2
+    n64 kimo_wa_kipande = kimo_px / ramani_jh->urefu;     // 2
+
+    jro_kagua_mwelekeo(fb, pitch, ramani_x, ramani_y, upana_wa_kipande, kimo_wa_kipande,
+                         kaskazini_x, kaskazini_y, kusini_x, kusini_y);
+    jro_kagua_maji(fb, pitch, ramani_x, ramani_y, upana_wa_kipande, kimo_wa_kipande, maji_x, maji_y);
+    jro_kagua_umiliki(ramani_jh, taifa_jh, fb, pitch, ramani_x, ramani_y,
+                        upana_wa_kipande, kimo_wa_kipande, jro_mx, jro_my);
+    jro_kagua_mji_mkuu(taifa_jh, ramani_jh, fb, pitch, ramani_x, ramani_y, upana_wa_kipande, kimo_wa_kipande);
+
+    // ---------- Nje ya eneo la ramani bado ni sifuri (fb_eneo
+    // haijavuja nje ya mpaka wake) ----------
+    n64 rangi_nje = mchoro_pata_pikseli(fb, pitch, 5, 5);
+    jro_thibitisha(rangi_nje == 0, "pikseli NJE kabisa ya eneo la ramani (5,5) bado ni sifuri");
+
+    achilia fb;
+    mchezo_uharibu(g);
+    andika("mchezo_uharibu(g) imekamilika bila kuanguka\n", 0, 0, 0, 0, 0, 0);
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", jro_yalioshindwa, 0, 0, 0, 0, 0);
+    kama (jro_yalioshindwa > 0) { rudisha 1; }
+    andika("DONE\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

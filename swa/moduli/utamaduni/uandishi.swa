@@ -1,0 +1,292 @@
+// uandishi.swa — tafsiri ya src/core/culture/writing_system.c (na
+// .h) kwenda Swa. Mifumo ya uandishi (scripts) ya lugha —
+// kuzaliwa, kuibuka kutoka kwa mzazi, na kuzalisha majina ya nasibu.
+//
+// Kiambishi: uandishi_ — angalia ../../KANUNI-MAJINA.md (culture/
+// -> utamaduni_ kwa jumla, lakini moduli ndogo za culture/ hutumia
+// kiambishi chake maalum kama dini.swa/itikadi.swa/kuenea.swa/
+// uigaji.swa, si "utamaduni_" ya jumla -- mtindo uleule hapa).
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - id/name/parent_script_id (char[] ndani ya struct) yamekuwa
+//     n8* -- kielekezi cha mwitaji kinapokelewa moja kwa moja,
+//     mtindo uleule wa mashirika.swa/kitengo_chini.swa.
+//   - manager->scripts (civ_writing_system_t[], safu inayokua kwa
+//     CIV_REALLOC KWA THAMANI) imekuwa safu ya n64 za anwani (#185),
+//     kila UtamaduniAndiko hutengwa peke yake kwa tenga().
+//   - script->symbols/symbol_count: imethibitishwa kwa kutafuta
+//     writing_system.c nzima kuwa HAZIWAHI kuwekwa (set) mahali
+//     popote -- civ_writing_system_set_characters huweka
+//     consonants/vowels TU, na civ_writing_system_destroy
+//     hufuta symbols ambayo ni NULL daima. Uwanja uliokufa kwenye
+//     chanzo asili, hauletwa hapa (sawa na international_relations
+//     kwenye vipimo_laini.swa na civ_org_remove_member kwenye
+//     mashirika.swa).
+//   - name_rng_state (static ya ndani ya faili, LCG yake YENYEWE)
+//     imebadilishwa kutumia civ_nasibu_chini_ya ya msingi_civ.swa
+//     (LCG moja ya pamoja ya mradi mzima) badala ya kuzalisha hali
+//     ya pili ya nasibu inayojitegemea -- hakuna sababu ya kuwa na
+//     LCG mbili tofauti, na civ_nasibu_* tayari ni mzunguko
+//     ulioothibitishwa.
+//   - consonant_count/vowel_count (size_t kwenye C) ni n32 hapa
+//     (idadi ndogo kila wakati, sawa na mtindo wa rushwa.swa
+//     idadi_ya_vikundi).
+//   - civ_writing_system_generate_name inapiga name_rng_seed(time())
+//     KILA WITO (hata baada ya kutumia state ile ile kuchagua herufi
+//     juu) -- tabia ya C YENYEWE si thabiti/haina maana kamili
+//     (seed inawekwa BAADA ya malloc, KABLA ya kutumika -- angalia
+//     mpangilio wa kazi asili), lakini kwa kuwa civ_nasibu_* ni hali
+//     MOJA ya pamoja isiyo na "seed kwa saa" hapa, hatua hiyo
+//     haihitajiki kuigwa (si tofauti ya tabia inayoonekana nje,
+//     ni maelezo ya ndani ya jenereta pekee).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+// ---------- Aina za andiko (badala ya civ_script_type_t) ----------
+n32 UANDISHI_AINA_ALFABETI = 0;      // ALPHABETIC (Roman, Greek, Cyrillic)
+n32 UANDISHI_AINA_ABJADI = 1;        // ABJAD (Arabic, Hebrew)
+n32 UANDISHI_AINA_ABUGIDA = 2;       // ABUGIDA (Devanagari, Thai)
+n32 UANDISHI_AINA_LOGOSILABI = 3;    // LOGOSYLLABIC (Chinese, Kanji)
+n32 UANDISHI_AINA_SILABI = 4;        // SYLLABIC (Hiragana/Katakana)
+n32 UANDISHI_AINA_PICHA = 5;         // PICTOGRAPHIC
+n32 UANDISHI_AINA_NYINGINE = 6;      // OTHER
+
+muundo UtamaduniAndiko {
+    n8* kitambulisho;
+    n8* jina;
+    n32 aina;
+
+    n8* mzazi_andiko_id; // parent_script_id, 0 kama hakuna
+
+    d64 utata;   // complexity, 0.0 hadi 1.0
+    d64 ufanisi; // efficiency, 0.0 hadi 1.0
+
+    n8* konsonanti; // nakala ya ndani (angalia uandishi_weka_herufi)
+    n8* vokali;     // nakala ya ndani
+    n32 idadi_ya_konsonanti;
+    n32 idadi_ya_vokali;
+
+    n64 muda_wa_kuundwa; // creation_time, kupitia civ_muda_sasa()
+};
+
+muundo UtamaduniAndikoMsimamizi {
+    n64* maandiko; // safu ya anwani za UtamaduniAndiko*, #185
+    n32 idadi;
+    n32 uwezo;
+};
+
+UtamaduniAndiko* uandishi_msimamizi_pata(UtamaduniAndikoMsimamizi* m, n32 idx) {
+    rudisha m->maandiko[idx];
+}
+
+w0 uandishi_msimamizi_anzisha(UtamaduniAndikoMsimamizi* m) {
+    kama (m == 0) { rudisha; }
+    m->uwezo = 32;
+    m->idadi = 0;
+    m->maandiko = tenga(ukubwa(n64) * m->uwezo);
+}
+
+UtamaduniAndikoMsimamizi* uandishi_msimamizi_unda() {
+    UtamaduniAndikoMsimamizi* m = tenga(ukubwa(UtamaduniAndikoMsimamizi));
+    uandishi_msimamizi_anzisha(m);
+    rudisha m;
+}
+
+UtamaduniAndiko* uandishi_unda(n8* kitambulisho, n8* jina, n32 aina) {
+    kama (kitambulisho == 0 || jina == 0) { rudisha 0; }
+
+    UtamaduniAndiko* s = tenga(ukubwa(UtamaduniAndiko));
+    s->kitambulisho = kitambulisho;
+    s->jina = jina;
+    s->aina = aina;
+    s->mzazi_andiko_id = 0;
+    s->utata = 0.5;
+    s->ufanisi = 0.5;
+    s->konsonanti = 0;
+    s->vokali = 0;
+    s->idadi_ya_konsonanti = 0;
+    s->idadi_ya_vokali = 0;
+    s->muda_wa_kuundwa = civ_muda_sasa();
+
+    rudisha s;
+}
+
+w0 uandishi_uharibu(UtamaduniAndiko* s) {
+    kama (s == 0) { rudisha; }
+    kama (s->konsonanti != 0) { achilia s->konsonanti; }
+    kama (s->vokali != 0) { achilia s->vokali; }
+    achilia s;
+}
+
+w0 uandishi_msimamizi_uharibu(UtamaduniAndikoMsimamizi* m) {
+    kama (m == 0) { rudisha; }
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        UtamaduniAndiko* s = uandishi_msimamizi_pata(m, i);
+        uandishi_uharibu(s);
+        i = i + 1;
+    }
+    achilia m->maandiko;
+    achilia m;
+}
+
+CivMatokeo uandishi_msimamizi_ongeza(UtamaduniAndikoMsimamizi* m, UtamaduniAndiko* s) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0 || s == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Hoja batili";
+        rudisha r;
+    }
+
+    kama (m->idadi >= m->uwezo) {
+        m->uwezo = m->uwezo * 2;
+        m->maandiko = badili(m->maandiko, ukubwa(n64) * m->uwezo);
+    }
+    m->maandiko[m->idadi] = s;
+    m->idadi = m->idadi + 1;
+    rudisha r;
+}
+
+UtamaduniAndiko* uandishi_msimamizi_tafuta(UtamaduniAndikoMsimamizi* m, n8* kitambulisho) {
+    kama (m == 0 || kitambulisho == 0) { rudisha 0; }
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        UtamaduniAndiko* s = uandishi_msimamizi_pata(m, i);
+        kama (linganisha_mfuatano(s->kitambulisho, kitambulisho) == 0) {
+            rudisha s;
+        }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+CivMatokeo uandishi_weka_herufi(UtamaduniAndiko* s, n8* konsonanti, n8* vokali) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (s == 0 || konsonanti == 0 || vokali == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Hoja batili";
+        rudisha r;
+    }
+
+    n64 urefu_wa_k = urefu_wa_mfuatano(konsonanti);
+    n64 urefu_wa_v = urefu_wa_mfuatano(vokali);
+
+    n8* nakala_k = tenga(urefu_wa_k + 1);
+    n8* nakala_v = tenga(urefu_wa_v + 1);
+    nakili_mfuatano(nakala_k, konsonanti);
+    nakili_mfuatano(nakala_v, vokali);
+
+    s->konsonanti = nakala_k;
+    s->vokali = nakala_v;
+    n32 k_n32 = urefu_wa_k;
+    n32 v_n32 = urefu_wa_v;
+    s->idadi_ya_konsonanti = k_n32;
+    s->idadi_ya_vokali = v_n32;
+
+    rudisha r;
+}
+
+// civ_writing_system_evolve_from: mtoto anarithi aina ya mzazi na
+// (kama zipo) konsonanti/vokali za mzazi, kisha utata/ufanisi
+// hupotoshwa kidogo kinasibu (+/- 0.5 kuzunguka 0, kipimo 0.01).
+CivMatokeo uandishi_ibuka_kutoka(UtamaduniAndikoMsimamizi* m, UtamaduniAndiko* mzazi, n8* id_mpya, n8* jina_mpya) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0 || mzazi == 0 || id_mpya == 0 || jina_mpya == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Hoja batili";
+        rudisha r;
+    }
+
+    UtamaduniAndiko* mpya = uandishi_unda(id_mpya, jina_mpya, mzazi->aina);
+    kama (mpya == 0) {
+        r.hitilafu = CIV_HITILAFU_KUMBUKUMBU_IMEISHA;
+        r.ujumbe = "Imeshindwa kutenga andiko jipya";
+        rudisha r;
+    }
+
+    mpya->mzazi_andiko_id = mzazi->kitambulisho;
+
+    kama (mzazi->konsonanti != 0 && mzazi->vokali != 0) {
+        uandishi_weka_herufi(mpya, mzazi->konsonanti, mzazi->vokali);
+    }
+
+    n32 mabadiliko_ya_utata = civ_nasibu_chini_ya(100) - 50;
+    n32 mabadiliko_ya_ufanisi = civ_nasibu_chini_ya(100) - 50;
+    n32 mtu = mabadiliko_ya_utata;
+    n32 mfu = mabadiliko_ya_ufanisi;
+    d64 mabadiliko_utata_d = mtu;
+    d64 mabadiliko_ufanisi_d = mfu;
+
+    mpya->utata = finya_d64(mzazi->utata + mabadiliko_utata_d * 0.01, 0.0, 1.0);
+    mpya->ufanisi = finya_d64(mzazi->ufanisi + mabadiliko_ufanisi_d * 0.01, 0.0, 1.0);
+
+    uandishi_msimamizi_ongeza(m, mpya);
+    rudisha r;
+}
+
+// civ_writing_system_generate_name: herufi zinazopishana
+// konsonanti/vokali (nafasi hata = konsonanti, nafasi isiyo ya hata =
+// vokali), herufi ya kwanza inafanywa KUBWA (A-Z badala ya a-z, -32
+// kwa ASCII) mwishoni. 0 ikiwa haina konsonanti/vokali zilizowekwa.
+n8* uandishi_zalisha_jina(UtamaduniAndiko* s, n32 urefu_wa_chini, n32 urefu_wa_juu) {
+    kama (s == 0 || s->konsonanti == 0 || s->vokali == 0) { rudisha 0; }
+
+    n32 wigo = urefu_wa_juu - urefu_wa_chini + 1;
+    n32 urefu = urefu_wa_chini + civ_nasibu_chini_ya(wigo);
+
+    n8* jina = tenga(urefu + 1);
+    n32 i = 0;
+    wakati (i < urefu) {
+        n32 ni_hata = i % 2;
+        kama (ni_hata == 0 && s->idadi_ya_konsonanti > 0) {
+            n32 idx = civ_nasibu_chini_ya(s->idadi_ya_konsonanti);
+            jina[i] = s->konsonanti[idx];
+        } sivyo { kama (s->idadi_ya_vokali > 0) {
+            n32 idx = civ_nasibu_chini_ya(s->idadi_ya_vokali);
+            jina[i] = s->vokali[idx];
+        } sivyo {
+            jina[i] = 97 + civ_nasibu_chini_ya(26); // 'a'..'z'
+        } }
+        i = i + 1;
+    }
+    jina[urefu] = 0;
+
+    kama (urefu > 0) {
+        kama (jina[0] >= 97 && jina[0] <= 122) { // 'a'..'z'
+            jina[0] = jina[0] - 32; // -> 'A'..'Z'
+        }
+    }
+
+    rudisha jina;
+}
+
+// civ_writing_system_evolve_symbols: hubadilisha herufi MOJA ya
+// konsonanti kinasibu (+1 kwa ASCII, kama haijafika 'z') ikiwa ukali
+// > 0.1.
+CivMatokeo uandishi_badilisha_alama(UtamaduniAndiko* s, d64 ukali) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (s == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Andiko ni tupu";
+        rudisha r;
+    }
+
+    kama (ukali > 0.1 && s->konsonanti != 0) {
+        n32 idx = civ_nasibu_chini_ya(s->idadi_ya_konsonanti);
+        n8 herufi = s->konsonanti[idx];
+        kama (herufi >= 97 && herufi < 122) { // 'a'..'y' (si 'z')
+            s->konsonanti[idx] = herufi + 1;
+        }
+    }
+
+    rudisha r;
+}

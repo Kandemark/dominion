@@ -1,0 +1,367 @@
+husisha { moduli/onyesho/hud.swa }
+husisha { moduli/onyesho/drm.swa }
+
+// jaribio_hud.swa -- jaribio la mkono la hud.swa (skrini ya KWANZA ya
+// takwimu za moja kwa moja) dhidi ya data HALISI ya mifumo midogo ya
+// mchezo (idadi_ya_watu.swa + taifa.swa), si data bandia.
+//
+// KWA NINI HAILIUNDI Mchezo (moduli/mchezo.swa) MOJA KWA MOJA:
+// angalia maelezo kamili juu ya hud.swa -- msururu wa husisha wa
+// mchezo.swa pekee (mifumo 47) tayari unafikia baiti 1,034,722 za
+// chanzo (98.7% ya kikomo kisichobadilika cha mkusanyaji cha baiti
+// 1,048,576, angalia ongeza_chanzo kwenye msingi/mkusanyaji/
+// kiendeshaji.swa, lugha-swa/swa), ukiacha nafasi ndogo mno kwa fonti.swa
+// (~baiti 52,500). Badala yake, jaribio hili huunda IdadiYaWatuMsimamizi
+// na TaifaMfumo HALISI kwa kutumia KAZI HALISI ZILE ZILE ambazo
+// mchezo_anzisha/mchezo_sasisha hutumia ndani yake (zimenakiliwa
+// hapa kutoka mchezo.swa kwa ulinganifu KAMILI -- angalia maoni
+// karibu na kila mwito): idadi_ya_watu_unda, dunia_taifa_mfumo_unda,
+// dunia_taifa_mfumo_anzisha_kutoka_data (0/0 -> chaguo-msingi, njia
+// ile ile mchezo_anzisha inayoitumia), dunia_ramani_unda(360,180,12345)
+// (vigezo HALISI vile vile vya mchezo_anzisha), dunia_taifa_mfumo_dai_maeneo_yote,
+// idadi_ya_watu_sasisha(pm, dt, 0.5), dunia_taifa_hesabu_uchumi_wote
+// (hoja na mpangilio HALISI ule ule wa mchezo_sasisha). Hii ni data
+// HALISI inayotokana na mantiki HALISI ya mchezo, si bandia -- tu
+// haijafungwa ndani ya muundo wa juu wa Mchezo kwa sababu ya kikomo
+// cha ukubwa kilichoelezwa juu.
+//
+// MTINDO WA UTHIBITISHO: tarakimu za namba (zamu, idadi ya watu,
+// GDP) zinatolewa humu kwa mod/div YA MOJA KWA MOJA kutoka kwenye
+// thamani halisi (SI kwa kutumia mfuatano_umbiza -- njia ile ile
+// inayotumika kuchora -- ili kuepuka jaribio "linalojithibitisha
+// lenyewe"), kisha kila glyph HALISI iliyochorwa inasomwa pikseli
+// kwa pikseli na kulinganishwa na ONYESHO_FONTI_DATA (jedwali la
+// uzalishaji, LISILO jedwali lililoandikwa kwa mkono -- usahihi wa
+// jedwali lenyewe umethibitishwa tayari na jaribio_fonti.swa).
+
+n32 jh_yalioshindwa = 0;
+
+w0 jh_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jh_yalioshindwa = jh_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+// jh_glyph_sahihi: linganisha glyph HALISI iliyochorwa kwenye (gx,gy)
+// dhidi ya ONYESHO_FONTI_DATA (faharisi ya glyph inayotarajiwa),
+// pikseli kwa pikseli (16 safu x 8 safu wima).
+n32 jh_glyph_sahihi(n8* fb, n64 pitch, n64 gx, n64 gy, n32 faharisi, n64 nyeupe) {
+    kama (faharisi < 0) { rudisha 0; }
+    n64 msingi = faharisi * 16;
+    n32 safu = 0;
+    wakati (safu < 16) {
+        n32 byte = ONYESHO_FONTI_DATA[msingi + safu] & 255;
+        n32 col = 0;
+        wakati (col < 8) {
+            n32 biti = (byte >> (7 - col)) & 1;
+            n64 pikseli = mchoro_pata_pikseli(fb, pitch, gx + col, gy + safu);
+            n32 imewashwa = (pikseli == nyeupe);
+            kama (biti == 1 && imewashwa == 0) { rudisha 0; }
+            kama (biti == 0 && pikseli != 0) { rudisha 0; }
+            col = col + 1;
+        }
+        safu = safu + 1;
+    }
+    rudisha 1;
+}
+
+// jh_thibitisha_namba: tarakimu za `thamani` zimetolewa kwa mod/div
+// (huru kabisa na mfuatano_umbiza), kisha kila moja inalinganishwa
+// na glyph halisi iliyochorwa kuanzia (x0, y).
+w0 jh_thibitisha_namba(n8* fb, n64 pitch, n64 x0, n64 y, n64 thamani, n64 nyeupe, n8* jina) {
+    n32 tarakimu[24];
+    n32 idadi = 0;
+    n64 tmp = thamani;
+    kama (tmp == 0) {
+        tarakimu[0] = 0;
+        idadi = 1;
+    } sivyo {
+        wakati (tmp > 0) {
+            tarakimu[idadi] = tmp % 10;
+            tmp = tmp / 10;
+            idadi = idadi + 1;
+        }
+    }
+    n32 kushoto = 0;
+    n32 kulia = idadi - 1;
+    wakati (kushoto < kulia) {
+        n32 t = tarakimu[kushoto];
+        tarakimu[kushoto] = tarakimu[kulia];
+        tarakimu[kulia] = t;
+        kushoto = kushoto + 1;
+        kulia = kulia - 1;
+    }
+
+    n32 zote_sahihi = 1;
+    n32 i = 0;
+    wakati (i < idadi) {
+        n32 d = tarakimu[i];
+        n32 faharisi = onyesho_fonti_faharisi_ascii(48 + d);
+        n32 sahihi = jh_glyph_sahihi(fb, pitch, x0 + i * 8, y, faharisi, nyeupe);
+        kama (sahihi == 0) { zote_sahihi = 0; }
+        i = i + 1;
+    }
+    jh_thibitisha(zote_sahihi, jina);
+}
+
+// jh_unda_data_halisi: ujenzi wa mkono wa IdadiYaWatuMsimamizi +
+// TaifaMfumo HALISI (angalia maelezo juu ya faili) -- mizunguko
+// `idadi_ya_mizunguko` ya sasisha HALISI (dt=1.0, kigezo_cha_kiuchumi=0.5,
+// sawa kabisa na mchezo_sasisha) inaendeshwa ili kuwe na hali
+// isiyo-ya-chaguomsingi, halisi inayobadilika.
+muundo JhDataHalisi {
+    n64 idadi_ya_watu_addr;   // IdadiYaWatuMsimamizi*
+    n64 taifa_addr;           // TaifaMfumo*
+    n64 zamu;
+};
+
+w0 jh_unda_data_halisi(JhDataHalisi* nje, n32 idadi_ya_mizunguko) {
+    IdadiYaWatuMsimamizi* pm = idadi_ya_watu_unda();
+
+    TaifaMfumo* taifa = dunia_taifa_mfumo_unda();
+    DuniaMataifaData* nd0 = 0;
+    DuniaMipakaKisiasa* mp0 = 0;
+    // Njia HALISI ya mchezo_anzisha: ikiwa hakuna data ya mipaka ya
+    // kisiasa (0/0), inarudi kwenye dunia_taifa_mfumo_anzisha_chaguo_msingi
+    // (mataifa 8 ya kuzaliwa, majina/eneo halisi -- angalia taifa.swa).
+    dunia_taifa_mfumo_anzisha_kutoka_data(taifa, nd0, mp0);
+
+    // Ramani HALISI, vigezo vile vile vya mchezo_anzisha (360x180,
+    // mbegu 12345) -- ndiyo inayopatia mataifa ardhi ya kudai.
+    DuniaRamani* ramani = dunia_ramani_unda(360, 180, 12345);
+
+    // MUHIMU: dunia_ramani_unda HUWEKA KILA kipande kuwa MAJI
+    // (MAZINGIRA_MATUMIZI_MAJI) kwa chaguo-msingi -- uzalishaji
+    // halisi wa ardhi (continent shapes, sin/cos) HAUJALETWA bado
+    // (lugha-swa/swa#183, angalia maoni ya wigo juu ya ramani.swa:
+    // "uzalishaji wa ardhi HAUJALETWA"). Hii ni tabia HALISI ya
+    // mchezo_anzisha YENYEWE pia (inatumia dunia_ramani_unda ile
+    // ile) -- bila kipande chochote cha ardhi, dunia_taifa_hesabu_uchumi
+    // ingerudisha pato_ghafi=0.0 kwa mataifa YOTE, kila mahali
+    // (si kasoro ya HUD hii). Kwa hiyo, kama vile jaribio_mchezo_kamili.swa
+    // inavyoongeza mbegu kwa mikono kwa mifumo inayoanza TUPU kwa
+    // makusudi (jk_seed_ziada), tunaweka kila kipande kuwa ardhi ya
+    // nyasi (MAZINGIRA_MATUMIZI_NYASI) hapa -- hii inaruhusu
+    // bomba HALISI la dunia_taifa_hesabu_uchumi_wote kuhesabu GDP
+    // isiyo-sifuri, bila kusubiri #183.
+    n32 y_seed = 0;
+    wakati (y_seed < ramani->urefu) {
+        n32 x_seed = 0;
+        wakati (x_seed < ramani->upana) {
+            DuniaRamaniKipande* kp = dunia_ramani_pata_kipande(ramani, x_seed, y_seed);
+            kama (kp != 0) {
+                kp->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_NYASI;
+                kp->rutuba = 0.5;
+                kp->mwinuko = 0.3;
+            }
+            x_seed = x_seed + 1;
+        }
+        y_seed = y_seed + 1;
+    }
+
+    dunia_taifa_mfumo_dai_maeneo_yote(taifa, ramani);
+
+    n64 zamu = 1;  // sawa na g->zamu_ya_sasa = 1 ndani ya mchezo_anzisha
+    n32 i = 0;
+    wakati (i < idadi_ya_mizunguko) {
+        // mwito HALISI ule ule wa mchezo_sasisha (dt=1.0, 0.5).
+        idadi_ya_watu_sasisha(pm, 1.0, 0.5);
+        DuniaRasilimaliRamani* rm_tupu = 0;
+        TaifaUchumi* jumla_tupu = 0;
+        dunia_taifa_hesabu_uchumi_wote(taifa, ramani, rm_tupu, jumla_tupu);
+        zamu = zamu + 1;  // sawa na mchezo_maliza_zamu kila mzunguko
+        i = i + 1;
+    }
+
+    nje->idadi_ya_watu_addr = pm;
+    nje->taifa_addr = taifa;
+    nje->zamu = zamu;
+}
+
+n32 anza() {
+    onyesho_fonti_pakia();
+
+    JhDataHalisi data;
+    jh_unda_data_halisi(&data, 6);
+    IdadiYaWatuMsimamizi* pm = data.idadi_ya_watu_addr;
+    TaifaMfumo* taifa = data.taifa_addr;
+    n64 zamu = data.zamu;
+
+    n64 idadi_ya_watu_halisi = idadi_ya_watu_pata_jumla(pm);
+    andika("[dbg] zamu=%d idadi_ya_watu=%d\n", zamu, idadi_ya_watu_halisi, 0, 0, 0, 0);
+    jh_thibitisha(idadi_ya_watu_halisi != 1000, "idadi ya watu imebadilika kutoka chaguo-msingi (1000) baada ya mizunguko");
+    jh_thibitisha(taifa->idadi == 8, "mataifa 8 ya chaguo-msingi yameundwa");
+
+    TaifaNchi* t0 = dunia_taifa_mfumo_pata_kwa_faharisi(taifa, 0);
+    n64 gdp0_ghafi = t0->uchumi.pato_ghafi;
+    andika("[dbg] taifa[0].jina=%s taifa[0].pato_ghafi=%d\n", anwani(t0->jina), gdp0_ghafi, 0, 0, 0, 0);
+    jh_thibitisha(gdp0_ghafi > 0, "taifa la kwanza lina pato ghafi > 0 baada ya hesabu_uchumi_wote (ardhi imedaiwa)");
+
+    // ---------- Chora HUD kwenye bafa ya SYNTHETIC (tenga(), si DRM) ----------
+    n64 canvas_w = ONYESHO_HUD_UPANA;
+    n64 canvas_h = ONYESHO_HUD_KIMO;
+    n64 pitch = canvas_w * 4;
+    n8* fb = tenga(pitch * canvas_h);
+    weka_sifuri(fb, pitch * canvas_h);
+    n64 nyeupe = ONYESHO_HUD_RANGI_MAANDISHI;
+
+    OnyeshoHudHoja hoja;
+    hoja.fb = fb;
+    hoja.pitch = pitch;
+    hoja.idadi_ya_watu = pm;
+    hoja.taifa = taifa;
+    hoja.zamu = zamu;
+    onyesho_hud_chora(&hoja);
+
+    // ---------- Uthibitisho wa pikseli HALISI dhidi ya data HALISI ----------
+    // Mpangilio (angalia hud.swa:onyesho_hud_chora): kichwa y=8,
+    // zamu y=32, idadi_ya_watu y=52, kichwa_mataifa y=76, taifa_0 y=96.
+    n8 kiambishi_zamu[16];
+    kiambishi_zamu[0] = 90; kiambishi_zamu[1] = 65; kiambishi_zamu[2] = 77; kiambishi_zamu[3] = 85;
+    kiambishi_zamu[4] = 58; kiambishi_zamu[5] = 32; kiambishi_zamu[6] = 0;  // "ZAMU: "
+    n64 urefu_kiambishi_zamu = urefu_wa_mfuatano(kiambishi_zamu);
+    n64 x_zamu = ONYESHO_HUD_X_KINGO + urefu_kiambishi_zamu * 8;
+    jh_thibitisha_namba(fb, pitch, x_zamu, 32, zamu, nyeupe, "tarakimu za ZAMU zinachorwa sahihi kwenye nafasi halisi");
+
+    n8 kiambishi_idadi[32];
+    kiambishi_idadi[0]=73; kiambishi_idadi[1]=68; kiambishi_idadi[2]=65; kiambishi_idadi[3]=68;
+    kiambishi_idadi[4]=73; kiambishi_idadi[5]=32; kiambishi_idadi[6]=89; kiambishi_idadi[7]=65;
+    kiambishi_idadi[8]=32; kiambishi_idadi[9]=87; kiambishi_idadi[10]=65; kiambishi_idadi[11]=84;
+    kiambishi_idadi[12]=85; kiambishi_idadi[13]=32; kiambishi_idadi[14]=40; kiambishi_idadi[15]=106;
+    kiambishi_idadi[16]=117; kiambishi_idadi[17]=109; kiambishi_idadi[18]=108; kiambishi_idadi[19]=97;
+    kiambishi_idadi[20]=41; kiambishi_idadi[21]=58; kiambishi_idadi[22]=32; kiambishi_idadi[23]=0;  // "IDADI YA WATU (jumla): "
+    n64 urefu_kiambishi_idadi = urefu_wa_mfuatano(kiambishi_idadi);
+    n64 x_idadi = ONYESHO_HUD_X_KINGO + urefu_kiambishi_idadi * 8;
+    jh_thibitisha_namba(fb, pitch, x_idadi, 52, idadi_ya_watu_halisi, nyeupe, "tarakimu za IDADI YA WATU (halisi) zinachorwa sahihi kwenye nafasi halisi");
+
+    // Taifa la kwanza: "  <jina>: %d" -- tumia urefu HALISI wa jina
+    // (unaosomwa kwa wakati wa kukimbia, hauandikwi mara mbili humu)
+    // kuhesabu mahali tarakimu za GDP zinapaswa kuanzia.
+    n8* jina0 = t0->jina;
+    n64 urefu_jina0 = urefu_wa_mfuatano(jina0);
+    n64 x_gdp0 = ONYESHO_HUD_X_KINGO + (2 + urefu_jina0 + 2) * 8;
+    jh_thibitisha_namba(fb, pitch, x_gdp0, 96, gdp0_ghafi, nyeupe, "tarakimu za GDP ya taifa la kwanza zinachorwa sahihi kwenye nafasi halisi");
+
+    // Herufi ya kwanza ya jina la taifa la kwanza (baada ya "  ")
+    // inapaswa kuwa glyph SAHIHI ya herufi hiyo HALISI (si tupu, si
+    // takataka) -- inathibitisha kuwa jina HALISI (si bandia)
+    // linafikia framebuffer.
+    n32 herufi_ya_kwanza = jina0[0] & 255;
+    n32 faharisi_herufi_ya_kwanza = onyesho_fonti_faharisi_ascii(herufi_ya_kwanza);
+    n32 jina_sahihi = jh_glyph_sahihi(fb, pitch, ONYESHO_HUD_X_KINGO + 2 * 8, 96, faharisi_herufi_ya_kwanza, nyeupe);
+    jh_thibitisha(jina_sahihi, "herufi ya kwanza ya jina HALISI la taifa la kwanza inachorwa sahihi");
+
+    achilia fb;
+
+    // ---------- Jaribio la mkono dhidi ya DRM HALISI (/dev/dri/cardN) ----------
+    // Mtindo HASA ule wa jaribio_drm.swa: fungua kifaa halisi, jenga
+    // dumb buffer halisi, jaribu kuiramanisha kumbukumbu -- kama
+    // ruhusa imekataliwa (EACCES, kawaida ya mazingira haya ya
+    // sandbox/headless ambapo compositor ya Wayland ni DRM master),
+    // SKIP (rc=2) imeandikwa WAZI, SI kushindwa (FAIL).
+    n64 fd = onyesho_drm_fungua("/dev/dri/card1");
+    kama (fd < 0) {
+        andika_kosa("SKIP: haiwezi kufungua /dev/dri/card1 (ruhusa?) rc=%d -- HUD halisi ya hardware haijathibitishwa kwenye kikao hiki\n", fd, 0, 0, 0, 0, 0);
+        andika("\n[muhtasari] yaliyoshindwa: %d\n", jh_yalioshindwa, 0, 0, 0, 0, 0);
+        kama (jh_yalioshindwa > 0) { rudisha 1; }
+        andika("DONE (DRM halisi: SKIP)\n", 0, 0, 0, 0, 0, 0);
+        rudisha 0;
+    }
+    andika("OK: /dev/dri/card1 kimefunguliwa, fd=%d\n", fd, 0, 0, 0, 0, 0);
+
+    n8* res = onyesho_drm_pata_rasilimali(fd);
+    kama (res == 0) {
+        andika_kosa("SKIP: GETRESOURCES imeshindwa -- HUD halisi ya hardware haijathibitishwa\n", 0, 0, 0, 0, 0, 0);
+        onyesho_drm_funga(fd);
+        andika("\n[muhtasari] yaliyoshindwa: %d\n", jh_yalioshindwa, 0, 0, 0, 0, 0);
+        kama (jh_yalioshindwa > 0) { rudisha 1; }
+        andika("DONE (DRM halisi: SKIP)\n", 0, 0, 0, 0, 0, 0);
+        rudisha 0;
+    }
+    n64 n_conn = onyesho_rasilimali_idadi_conn(res);
+    n64 i2 = 0;
+    n8* kiungo = 0;
+    wakati (i2 < n_conn) {
+        n64 cid = onyesho_rasilimali_conn_id(res, i2);
+        n8* c = onyesho_drm_pata_kiunganishi(fd, cid);
+        kama (c != 0) {
+            n64 kimeungwa = onyesho_kiunganishi_kimeungwa(c);
+            n64 nm = onyesho_kiunganishi_idadi_modi(c);
+            kama (kimeungwa == 1 && nm > 0 && kiungo == 0) { kiungo = c; }
+        }
+        i2 = i2 + 1;
+    }
+    kama (kiungo == 0) {
+        andika_kosa("SKIP: hakuna onyesho lililounganishwa -- HUD halisi ya hardware haijathibitishwa\n", 0, 0, 0, 0, 0, 0);
+        onyesho_drm_funga(fd);
+        andika("\n[muhtasari] yaliyoshindwa: %d\n", jh_yalioshindwa, 0, 0, 0, 0, 0);
+        kama (jh_yalioshindwa > 0) { rudisha 1; }
+        andika("DONE (DRM halisi: SKIP)\n", 0, 0, 0, 0, 0, 0);
+        rudisha 0;
+    }
+
+    n8* modi = onyesho_kiunganishi_modi_bora(kiungo);
+    n64 upana = onyesho_modi_upana(modi);
+    n64 kimo = onyesho_modi_kimo(modi);
+    andika("OK: modi bora halisi = %d x %d\n", upana, kimo, 0, 0, 0, 0);
+
+    n8* dumb = onyesho_drm_unda_dumb(fd, upana, kimo, 32);
+    kama (dumb == 0) {
+        andika_kosa("SKIP: CREATE_DUMB imeshindwa -- HUD halisi ya hardware haijathibitishwa\n", 0, 0, 0, 0, 0, 0);
+        onyesho_drm_funga(fd);
+        andika("\n[muhtasari] yaliyoshindwa: %d\n", jh_yalioshindwa, 0, 0, 0, 0, 0);
+        kama (jh_yalioshindwa > 0) { rudisha 1; }
+        andika("DONE (DRM halisi: SKIP)\n", 0, 0, 0, 0, 0, 0);
+        rudisha 0;
+    }
+    n64 handle = onyesho_dumb_handle(dumb);
+    n64 dumb_pitch = onyesho_dumb_pitch(dumb);
+    n64 ukubwa = onyesho_dumb_ukubwa(dumb);
+    andika("OK: CREATE_DUMB -- handle=%d pitch=%d ukubwa=%d\n", handle, dumb_pitch, ukubwa, 0, 0, 0);
+
+    n8* fb_mem = onyesho_drm_ramanisha_dumb(fd, handle, ukubwa);
+    n64 fb_mem_addr = fb_mem;
+    kama (fb_mem_addr < 0) {
+        andika_kosa("SKIP: mmap ya dumb buffer imekataliwa (errno=-%d) -- kawaida kwa sababu compositor mwingine (Wayland) tayari ni DRM master kwenye kikao hiki; HUD halisi ya hardware HAIJATHIBITISHWA kwa sababu hii (si kwa sababu ya hitilafu ya msimbo wa HUD -- angalia uthibitisho wa pikseli HALISI dhidi ya bafa ya synthetic hapo juu, ambao UMEFAULU)\n", 0 - fb_mem_addr, 0, 0, 0, 0, 0);
+        onyesho_drm_haribu_dumb(fd, handle);
+        onyesho_drm_funga(fd);
+        andika("\n[muhtasari] yaliyoshindwa: %d\n", jh_yalioshindwa, 0, 0, 0, 0, 0);
+        kama (jh_yalioshindwa > 0) { rudisha 1; }
+        andika("DONE (DRM halisi: SKIP, ruhusa imekataliwa -- angalia ujumbe wa SKIP hapo juu)\n", 0, 0, 0, 0, 0, 0);
+        rudisha 0;
+    }
+
+    // mmap imefaulu (kifaa halisi, hakuna compositor mwingine
+    // anayeshikilia DRM master) -- chora HUD HALISI kwenye kumbukumbu
+    // ya kernel, kisha thibitisha angalau pikseli moja HALISI.
+    andika("OK: dumb buffer imeramanishwa kumbukumbu HALISI, anwani=%d\n", fb_mem_addr, 0, 0, 0, 0, 0);
+    weka_sifuri(fb_mem, ukubwa);
+    kama (upana >= ONYESHO_HUD_UPANA && kimo >= ONYESHO_HUD_KIMO) {
+        OnyeshoHudHoja hoja_halisi;
+        hoja_halisi.fb = fb_mem;
+        hoja_halisi.pitch = dumb_pitch;
+        hoja_halisi.idadi_ya_watu = pm;
+        hoja_halisi.taifa = taifa;
+        hoja_halisi.zamu = zamu;
+        onyesho_hud_chora(&hoja_halisi);
+        // "D" ya kwanza ya "DOMINION" (herufi ya kwanza ya kichwa,
+        // ASCII 68) kwenye (ONYESHO_HUD_X_KINGO, 8) -- glyph nzima
+        // (16x8) inalinganishwa, si pikseli moja tu.
+        n32 faharisi_D = onyesho_fonti_faharisi_ascii(68);
+        n32 kichwa_sahihi = jh_glyph_sahihi(fb_mem, dumb_pitch, ONYESHO_HUD_X_KINGO, 8, faharisi_D, nyeupe);
+        jh_thibitisha(kichwa_sahihi, "HUD halisi imechorwa kwenye dumb buffer HALISI ya kernel (herufi 'D' ya kichwa sahihi)");
+    } sivyo {
+        andika("INFO: modi halisi (%d x %d) ni ndogo kuliko eneo la HUD -- uchoraji wa HUD halisi umerukwa, lakini mmap+uandishi/usomaji wa kumbukumbu halisi ya kernel umethibitishwa\n", upana, kimo, 0, 0, 0, 0);
+    }
+
+    onyesho_drm_haribu_dumb(fd, handle);
+    onyesho_drm_funga(fd);
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", jh_yalioshindwa, 0, 0, 0, 0, 0);
+    kama (jh_yalioshindwa > 0) { rudisha 1; }
+    andika("DONE\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

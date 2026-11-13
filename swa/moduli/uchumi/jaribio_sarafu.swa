@@ -1,0 +1,73 @@
+husisha { moduli/uchumi/sarafu.swa }
+
+// jaribio_sarafu.swa -- jaribio la mkono dhidi ya Sarafu (sarafu.swa,
+// tafsiri ya currency.c) PEKEE, bila kupitia mchezo.swa (angalia
+// lugha-swa/swa#292). Linathibitisha THAMANI HALISI.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    Sarafu* s = tenga(ukubwa(Sarafu));
+    sarafu_anzisha(s, "Shilingi");
+
+    jaribio_thibitisha(s->kiwango_cha_ubadilishaji > 0.99 && s->kiwango_cha_ubadilishaji < 1.01, "kiwango_cha_ubadilishaji huanza 1.0");
+    jaribio_thibitisha(s->nguvu_ya_akiba > 0.79 && s->nguvu_ya_akiba < 0.81, "nguvu_ya_akiba huanza 0.8");
+    jaribio_thibitisha(linganisha_mfuatano(s->jina, "Shilingi") == 0, "jina limewekwa sahihi");
+
+    // Hali ya taifa yenye ukuaji mzuri (uzalishaji=0.9, uthabiti=0.8,
+    // ukosefu wa kazi=0.05, mzunguko=UKUAJI(0)).
+    SarafuHaliYaTaifa* jumla_nzuri = tenga(ukubwa(SarafuHaliYaTaifa));
+    jumla_nzuri->uzalishaji_wa_taifa = 0.9;
+    jumla_nzuri->uthabiti_wa_viwanda = 0.8;
+    jumla_nzuri->kiashiria_cha_ukosefu_wa_kazi = 0.05;
+    jumla_nzuri->mzunguko_wa_sasa = SARAFU_MZUNGUKO_UKUAJI;
+    sarafu_sasisha_thamani(s, jumla_nzuri);
+
+    // kigezo_cha_uzalishaji=0.45, kigezo_cha_uthabiti=0.24,
+    // (1-ukosefu)=0.95, jumla=1.64 * kigezo_cha_mzunguko(1.0) = 1.64
+    d64 kiwango_kinachotarajiwa = 1.64;
+    d64 tofauti = s->kiwango_cha_ubadilishaji - kiwango_kinachotarajiwa;
+    kama (tofauti < 0.0) { tofauti = 0.0 - tofauti; }
+    jaribio_thibitisha(tofauti < 0.01, "kiwango_cha_ubadilishaji kinahesabiwa sahihi kwa hali nzuri");
+
+    // Hali mbaya (msukosuko mkubwa) -- kigezo_cha_mzunguko=0.4,
+    // kinapaswa kupunguza kiwango sana.
+    Sarafu* s2 = tenga(ukubwa(Sarafu));
+    sarafu_anzisha(s2, "Dinari");
+    SarafuHaliYaTaifa* jumla_mbaya = tenga(ukubwa(SarafuHaliYaTaifa));
+    jumla_mbaya->uzalishaji_wa_taifa = 0.9;
+    jumla_mbaya->uthabiti_wa_viwanda = 0.8;
+    jumla_mbaya->kiashiria_cha_ukosefu_wa_kazi = 0.05;
+    jumla_mbaya->mzunguko_wa_sasa = SARAFU_MZUNGUKO_MSUKOSUKO_MKUBWA;
+    sarafu_sasisha_thamani(s2, jumla_mbaya);
+    jaribio_thibitisha(s2->kiwango_cha_ubadilishaji < s->kiwango_cha_ubadilishaji, "msukosuko mkubwa hupunguza kiwango cha ubadilishaji ikilinganishwa na ukuaji");
+
+    // nguvu_ya_akiba < 0.3 inapaswa kuongeza mfumuko.
+    Sarafu* s3 = tenga(ukubwa(Sarafu));
+    sarafu_anzisha(s3, "Faranga");
+    s3->nguvu_ya_akiba = 0.2;
+    d64 mfumuko_kabla = s3->kiashiria_cha_mfumuko;
+    SarafuHaliYaTaifa* jumla3 = tenga(ukubwa(SarafuHaliYaTaifa));
+    jumla3->uzalishaji_wa_taifa = 0.5;
+    jumla3->uthabiti_wa_viwanda = 0.5;
+    jumla3->kiashiria_cha_ukosefu_wa_kazi = 0.1;
+    jumla3->mzunguko_wa_sasa = SARAFU_MZUNGUKO_UKUAJI;
+    sarafu_sasisha_thamani(s3, jumla3);
+    jaribio_thibitisha(s3->kiashiria_cha_mfumuko > mfumuko_kabla, "akiba ndogo huongeza mfumuko");
+
+    // Nguvu ya ubadilishaji kati ya sarafu mbili.
+    d64 nguvu = sarafu_nguvu_ya_ubadilishaji(s, s2);
+    jaribio_thibitisha(nguvu > 1.0, "sarafu yenye kiwango cha juu ina nguvu kubwa zaidi ya ubadilishaji dhidi ya sarafu dhaifu");
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

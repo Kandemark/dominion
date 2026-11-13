@@ -1,0 +1,328 @@
+husisha { moduli/mchezo.swa }
+husisha { moduli/onyesho/ramani_onyesho.swa }
+
+// jaribio_dunia_duara.swa -- jaribio la kudumu la onyesho_dunia_duara_chora
+// (Awamu G2 ya "Ramani Halisi + Uhuishaji + Dirisha la Kisasa" -- duara
+// la 3D "kwa raha", orthographic azimuthal projection HALISI ya
+// katografia, SI injini kamili ya 3D -- hakuna mzunguko wa wakati
+// halisi, hakuna z-buffer, hakuna mesh/polygon). Muundo ni SAWA na
+// jaribio_ramani_onyesho.swa (Awamu G1): Mchezo HALISI (mifumo 47)
+// unaundwa, ardhi inapandwa kwa NYASI kila mahali, vipande vitatu
+// MAHSUSI vinawekwa kwenye matumizi_ya_ardhi yanayojulikana kwa ajili
+// ya uthibitisho usio na utata, kisha duara linachorwa kwenye bafa
+// 400x400 -- UTHIBITISHO WOTE ni dhidi ya PIKSELI HALISI zilizochorwa
+// (mahesabu ya nafasi ya skrini yanafanywa HAPA kwa mkono, kwa FOMULA
+// ILE ILE iliyothibitishwa na kuandikwa kwenye maoni ya
+// onyesho_dunia_duara_chora -- SI kwa kuita kazi ya ndani ya
+// uzalishaji yenyewe tena).
+//
+// UCHAGUZI WA VIPANDE VYA JARIBIO (vilivyothibitishwa kwa simulesheni
+// ya Python NJE ya mfumo huu KABLA ya kuandikwa hapa -- ili kuepuka
+// migongano ya pikseli isiyotarajiwa kati ya vipande vya karibu):
+//   (x_k=180, y_k=90) -- karibu na katikati ya mtazamo (lon~0.50,
+//     lat~-0.50, cos_c~0.9999) -- JANGWA.
+//   (x_k=269, y_k=90) -- karibu na ukingo wa mtazamo (lon~89.75,
+//     cos_c~0.0044, bado kinachoonekana KIDOGO, dist~99.3% ya radius)
+//     -- MJINI.
+//   (x_k=349, y_k=90) -- NYUMA KABISA (lon~169.97, cos_c~-0.985,
+//     HAKIONEKANI) -- TUNDRA (haitarajiwi kuonekana popote).
+//
+// KUHUSU "lon=180 HASA" (x_k=359, SI x_k=349 iliyotumika hapo juu):
+// fomula x_proj = radius*cos(lat)*sin(lon) ina sin(180)=sin(0)=0.0 --
+// HII INAMAANISHA kipande cha lon=180 (nyuma, hakionekani) na kipande
+// cha lon~0 (mbele, HASA kinachoonekana KILA WAKATI kwa latitudo
+// yoyote, kwa sababu cos_c=cos(lat)*cos(0)=cos(lat)>=0 daima isipokuwa
+// kwenye ncha HASA) VYOTE vinakokotoa X_PROJ=0 (safu ile ile ya
+// skrini, cx). Hii ni UKWELI WA HISABATI ulioangaliwa kwa makini
+// (simulesheni ya Python ilijaribu safu ZOTE 180 za latitudo kwa
+// x_k=359 -- HAKUNA hata MOJA ambayo nafasi yake ya skrini inabaki
+// sifuri, kwa sababu kipande cha mbele cha latitudo ile ile HUJAZA
+// safu hiyo hiyo KILA WAKATI) -- SI mdudu wa onyesho_dunia_duara_chora,
+// ni tabia inayotarajiwa ya hisabati ya orthographic projection
+// MAHSUSI kwenye meridiani iliyo KINYUME KABISA na meridiani ya
+// msingi. Kwa hiyo jaribio kuu la "upande wa nyuma unarukwa, pikseli
+// inabaki sifuri KABISA" (jdd_kagua_nyuma_haijaguswa) linatumia
+// x_k=349 (lon~170, bado NYUMA KABISA, mbali vya kutosha na sifuri ya
+// cos_c) badala ya x_k=359 (lon=180.0 HASA). Jaribio la ZIADA
+// (jdd_kagua_lon_180_hasa) bado linaangalia x_k=359 maalum --
+// linathibitisha kuwa rangi YAKE MAHSUSI (ARDHIOEVU) haionekani
+// kwenye nafasi yake iliyokokotolewa, ingawa nafasi hiyo SIYO sifuri
+// kabisa (imejazwa na kipande kingine cha mbele cha latitudo ile ile).
+
+n32 jdd_yalioshindwa = 0;
+
+w0 jdd_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jdd_yalioshindwa = jdd_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+// jdd_lat_lon: kokotoa lat/lon kwa mkono kutoka x_k/y_k, FOMULA ILE
+// ILE (Awamu G1, maoni ya onyesho_dunia_duara_chora). Haiwezi
+// kurudisha vigezo viwili moja kwa moja -- kazi mbili ndogo badala
+// yake (moja kwa lat, moja kwa lon), zote mbili zikitumia upana_p1_d/
+// urefu_p1_d zilizopitishwa kama hoja ili kuepuka kuhesabu tena.
+d64 jdd_lat(n32 yk, d64 urefu_p1_d) {
+    d64 yk_d = yk;
+    rudisha 90.0 - (yk_d / urefu_p1_d) * 180.0;
+}
+
+d64 jdd_lon(n32 xk, d64 upana_p1_d) {
+    d64 xk_d = xk;
+    rudisha (xk_d / upana_p1_d) * 360.0 - 180.0;
+}
+
+// (1) Kipande cha KATIKATI ya mtazamo (lon~0, lat~0): cos_c >= 0
+// (kinachoonekana), kinachorwa KARIBU SANA na kituo (cx,cy) cha
+// duara, na rangi yake HALISI kwenye pikseli ni SAWA na rangi
+// iliyowekwa kwa kipande hicho (JANGWA).
+w0 jdd_kagua_katikati(DuniaRamani* ramani, n8* fb, n64 pitch, n64 cx, n64 cy, n64 radius,
+                        n32 xk, n32 yk, n64 rangi_tarajiwa) {
+    n64 upana_p1 = ramani->upana - 1;
+    n64 urefu_p1 = ramani->urefu - 1;
+    d64 upana_p1_d = upana_p1;
+    d64 urefu_p1_d = urefu_p1;
+    d64 deg2rad = civ_pi() / 180.0;
+
+    d64 lat = jdd_lat(yk, urefu_p1_d);
+    d64 lon = jdd_lon(xk, upana_p1_d);
+    d64 lat_rad = lat * deg2rad;
+    d64 lon_rad = lon * deg2rad;
+    d64 cos_c = civ_cos(lat_rad) * civ_cos(lon_rad);
+    jdd_thibitisha(cos_c >= 0.0,
+                     "kipande cha KATIKATI ya mtazamo (lon~0,lat~0) kina cos_c >= 0 (kinachoonekana)");
+
+    d64 radius_d = radius;
+    d64 x_proj = radius_d * civ_cos(lat_rad) * civ_sin(lon_rad);
+    d64 y_proj = radius_d * civ_sin(lat_rad);
+    n64 x_proj_i = x_proj;
+    n64 y_proj_i = y_proj;
+    n64 sx = cx + x_proj_i;
+    n64 sy = cy - y_proj_i;
+
+    n64 dx = sx - cx;
+    n64 dy = sy - cy;
+    d64 dx_d = dx;
+    d64 dy_d = dy;
+    d64 dist = civ_mzizi(dx_d * dx_d + dy_d * dy_d);
+    jdd_thibitisha(dist < 5.0,
+                     "kipande cha KATIKATI kimechorwa NDANI YA PIKSELI CHACHE (<5px) kutoka kituo (cx,cy) cha duara");
+
+    n64 rangi_halisi = mchoro_pata_pikseli(fb, pitch, sx, sy);
+    jdd_thibitisha(rangi_halisi == rangi_tarajiwa,
+                     "kipande cha KATIKATI kina rangi HASA iliyotarajiwa (JANGWA) kwenye pikseli yake ya skrini");
+}
+
+// (2) Kipande KARIBU NA UKINGO wa mtazamo (lon~90): cos_c >= 0 lakini
+// KARIBU SANA na sifuri, kinachorwa KARIBU NA UKINGO wa duara (umbali
+// kutoka kituo ni ANGALAU 80% ya radius -- SI chini ya nusu yake,
+// kama ilivyoagizwa).
+w0 jdd_kagua_ukingoni(DuniaRamani* ramani, n8* fb, n64 pitch, n64 cx, n64 cy, n64 radius,
+                        n32 xk, n32 yk, n64 rangi_tarajiwa) {
+    n64 upana_p1 = ramani->upana - 1;
+    n64 urefu_p1 = ramani->urefu - 1;
+    d64 upana_p1_d = upana_p1;
+    d64 urefu_p1_d = urefu_p1;
+    d64 deg2rad = civ_pi() / 180.0;
+
+    d64 lat = jdd_lat(yk, urefu_p1_d);
+    d64 lon = jdd_lon(xk, upana_p1_d);
+    d64 lat_rad = lat * deg2rad;
+    d64 lon_rad = lon * deg2rad;
+    d64 cos_c = civ_cos(lat_rad) * civ_cos(lon_rad);
+    jdd_thibitisha(cos_c >= 0.0,
+                     "kipande KARIBU NA UKINGO (lon~90) bado kina cos_c >= 0 (kinachoonekana KIDOGO)");
+
+    d64 radius_d = radius;
+    d64 x_proj = radius_d * civ_cos(lat_rad) * civ_sin(lon_rad);
+    d64 y_proj = radius_d * civ_sin(lat_rad);
+    n64 x_proj_i = x_proj;
+    n64 y_proj_i = y_proj;
+    n64 sx = cx + x_proj_i;
+    n64 sy = cy - y_proj_i;
+
+    n64 dx = sx - cx;
+    n64 dy = sy - cy;
+    d64 dx_d = dx;
+    d64 dy_d = dy;
+    d64 dist = civ_mzizi(dx_d * dx_d + dy_d * dy_d);
+    d64 kiwango_cha_chini = radius_d * 0.8;
+    jdd_thibitisha(dist >= kiwango_cha_chini,
+                     "kipande KARIBU NA UKINGO kimechorwa umbali wa ANGALAU 80% ya radius kutoka kituo (SI chini ya nusu)");
+
+    n64 rangi_halisi = mchoro_pata_pikseli(fb, pitch, sx, sy);
+    jdd_thibitisha(rangi_halisi == rangi_tarajiwa,
+                     "kipande KARIBU NA UKINGO kina rangi HASA iliyotarajiwa (MJINI) kwenye pikseli yake ya skrini");
+}
+
+// (3) Kipande cha UPANDE WA NYUMA (lon~170, NDANI ya nusu isiyoonekana
+// -- angalia maelezo ya juu kuhusu kwa nini SI lon=180.0 HASA): cos_c
+// < 0.0 (haionekani), na pikseli kwenye nafasi ambayo ingelingana na
+// kipande hicho IKIWA kingechorwa INABAKI SIFURI KABISA (haijaguswa na
+// KITU CHOCHOTE) -- uthibitisho WENYE NGUVU zaidi kuliko "rangi
+// tofauti pekee", kwa sababu eneo hili halijakumbwa na muunganiko wa
+// safu ya skrini na kipande cha mbele (tofauti na lon=180.0 HASA).
+w0 jdd_kagua_nyuma_haijaguswa(DuniaRamani* ramani, n8* fb, n64 pitch, n64 cx, n64 cy, n64 radius,
+                                n32 xk, n32 yk) {
+    n64 upana_p1 = ramani->upana - 1;
+    n64 urefu_p1 = ramani->urefu - 1;
+    d64 upana_p1_d = upana_p1;
+    d64 urefu_p1_d = urefu_p1;
+    d64 deg2rad = civ_pi() / 180.0;
+
+    d64 lat = jdd_lat(yk, urefu_p1_d);
+    d64 lon = jdd_lon(xk, upana_p1_d);
+    d64 lat_rad = lat * deg2rad;
+    d64 lon_rad = lon * deg2rad;
+    d64 cos_c = civ_cos(lat_rad) * civ_cos(lon_rad);
+    jdd_thibitisha(cos_c < 0.0,
+                     "kipande cha UPANDE WA NYUMA (lon~170) kina cos_c < 0 (hakionekani, HASA kama ilivyotarajiwa)");
+
+    d64 radius_d = radius;
+    d64 x_proj = radius_d * civ_cos(lat_rad) * civ_sin(lon_rad);
+    d64 y_proj = radius_d * civ_sin(lat_rad);
+    n64 x_proj_i = x_proj;
+    n64 y_proj_i = y_proj;
+    n64 sx = cx + x_proj_i;
+    n64 sy = cy - y_proj_i;
+
+    n64 rangi_halisi = mchoro_pata_pikseli(fb, pitch, sx, sy);
+    jdd_thibitisha(rangi_halisi == 0,
+                     "pikseli kwenye nafasi ya kipande cha UPANDE WA NYUMA BADO NI SIFURI KABISA (haijaguswa)");
+}
+
+// (4) ZIADA: kipande cha lon=180.0 HASA (x_k=359) -- cos_c < 0
+// (hakionekani), na rangi yake MAHSUSI (ARDHIOEVU, isiyotumika
+// mahali pengine popote kwenye ramani ya jaribio hili) HAIONEKANI
+// kwenye nafasi yake iliyokokotolewa (ingawa nafasi hiyo SIYO sifuri
+// kabisa -- imejazwa na kipande kingine cha MBELE cha latitudo ile
+// ile, angalia maelezo marefu ya juu).
+w0 jdd_kagua_lon_180_hasa(DuniaRamani* ramani, n8* fb, n64 pitch, n64 cx, n64 cy, n64 radius,
+                            n32 xk, n32 yk, n64 rangi_yake_mahsusi) {
+    n64 upana_p1 = ramani->upana - 1;
+    n64 urefu_p1 = ramani->urefu - 1;
+    d64 upana_p1_d = upana_p1;
+    d64 urefu_p1_d = urefu_p1;
+    d64 deg2rad = civ_pi() / 180.0;
+
+    d64 lat = jdd_lat(yk, urefu_p1_d);
+    d64 lon = jdd_lon(xk, upana_p1_d);
+    jdd_thibitisha(lon == 180.0, "x_k=359 ni lon=180.0 HASA (ncha ya juu ya fomula, SI makadirio)");
+    d64 lat_rad = lat * deg2rad;
+    d64 lon_rad = lon * deg2rad;
+    d64 cos_c = civ_cos(lat_rad) * civ_cos(lon_rad);
+    jdd_thibitisha(cos_c < 0.0, "kipande cha lon=180.0 HASA kina cos_c < 0 (hakionekani)");
+
+    d64 radius_d = radius;
+    d64 x_proj = radius_d * civ_cos(lat_rad) * civ_sin(lon_rad);
+    d64 y_proj = radius_d * civ_sin(lat_rad);
+    n64 x_proj_i = x_proj;
+    n64 y_proj_i = y_proj;
+    n64 sx = cx + x_proj_i;
+    n64 sy = cy - y_proj_i;
+
+    n64 rangi_halisi = mchoro_pata_pikseli(fb, pitch, sx, sy);
+    jdd_thibitisha(rangi_halisi != rangi_yake_mahsusi,
+                     "rangi MAHSUSI ya kipande cha lon=180.0 HASA (ARDHIOEVU) HAIONEKANI kwenye nafasi yake (hakijachorwa)");
+}
+
+// (5) Ukingo wa duara (mchoro_duara_mpaka) umechorwa -- pikseli HASA
+// mashariki mwa kituo (cx+radius, cy) ni sehemu ya kwanza
+// inayochorwa na "midpoint circle algorithm" (x=radius,y=0), kwa
+// hiyo ina rangi ya ukingo KWA UHAKIKA.
+w0 jdd_kagua_ukingo_duara(n8* fb, n64 pitch, n64 cx, n64 cy, n64 radius) {
+    n64 rangi_halisi = mchoro_pata_pikseli(fb, pitch, cx + radius, cy);
+    jdd_thibitisha(rangi_halisi == ONYESHO_RAMANI_RANGI_UKINGO_DUARA,
+                     "pikseli (cx+radius, cy) ina rangi ya UKINGO wa duara (mchoro_duara_mpaka imechora)");
+}
+
+n32 anza() {
+    // ---------- Unda Mchezo HALISI (mifumo 47) ----------
+    Mchezo* g = mchezo_unda();
+    n32 g_sio_tupu = (g != 0);
+    jdd_thibitisha(g_sio_tupu, "mchezo_unda inarudisha kielekezi");
+
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    jdd_thibitisha(r.hitilafu == CIV_SAWA, "mchezo_anzisha HALISI inarudi CIV_SAWA (mifumo 47)");
+
+    DuniaRamani* ramani_jh = mchezo_pata_ramani(g);
+    jdd_thibitisha(ramani_jh->upana == 360 && ramani_jh->urefu == 180,
+                     "ramani ya Mchezo halisi ni 360x180 (dunia nzima)");
+
+    // ---------- Mbegu ya ardhi: kila kipande -> NYASI (sawa na
+    // jaribio_ramani_onyesho.swa Awamu G1 -- dunia_ramani_unda huweka
+    // kila kipande kuwa MAJI kwa chaguo-msingi) ----------
+    n32 y_seed = 0;
+    wakati (y_seed < ramani_jh->urefu) {
+        n32 x_seed = 0;
+        wakati (x_seed < ramani_jh->upana) {
+            DuniaRamaniKipande* kp = dunia_ramani_pata_kipande(ramani_jh, x_seed, y_seed);
+            kama (kp != 0) {
+                kp->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_NYASI;
+            }
+            x_seed = x_seed + 1;
+        }
+        y_seed = y_seed + 1;
+    }
+
+    // ---------- Vipande MAHSUSI vya uthibitisho (angalia maoni ya
+    // juu ya faili hili kwa jinsi haya yalivyochaguliwa) ----------
+    n32 katikati_x = 180; n32 katikati_y = 90;
+    n32 ukingoni_x = 269; n32 ukingoni_y = 90;
+    n32 nyuma_x = 349;    n32 nyuma_y = 90;
+    n32 lon180_x = 359;   n32 lon180_y = 90;
+
+    DuniaRamaniKipande* kp_katikati = dunia_ramani_pata_kipande(ramani_jh, katikati_x, katikati_y);
+    kp_katikati->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_JANGWA;
+
+    DuniaRamaniKipande* kp_ukingoni = dunia_ramani_pata_kipande(ramani_jh, ukingoni_x, ukingoni_y);
+    kp_ukingoni->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_MJINI;
+
+    DuniaRamaniKipande* kp_nyuma = dunia_ramani_pata_kipande(ramani_jh, nyuma_x, nyuma_y);
+    kp_nyuma->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_TUNDRA;
+
+    DuniaRamaniKipande* kp_lon180 = dunia_ramani_pata_kipande(ramani_jh, lon180_x, lon180_y);
+    kp_lon180->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_ARDHIOEVU;
+
+    // ---------- Chora DUARA kwenye bafa 400x400, cx=cy=200, radius=150 ----------
+    n64 canvas_w = 400;
+    n64 canvas_h = 400;
+    n64 pitch = canvas_w * 4;
+    n8* fb = tenga(pitch * canvas_h);
+    weka_sifuri(fb, pitch * canvas_h);
+
+    n64 cx = 200;
+    n64 cy = 200;
+    n64 radius = 150;
+
+    TaifaMfumo* taifa_jh = mchezo_pata_taifa(g);
+    onyesho_dunia_duara_chora(ramani_jh, taifa_jh, fb, pitch, canvas_w, canvas_h, cx, cy, radius);
+
+    n64 rangi_jangwa = onyesho_ramani_rangi_ya_ardhi(MAZINGIRA_MATUMIZI_JANGWA);
+    n64 rangi_mjini = onyesho_ramani_rangi_ya_ardhi(MAZINGIRA_MATUMIZI_MJINI);
+    n64 rangi_ardhioevu = onyesho_ramani_rangi_ya_ardhi(MAZINGIRA_MATUMIZI_ARDHIOEVU);
+
+    jdd_kagua_katikati(ramani_jh, fb, pitch, cx, cy, radius, katikati_x, katikati_y, rangi_jangwa);
+    jdd_kagua_ukingoni(ramani_jh, fb, pitch, cx, cy, radius, ukingoni_x, ukingoni_y, rangi_mjini);
+    jdd_kagua_nyuma_haijaguswa(ramani_jh, fb, pitch, cx, cy, radius, nyuma_x, nyuma_y);
+    jdd_kagua_lon_180_hasa(ramani_jh, fb, pitch, cx, cy, radius, lon180_x, lon180_y, rangi_ardhioevu);
+    jdd_kagua_ukingo_duara(fb, pitch, cx, cy, radius);
+
+    // ---------- Nje ya duara kabisa (mbali na radius) bado ni sifuri ----------
+    n64 rangi_nje = mchoro_pata_pikseli(fb, pitch, 5, 5);
+    jdd_thibitisha(rangi_nje == 0, "pikseli NJE kabisa ya duara (5,5, mbali zaidi ya radius) bado ni sifuri");
+
+    achilia fb;
+    mchezo_uharibu(g);
+    andika("mchezo_uharibu(g) imekamilika bila kuanguka\n", 0, 0, 0, 0, 0, 0);
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", jdd_yalioshindwa, 0, 0, 0, 0, 0);
+    kama (jdd_yalioshindwa > 0) { rudisha 1; }
+    andika("DONE\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

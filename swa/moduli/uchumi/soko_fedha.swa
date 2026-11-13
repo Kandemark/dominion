@@ -1,0 +1,646 @@
+// soko_fedha.swa — tafsiri ya src/core/economy/financial_markets.c
+// (na .h) kwenda Swa. Masoko ya fedha — ubadilishanaji wa sarafu
+// (forex), bidhaa (commodities), kampuni, na pochi ya mchezaji yenye
+// sarafu nyingi.
+//
+// Kiambishi: soko_fedha_ — angalia ../../KANUNI-MAJINA.md (economy/
+// -> uchumi_ kwa jumla, lakini moduli ndogo za economy/ hutumia
+// kiambishi chake maalum kama sarafu.swa/benki.swa/mtaji.swa, si
+// "uchumi_" ya jumla -- mtindo uleule hapa).
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - civ_market_currency_t.iso/name/symbol na civ_company_t.name/
+//     industry/nation_id (char[] ndani ya struct, strncpy) zimekuwa
+//     n8* -- kielekezi cha mwitaji kinapokelewa moja kwa moja (au
+//     cha herufi tuli iliyoainishwa kwenye kazi ya kuzalisha data,
+//     angalia chini), mtindo uleule wa moduli nyingine za mradi huu.
+//   - ALAMA ZA SARAFU (currency symbol) ambazo SI ASCII (€,£,¥,₦,₩,
+//     ₹,฿,₫,₪,₱,৳,₺,₽,﷼,د.إ,zł,Kč,GH₵...) zimebadilishwa kuwa
+//     msimbo wa ISO wa sarafu yenyewe (mfano "€"->"EUR", "£"->"GBP")
+//     KAMA ALAMA -- hakuna fasihi iliyopo ya kujaribu herufi
+//     nyingi-baiti (multi-byte UTF-8) kwenye string literal za Swa
+//     popote kwenye mradi huu (imethibitishwa kwa grep ya `swa/`
+//     nzima), hivyo kuzitumia hapa ingekuwa hatari isiyojaribiwa
+//     badala ya uamuzi ulioothibitishwa -- thamani za NAMBA (kiwango,
+//     mzunguko) zote ni SAHIHI KAMILI dhidi ya chanzo cha C, ni ALAMA
+//     ya maonyesho TU (cosmetic) iliyobadilishwa.
+//   - civ_market_engine_t.currencies[CIV_CURRENCY_MAX=280] (fixed
+//     array field, haipitiki kwenye Swa) imekuwa safu INAYOKUA ya
+//     n64 za anwani (#185, kila SokoFedhaSarafu hutengwa peke yake
+//     kwa tenga(), ikianza na uwezo 64 na kukua kwa badili() hadi
+//     kufikia kikomo cha SOKO_FEDHA_SARAFU_IDADI_JUU=280) -- SI
+//     mtindo wa "sehemu N zenye majina" (ambao ungehitaji majina 280,
+//     usiowezekana/usiofaa kwa idadi inayokua), tofauti na commodities
+//     (chini) ambazo ni ndogo-na-fasta kweli.
+//   - civ_market_engine_t.commodities[12] (fixed, HAKUNA kazi ya
+//     "ongeza bidhaa" kwenye API ya C -- idadi ni 12 KWELI na ya
+//     kudumu) imekuwa sehemu 12 zenye majina + kazi ya pata (mtindo
+//     wa teknolojia.swa/rushwa.swa) -- hii NDIYO kesi sahihi ya
+//     mtindo huo, tofauti na currencies/companies (ambazo zinakua
+//     kidinamik kwa kazi za "ongeza").
+//   - civ_market_engine_t.companies[CIV_COMPANY_MAX=64] imekuwa safu
+//     INAYOKUA ya n64 (#185, sawa na currencies) -- 64 ni kikomo cha
+//     juu (kinachokaguliwa), si idadi ya awali, hivyo safu inayokua
+//     ni sahihi zaidi kuliko sehemu 64 zenye majina.
+//   - civ_wallet_t.slots[CIV_WALLET_SLOTS=8] (fixed, ndogo kweli,
+//     HAKUNA ukuaji -- wallet_add inarudi bila kufanya lolote
+//     ikifika 8) imekuwa sehemu 8 zenye majina (nafasi_0..nafasi_7) +
+//     kazi za pata/weka za ndani, mtindo uleule wa rushwa.swa nodi_N.
+//   - s_currency_defs[]/s_commodity_defs[] (tables tuli za C,
+//     const struct arrays) HAZIWEZI kuwakilishwa moja kwa moja
+//     (Swa haina "safu tuli ya struct zisizobadilika" kama field ya
+//     kiwango cha moduli) -- civ_market_create imekuwa
+//     soko_fedha_injini_unda inayoita soko_fedha_ongeza_sarafu mara
+//     52 wazi (moja kwa kila sarafu) badala ya kuzunguka kwenye
+//     jedwali, na bidhaa 12 zinawekwa moja kwa moja field kwa field.
+//   - rand()%100 (RNG ya libc) imekuwa civ_nasibu_chini_ya ya
+//     msingi_civ.swa (LCG ya pamoja ya mradi mzima).
+//   - industries[]/city_sfx[] (safu tuli za C-string za ndani ya
+//     civ_market_generate_companies) zimekuwa kazi mbili za
+//     pata-kwa-fahirisi (soko_fedha_jina_la_sekta/
+//     soko_fedha_kiambishi_jina) zenye mnyororo wa kama/sivyo,
+//     mtindo uleule wa teknolojia_jina_la_nyanja.
+//   - snprintf ya jina la kampuni ("%s %s %s") imekuwa mnyororo wa
+//     unganisha_mfuatano juu ya bafa zilizotengwa, mtindo uleule wa
+//     jeshi/kitengo.swa.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+n32 SOKO_FEDHA_SARAFU_IDADI_JUU = 280;
+n32 SOKO_FEDHA_KAMPUNI_IDADI_JUU = 64;
+n32 SOKO_FEDHA_BIDHAA_IDADI = 12;
+
+muundo SokoFedhaSarafu {
+    n8* iso;
+    n8* jina;
+    n8* alama;
+    d64 kiwango_cha_msingi; // base_rate
+    d64 kiwango_cha_sasa;   // current_rate
+    d64 mzunguko;           // volatility
+    n32 idadi_ya_mataifa;   // nation_count
+    d64 mfumuko;            // inflation
+};
+
+muundo SokoFedhaBidhaa {
+    n8* jina;
+    n8* kipimo;       // unit
+    d64 bei_kwa_kipimo; // price_per_unit
+    d64 mzunguko;       // volatility
+    d64 ugavi;          // supply_index, 0..1
+    d64 mahitaji;       // demand_index, 0..1
+};
+
+muundo SokoFedhaKampuni {
+    n8* jina;
+    n8* sekta;     // industry
+    n8* taifa_id;  // nation_id
+    n32 wafanyakazi; // employees
+    d64 mapato;      // revenue
+    d64 bei_ya_hisa; // stock_price
+    n32 ni_ya_umma;  // is_public (0/1)
+    d64 kiwango_cha_ukuaji; // growth_rate
+};
+
+muundo SokoFedhaNafasiPochi {
+    n8* sarafu_iso;
+    d64 salio;
+};
+
+muundo SokoFedhaPochi {
+    SokoFedhaNafasiPochi nafasi_0; SokoFedhaNafasiPochi nafasi_1;
+    SokoFedhaNafasiPochi nafasi_2; SokoFedhaNafasiPochi nafasi_3;
+    SokoFedhaNafasiPochi nafasi_4; SokoFedhaNafasiPochi nafasi_5;
+    SokoFedhaNafasiPochi nafasi_6; SokoFedhaNafasiPochi nafasi_7;
+    n32 idadi;
+    d64 jumla_ya_thamani_marejeo; // total_value_ref
+};
+
+muundo SokoFedhaInjini {
+    n64* sarafu; // safu ya anwani za SokoFedhaSarafu*, #185
+    n32 idadi_ya_sarafu;
+    n32 uwezo_wa_sarafu;
+
+    SokoFedhaBidhaa bidhaa_0; SokoFedhaBidhaa bidhaa_1; SokoFedhaBidhaa bidhaa_2;
+    SokoFedhaBidhaa bidhaa_3; SokoFedhaBidhaa bidhaa_4; SokoFedhaBidhaa bidhaa_5;
+    SokoFedhaBidhaa bidhaa_6; SokoFedhaBidhaa bidhaa_7; SokoFedhaBidhaa bidhaa_8;
+    SokoFedhaBidhaa bidhaa_9; SokoFedhaBidhaa bidhaa_10; SokoFedhaBidhaa bidhaa_11;
+    n32 idadi_ya_bidhaa;
+
+    n64* makampuni; // safu ya anwani za SokoFedhaKampuni*, #185
+    n32 idadi_ya_makampuni;
+    n32 uwezo_wa_makampuni;
+};
+
+// ---------- pata za ndani (safu/sehemu) ----------
+SokoFedhaSarafu* soko_fedha_pata_sarafu_kwa_idx(SokoFedhaInjini* m, n32 idx) { rudisha m->sarafu[idx]; }
+SokoFedhaKampuni* soko_fedha_pata_kampuni_kwa_idx(SokoFedhaInjini* m, n32 idx) { rudisha m->makampuni[idx]; }
+
+SokoFedhaBidhaa* soko_fedha_pata_bidhaa_kwa_idx(SokoFedhaInjini* m, n32 idx) {
+    kama (idx == 0) { rudisha &m->bidhaa_0; }
+    kama (idx == 1) { rudisha &m->bidhaa_1; }
+    kama (idx == 2) { rudisha &m->bidhaa_2; }
+    kama (idx == 3) { rudisha &m->bidhaa_3; }
+    kama (idx == 4) { rudisha &m->bidhaa_4; }
+    kama (idx == 5) { rudisha &m->bidhaa_5; }
+    kama (idx == 6) { rudisha &m->bidhaa_6; }
+    kama (idx == 7) { rudisha &m->bidhaa_7; }
+    kama (idx == 8) { rudisha &m->bidhaa_8; }
+    kama (idx == 9) { rudisha &m->bidhaa_9; }
+    kama (idx == 10) { rudisha &m->bidhaa_10; }
+    rudisha &m->bidhaa_11;
+}
+
+SokoFedhaNafasiPochi* soko_fedha_pata_nafasi(SokoFedhaPochi* w, n32 idx) {
+    kama (idx == 0) { rudisha &w->nafasi_0; }
+    kama (idx == 1) { rudisha &w->nafasi_1; }
+    kama (idx == 2) { rudisha &w->nafasi_2; }
+    kama (idx == 3) { rudisha &w->nafasi_3; }
+    kama (idx == 4) { rudisha &w->nafasi_4; }
+    kama (idx == 5) { rudisha &w->nafasi_5; }
+    kama (idx == 6) { rudisha &w->nafasi_6; }
+    rudisha &w->nafasi_7;
+}
+
+// ---------- majina ya sekta/kiambishi (badala ya industries[]/city_sfx[]) ----------
+n8* soko_fedha_jina_la_sekta(n32 i) {
+    kama (i == 0) { rudisha "Kilimo"; }
+    kama (i == 1) { rudisha "Teknolojia"; }
+    kama (i == 2) { rudisha "Fedha"; }
+    kama (i == 3) { rudisha "Viwanda"; }
+    kama (i == 4) { rudisha "Rejareja"; }
+    kama (i == 5) { rudisha "Nishati"; }
+    kama (i == 6) { rudisha "Afya"; }
+    kama (i == 7) { rudisha "Ujenzi"; }
+    kama (i == 8) { rudisha "Usafirishaji"; }
+    rudisha "Vyombo vya Habari";
+}
+
+n8* soko_fedha_kiambishi_jina(n32 i) {
+    kama (i == 0) { rudisha "Capital"; }
+    kama (i == 1) { rudisha "Metro"; }
+    kama (i == 2) { rudisha "Holdings"; }
+    kama (i == 3) { rudisha "Group"; }
+    kama (i == 4) { rudisha "Industries"; }
+    kama (i == 5) { rudisha "Corp"; }
+    kama (i == 6) { rudisha "Exchange"; }
+    kama (i == 7) { rudisha "Enterprises"; }
+    kama (i == 8) { rudisha "Ventures"; }
+    rudisha "Partners";
+}
+
+// ---------- sarafu ----------
+w0 soko_fedha_hakikisha_nafasi_sarafu(SokoFedhaInjini* m) {
+    kama (m->idadi_ya_sarafu >= m->uwezo_wa_sarafu) {
+        m->uwezo_wa_sarafu = m->uwezo_wa_sarafu * 2;
+        m->sarafu = badili(m->sarafu, ukubwa(n64) * m->uwezo_wa_sarafu);
+    }
+}
+
+SokoFedhaSarafu* soko_fedha_ongeza_sarafu(SokoFedhaInjini* m, n8* iso, n8* jina, n8* alama, d64 kiwango) {
+    kama (m == 0 || m->idadi_ya_sarafu >= SOKO_FEDHA_SARAFU_IDADI_JUU) { rudisha 0; }
+
+    soko_fedha_hakikisha_nafasi_sarafu(m);
+
+    SokoFedhaSarafu* c = tenga(ukubwa(SokoFedhaSarafu));
+    c->iso = iso;
+    c->jina = jina;
+    c->alama = alama;
+    c->kiwango_cha_msingi = kiwango;
+    c->kiwango_cha_sasa = kiwango;
+    c->mzunguko = 0.015;
+    c->idadi_ya_mataifa = 0;
+    c->mfumuko = 0.02;
+
+    m->sarafu[m->idadi_ya_sarafu] = c;
+    m->idadi_ya_sarafu = m->idadi_ya_sarafu + 1;
+    rudisha c;
+}
+
+// soko_fedha_ongeza_sarafu_kamili: toleo la ndani linalotumika WAKATI
+// WA KUZALISHA DATA ya awali (soko_fedha_injini_unda) -- sawa na
+// soko_fedha_ongeza_sarafu lakini linaruhusu mzunguko/idadi_ya_mataifa
+// maalum (s_currency_defs ya C ina base_rate+volatility za pekee kwa
+// kila sarafu, si 0.015 chaguomsingi ya civ_market_add_currency).
+SokoFedhaSarafu* soko_fedha_ongeza_sarafu_kamili(SokoFedhaInjini* m, n8* iso, n8* jina, n8* alama, d64 kiwango, d64 mzunguko) {
+    SokoFedhaSarafu* c = soko_fedha_ongeza_sarafu(m, iso, jina, alama, kiwango);
+    kama (c != 0) {
+        c->mzunguko = mzunguko;
+    }
+    rudisha c;
+}
+
+SokoFedhaSarafu* soko_fedha_pata_sarafu(SokoFedhaInjini* m, n8* iso) {
+    kama (m == 0 || iso == 0) { rudisha 0; }
+    n32 i = 0;
+    wakati (i < m->idadi_ya_sarafu) {
+        SokoFedhaSarafu* c = soko_fedha_pata_sarafu_kwa_idx(m, i);
+        kama (linganisha_mfuatano(c->iso, iso) == 0) { rudisha c; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+d64 soko_fedha_badilishana(SokoFedhaInjini* m, n8* kutoka_iso, n8* kwenda_iso, d64 kiasi) {
+    kama (m == 0 || kutoka_iso == 0 || kwenda_iso == 0) { rudisha kiasi; }
+    SokoFedhaSarafu* kutoka = soko_fedha_pata_sarafu(m, kutoka_iso);
+    SokoFedhaSarafu* kwenda = soko_fedha_pata_sarafu(m, kwenda_iso);
+    kama (kutoka == 0 || kwenda == 0) { rudisha kiasi; }
+    rudisha (kiasi / kutoka->kiwango_cha_sasa) * kwenda->kiwango_cha_sasa;
+}
+
+// ---------- injini (unda/uharibu/sasisha) ----------
+SokoFedhaInjini* soko_fedha_injini_unda() {
+    SokoFedhaInjini* m = tenga(ukubwa(SokoFedhaInjini));
+    m->idadi_ya_sarafu = 0;
+    m->uwezo_wa_sarafu = 64;
+    m->sarafu = tenga(ukubwa(n64) * m->uwezo_wa_sarafu);
+    m->idadi_ya_makampuni = 0;
+    m->uwezo_wa_makampuni = 16;
+    m->makampuni = tenga(ukubwa(n64) * m->uwezo_wa_makampuni);
+
+    // 52 sarafu za awali (s_currency_defs ya C) -- iso, jina, alama
+    // (ASCII-salama, angalia maelezo ya wigo juu ya faili), kiwango,
+    // mzunguko.
+    soko_fedha_ongeza_sarafu_kamili(m, "USD", "Dola ya Marekani", "$", 1.000, 0.008);
+    soko_fedha_ongeza_sarafu_kamili(m, "CAD", "Dola ya Kanada", "$", 1.360, 0.008);
+    soko_fedha_ongeza_sarafu_kamili(m, "MXN", "Peso ya Mexico", "$", 16.70, 0.014);
+    soko_fedha_ongeza_sarafu_kamili(m, "BRL", "Real ya Brazil", "R$", 4.970, 0.018);
+    soko_fedha_ongeza_sarafu_kamili(m, "ARS", "Peso ya Argentina", "$", 890.0, 0.040);
+    soko_fedha_ongeza_sarafu_kamili(m, "CLP", "Peso ya Chile", "$", 920.0, 0.022);
+    soko_fedha_ongeza_sarafu_kamili(m, "COP", "Peso ya Colombia", "$", 3890.0, 0.020);
+    soko_fedha_ongeza_sarafu_kamili(m, "PEN", "Sol ya Peru", "S/", 3.720, 0.012);
+    soko_fedha_ongeza_sarafu_kamili(m, "EUR", "Euro", "EUR", 0.920, 0.007);
+    soko_fedha_ongeza_sarafu_kamili(m, "GBP", "Pauni ya Uingereza", "GBP", 0.790, 0.009);
+    soko_fedha_ongeza_sarafu_kamili(m, "CHF", "Faranga ya Uswisi", "Fr", 0.890, 0.006);
+    soko_fedha_ongeza_sarafu_kamili(m, "SEK", "Krona ya Uswidi", "kr", 10.45, 0.010);
+    soko_fedha_ongeza_sarafu_kamili(m, "NOK", "Krone ya Norway", "kr", 10.60, 0.011);
+    soko_fedha_ongeza_sarafu_kamili(m, "DKK", "Krone ya Denmark", "kr", 6.870, 0.007);
+    soko_fedha_ongeza_sarafu_kamili(m, "PLN", "Zloty ya Poland", "zl", 3.950, 0.012);
+    soko_fedha_ongeza_sarafu_kamili(m, "CZK", "Koruna ya Czech", "Kc", 22.80, 0.010);
+    soko_fedha_ongeza_sarafu_kamili(m, "HUF", "Forint ya Hungary", "Ft", 360.0, 0.014);
+    soko_fedha_ongeza_sarafu_kamili(m, "RON", "Leu ya Romania", "lei", 4.580, 0.012);
+    soko_fedha_ongeza_sarafu_kamili(m, "NGN", "Naira ya Nigeria", "NGN", 1540.0, 0.035);
+    soko_fedha_ongeza_sarafu_kamili(m, "KES", "Shilingi ya Kenya", "KSh", 129.5, 0.015);
+    soko_fedha_ongeza_sarafu_kamili(m, "ZAR", "Rand ya Afrika Kusini", "R", 18.60, 0.022);
+    soko_fedha_ongeza_sarafu_kamili(m, "EGP", "Pauni ya Misri", "EGP", 47.80, 0.028);
+    soko_fedha_ongeza_sarafu_kamili(m, "GHS", "Cedi ya Ghana", "GHS", 12.80, 0.030);
+    soko_fedha_ongeza_sarafu_kamili(m, "MAD", "Dirham ya Morocco", "DH", 10.10, 0.012);
+    soko_fedha_ongeza_sarafu_kamili(m, "ETB", "Birr ya Ethiopia", "Br", 57.20, 0.025);
+    soko_fedha_ongeza_sarafu_kamili(m, "XOF", "Faranga ya CFA BCEAO", "CFA", 610.0, 0.014);
+    soko_fedha_ongeza_sarafu_kamili(m, "XAF", "Faranga ya CFA BEAC", "CFA", 610.0, 0.014);
+    soko_fedha_ongeza_sarafu_kamili(m, "UGX", "Shilingi ya Uganda", "USh", 3800.0, 0.020);
+    soko_fedha_ongeza_sarafu_kamili(m, "TZS", "Shilingi ya Tanzania", "TSh", 2550.0, 0.018);
+    soko_fedha_ongeza_sarafu_kamili(m, "RWF", "Faranga ya Rwanda", "RFr", 1300.0, 0.020);
+    soko_fedha_ongeza_sarafu_kamili(m, "SAR", "Riyal ya Saudi", "SAR", 3.750, 0.004);
+    soko_fedha_ongeza_sarafu_kamili(m, "AED", "Dirham ya UAE", "AED", 3.670, 0.004);
+    soko_fedha_ongeza_sarafu_kamili(m, "QAR", "Riyal ya Qatar", "QAR", 3.640, 0.004);
+    soko_fedha_ongeza_sarafu_kamili(m, "KWD", "Dinar ya Kuwait", "KD", 0.307, 0.003);
+    soko_fedha_ongeza_sarafu_kamili(m, "ILS", "Shekel ya Israel", "ILS", 3.680, 0.012);
+    soko_fedha_ongeza_sarafu_kamili(m, "JPY", "Yen ya Japan", "JPY", 149.50, 0.010);
+    soko_fedha_ongeza_sarafu_kamili(m, "CNY", "Yuan ya China", "CNY", 7.240, 0.006);
+    soko_fedha_ongeza_sarafu_kamili(m, "INR", "Rupia ya India", "INR", 83.10, 0.012);
+    soko_fedha_ongeza_sarafu_kamili(m, "KRW", "Won ya Korea Kusini", "KRW", 1330.0, 0.011);
+    soko_fedha_ongeza_sarafu_kamili(m, "SGD", "Dola ya Singapore", "$", 1.340, 0.006);
+    soko_fedha_ongeza_sarafu_kamili(m, "HKD", "Dola ya Hong Kong", "HK$", 7.820, 0.005);
+    soko_fedha_ongeza_sarafu_kamili(m, "MYR", "Ringgit ya Malaysia", "RM", 4.680, 0.012);
+    soko_fedha_ongeza_sarafu_kamili(m, "IDR", "Rupiah ya Indonesia", "Rp", 15600.0, 0.020);
+    soko_fedha_ongeza_sarafu_kamili(m, "THB", "Baht ya Thailand", "THB", 36.20, 0.012);
+    soko_fedha_ongeza_sarafu_kamili(m, "VND", "Dong ya Vietnam", "VND", 24800.0, 0.018);
+    soko_fedha_ongeza_sarafu_kamili(m, "PHP", "Peso ya Ufilipino", "PHP", 56.20, 0.014);
+    soko_fedha_ongeza_sarafu_kamili(m, "PKR", "Rupia ya Pakistan", "Rs", 278.0, 0.025);
+    soko_fedha_ongeza_sarafu_kamili(m, "BDT", "Taka ya Bangladesh", "BDT", 110.0, 0.020);
+    soko_fedha_ongeza_sarafu_kamili(m, "AUD", "Dola ya Australia", "$", 1.520, 0.010);
+    soko_fedha_ongeza_sarafu_kamili(m, "NZD", "Dola ya New Zealand", "$", 1.630, 0.012);
+    soko_fedha_ongeza_sarafu_kamili(m, "TRY", "Lira ya Uturuki", "TRY", 32.10, 0.030);
+    soko_fedha_ongeza_sarafu_kamili(m, "RUB", "Ruble ya Urusi", "RUB", 92.30, 0.025);
+
+    // Bidhaa 12 za awali (s_commodity_defs ya C).
+    m->bidhaa_0.jina = "Dhahabu"; m->bidhaa_0.kipimo = "oz"; m->bidhaa_0.bei_kwa_kipimo = 2340.0; m->bidhaa_0.mzunguko = 0.012; m->bidhaa_0.ugavi = 0.5; m->bidhaa_0.mahitaji = 0.5;
+    m->bidhaa_1.jina = "Mafuta Ghafi"; m->bidhaa_1.kipimo = "bbl"; m->bidhaa_1.bei_kwa_kipimo = 78.5; m->bidhaa_1.mzunguko = 0.025; m->bidhaa_1.ugavi = 0.5; m->bidhaa_1.mahitaji = 0.5;
+    m->bidhaa_2.jina = "Ngano"; m->bidhaa_2.kipimo = "tonne"; m->bidhaa_2.bei_kwa_kipimo = 220.0; m->bidhaa_2.mzunguko = 0.018; m->bidhaa_2.ugavi = 0.5; m->bidhaa_2.mahitaji = 0.5;
+    m->bidhaa_3.jina = "Shaba"; m->bidhaa_3.kipimo = "tonne"; m->bidhaa_3.bei_kwa_kipimo = 8500.0; m->bidhaa_3.mzunguko = 0.015; m->bidhaa_3.ugavi = 0.5; m->bidhaa_3.mahitaji = 0.5;
+    m->bidhaa_4.jina = "Kahawa"; m->bidhaa_4.kipimo = "tonne"; m->bidhaa_4.bei_kwa_kipimo = 3200.0; m->bidhaa_4.mzunguko = 0.022; m->bidhaa_4.ugavi = 0.5; m->bidhaa_4.mahitaji = 0.5;
+    m->bidhaa_5.jina = "Gesi Asilia"; m->bidhaa_5.kipimo = "MMBtu"; m->bidhaa_5.bei_kwa_kipimo = 3.20; m->bidhaa_5.mzunguko = 0.030; m->bidhaa_5.ugavi = 0.5; m->bidhaa_5.mahitaji = 0.5;
+    m->bidhaa_6.jina = "Fedha"; m->bidhaa_6.kipimo = "oz"; m->bidhaa_6.bei_kwa_kipimo = 27.5; m->bidhaa_6.mzunguko = 0.016; m->bidhaa_6.ugavi = 0.5; m->bidhaa_6.mahitaji = 0.5;
+    m->bidhaa_7.jina = "Mahindi"; m->bidhaa_7.kipimo = "tonne"; m->bidhaa_7.bei_kwa_kipimo = 180.0; m->bidhaa_7.mzunguko = 0.020; m->bidhaa_7.ugavi = 0.5; m->bidhaa_7.mahitaji = 0.5;
+    m->bidhaa_8.jina = "Madini ya Chuma"; m->bidhaa_8.kipimo = "tonne"; m->bidhaa_8.bei_kwa_kipimo = 110.0; m->bidhaa_8.mzunguko = 0.014; m->bidhaa_8.ugavi = 0.5; m->bidhaa_8.mahitaji = 0.5;
+    m->bidhaa_9.jina = "Pamba"; m->bidhaa_9.kipimo = "tonne"; m->bidhaa_9.bei_kwa_kipimo = 2100.0; m->bidhaa_9.mzunguko = 0.018; m->bidhaa_9.ugavi = 0.5; m->bidhaa_9.mahitaji = 0.5;
+    m->bidhaa_10.jina = "Sukari"; m->bidhaa_10.kipimo = "tonne"; m->bidhaa_10.bei_kwa_kipimo = 550.0; m->bidhaa_10.mzunguko = 0.022; m->bidhaa_10.ugavi = 0.5; m->bidhaa_10.mahitaji = 0.5;
+    m->bidhaa_11.jina = "Mchele"; m->bidhaa_11.kipimo = "tonne"; m->bidhaa_11.bei_kwa_kipimo = 420.0; m->bidhaa_11.mzunguko = 0.015; m->bidhaa_11.ugavi = 0.5; m->bidhaa_11.mahitaji = 0.5;
+    m->idadi_ya_bidhaa = SOKO_FEDHA_BIDHAA_IDADI;
+
+    rudisha m;
+}
+
+w0 soko_fedha_injini_uharibu(SokoFedhaInjini* m) {
+    kama (m == 0) { rudisha; }
+    n32 i = 0;
+    wakati (i < m->idadi_ya_sarafu) {
+        SokoFedhaSarafu* c = soko_fedha_pata_sarafu_kwa_idx(m, i);
+        achilia c;
+        i = i + 1;
+    }
+    achilia m->sarafu;
+
+    n32 j = 0;
+    wakati (j < m->idadi_ya_makampuni) {
+        SokoFedhaKampuni* k = soko_fedha_pata_kampuni_kwa_idx(m, j);
+        achilia k;
+        j = j + 1;
+    }
+    achilia m->makampuni;
+
+    achilia m;
+}
+
+// ---------- bidhaa: sasisha (ugavi/mahitaji/bei) ----------
+// Mantiki hii hii (jitter ya nasibu + finya kati ya 0.1 na 0.9 +
+// bei_mpya = bei * (1 + (mahitaji-ugavi)*mzunguko)) INAJIRUDIA kwenye
+// C ndani ya civ_market_update NA civ_market_apply_production
+// (zisizounganishwa/refactored huko pia) -- tafsiri hii inaiga hilo
+// hilo badala ya kuanzisha muundo wa pamoja usiokuwepo kwenye chanzo.
+w0 soko_fedha_bidhaa_sogeza(SokoFedhaBidhaa* co, d64 mabadiliko_ya_ugavi, d64 mabadiliko_ya_mahitaji) {
+    co->ugavi = co->ugavi + mabadiliko_ya_ugavi;
+    co->mahitaji = co->mahitaji + mabadiliko_ya_mahitaji;
+    kama (co->ugavi < 0.1) { co->ugavi = 0.1; }
+    kama (co->ugavi > 0.9) { co->ugavi = 0.9; }
+    kama (co->mahitaji < 0.1) { co->mahitaji = 0.1; }
+    kama (co->mahitaji > 0.9) { co->mahitaji = 0.9; }
+    d64 mabadiliko_ya_bei = (co->mahitaji - co->ugavi) * co->mzunguko;
+    co->bei_kwa_kipimo = co->bei_kwa_kipimo * (1.0 + mabadiliko_ya_bei);
+}
+
+d64 soko_fedha_jitter_ndogo(d64 kiwango) {
+    n32 asilimia = civ_nasibu_chini_ya(100);
+    n32 a = asilimia;
+    d64 ad = a;
+    rudisha (ad / 100.0 - 0.5) * kiwango;
+}
+
+w0 soko_fedha_sasisha_uzalishaji(SokoFedhaInjini* m, d64 pato_la_dunia, d64 chakula_cha_dunia, d64 nishati_ya_dunia, d64 viwanda_vya_dunia) {
+    kama (m == 0) { rudisha; }
+
+    n32 i = 0;
+    wakati (i < m->idadi_ya_bidhaa) {
+        SokoFedhaBidhaa* co = soko_fedha_pata_bidhaa_kwa_idx(m, i);
+        d64 ss = soko_fedha_jitter_ndogo(0.03);
+        d64 ds = soko_fedha_jitter_ndogo(0.03);
+
+        n32 ni_ngano = (linganisha_mfuatano(co->jina, "Ngano") == 0);
+        n32 ni_mahindi = (linganisha_mfuatano(co->jina, "Mahindi") == 0);
+        n32 ni_mchele = (linganisha_mfuatano(co->jina, "Mchele") == 0);
+        kama (ni_ngano || ni_mahindi || ni_mchele) {
+            d64 kipengele_cha_chakula = chakula_cha_dunia / 100000.0;
+            ss = ss + kipengele_cha_chakula * 0.01;
+        }
+
+        n32 ni_mafuta = (linganisha_mfuatano(co->jina, "Mafuta Ghafi") == 0);
+        n32 ni_gesi = (linganisha_mfuatano(co->jina, "Gesi Asilia") == 0);
+        kama (ni_mafuta || ni_gesi) {
+            d64 kipengele_cha_nishati = nishati_ya_dunia / 10000.0;
+            ss = ss + kipengele_cha_nishati * 0.01;
+        }
+
+        n32 ni_shaba = (linganisha_mfuatano(co->jina, "Shaba") == 0);
+        n32 ni_madini_ya_chuma = (linganisha_mfuatano(co->jina, "Madini ya Chuma") == 0);
+        kama (ni_shaba || ni_madini_ya_chuma) {
+            d64 kipengele_cha_viwanda = viwanda_vya_dunia / 50000.0;
+            ds = ds + kipengele_cha_viwanda * 0.01;
+        }
+
+        n32 ni_dhahabu = (linganisha_mfuatano(co->jina, "Dhahabu") == 0);
+        kama (ni_dhahabu) {
+            ds = ds + (pato_la_dunia / 100000.0) * 0.005;
+        }
+
+        soko_fedha_bidhaa_sogeza(co, ss, ds);
+        i = i + 1;
+    }
+
+    n32 j = 0;
+    wakati (j < m->idadi_ya_sarafu) {
+        SokoFedhaSarafu* c = soko_fedha_pata_sarafu_kwa_idx(m, j);
+        d64 mzunguko_wa_juu = c->mzunguko * 1.5;
+        d64 kiyumbisho = soko_fedha_jitter_ndogo(mzunguko_wa_juu);
+        c->kiwango_cha_sasa = c->kiwango_cha_sasa * (1.0 + kiyumbisho);
+        c->kiwango_cha_sasa = c->kiwango_cha_sasa * (1.0 + c->mfumuko * 0.001);
+        d64 chini_ya_mpaka = c->kiwango_cha_msingi * 0.5;
+        d64 juu_ya_mpaka = c->kiwango_cha_msingi * 3.0;
+        kama (c->kiwango_cha_sasa < chini_ya_mpaka) { c->kiwango_cha_sasa = chini_ya_mpaka; }
+        kama (c->kiwango_cha_sasa > juu_ya_mpaka) { c->kiwango_cha_sasa = juu_ya_mpaka; }
+        j = j + 1;
+    }
+}
+
+w0 soko_fedha_sasisha(SokoFedhaInjini* m) {
+    kama (m == 0) { rudisha; }
+
+    n32 i = 0;
+    wakati (i < m->idadi_ya_sarafu) {
+        SokoFedhaSarafu* c = soko_fedha_pata_sarafu_kwa_idx(m, i);
+        d64 mzunguko_wa_juu = c->mzunguko * 2.0;
+        d64 kiyumbisho = soko_fedha_jitter_ndogo(mzunguko_wa_juu);
+        c->kiwango_cha_sasa = c->kiwango_cha_sasa * (1.0 + kiyumbisho);
+        c->kiwango_cha_sasa = c->kiwango_cha_sasa * (1.0 + c->mfumuko * 0.001);
+        d64 chini_ya_mpaka = c->kiwango_cha_msingi * 0.5;
+        d64 juu_ya_mpaka = c->kiwango_cha_msingi * 3.0;
+        kama (c->kiwango_cha_sasa < chini_ya_mpaka) { c->kiwango_cha_sasa = chini_ya_mpaka; }
+        kama (c->kiwango_cha_sasa > juu_ya_mpaka) { c->kiwango_cha_sasa = juu_ya_mpaka; }
+        i = i + 1;
+    }
+
+    n32 j = 0;
+    wakati (j < m->idadi_ya_bidhaa) {
+        SokoFedhaBidhaa* co = soko_fedha_pata_bidhaa_kwa_idx(m, j);
+        d64 ss = soko_fedha_jitter_ndogo(0.05);
+        d64 ds = soko_fedha_jitter_ndogo(0.05);
+        soko_fedha_bidhaa_sogeza(co, ss, ds);
+        j = j + 1;
+    }
+}
+
+// ---------- pochi ----------
+w0 soko_fedha_pochi_anzisha(SokoFedhaPochi* w) {
+    kama (w == 0) { rudisha; }
+    n32 i = 0;
+    wakati (i < 8) {
+        SokoFedhaNafasiPochi* n = soko_fedha_pata_nafasi(w, i);
+        n->sarafu_iso = 0;
+        n->salio = 0.0;
+        i = i + 1;
+    }
+    w->idadi = 0;
+    w->jumla_ya_thamani_marejeo = 0.0;
+}
+
+w0 soko_fedha_pochi_ongeza(SokoFedhaPochi* w, n8* iso, d64 kiasi) {
+    kama (w == 0 || iso == 0) { rudisha; }
+    n32 i = 0;
+    wakati (i < w->idadi) {
+        SokoFedhaNafasiPochi* n = soko_fedha_pata_nafasi(w, i);
+        kama (linganisha_mfuatano(n->sarafu_iso, iso) == 0) {
+            n->salio = n->salio + kiasi;
+            rudisha;
+        }
+        i = i + 1;
+    }
+    kama (w->idadi >= 8) { rudisha; }
+    SokoFedhaNafasiPochi* mpya = soko_fedha_pata_nafasi(w, w->idadi);
+    mpya->sarafu_iso = iso;
+    mpya->salio = kiasi;
+    w->idadi = w->idadi + 1;
+}
+
+d64 soko_fedha_pochi_salio(SokoFedhaPochi* w, n8* iso) {
+    kama (w == 0 || iso == 0) { rudisha 0.0; }
+    n32 i = 0;
+    wakati (i < w->idadi) {
+        SokoFedhaNafasiPochi* n = soko_fedha_pata_nafasi(w, i);
+        kama (linganisha_mfuatano(n->sarafu_iso, iso) == 0) { rudisha n->salio; }
+        i = i + 1;
+    }
+    rudisha 0.0;
+}
+
+w0 soko_fedha_pochi_ondoa(SokoFedhaPochi* w, n8* iso) {
+    kama (w == 0 || iso == 0) { rudisha; }
+    n32 i = 0;
+    wakati (i < w->idadi) {
+        SokoFedhaNafasiPochi* n = soko_fedha_pata_nafasi(w, i);
+        kama (linganisha_mfuatano(n->sarafu_iso, iso) == 0) {
+            n32 j = i;
+            wakati (j < w->idadi - 1) {
+                SokoFedhaNafasiPochi* sasa = soko_fedha_pata_nafasi(w, j);
+                SokoFedhaNafasiPochi* ijayo = soko_fedha_pata_nafasi(w, j + 1);
+                sasa->sarafu_iso = ijayo->sarafu_iso;
+                sasa->salio = ijayo->salio;
+                j = j + 1;
+            }
+            w->idadi = w->idadi - 1;
+            rudisha;
+        }
+        i = i + 1;
+    }
+}
+
+n32 soko_fedha_pochi_badilishana(SokoFedhaPochi* w, SokoFedhaInjini* m, n8* kutoka_iso, n8* kwenda_iso, d64 kiasi) {
+    kama (w == 0 || m == 0 || kiasi <= 0.0) { rudisha 0; }
+    d64 salio = soko_fedha_pochi_salio(w, kutoka_iso);
+    kama (salio < kiasi) { rudisha 0; }
+    d64 kiwango_kilichobadilishwa = soko_fedha_badilishana(m, kutoka_iso, kwenda_iso, kiasi);
+    soko_fedha_pochi_ondoa(w, kutoka_iso);
+    soko_fedha_pochi_ongeza(w, kutoka_iso, salio - kiasi);
+    soko_fedha_pochi_ongeza(w, kwenda_iso, kiwango_kilichobadilishwa);
+    rudisha 1;
+}
+
+d64 soko_fedha_pochi_jumla(SokoFedhaPochi* w, SokoFedhaInjini* m) {
+    kama (w == 0 || m == 0) { rudisha 0.0; }
+    d64 jumla = 0.0;
+    n32 i = 0;
+    wakati (i < w->idadi) {
+        SokoFedhaNafasiPochi* n = soko_fedha_pata_nafasi(w, i);
+        SokoFedhaSarafu* c = soko_fedha_pata_sarafu(m, n->sarafu_iso);
+        kama (c != 0) {
+            jumla = jumla + n->salio / c->kiwango_cha_sasa;
+        }
+        i = i + 1;
+    }
+    rudisha jumla;
+}
+
+// ---------- bidhaa (lookup), bei ya kidinamik, gharama ya maisha ----------
+SokoFedhaBidhaa* soko_fedha_pata_bidhaa(SokoFedhaInjini* m, n8* jina) {
+    kama (m == 0 || jina == 0) { rudisha 0; }
+    n32 i = 0;
+    wakati (i < m->idadi_ya_bidhaa) {
+        SokoFedhaBidhaa* co = soko_fedha_pata_bidhaa_kwa_idx(m, i);
+        kama (linganisha_mfuatano(co->jina, jina) == 0) { rudisha co; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+d64 soko_fedha_bei_ya_kidinamik(SokoFedhaInjini* m, d64 bei_msingi, n8* sarafu_iso, d64 gharama_ya_maisha) {
+    SokoFedhaSarafu* c = soko_fedha_pata_sarafu(m, sarafu_iso);
+    kama (c == 0) { rudisha bei_msingi * gharama_ya_maisha; }
+    rudisha bei_msingi * gharama_ya_maisha * c->kiwango_cha_sasa;
+}
+
+d64 soko_fedha_gharama_ya_maisha(SokoFedhaInjini* m, n8* iso) {
+    SokoFedhaSarafu* c = soko_fedha_pata_sarafu(m, iso);
+    kama (c == 0) { rudisha 1.0; }
+    rudisha 0.8 + c->mfumuko * 10.0;
+}
+
+// ---------- makampuni ----------
+w0 soko_fedha_zalisha_makampuni(SokoFedhaInjini* m, n8* taifa_id) {
+    kama (m == 0 || taifa_id == 0) { rudisha; }
+    kama (m->idadi_ya_makampuni >= SOKO_FEDHA_KAMPUNI_IDADI_JUU) { rudisha; }
+
+    n8 herufi_0 = taifa_id[0];
+    n8 herufi_1 = taifa_id[1];
+    n64 h0 = herufi_0 & 255;
+    n64 h1 = herufi_1 & 255;
+
+    n32 i = 0;
+    wakati (i < 8 && m->idadi_ya_makampuni < SOKO_FEDHA_KAMPUNI_IDADI_JUU) {
+        n64 hesabu = h0 * 31 + h1 * 7 + i * 13;
+        n32 si = hesabu % 10;
+        kama (si < 0) { si = 0 - si; }
+
+        n32 i_mod = i % 10;
+        n8* sekta = soko_fedha_jina_la_sekta(i_mod);
+        n8* kiambishi = soko_fedha_kiambishi_jina(si);
+
+        n8* jina_sehemu1 = tenga(96);
+        n8* jina_sehemu2 = tenga(128);
+        unganisha_mfuatano(jina_sehemu1, taifa_id, " ");
+        n8* jina_sehemu1b = tenga(112);
+        unganisha_mfuatano(jina_sehemu1b, jina_sehemu1, sekta);
+        achilia jina_sehemu1;
+        n8* jina_sehemu1c = tenga(120);
+        unganisha_mfuatano(jina_sehemu1c, jina_sehemu1b, " ");
+        achilia jina_sehemu1b;
+        unganisha_mfuatano(jina_sehemu2, jina_sehemu1c, kiambishi);
+        achilia jina_sehemu1c;
+
+        SokoFedhaKampuni* kamp = tenga(ukubwa(SokoFedhaKampuni));
+        kamp->jina = jina_sehemu2;
+        kamp->sekta = sekta;
+        kamp->taifa_id = taifa_id;
+        kamp->wafanyakazi = 50 + civ_nasibu_chini_ya(5000);
+
+        n32 waf = kamp->wafanyakazi;
+        d64 waf_d = waf;
+        n32 ziada = civ_nasibu_chini_ya(5000);
+        d64 ziada_d = ziada;
+        kamp->mapato = waf_d * (500.0 + ziada_d);
+
+        n32 ni_ya_tatu = (i % 3 == 0);
+        kama (ni_ya_tatu) {
+            n32 bei_ziada = civ_nasibu_chini_ya(200);
+            d64 bei_ziada_d = bei_ziada;
+            kamp->bei_ya_hisa = 10.0 + bei_ziada_d;
+            kamp->ni_ya_umma = 1;
+        } sivyo {
+            kamp->bei_ya_hisa = 0.0;
+            kamp->ni_ya_umma = 0;
+        }
+
+        n32 kiwango_cha_ukuaji_ghafi = civ_nasibu_chini_ya(2000);
+        d64 kcg_d = kiwango_cha_ukuaji_ghafi;
+        kamp->kiwango_cha_ukuaji = (kcg_d / 100.0 - 5.0) / 100.0;
+
+        m->makampuni[m->idadi_ya_makampuni] = kamp;
+        m->idadi_ya_makampuni = m->idadi_ya_makampuni + 1;
+
+        i = i + 1;
+    }
+}
+
+SokoFedhaKampuni* soko_fedha_pata_kampuni(SokoFedhaInjini* m, n32 idx) {
+    kama (m == 0 || idx < 0 || idx >= m->idadi_ya_makampuni) { rudisha 0; }
+    rudisha soko_fedha_pata_kampuni_kwa_idx(m, idx);
+}

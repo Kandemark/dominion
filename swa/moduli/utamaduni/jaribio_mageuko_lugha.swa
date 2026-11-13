@@ -1,0 +1,142 @@
+husisha { moduli/utamaduni/mageuko_lugha.swa }
+
+// jaribio_mageuko_lugha.swa -- jaribio la mkono dhidi ya
+// UtamaduniMageukoMfumo (mageuko_lugha.swa, tafsiri ya
+// culture/language_evolution.c) PEKEE, bila kupitia mchezo.swa
+// (angalia lugha-swa/swa#295). Linathibitisha THAMANI HALISI.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    civ_nasibu_panda(7);
+
+    UtamaduniMageukoMfumo* m = utamaduni_mageuko_mfumo_unda();
+    n32 m_sio_tupu = (m != 0);
+    jaribio_thibitisha(m_sio_tupu, "mfumo_unda si tupu");
+    jaribio_thibitisha(m->uwezo == 32, "uwezo awali ni 32");
+    jaribio_thibitisha(m->idadi == 0, "idadi awali ni 0");
+
+    n8* hakuna_mzazi = 0;
+    UtamaduniMageukoLugha* mzazi = utamaduni_mageuko_unda("lug_1", "Kiproto", hakuna_mzazi);
+    n32 mzazi_sio_tupu = (mzazi != 0);
+    jaribio_thibitisha(mzazi_sio_tupu, "mageuko_unda si tupu");
+    n32 utata_sahihi = (mzazi->utata > 0.49 && mzazi->utata < 0.51);
+    jaribio_thibitisha(utata_sahihi, "utata chaguomsingi 0.5");
+    jaribio_thibitisha(mzazi->sarufi.mpangilio_wa_maneno == UTAMADUNI_MAGEUKO_MPANGILIO_SVO,
+        "mpangilio wa maneno chaguomsingi ni SVO");
+
+    CivMatokeo r1 = utamaduni_mageuko_ongeza_neno(mzazi, "MAJI", "apa");
+    jaribio_thibitisha(r1.hitilafu == CIV_SAWA, "ongeza_neno MAJI inafaulu");
+    jaribio_thibitisha(mzazi->idadi_ya_msamiati == 1, "idadi_ya_msamiati baada ya ongeza ni 1");
+
+    n8* neno1 = utamaduni_mageuko_pata_neno(mzazi, "MAJI");
+    n32 neno1_sahihi = (linganisha_mfuatano(neno1, "apa") == 0);
+    jaribio_thibitisha(neno1_sahihi, "pata_neno MAJI inarudisha 'apa'");
+
+    n8* neno_kosa = utamaduni_mageuko_pata_neno(mzazi, "MOTO");
+    n32 neno_kosa_ni_tupu = (neno_kosa == 0);
+    jaribio_thibitisha(neno_kosa_ni_tupu, "pata_neno isiyopo inarudisha 0");
+
+    CivMatokeo r2 = utamaduni_mageuko_mfumo_ongeza(m, mzazi);
+    jaribio_thibitisha(r2.hitilafu == CIV_SAWA, "mfumo_ongeza inafaulu");
+    jaribio_thibitisha(m->idadi == 1, "idadi ya mfumo baada ya ongeza ni 1");
+
+    UtamaduniMageukoLugha* tafuta1 = utamaduni_mageuko_mfumo_tafuta(m, "lug_1");
+    n32 tafuta1_sahihi = (tafuta1 == mzazi);
+    jaribio_thibitisha(tafuta1_sahihi, "mfumo_tafuta inapata lugha sahihi");
+
+    // Badilika mara moja na dt kubwa ya kutosha kusababisha mabadiliko
+    // ya kupimika kwenye utata/fahari (dt=1000). Ongeza wazungumzaji
+    // kwanza -- vinginevyo (wazungumzaji*fahari - utata) == 0.5*1.0 -
+    // 0.5 == 0 KAMILI kwenye hali chaguomsingi, hakuna badiliko
+    // kutarajiwa (formula ya C, si pengo).
+    mzazi->wazungumzaji = 2.0;
+    d64 utata_kabla = mzazi->utata;
+    CivMatokeo r3 = utamaduni_mageuko_badilika(mzazi, 1000.0);
+    jaribio_thibitisha(r3.hitilafu == CIV_SAWA, "badilika inafaulu");
+    n32 utata_umebadilika = (mzazi->utata != utata_kabla);
+    jaribio_thibitisha(utata_umebadilika, "utata umebadilika baada ya dt kubwa (wazungumzaji>fahari*complexity)");
+    n32 utata_umeongezeka = (mzazi->utata > utata_kabla);
+    jaribio_thibitisha(utata_umeongezeka, "utata umeongezeka (wazungumzaji*fahari > utata)");
+    n32 utata_bado_ndani_ya_mipaka = (mzazi->utata >= 0.0 && mzazi->utata <= 1.0);
+    jaribio_thibitisha(utata_bado_ndani_ya_mipaka, "utata unabaki ndani ya [0,1]");
+    mzazi->wazungumzaji = 1.0;
+
+    // Mdudu wa asili uliohifadhiwa kwa makusudi: mpangilio wa maneno
+    // HAUBADILIKI KAMWE (angalia maoni ya mageuko_lugha.swa).
+    jaribio_thibitisha(mzazi->sarufi.mpangilio_wa_maneno == UTAMADUNI_MAGEUKO_MPANGILIO_SVO,
+        "mpangilio wa maneno unabaki SVO (mdudu wa C uliohifadhiwa)");
+
+    // Lugha mtoto kwa kuibuka.
+    UtamaduniMageukoLugha* mtoto = utamaduni_mageuko_kutoka(m, mzazi, "lug_2", "Kiproto Kipya");
+    n32 mtoto_sio_tupu = (mtoto != 0);
+    jaribio_thibitisha(mtoto_sio_tupu, "mageuko_kutoka si tupu");
+    jaribio_thibitisha(m->idadi == 2, "idadi ya mfumo baada ya kutoka ni 2");
+    n32 mtoto_mzazi_sahihi = (linganisha_mfuatano(mtoto->mzazi_id, "lug_1") == 0);
+    jaribio_thibitisha(mtoto_mzazi_sahihi, "mtoto ana mzazi_id sahihi");
+    n32 fahari_mtoto_sahihi = (mtoto->fahari > mzazi->fahari * 0.8 - 0.01 &&
+                                mtoto->fahari < mzazi->fahari * 0.8 + 0.01);
+    jaribio_thibitisha(fahari_mtoto_sahihi, "mtoto fahari ni 0.8 ya mzazi");
+    n32 wazungumzaji_mtoto_sahihi = (mtoto->wazungumzaji > 0.09 && mtoto->wazungumzaji < 0.11);
+    jaribio_thibitisha(wazungumzaji_mtoto_sahihi, "mtoto wazungumzaji ni 0.1 ya mzazi (1.0)");
+
+    // Ufanano: mzazi na mtoto wanapaswa kuwa na ufanano wa juu
+    // (uhusiano wa mzazi, 0.6 + sehemu ya utata).
+    d64 ufanano = utamaduni_mageuko_kipimo_cha_ufanano(mzazi, mtoto);
+    n32 ufanano_sahihi = (ufanano > 0.6);
+    jaribio_thibitisha(ufanano_sahihi, "ufanano wa mzazi/mtoto ni zaidi ya 0.6");
+
+    UtamaduniMageukoLugha* mgeni = utamaduni_mageuko_unda("lug_x", "Lugha Nyingine", hakuna_mzazi);
+    d64 ufanano_mgeni = utamaduni_mageuko_kipimo_cha_ufanano(mzazi, mgeni);
+    n32 ufanano_mgeni_mdogo = (ufanano_mgeni < ufanano);
+    jaribio_thibitisha(ufanano_mgeni_mdogo, "ufanano wa lugha zisizohusiana ni mdogo kuliko mzazi/mtoto");
+
+    // Lahaja.
+    UtamaduniMageukoLugha* lahaja = utamaduni_mageuko_gawanya_lahaja(m, mzazi, "Lahaja ya Pwani");
+    n32 lahaja_sio_tupu = (lahaja != 0);
+    jaribio_thibitisha(lahaja_sio_tupu, "gawanya_lahaja si tupu");
+    n32 lahaja_id_sahihi = (linganisha_mfuatano(lahaja->mzazi_id, "lug_1") == 0);
+    jaribio_thibitisha(lahaja_id_sahihi, "lahaja ina mzazi_id sahihi");
+    n32 lahaja_utata_sawa = (lahaja->utata == mzazi->utata);
+    jaribio_thibitisha(lahaja_utata_sawa, "lahaja inarithi utata halisi wa mzazi");
+    jaribio_thibitisha(m->idadi == 3, "idadi ya mfumo baada ya lahaja ni 3");
+
+    // Kuazima neno kutoka mzazi kwenda mtoto.
+    CivMatokeo r4 = utamaduni_mageuko_azima_neno(mtoto, mzazi, "MAJI");
+    jaribio_thibitisha(r4.hitilafu == CIV_SAWA, "azima_neno MAJI inafaulu");
+    jaribio_thibitisha(mtoto->idadi_ya_mikopo == 1, "idadi_ya_mikopo ya mtoto ni 1");
+
+    CivMatokeo r5 = utamaduni_mageuko_azima_neno(mtoto, mzazi, "HAIPO");
+    jaribio_thibitisha(r5.hitilafu == CIV_HITILAFU_HAIJAPATIKANA, "azima_neno isiyopo inarudisha HAIJAPATIKANA");
+
+    // Badilisha mfumo mzima (lugha zote tatu).
+    CivMatokeo r6 = utamaduni_mageuko_mfumo_badilika(m, 10.0);
+    jaribio_thibitisha(r6.hitilafu == CIV_SAWA, "mfumo_badilika inafaulu");
+
+    // Herekeza neno moja kwa moja: "apa" yenye vokali "aiu" -- 'a' ni
+    // vokali ya kwanza, inapaswa kuhamia 'i'.
+    n8* neno_la_jaribu = tenga(ukubwa(n8) * 8);
+    neno_la_jaribu[0] = 97;  // 'a'
+    neno_la_jaribu[1] = 112; // 'p'
+    neno_la_jaribu[2] = 97;  // 'a'
+    neno_la_jaribu[3] = 0;
+    utamaduni_mageuko_herekeza_neno(neno_la_jaribu, "aiu");
+    n32 herekeza_sahihi = (neno_la_jaribu[0] == 105); // 'i'
+    jaribio_thibitisha(herekeza_sahihi, "herekeza_neno inahamisha vokali ya kwanza 'a' kwenda 'i'");
+
+    utamaduni_mageuko_mfumo_uharibu(m);
+    utamaduni_mageuko_uharibu(mgeni);
+    achilia mgeni;
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

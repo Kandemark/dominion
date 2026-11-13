@@ -1,0 +1,68 @@
+husisha { moduli/idadi_ya_watu/uhai.swa }
+
+// jaribio_uhai.swa -- jaribio la mkono dhidi ya UhaiMfumo (uhai.swa,
+// tafsiri ya population_vitality.c) PEKEE, bila kupitia mchezo.swa
+// (angalia lugha-swa/swa#292 -- mnyororo kamili wa mchezo.swa una
+// moduli ~45+/kazi ~925+, zaidi ya kiwango cha SIGSEGV ya kimya ya
+// mkusanyaji; faili hili linahusisha uhai.swa PEKEE, mbali sana na
+// kiwango hicho). Linathibitisha THAMANI HALISI za shamba, si tu
+// "haikuanguka".
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    UhaiMfumo* v = tenga(ukubwa(UhaiMfumo));
+    uhai_anzisha(v);
+
+    jaribio_thibitisha(v->afya_ya_jumla > 0.79 && v->afya_ya_jumla < 0.81, "afya_ya_jumla huanza 0.8");
+    jaribio_thibitisha(v->kiwango_cha_elimu > 0.19 && v->kiwango_cha_elimu < 0.21, "kiwango_cha_elimu huanza 0.2");
+    jaribio_thibitisha(v->kuna_mlipuko == 0, "hakuna mlipuko mwanzoni");
+    jaribio_thibitisha(v->matarajio_ya_maisha > 39.9 && v->matarajio_ya_maisha < 40.1, "matarajio_ya_maisha huanza 40.0");
+
+    // Sasisha mara 10 bila mlipuko -- afya inapaswa kupanda polepole
+    // (kigezo: +0.01*muda kila mzunguko, muda=1.0 -> +0.1 jumla,
+    // kikomo cha juu 1.0).
+    d64 afya_kabla = v->afya_ya_jumla;
+    n32 i = 0;
+    wakati (i < 10) {
+        uhai_sasisha(v, 1.0);
+        i = i + 1;
+    }
+    jaribio_thibitisha(v->afya_ya_jumla > afya_kabla, "afya_ya_jumla inapanda bila mlipuko");
+    // elimu inapanda kwa 0.001*muda kila mzunguko -> baada ya 10
+    // mizunguko ya dt=1.0, ziada ya 0.01 (kutoka 0.2 hadi ~0.21).
+    jaribio_thibitisha(v->kiwango_cha_elimu > 0.209 && v->kiwango_cha_elimu < 0.211, "kiwango_cha_elimu kinapanda kwa hesabu sahihi");
+
+    // Anzisha mlipuko kwa uwezo_wa_kuua=0.3 -- ukali unapaswa kuwa 0.6.
+    CivMatokeo r = uhai_anzisha_mlipuko(v, 0.3);
+    jaribio_thibitisha(r.hitilafu == CIV_SAWA, "uhai_anzisha_mlipuko inarudisha CIV_SAWA");
+    jaribio_thibitisha(v->kuna_mlipuko == 1, "mlipuko umeanzishwa");
+    jaribio_thibitisha(v->mlipuko.ukali > 0.59 && v->mlipuko.ukali < 0.61, "ukali wa mlipuko = uwezo_wa_kuua * 2.0");
+
+    // Kigezo cha vifo kinapaswa kuongezeka kwa mlipuko.
+    d64 kigezo_bila_mlipuko = 1.0;
+    kama (v->afya_ya_jumla < 0.5) { kigezo_bila_mlipuko = kigezo_bila_mlipuko + (0.5 - v->afya_ya_jumla) * 2.0; }
+    d64 kigezo_halisi = uhai_hesabu_kigezo_cha_vifo(v);
+    jaribio_thibitisha(kigezo_halisi > kigezo_bila_mlipuko, "kigezo cha vifo kinaongezeka kwa mlipuko hai");
+
+    // Afya inapaswa kushuka wakati wa mlipuko (badala ya kupanda).
+    d64 afya_wakati_wa_mlipuko_kabla = v->afya_ya_jumla;
+    uhai_sasisha(v, 1.0);
+    // Mlipuko unaweza kuisha kinasibu (5% nafasi kila sasisha) -- hatuwezi
+    // kuhakikisha afya ilishuka KILA MARA, lakini tunaweza kuhakikisha
+    // haikubadilika kwa kiasi kikubwa zaidi ya kinachowezekana bila
+    // mlipuko (ongezeko la juu linalowezekana bila mlipuko: +0.01).
+    jaribio_thibitisha(v->afya_ya_jumla <= afya_wakati_wa_mlipuko_kabla + 0.011, "afya haiongezeki kwa kasi ya kawaida wakati wa mlipuko");
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

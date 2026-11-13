@@ -1,0 +1,88 @@
+husisha { moduli/diplomasia/mashirika.swa }
+
+// jaribio_mashirika.swa -- jaribio la mkono dhidi ya ShirikaMsimamizi
+// (mashirika.swa, tafsiri ya international_organizations.c) PEKEE,
+// bila kupitia mchezo.swa (angalia lugha-swa/swa#292). Linathibitisha
+// THAMANI HALISI.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    ShirikaMsimamizi* meneja = shirika_msimamizi_unda();
+    jaribio_thibitisha(meneja->idadi == 0, "meneja huanza bila mashirika");
+
+    Shirika* umoja = shirika_unda("org1", "Umoja wa Mataifa", SHIRIKA_AINA_JUKWAA_LA_DUNIA);
+    n32 umoja_sio_tupu = (umoja != 0);
+    jaribio_thibitisha(umoja_sio_tupu, "shirika_unda inarudisha kielekezi");
+    jaribio_thibitisha(umoja->aina == SHIRIKA_AINA_JUKWAA_LA_DUNIA, "aina imewekwa sahihi");
+    jaribio_thibitisha(umoja->idadi_ya_wanachama == 0, "hakuna wanachama mwanzoni");
+    jaribio_thibitisha(umoja->mshikamano > 0.99 && umoja->mshikamano < 1.01, "mshikamano huanza 1.0");
+    jaribio_thibitisha(umoja->tarehe_ya_kuundwa > 0, "tarehe_ya_kuundwa imewekwa (civ_muda_sasa > 0)");
+
+    CivMatokeo r1 = shirika_ongeza_mwanachama(umoja, "taifa_a");
+    jaribio_thibitisha(r1.hitilafu == CIV_SAWA, "ongeza_mwanachama wa kwanza inafanikiwa");
+    CivMatokeo r2 = shirika_ongeza_mwanachama(umoja, "taifa_b");
+    jaribio_thibitisha(r2.hitilafu == CIV_SAWA, "ongeza_mwanachama wa pili inafanikiwa");
+    jaribio_thibitisha(umoja->idadi_ya_wanachama == 2, "idadi_ya_wanachama ni 2");
+
+    // Mwanachama anayerudiwa anapaswa kukataliwa.
+    CivMatokeo r3 = shirika_ongeza_mwanachama(umoja, "taifa_a");
+    jaribio_thibitisha(r3.hitilafu != CIV_SAWA, "mwanachama anayerudiwa anakataliwa");
+    jaribio_thibitisha(umoja->idadi_ya_wanachama == 2, "idadi_ya_wanachama haikuongezeka kwa mrudio");
+
+    n8* mwanachama0 = shirika_pata_mwanachama(umoja, 0);
+    jaribio_thibitisha(linganisha_mfuatano(mwanachama0, "taifa_a") == 0, "mwanachama wa kwanza ni sahihi");
+
+    // Pendekeza maazimio mawili.
+    CivMatokeo r4 = shirika_pendekeza_azimio(umoja, "Marufuku ya Vita", "Azimio la amani", "taifa_a");
+    jaribio_thibitisha(r4.hitilafu == CIV_SAWA, "pendekeza_azimio ya kwanza inafanikiwa");
+    CivMatokeo r5 = shirika_pendekeza_azimio(umoja, "Ushuru wa Pamoja", "Azimio la biashara", "taifa_b");
+    jaribio_thibitisha(r5.hitilafu == CIV_SAWA, "pendekeza_azimio ya pili inafanikiwa");
+    jaribio_thibitisha(umoja->idadi_ya_maazimio == 2, "idadi_ya_maazimio ni 2");
+
+    ShirikaAzimio* azimio0 = shirika_pata_azimio(umoja, 0);
+    jaribio_thibitisha(linganisha_mfuatano(azimio0->kichwa, "Marufuku ya Vita") == 0, "azimio la kwanza lina kichwa sahihi");
+    jaribio_thibitisha(azimio0->linafanya_kazi == 1, "azimio jipya linafanya kazi");
+    jaribio_thibitisha(azimio0->limepita == 0, "azimio jipya halijapita bado");
+    jaribio_thibitisha(azimio0->kura_ndiyo == 0, "azimio jipya halina kura bado");
+
+    // Ongeza shirika kwenye meneja na uthibitishe tafuta.
+    CivMatokeo r6 = shirika_msimamizi_ongeza(meneja, umoja);
+    jaribio_thibitisha(r6.hitilafu == CIV_SAWA, "msimamizi_ongeza inafanikiwa");
+    jaribio_thibitisha(meneja->idadi == 1, "idadi ya meneja ni 1 baada ya kuongeza");
+
+    Shirika* iliyopatikana = shirika_msimamizi_tafuta(meneja, "org1");
+    jaribio_thibitisha(linganisha_mfuatano(iliyopatikana->jina, "Umoja wa Mataifa") == 0, "msimamizi_tafuta inapata shirika sahihi");
+
+    Shirika* isiyopatikana = shirika_msimamizi_tafuta(meneja, "org_hakuna");
+    n32 isiyopatikana_ni_tupu = (isiyopatikana == 0);
+    jaribio_thibitisha(isiyopatikana_ni_tupu, "msimamizi_tafuta inarudisha tupu kwa kitambulisho kisichopo");
+
+    // Shirika la pili la aina tofauti, kuthibitisha kuzidisha uwezo
+    // wa awali (8) hakuvunji chochote baada ya kuongeza zaidi ya 8
+    // wanachama.
+    Shirika* muungano_wa_biashara = shirika_unda("org2", "Jumuiya ya Biashara", SHIRIKA_AINA_KUNDI_LA_BIASHARA);
+    n32 i = 0;
+    wakati (i < 10) {
+        n8* jina_la_taifa = "taifa_x";
+        shirika_ongeza_mwanachama(muungano_wa_biashara, jina_la_taifa);
+        i = i + 1;
+    }
+    // Kumbuka: "taifa_x" ni jina lilelile kila mara (jaribio
+    // rahisi) -- mwanachama wa kwanza tu ndiye anaongezwa (wengine
+    // wanakataliwa kama marudio), hivyo idadi inapaswa kubaki 1 --
+    // hii inathibitisha KUGUNDUA MARUDIO HALISI, si tu kuzidisha.
+    jaribio_thibitisha(muungano_wa_biashara->idadi_ya_wanachama == 1, "ugunduzi wa marudio unafanya kazi hata kwa majaribio mengi mfululizo");
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

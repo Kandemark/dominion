@@ -1,0 +1,79 @@
+husisha { msingi/msingi_civ.swa }
+
+// baiti_ghafi.swa -- kusoma/kuandika namba za u16/u32/u64 (little-
+// endian) ndani ya bafa ya n8* kwa OFFSET halisi ya baiti.
+//
+// Miundo ya hoja za ioctl za DRM/KMS (drm_mode_card_res,
+// drm_mode_get_connector, drm_mode_modeinfo, n.k.) zina mpangilio wa
+// baiti ULIOBAINISHWA na ABI ya kernel -- si sawa na jinsi Swa
+// `muundo` ingepanga fields (na tayari kuna hitilafu za `muundo`
+// zinazojulikana: #186 field ya kielekezi-kwa-muundo, hakuna fields
+// za safu zenye ukubwa maalum). Badala ya kutegemea mpangilio wa
+// `muundo` ya Swa kuendana na kernel, kila muundo wa ioctl
+// unawakilishwa hapa kama bafa ya n8* ya ukubwa halisi (kutoka
+// sizeof() ya kweli ya C, imepatikana kwa kuandika programu ndogo ya
+// C na kuichapisha -- si kukisia), na fields zinasomwa/kuandikwa kwa
+// kazi hizi kwa offset halisi. Hii ni salama kabisa na inaepuka
+// hitilafu zote za `muundo` za Swa.
+
+// Badilisha kielekezi kuwa n64 (thamani ya anwani) -- Swa haina
+// cast wazi; njia pekee ni kigezo cha kati chenye aina tofauti
+// (angalia kishikio_kutoka_hoja kwenye faili.swa kwa muundo huu huo
+// uliopo tayari).
+n64 anwani(n8* p) {
+    n64 a = p;
+    rudisha a;
+}
+
+w0 weka_u16(n8* buf, n64 off, n64 v) {
+    buf[off] = v & 255;
+    buf[off + 1] = (v >> 8) & 255;
+}
+
+w0 weka_u32(n8* buf, n64 off, n64 v) {
+    buf[off] = v & 255;
+    buf[off + 1] = (v >> 8) & 255;
+    buf[off + 2] = (v >> 16) & 255;
+    buf[off + 3] = (v >> 24) & 255;
+}
+
+w0 weka_u64(n8* buf, n64 off, n64 v) {
+    n64 i = 0;
+    wakati (i < 8) {
+        buf[off + i] = (v >> (i * 8)) & 255;
+        i = i + 1;
+    }
+}
+
+// MUHIMU: n8 ni aina yenye ishara (kama `char` ya C) -- `buf[off]`
+// ikipanuliwa moja kwa moja hadi n64 kwa thamani >= 128 hupanuliwa
+// KI-ISHARA (sign-extend), ikijaza biti za juu zote na 1. `|` na
+// thamani hiyo iliyoharibika huacha biti hizo za juu kuwa 1 milele --
+// hukwamisha soma_u* nzima kimya kabisa (imegunduliwa kwa jaribio
+// hili moja kwa moja, si nadharia). Suluhisho: `& 255` mara moja
+// baada ya kusoma kila baiti, KABLA ya kuihamisha (`<<`) au kuiunga
+// (`|`).
+n64 pata_u16(n8* buf, n64 off) {
+    n64 a = buf[off] & 255;
+    n64 b = buf[off + 1] & 255;
+    rudisha a | (b << 8);
+}
+
+n64 pata_u32(n8* buf, n64 off) {
+    n64 a = buf[off] & 255;
+    n64 b = buf[off + 1] & 255;
+    n64 c = buf[off + 2] & 255;
+    n64 d = buf[off + 3] & 255;
+    rudisha a | (b << 8) | (c << 16) | (d << 24);
+}
+
+n64 pata_u64(n8* buf, n64 off) {
+    n64 v = 0;
+    n64 i = 0;
+    wakati (i < 8) {
+        n64 byte = buf[off + i] & 255;
+        v = v | (byte << (i * 8));
+        i = i + 1;
+    }
+    rudisha v;
+}

@@ -1,0 +1,70 @@
+// muungano.swa — tafsiri ya src/core/diplomacy/unification_engine.c
+// (na .h) kwenda Swa. Uunganishaji wa mataifa (mergers) na miundo
+// ya pamoja ya kimataifa.
+//
+// Kiambishi: muungano_ — angalia ../../KANUNI-MAJINA.md (diplomacy/).
+// new_national_name (snprintf ya jina jipya kutoka mataifa mawili,
+// char[STRING_MEDIUM_LEN]) imekuwa kutumia unganisha_mfuatano mara
+// tatu (haiwezi kufanya kazi ya snprintf ya mfumo wa Kiswahili
+// moja kwa moja kwa sababu ya muundo wa maneno matatu — imerahisishwa
+// kuwa "<taifa_a>-<taifa_b>" bila neno la mbele "The United
+// Commonwealth of"). Kigezo cha ukubwa wa hifadhi kimewekwa 96
+// herufi kwa jina jipya.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/lugha_dominion.swa }
+
+n32 MUUNGANO_HATUA_USHIRIKIANO_WA_SOKO = 0;
+n32 MUUNGANO_HATUA_UMOJA_WA_SARAFU = 1;
+n32 MUUNGANO_HATUA_SHIRIKISHO_LA_KISIASA = 2;
+n32 MUUNGANO_HATUA_UUNGANISHAJI_KAMILI = 3;
+
+muundo MuunganoMatokeo {
+    n8* jina_jipya_la_taifa;
+    n32 hatua;
+    d64 athari_ya_utulivu;
+    n32 mafanikio;
+};
+
+MuunganoMatokeo muungano_pendekeza(n8* taifa_a, n8* taifa_b, n32 lengo) {
+    MuunganoMatokeo matokeo;
+    matokeo.jina_jipya_la_taifa = 0;
+    matokeo.hatua = lengo;
+    matokeo.athari_ya_utulivu = 0.0;
+    matokeo.mafanikio = 0;
+
+    kama (taifa_a != 0 && taifa_b != 0) {
+        matokeo.mafanikio = 1;
+        n8* jina = tenga(96);
+        unganisha_mfuatano(jina, taifa_a, "-");
+        n8* jina_kamili = tenga(96);
+        unganisha_mfuatano(jina_kamili, jina, taifa_b);
+        matokeo.jina_jipya_la_taifa = jina_kamili;
+        matokeo.athari_ya_utulivu = 0.1;
+    }
+
+    kama (matokeo.mafanikio != 0) {
+        andika(d_tafsiri("m9"), taifa_a, taifa_b, 0,0,0,0);
+    } sivyo {
+        andika(d_tafsiri("m10"), taifa_a, taifa_b, 0,0,0,0);
+    }
+
+    rudisha matokeo;
+}
+
+CivMatokeo muungano_unganisha_uchumi(n8* taifa_a, n8* taifa_b) {
+    andika(d_tafsiri("m32"), taifa_a, taifa_b, 0,0,0,0);
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    rudisha r;
+}
+
+CivMatokeo muungano_unda_sarafu_ya_pamoja(n8* jina, n8* taifa_a, n8* taifa_b) {
+    andika(d_tafsiri("m33"), jina, taifa_a, taifa_b, 0,0,0);
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    rudisha r;
+}

@@ -1,0 +1,235 @@
+// mashirika.swa — tafsiri ya src/core/diplomacy/international_organizations.c
+// (na .h) kwenda Swa. Mashirika ya kimataifa (ushirikiano wa
+// kijeshi/kiuchumi/kisiasa/kisayansi kati ya mataifa mengi) na
+// maazimio yanayopigiwa kura ndani yake.
+//
+// Kiambishi: shirika_ — angalia ../../KANUNI-MAJINA.md (diplomacy/,
+// mtindo uleule wa muungano.swa: moduli ndogo ndani ya diplomacy/
+// hutumia kiambishi chake maalum, si "diplomasia_" ya jumla, kwa
+// sababu haigongani na kazi yoyote iliyopo).
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - civ_org_create (snprintf ya id kutoka time(NULL)) imekuwa
+//     kupokea kitambulisho moja kwa moja kama hoja (mtindo
+//     ulioothibitishwa kwenye utawala_desturi_unda/teknolojia.swa) --
+//     hakuna snprintf ya namba->mfuatano salama kwa mkusanyaji huu
+//     bado.
+//   - member_ids (char**, safu ya vielekezi vya C-string) na
+//     resolutions (civ_resolution_t[], safu inayokua ya THAMANI za
+//     muundo kwenye chanzo asili) zote mbili zimekuwa safu za n64
+//     za vielekezi (#185) -- member_ids ilikuwa tayari vielekezi
+//     kwenye C, na resolutions imebadilishwa kutoka safu ya thamani
+//     kwenda safu ya vielekezi kwa usalama (kuandika kipengele cha
+//     safu ya muundo kupitia kielekezi cha parameter kunaweza
+//     kuharibu -- #182(b) -- mtindo huu unaepuka hatari hiyo kabisa,
+//     sawa na uamuzi uliofanywa kwenye utawala/interaction/
+//     mwingiliano.swa kwa participants[]).
+//   - civ_constitution_t* charter imeachwa (haijatumika popote
+//     kwenye civ_org_create/destroy wenyewe -- field tupu kwenye
+//     chanzo asili, si pengo jipya la tafsiri hii).
+//   - civ_org_remove_member, civ_org_vote, civ_org_manager_find
+//     zimetangazwa kwenye .h LAKINI HAZIJAWAHI kutekelezwa popote
+//     kwenye .c ya asili (imethibitishwa kwa kutafuta mradi mzima) --
+//     hazikuletwa Swa kwa sababu hiyo hiyo (hakuna la kutafsiri).
+//     diplomasia_mashirika_msimamizi_tafuta (search by id) IMEONGEZWA
+//     hapa kama mbadala muhimu wa civ_org_manager_find, kwa mtindo
+//     uleule wa utawala_desturi_msimamizi_tafuta.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+n32 SHIRIKA_AINA_USHIRIKIANO = 0;             // ALLIANCE
+n32 SHIRIKA_AINA_KUNDI_LA_BIASHARA = 1;       // TRADE_BLOC
+n32 SHIRIKA_AINA_SHIRIKISHO = 2;              // FEDERATION
+n32 SHIRIKA_AINA_USHIRIKIANO_WA_KISAYANSI = 3; // SCIENTIFIC_COOP
+n32 SHIRIKA_AINA_JUKWAA_LA_DUNIA = 4;         // GLOBAL_FORUM
+
+muundo ShirikaAzimio {
+    n8* kitambulisho;
+    n8* kichwa;
+    n8* maelezo;
+    n8* mpendekezaji_id;
+    n32 kura_ndiyo;
+    n32 kura_hapana;
+    n32 kura_kujizuia;
+    n32 limepita;
+    n32 linafanya_kazi;
+};
+
+muundo Shirika {
+    n8* kitambulisho;
+    n8* jina;
+    n32 aina;
+
+    n64* wanachama;        // safu ya vielekezi vya n8* (majina ya mataifa), #185
+    n32 idadi_ya_wanachama;
+    n32 uwezo_wa_wanachama;
+
+    n8* kiongozi_id;
+
+    n64* maazimio;          // safu ya vielekezi vya ShirikaAzimio*, #185
+    n32 idadi_ya_maazimio;
+    n32 uwezo_wa_maazimio;
+
+    d64 mshikamano;         // cohesion, 0.0 hadi 1.0
+    n64 tarehe_ya_kuundwa;  // formation_date, kupitia civ_muda_sasa()
+};
+
+muundo ShirikaMsimamizi {
+    n64* mashirika;         // safu ya vielekezi vya Shirika*, #185
+    n32 idadi;
+    n32 uwezo;
+};
+
+n8* shirika_pata_mwanachama(Shirika* org, n32 idx) { rudisha org->wanachama[idx]; }
+ShirikaAzimio* shirika_pata_azimio(Shirika* org, n32 idx) { rudisha org->maazimio[idx]; }
+Shirika* shirika_msimamizi_pata(ShirikaMsimamizi* m, n32 idx) { rudisha m->mashirika[idx]; }
+
+ShirikaMsimamizi* shirika_msimamizi_unda() {
+    ShirikaMsimamizi* m = tenga(ukubwa(ShirikaMsimamizi));
+    m->uwezo = 8;
+    m->idadi = 0;
+    m->mashirika = tenga(ukubwa(n64) * m->uwezo);
+    rudisha m;
+}
+
+Shirika* shirika_unda(n8* kitambulisho, n8* jina, n32 aina) {
+    kama (kitambulisho == 0 || jina == 0) { rudisha 0; }
+
+    Shirika* org = tenga(ukubwa(Shirika));
+    org->kitambulisho = kitambulisho;
+    org->jina = jina;
+    org->aina = aina;
+
+    org->uwezo_wa_wanachama = 8;
+    org->idadi_ya_wanachama = 0;
+    org->wanachama = tenga(ukubwa(n64) * org->uwezo_wa_wanachama);
+
+    org->kiongozi_id = 0;
+
+    org->uwezo_wa_maazimio = 8;
+    org->idadi_ya_maazimio = 0;
+    org->maazimio = tenga(ukubwa(n64) * org->uwezo_wa_maazimio);
+
+    org->mshikamano = 1.0;
+    org->tarehe_ya_kuundwa = civ_muda_sasa();
+    rudisha org;
+}
+
+w0 shirika_uharibu(Shirika* org) {
+    kama (org == 0) { rudisha; }
+    achilia org->wanachama;
+    n32 i = 0;
+    wakati (i < org->idadi_ya_maazimio) {
+        ShirikaAzimio* res = shirika_pata_azimio(org, i);
+        achilia res;
+        i = i + 1;
+    }
+    achilia org->maazimio;
+    achilia org;
+}
+
+w0 shirika_msimamizi_uharibu(ShirikaMsimamizi* m) {
+    kama (m == 0) { rudisha; }
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        Shirika* org = shirika_msimamizi_pata(m, i);
+        shirika_uharibu(org);
+        i = i + 1;
+    }
+    achilia m->mashirika;
+    achilia m;
+}
+
+CivMatokeo shirika_ongeza_mwanachama(Shirika* org, n8* taifa_id) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (org == 0 || taifa_id == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Hoja batili";
+        rudisha r;
+    }
+
+    n32 i = 0;
+    wakati (i < org->idadi_ya_wanachama) {
+        n8* aliyepo = shirika_pata_mwanachama(org, i);
+        kama (linganisha_mfuatano(aliyepo, taifa_id) == 0) {
+            r.hitilafu = CIV_HITILAFU_HALI_MBAYA;
+            r.ujumbe = "Tayari ni mwanachama";
+            rudisha r;
+        }
+        i = i + 1;
+    }
+
+    kama (org->idadi_ya_wanachama >= org->uwezo_wa_wanachama) {
+        org->uwezo_wa_wanachama = org->uwezo_wa_wanachama * 2;
+        org->wanachama = badili(org->wanachama, ukubwa(n64) * org->uwezo_wa_wanachama);
+    }
+    org->wanachama[org->idadi_ya_wanachama] = taifa_id;
+    org->idadi_ya_wanachama = org->idadi_ya_wanachama + 1;
+    rudisha r;
+}
+
+CivMatokeo shirika_pendekeza_azimio(Shirika* org, n8* kichwa, n8* maelezo, n8* mpendekezaji) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (org == 0 || kichwa == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Hoja batili";
+        rudisha r;
+    }
+
+    kama (org->idadi_ya_maazimio >= org->uwezo_wa_maazimio) {
+        org->uwezo_wa_maazimio = org->uwezo_wa_maazimio * 2;
+        org->maazimio = badili(org->maazimio, ukubwa(n64) * org->uwezo_wa_maazimio);
+    }
+
+    ShirikaAzimio* res = tenga(ukubwa(ShirikaAzimio));
+    res->kitambulisho = kichwa;
+    res->kichwa = kichwa;
+    res->maelezo = maelezo;
+    res->mpendekezaji_id = mpendekezaji;
+    res->kura_ndiyo = 0;
+    res->kura_hapana = 0;
+    res->kura_kujizuia = 0;
+    res->limepita = 0;
+    res->linafanya_kazi = 1;
+
+    org->maazimio[org->idadi_ya_maazimio] = res;
+    org->idadi_ya_maazimio = org->idadi_ya_maazimio + 1;
+    rudisha r;
+}
+
+CivMatokeo shirika_msimamizi_ongeza(ShirikaMsimamizi* m, Shirika* org) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0 || org == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Hoja batili";
+        rudisha r;
+    }
+
+    kama (m->idadi >= m->uwezo) {
+        m->uwezo = m->uwezo * 2;
+        m->mashirika = badili(m->mashirika, ukubwa(n64) * m->uwezo);
+    }
+    m->mashirika[m->idadi] = org;
+    m->idadi = m->idadi + 1;
+    rudisha r;
+}
+
+Shirika* shirika_msimamizi_tafuta(ShirikaMsimamizi* m, n8* kitambulisho) {
+    kama (m == 0 || kitambulisho == 0) { rudisha 0; }
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        Shirika* org = shirika_msimamizi_pata(m, i);
+        kama (linganisha_mfuatano(org->kitambulisho, kitambulisho) == 0) {
+            rudisha org;
+        }
+        i = i + 1;
+    }
+    rudisha 0;
+}

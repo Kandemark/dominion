@@ -1,0 +1,134 @@
+// mazungumzo.swa — tafsiri ya
+// src/core/governance/interaction/conversation.c (na .h) kwenda Swa.
+// Mfumo wa mazungumzo/dialogia juu ya UtawalaMwingiliano.
+//
+// Kiambishi: utawala_mazungumzo_ — angalia ../../../KANUNI-MAJINA.md.
+// UtawalaMazungumzo.interaction na .current_node (vielekezi kwenda
+// miundo mingine ya mtumiaji) ni FIELD zenye aina ya kielekezi
+// kwenda muundo mwingine -- mfano wa #186. Zimehifadhiwa kama n64
+// (anwani) na kupatikana kupitia kazi za "pata" zinazorudisha
+// kielekezi sahihi kupitia aina ya kurudisha (return type coercion),
+// mtindo uleule uliothibitishwa kwenye akili/mbinu.swa.
+// options[] ndani ya kila DialogueNode ni safu ya n64* ya vielekezi
+// (#185). civ_dialogue_node_t haina kazi ya "unda" kwenye C ya asili
+// (data ingeundwa na mfumo wa maudhui usio kwenye wigo huu) --
+// utawala_mazungumzo_nodi_unda imeongezwa kama kiungo cha lazima
+// kinachokosekana ili muundo huu uweze kujaribiwa/kutumika kabisa.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/lugha_dominion.swa }
+husisha { moduli/utawala/interaction/mwingiliano.swa }
+
+n32 UTAWALA_MAZUNGUMZO_CHAGUO_UWEZO_AWALI = 4;
+
+muundo UtawalaMazungumzoChaguo {
+    n8* maandishi;
+    n8* nodi_lengwa_id;
+    d64 athari_ya_uhusiano;
+    d64 gharama;
+};
+
+muundo UtawalaMazungumzoNodi {
+    n8* kitambulisho;
+    n8* maandishi;
+    n64* chaguo;   // safu ya vielekezi vya UtawalaMazungumzoChaguo* (#185)
+    n32 idadi_ya_chaguo;
+    n32 uwezo_wa_chaguo;
+    n8* kitendo_cha_hati;   // script_action
+};
+
+muundo UtawalaMazungumzo {
+    n64 mwingiliano_addr;   // UtawalaMwingiliano* kama anwani (#186)
+    n64 nodi_ya_sasa_addr;  // UtawalaMazungumzoNodi* kama anwani (#186)
+    n32 inaendelea;         // active, 0/1
+    n8* historia;
+};
+
+UtawalaMazungumzoChaguo* utawala_mazungumzo_nodi_pata_chaguo(UtawalaMazungumzoNodi* nodi, n32 idx) {
+    rudisha nodi->chaguo[idx];
+}
+
+UtawalaMwingiliano* utawala_mazungumzo_pata_mwingiliano(UtawalaMazungumzo* m) {
+    rudisha m->mwingiliano_addr;
+}
+
+UtawalaMazungumzoNodi* utawala_mazungumzo_pata_nodi_ya_sasa(UtawalaMazungumzo* m) {
+    rudisha m->nodi_ya_sasa_addr;
+}
+
+UtawalaMazungumzoNodi* utawala_mazungumzo_nodi_unda(n8* kitambulisho, n8* maandishi) {
+    UtawalaMazungumzoNodi* nodi = tenga(ukubwa(UtawalaMazungumzoNodi));
+    nodi->kitambulisho = kitambulisho;
+    nodi->maandishi = maandishi;
+    nodi->uwezo_wa_chaguo = UTAWALA_MAZUNGUMZO_CHAGUO_UWEZO_AWALI;
+    nodi->idadi_ya_chaguo = 0;
+    nodi->chaguo = tenga(ukubwa(n64) * nodi->uwezo_wa_chaguo);
+    nodi->kitendo_cha_hati = 0;
+    rudisha nodi;
+}
+
+CivMatokeo utawala_mazungumzo_nodi_ongeza_chaguo(UtawalaMazungumzoNodi* nodi, n8* maandishi,
+                                                   n8* nodi_lengwa_id, d64 athari_ya_uhusiano,
+                                                   d64 gharama) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (nodi == 0 || maandishi == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Kielekezi tupu";
+        rudisha r;
+    }
+    kama (nodi->idadi_ya_chaguo >= nodi->uwezo_wa_chaguo) {
+        nodi->uwezo_wa_chaguo = nodi->uwezo_wa_chaguo * 2;
+        nodi->chaguo = badili(nodi->chaguo, ukubwa(n64) * nodi->uwezo_wa_chaguo);
+    }
+    UtawalaMazungumzoChaguo* c = tenga(ukubwa(UtawalaMazungumzoChaguo));
+    c->maandishi = maandishi;
+    c->nodi_lengwa_id = nodi_lengwa_id;
+    c->athari_ya_uhusiano = athari_ya_uhusiano;
+    c->gharama = gharama;
+    nodi->chaguo[nodi->idadi_ya_chaguo] = c;
+    nodi->idadi_ya_chaguo = nodi->idadi_ya_chaguo + 1;
+    rudisha r;
+}
+
+UtawalaMazungumzo* utawala_mazungumzo_anza(UtawalaMwingiliano* mwingiliano, UtawalaMazungumzoNodi* mzizi) {
+    kama (mwingiliano == 0 || mzizi == 0) { rudisha 0; }
+    UtawalaMazungumzo* m = tenga(ukubwa(UtawalaMazungumzo));
+    m->mwingiliano_addr = mwingiliano;
+    m->nodi_ya_sasa_addr = mzizi;
+    m->inaendelea = 1;
+    m->historia = 0;
+    utawala_mwingiliano_anza(mwingiliano);
+    rudisha m;
+}
+
+w0 utawala_mazungumzo_uharibu(UtawalaMazungumzo* m) {
+    achilia m;
+}
+
+CivMatokeo utawala_mazungumzo_chagua_chaguo(UtawalaMazungumzo* m, n32 faharisi_ya_chaguo) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    UtawalaMazungumzoNodi* nodi_ya_sasa = utawala_mazungumzo_pata_nodi_ya_sasa(m);
+    kama (m == 0 || m->inaendelea == 0 || nodi_ya_sasa == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Mazungumzo batili";
+        rudisha r;
+    }
+    kama (faharisi_ya_chaguo >= nodi_ya_sasa->idadi_ya_chaguo) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        r.ujumbe = "Faharisi ya chaguo batili";
+        rudisha r;
+    }
+    UtawalaMazungumzoChaguo* c = utawala_mazungumzo_nodi_pata_chaguo(nodi_ya_sasa, faharisi_ya_chaguo);
+    andika(d_tafsiri("m17"), c->maandishi, 0,0,0,0,0);
+    rudisha r;
+}
+
+n8* utawala_mazungumzo_pata_maandishi_ya_sasa(UtawalaMazungumzo* m) {
+    UtawalaMazungumzoNodi* nodi_ya_sasa = utawala_mazungumzo_pata_nodi_ya_sasa(m);
+    kama (m == 0 || nodi_ya_sasa == 0) { rudisha 0; }
+    rudisha nodi_ya_sasa->maandishi;
+}

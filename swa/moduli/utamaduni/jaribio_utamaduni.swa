@@ -1,0 +1,72 @@
+husisha { moduli/utamaduni/utamaduni.swa }
+
+// jaribio_utamaduni.swa -- jaribio la mkono dhidi ya kazi za
+// upangiliaji za utamaduni.swa (tafsiri ya culture/culture.c)
+// PEKEE, bila kupitia mchezo.swa (angalia lugha-swa/swa#295).
+// Linathibitisha THAMANI HALISI, zikiwemo za pengo lililopatikana
+// (kitanzi cha kusasisha vitambulisho vyote).
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    civ_nasibu_panda(11);
+
+    UtamaduniKitambulishoMfumo* km = utamaduni_kitambulisho_mfumo_unda();
+    UtamaduniKitambulisho* k1 = utamaduni_kitambulisho_unda("kit_1", "Jamii ya Kwanza");
+    k1->mshikamano = 0.9;
+    utamaduni_kitambulisho_ongeza_sifa(k1, "uzalendo", 0.6);
+    utamaduni_kitambulisho_mfumo_ongeza(km, k1);
+
+    UtamaduniSifa* sifa_kabla = utamaduni_kitambulisho_pata_sifa(k1, 0);
+    d64 ushawishi_kabla = sifa_kabla->ushawishi;
+    n32 ushawishi_awali_sahihi = (ushawishi_kabla > 0.29 && ushawishi_kabla < 0.31);
+    jaribio_thibitisha(ushawishi_awali_sahihi, "ushawishi awali ni nguvu*0.5 = 0.3");
+
+    // NYONGEZA HALISI: kitanzi kilichokosekana kabla ya kikao hiki.
+    utamaduni_mfumo_sasisha_watambulisho_wote(km, 1.0);
+    UtamaduniSifa* sifa_baada = utamaduni_kitambulisho_pata_sifa(k1, 0);
+    n32 ushawishi_umesasishwa = (sifa_baada->ushawishi > 0.53 && sifa_baada->ushawishi < 0.55);
+    jaribio_thibitisha(ushawishi_umesasishwa, "ushawishi baada ya sasisha ni nguvu*mshikamano = 0.6*0.9 = 0.54");
+
+    UtamaduniKuenea* kuenea = utamaduni_kuenea_unda();
+    UtamaduniUigajiTracker* uigaji = utamaduni_uigaji_tracker_unda();
+    UtamaduniMageukoMfumo* lugha_mfumo = utamaduni_mageuko_mfumo_unda();
+    n8* hakuna_mzazi = 0;
+    UtamaduniMageukoLugha* lugha1 = utamaduni_mageuko_unda("lug_a", "Lugha A", hakuna_mzazi);
+    lugha1->wazungumzaji = 3.0;
+    utamaduni_mageuko_mfumo_ongeza(lugha_mfumo, lugha1);
+
+    d64 utata_kabla = lugha1->utata;
+
+    // Mfuatano kamili wa mfumo mmoja mmoja (kama
+    // civ_culture_system_update): vitambulisho -> kuenea -> uigaji ->
+    // mageuko ya lugha.
+    CivMatokeo r = utamaduni_mfumo_sasisha(km, kuenea, uigaji, lugha_mfumo, 200.0);
+    jaribio_thibitisha(r.hitilafu == CIV_SAWA, "mfumo_sasisha (mfuatano kamili) inafaulu");
+
+    n32 utata_umebadilika = (lugha1->utata != utata_kabla);
+    jaribio_thibitisha(utata_umebadilika, "mageuko ya lugha yameitwa ndani ya mfuatano (utata umebadilika)");
+
+    UtamaduniSifa* sifa_baada2 = utamaduni_kitambulisho_pata_sifa(k1, 0);
+    n32 sifa_bado_sahihi = (sifa_baada2->ushawishi > 0.53 && sifa_baada2->ushawishi < 0.55);
+    jaribio_thibitisha(sifa_bado_sahihi, "vitambulisho vimesasishwa ndani ya mfuatano kamili pia");
+
+    // Vielekezi vya 0: haipaswi kuanguka.
+    UtamaduniKuenea* kuenea_tupu = 0;
+    UtamaduniUigajiTracker* uigaji_tupu = 0;
+    UtamaduniMageukoMfumo* lugha_tupu = 0;
+    CivMatokeo r2 = utamaduni_mfumo_sasisha(km, kuenea_tupu, uigaji_tupu, lugha_tupu, 10.0);
+    jaribio_thibitisha(r2.hitilafu == CIV_SAWA, "mfumo_sasisha na vielekezi vingine vya 0 haviangushi");
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

@@ -1,0 +1,99 @@
+husisha { moduli/subunits/kitengo_chini.swa }
+
+// jaribio_kitengo_chini.swa -- jaribio la mkono dhidi ya
+// KitengoChiniMsimamizi (kitengo_chini.swa, tafsiri ya
+// subunits/subunit.c) PEKEE, bila kupitia mchezo.swa (angalia
+// lugha-swa/swa#295). Linathibitisha THAMANI HALISI.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    KitengoChiniMsimamizi* m = kitengo_chini_msimamizi_unda();
+    n32 m_sio_tupu = (m != 0);
+    jaribio_thibitisha(m_sio_tupu, "msimamizi_unda si tupu");
+    jaribio_thibitisha(m->idadi == 0, "idadi awali ni 0");
+    jaribio_thibitisha(m->uwezo == 64, "uwezo awali ni 64");
+
+    KitengoChini* mkoa_mkuu = kitengo_chini_unda("mkoa_1", "Mkoa Mkuu", KITENGO_CHINI_AINA_MKOA);
+    n32 mkoa_sio_tupu = (mkoa_mkuu != 0);
+    jaribio_thibitisha(mkoa_sio_tupu, "kitengo_chini_unda si tupu");
+    jaribio_thibitisha(mkoa_mkuu->aina == KITENGO_CHINI_AINA_MKOA, "aina ni MKOA");
+    n32 uhuru_sahihi = (mkoa_mkuu->uhuru > 0.29 && mkoa_mkuu->uhuru < 0.31);
+    jaribio_thibitisha(uhuru_sahihi, "uhuru chaguomsingi 0.3");
+    n32 uaminifu_sahihi = (mkoa_mkuu->uaminifu > 0.69 && mkoa_mkuu->uaminifu < 0.71);
+    jaribio_thibitisha(uaminifu_sahihi, "uaminifu chaguomsingi 0.7");
+
+    mkoa_mkuu->idadi_ya_watu = 1000000;
+    mkoa_mkuu->pato = 5000000.0;
+
+    CivMatokeo r1 = kitengo_chini_msimamizi_ongeza(m, mkoa_mkuu);
+    n32 ongeza_ok = (r1.hitilafu == CIV_SAWA);
+    jaribio_thibitisha(ongeza_ok, "msimamizi_ongeza inafaulu");
+    jaribio_thibitisha(m->idadi == 1, "idadi baada ya kuongeza ni 1");
+
+    KitengoChini* tafuta1 = kitengo_chini_msimamizi_tafuta(m, "mkoa_1");
+    n32 tafuta_sahihi = (tafuta1 == mkoa_mkuu);
+    jaribio_thibitisha(tafuta_sahihi, "msimamizi_tafuta inapata kitengo sahihi");
+    KitengoChini* tafuta2 = kitengo_chini_msimamizi_tafuta(m, "haipo");
+    n32 tafuta_batili = (tafuta2 == 0);
+    jaribio_thibitisha(tafuta_batili, "msimamizi_tafuta inarudisha 0 kwa kitambulisho kisichopo");
+
+    CivMatokeo r2 = kitengo_chini_ongeza_mtoto(mkoa_mkuu, "wilaya_a");
+    kitengo_chini_ongeza_mtoto(mkoa_mkuu, "wilaya_b");
+    n32 watoto_ok = (mkoa_mkuu->idadi_ya_watoto == 2);
+    jaribio_thibitisha(watoto_ok, "idadi_ya_watoto baada ya ongeza_mtoto mara mbili ni 2");
+    n8* mtoto0 = kitengo_chini_pata_mtoto(mkoa_mkuu, 0);
+    n32 mtoto0_sahihi = (linganisha_mfuatano(mtoto0, "wilaya_a") == 0);
+    jaribio_thibitisha(mtoto0_sahihi, "mtoto wa kwanza ni wilaya_a");
+
+    d64 maendeleo_kabla = mkoa_mkuu->maendeleo;
+    kitengo_chini_msimamizi_sasisha(m, 100.0);
+    n32 maendeleo_badilika = (mkoa_mkuu->maendeleo != maendeleo_kabla);
+    jaribio_thibitisha(maendeleo_badilika, "msimamizi_sasisha inabadilisha maendeleo");
+
+    n8* jina_mpya_0 = "Mkoa A";
+    n8* jina_mpya_1 = "Mkoa B";
+    n64* majina_mapya = tenga(ukubwa(n64) * 2);
+    majina_mapya[0] = jina_mpya_0;
+    majina_mapya[1] = jina_mpya_1;
+    n64* matokeo_gawanyo = tenga(ukubwa(n64) * 2);
+    CivMatokeo r3 = kitengo_chini_gawanya(m, mkoa_mkuu, 2, majina_mapya, matokeo_gawanyo);
+    n32 gawanyo_ok = (r3.hitilafu == CIV_SAWA);
+    jaribio_thibitisha(gawanyo_ok, "gawanya inafaulu");
+    jaribio_thibitisha(m->idadi == 3, "idadi baada ya gawanya (1 asili + 2 mpya) ni 3");
+
+    KitengoChini* mpya0 = matokeo_gawanyo[0];
+    n32 mpya0_sio_tupu = (mpya0 != 0);
+    jaribio_thibitisha(mpya0_sio_tupu, "kitengo cha kwanza cha gawanyo si tupu");
+    n32 pop_sahihi = (mpya0->idadi_ya_watu == 500000);
+    jaribio_thibitisha(pop_sahihi, "idadi_ya_watu imegawanywa sawa (500000 kila kimoja)");
+
+    n64* vya_kuungana = tenga(ukubwa(n64) * 2);
+    vya_kuungana[0] = matokeo_gawanyo[0];
+    vya_kuungana[1] = matokeo_gawanyo[1];
+    KitengoChini* muungano = kitengo_chini_unganisha(m, vya_kuungana, 2, "Muungano Mpya");
+    n32 muungano_sio_tupu = (muungano != 0);
+    jaribio_thibitisha(muungano_sio_tupu, "unganisha inarudisha kitengo kipya");
+    n32 muungano_pop_ok = (muungano->idadi_ya_watu == 1000000);
+    jaribio_thibitisha(muungano_pop_ok, "unganisha inajumlisha idadi_ya_watu (500000+500000)");
+    jaribio_thibitisha(m->idadi == 4, "idadi baada ya unganisha (3+1) ni 4");
+
+    CivMatokeo r4 = kitengo_chini_weka_aina(muungano, KITENGO_CHINI_AINA_JIJI);
+    n32 weka_aina_ok = (r4.hitilafu == CIV_SAWA);
+    jaribio_thibitisha(weka_aina_ok, "weka_aina inafaulu");
+    jaribio_thibitisha(muungano->aina == KITENGO_CHINI_AINA_JIJI, "aina imebadilika kuwa JIJI");
+
+    kitengo_chini_msimamizi_uharibu(m);
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

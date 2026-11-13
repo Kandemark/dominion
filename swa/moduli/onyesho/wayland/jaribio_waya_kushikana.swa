@@ -1,0 +1,157 @@
+husisha { moduli/onyesho/wayland/mazingira.swa }
+husisha { moduli/onyesho/wayland/soketi.swa }
+husisha { moduli/onyesho/wayland/waya.swa }
+
+// jaribio_waya_kushikana.swa -- "kushikana kwa itifaki" ya Wayland,
+// Awamu 1: hakuna pikseli, hakuna dirisha -- lengo ni TU kuunganisha
+// kwenye soketi HALISI ya Wayland ya mazingira haya, kutuma
+// wl_display.get_registry, kusoma matukio ya wl_registry.global
+// yanayorudishwa na compositor HALISI (Hyprland), na kuchapisha kila
+// global iliyogunduliwa.
+//
+// Mkakati wa "lini tusimamishe kusoma": tunatuma wl_display.sync
+// MARA MOJA baada ya get_registry. Kwa kuwa Wayland inashughulikia
+// maombi na matukio KWA MPANGILIO (FIFO), wl_callback.done ya sync
+// hii HAIWEZI kufika kabla ya matukio YOTE ya global ya burst ya
+// kwanza -- ni roundtrip ya classic ya Wayland (libwayland yenyewe
+// inatumia mbinu hii hii kwa wl_display_roundtrip()), SI muda wa
+// kusubiri wa bahati nasibu.
+
+n32 anza(n32 argc, n8** argv) {
+    n8** envp = wayland_mazingira_pata_envp(argv);
+
+    n8* xdg = wayland_mazingira_tafuta(envp, "XDG_RUNTIME_DIR");
+    n8* wd = wayland_mazingira_tafuta(envp, "WAYLAND_DISPLAY");
+    kama (xdg == 0) {
+        andika_kosa("FAIL: XDG_RUNTIME_DIR haipo kwenye mazingira\n", 0, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    kama (wd == 0) {
+        andika_kosa("FAIL: WAYLAND_DISPLAY haipo kwenye mazingira\n", 0, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+
+    n8* njia = tenga(256);
+    weka_sifuri(njia, 256);
+    unganisha_mfuatano(njia, xdg, "/");
+    n8* njia2 = tenga(256);
+    weka_sifuri(njia2, 256);
+    unganisha_mfuatano(njia2, njia, wd);
+
+    andika("INFO: XDG_RUNTIME_DIR=%s WAYLAND_DISPLAY=%s\n", xdg, wd, 0, 0, 0, 0);
+    andika("INFO: soketi ya Wayland = %s\n", njia2, 0, 0, 0, 0, 0);
+
+    n64 fd = wayland_soketi_fungua();
+    kama (fd < 0) {
+        andika_kosa("FAIL: socket(AF_UNIX, SOCK_STREAM) imeshindwa rc=%d\n", fd, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+
+    n64 rc = wayland_soketi_unganisha(fd, njia2);
+    kama (rc < 0) {
+        andika_kosa("FAIL: connect() kwenye %s imeshindwa rc=%d\n", njia2, rc, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("OK: connect() kwenye soketi ya Wayland halisi imefaulu, fd=%d\n", fd, 0, 0, 0, 0, 0);
+
+    n64 registry_id = 2;
+    n64 sync_id = 3;
+
+    n8* m1 = wayland_waya_jenga_get_registry(registry_id);
+    n64 s1 = wayland_soketi_tuma(fd, m1, wayland_waya_get_registry_ukubwa());
+    kama (s1 < 0) {
+        andika_kosa("FAIL: kutuma wl_display.get_registry kumeshindwa rc=%d\n", s1, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("OK: wl_display.get_registry imetumwa (registry object_id=%d)\n", registry_id, 0, 0, 0, 0, 0);
+
+    n8* m2 = wayland_waya_jenga_sync(sync_id);
+    n64 s2 = wayland_soketi_tuma(fd, m2, 12);
+    kama (s2 < 0) {
+        andika_kosa("FAIL: kutuma wl_display.sync kumeshindwa rc=%d\n", s2, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("OK: wl_display.sync imetumwa (callback object_id=%d)\n", sync_id, 0, 0, 0, 0, 0);
+
+    n64 ukubwa_bafa = 65536;
+    n8* bafa = tenga(ukubwa_bafa);
+    n64 jumla = 0;
+    n64 nafasi = 0;
+    n64 imekamilika = 0;
+    n64 idadi_globals = 0;
+    n64 ina_compositor = 0;
+    n64 ina_shm = 0;
+    n64 ina_xdg_wm_base = 0;
+    n64 ina_seat = 0;
+    n64 ina_output = 0;
+
+    wakati (imekamilika == 0) {
+        wakati (1 == 1) {
+            kama (jumla - nafasi < 8) { acha; }
+            n64 obj = wayland_waya_msg_object_id(bafa, nafasi);
+            n64 op = wayland_waya_msg_opcode(bafa, nafasi);
+            n64 sz = wayland_waya_msg_ukubwa(bafa, nafasi);
+            kama (sz < 8) {
+                andika_kosa("FAIL: ukubwa batili wa ujumbe kwenye waya (sz=%d)\n", sz, 0, 0, 0, 0, 0);
+                imekamilika = 1;
+                acha;
+            }
+            kama (jumla - nafasi < sz) { acha; }  // ujumbe haujakamilika -- soma zaidi
+
+            kama (obj == registry_id && op == WAYLAND_WAYA_REGISTRY_EV_GLOBAL) {
+                n64 jina = wayland_waya_global_name(bafa, nafasi);
+                n8* iface = wayland_waya_global_interface_ptr(bafa, nafasi);
+                n64 toleo = wayland_waya_global_version(bafa, nafasi);
+                andika("GLOBAL  jina=%d  interface=%s  toleo=%d\n", jina, iface, toleo, 0, 0, 0);
+                idadi_globals = idadi_globals + 1;
+                kama (linganisha_mfuatano(iface, "wl_compositor") == 0) { ina_compositor = 1; }
+                kama (linganisha_mfuatano(iface, "wl_shm") == 0) { ina_shm = 1; }
+                kama (linganisha_mfuatano(iface, "xdg_wm_base") == 0) { ina_xdg_wm_base = 1; }
+                kama (linganisha_mfuatano(iface, "wl_seat") == 0) { ina_seat = 1; }
+                kama (linganisha_mfuatano(iface, "wl_output") == 0) { ina_output = 1; }
+            } sivyo {
+                kama (obj == sync_id && op == WAYLAND_WAYA_CALLBACK_EV_DONE) {
+                    andika("OK: wl_callback.done (sync) imepokelewa -- burst ya awali ya globals imekamilika\n", 0, 0, 0, 0, 0, 0);
+                    imekamilika = 1;
+                } sivyo {
+                    kama (obj == WAYLAND_WAYA_DISPLAY_ID) {
+                        andika_kosa("WARN: tukio lisilotarajiwa kutoka wl_display (opcode=%d) -- angalia kama ni 'error'\n", op, 0, 0, 0, 0, 0);
+                    }
+                }
+            }
+
+            nafasi = nafasi + sz;
+            kama (imekamilika == 1) { acha; }
+        }
+        kama (imekamilika == 1) { acha; }
+
+        kama (nafasi > 0) {
+            n64 iliyobaki = jumla - nafasi;
+            nakili(bafa, bafa + nafasi, iliyobaki);
+            jumla = iliyobaki;
+            nafasi = 0;
+        }
+
+        n64 n = wayland_soketi_pokea(fd, bafa + jumla, ukubwa_bafa - jumla);
+        kama (n <= 0) {
+            andika_kosa("FAIL: recvmsg() imerudisha %d (soketi imefungwa kabla ya sync.done?)\n", n, 0, 0, 0, 0, 0);
+            acha;
+        }
+        jumla = jumla + n;
+    }
+
+    wayland_soketi_funga(fd);
+
+    andika("\n===== MUHTASARI =====\n", 0, 0, 0, 0, 0, 0);
+    andika("jumla ya globals zilizogunduliwa: %d\n", idadi_globals, 0, 0, 0, 0, 0);
+    andika("wl_compositor=%d  wl_shm=%d  xdg_wm_base=%d  wl_seat=%d  wl_output=%d\n",
+        ina_compositor, ina_shm, ina_xdg_wm_base, ina_seat, ina_output);
+
+    kama (ina_compositor == 0 || ina_shm == 0 || ina_xdg_wm_base == 0) {
+        andika_kosa("FAIL: moja au zaidi ya globals za msingi (wl_compositor/wl_shm/xdg_wm_base) hazikupatikana\n", 0, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+
+    andika("DONE: kushikana kwa itifaki ya Wayland (Awamu 1) kumefaulu\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

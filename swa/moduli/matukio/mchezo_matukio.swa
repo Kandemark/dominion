@@ -1,0 +1,95 @@
+// mchezo_matukio.swa — tafsiri ya src/core/events/game_events.c (na
+// .h) kwenda Swa. Vichochezi vya matukio ya kiwango-cha-mchezo
+// (mgogoro wa kiuchumi, majanga ya asili).
+//
+// Kiambishi: matukio_mchezo_ — angalia ../../KANUNI-MAJINA.md
+// (events/ -> matukio_ kwa jumla; "matukio_" bila kiambishi kidogo
+// TAYARI inatumiwa na hadithi.swa (story_events.c), kwa hiyo faili
+// hili linatumia "matukio_mchezo_" kuepuka mgongano -- jina lake la
+// C (game_events.c) ni chanzo cha kiambishi hiki).
+//
+// MUHIMU — HALI HALISI YA C YA ASILI (game_events.c ni KIUNZI
+// KIKUBWA, si mantiki kamili): kati ya vitendo VINNE vilivyoorodheshwa
+// ndani ya civ_trigger_economic_crisis (Market Crash, Currency
+// Devaluation, Ideology Shift, Legislative Response), VITATU kati ya
+// hivyo vinne (Market Crash/Ideology Shift/Legislative Response) ni
+// MAONI TU yaliyoachwa ndani ya tawi la "if" -- HAKUNA MSIMBO HALISI
+// unaotekelezwa (imethibitishwa kwa kusoma chanzo mstari kwa mstari,
+// angalia game_events.c). Currency Devaluation (tawi la nne) linafanya
+// kazi dhidi ya `game->currency_manager->currencies[]` -- SAFU ambayo
+// civ_currency_manager_t (iliyotangazwa kwenye .h) HAIJAWAHI
+// kuundwa/kujazwa popote kwenye MRADI MZIMA wa C (imethibitishwa kwa
+// kutafuta mradi mzima; angalia maoni ya sarafu.swa, ambayo tayari
+// ilifika hitimisho lile lile kwa sababu hiyo hiyo) -- kwa hiyo tawi
+// hili HALIFANYI KAZI KAMWE kwenye mazoezi pia. Vivyo hivyo,
+// civ_trigger_natural_disaster ina "Economic Impact" (Disrupt trade
+// routes) iliyoachwa kama maoni tu.
+//
+// KWA HIYO: tafsiri hii inabeba TU vitendo VIWILI vinavyotekelezwa
+// KWELI na chanzo cha C: (1) civ_game_add_event (logi ya tukio kupitia
+// event_manager) kwa matukio YOTE mawili, na (2) devaluation YA
+// SARAFU MOJA iliyopo (Sarafu/sarafu.swa, tafsiri pekee ya
+// civ_currency_t halisi -- angalia maoni ya sarafu.swa) badala ya
+// safu isiyowahi kuwepo, na (3) civ_disaster_trigger kwa maafa --
+// AMBAYO TAYARI ipo kama mazingira_majanga_sababisha (majanga.swa),
+// kwa hiyo civ_trigger_natural_disaster ni KIFUNGASHI CHEMBAMBA (thin
+// wrapper) karibu na kazi iliyopo TAYARI, kikiongeza tu maadili
+// chaguomsingi ya eneo/ukali na logi ya tukio.
+//
+// Tofauti za kimakusudi:
+//   - "CRISIS"/"DISASTER" (string za aina kwenye civ_game_add_event
+//     ya asili) zimeramanishwa kwenda kategoria za nambari
+//     zilizopo tayari za MatukioTukio: MATUKIO_TUKIO_KIUCHUMI na
+//     MATUKIO_TUKIO_ASILI (hakuna kategoria ya "mgogoro" maalum
+//     kwenye tukio.swa -- hizi mbili ndizo karibu zaidi).
+//   - civ_coordinate_t loc = {50.0, 50.0} (eneo la bandia la
+//     "random or specific") limehifadhiwa HASA kama 50.0/50.0,
+//     ukali 0.8 -- maadili ya asili ya C, si ubunifu mpya.
+
+husisha { msingi/msingi_civ.swa }
+husisha { moduli/matukio/tukio.swa }
+husisha { moduli/uchumi/sarafu.swa }
+husisha { moduli/mazingira/majanga.swa }
+
+CivMatokeo matukio_mchezo_simamisha_mgogoro_wa_uchumi(MatukioTukioMfumo* matukio, Sarafu* sarafu) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (matukio != 0) {
+        r = matukio_tukio_unda_na_toa(matukio, MATUKIO_TUKIO_KIUCHUMI,
+            "Mgogoro wa Kiuchumi wa Dunia", "Anguko kuu la kiuchumi la kimataifa", 0.9);
+    }
+
+    // Currency Devaluation (kipengele PEKEE kinachotekelezwa kweli
+    // kwenye civ_trigger_economic_crisis ya asili) -- 30% kushuka
+    // kwa kiwango cha ubadilishaji, +5% ya mfumuko wa bei.
+    kama (sarafu != 0) {
+        sarafu->kiwango_cha_ubadilishaji = sarafu->kiwango_cha_ubadilishaji * 0.7;
+        sarafu->kiashiria_cha_mfumuko = sarafu->kiashiria_cha_mfumuko + 0.05;
+    }
+
+    rudisha r;
+}
+
+CivMatokeo matukio_mchezo_sababisha_maafa(MatukioTukioMfumo* matukio, MazingiraMajangaMfumo* majanga, n32 aina_ya_janga) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (majanga == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    // civ_disaster_trigger: eneo la bandia 50.0/50.0, ukali 0.8 --
+    // maadili HASA ya chanzo cha C (civ_coordinate_t loc = {50,50}).
+    r = mazingira_majanga_sababisha(majanga, aina_ya_janga, 50.0, 50.0, 0.8);
+
+    kama (matukio != 0) {
+        matukio_tukio_unda_na_toa(matukio, MATUKIO_TUKIO_ASILI,
+            "Janga Kubwa la Kimazingira", "Janga kubwa la asili limetokea", 0.8);
+    }
+
+    rudisha r;
+}

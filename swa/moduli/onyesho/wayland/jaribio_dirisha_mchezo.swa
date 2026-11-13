@@ -1,0 +1,688 @@
+husisha { moduli/onyesho/wayland/mazingira.swa }
+husisha { moduli/onyesho/wayland/soketi.swa }
+husisha { moduli/onyesho/wayland/waya.swa }
+husisha { moduli/onyesho/wayland/shm.swa }
+husisha { moduli/onyesho/mzunguko.swa }
+
+// jaribio_dirisha_mchezo.swa -- Wayland Awamu 3: DIRISHA LA MCHEZO
+// HALISI (SI tena rangi moja tuli ya Awamu 2) -- huunganisha vipande
+// vitatu vilivyothibitishwa TAYARI bila kuandika upya mantiki yoyote
+// kati yao:
+//   1. jaribio_dirisha_halisi.swa (Awamu 2) -- jinsi dirisha la
+//      Wayland linavyoanzishwa na kuonyeshwa (soketi/waya/shm,
+//      mlolongo kamili wa get_registry->bind->create_surface->
+//      create_pool(SCM_RIGHTS)->create_buffer->xdg_surface->toplevel->
+//      commit, kisha kitanzi cha ping/configure). Muundo wa mlolongo
+//      huo UMENAKILIWA HASA hapa (hakuna opcode mpya iliyovumbuliwa),
+//      lakini umegawanywa kwenye kazi ndogo (jdm_*) badala ya anza()
+//      moja kubwa -- kigezo cha ndani cha kazi moja hairuhusiwi
+//      kuzidi 64 (kikomo cha kamili cha sasa, angalia maoni ya
+//      jaribio_dirisha_halisi.swa), na anza() peke yake ingefikia
+//      zaidi ya 80 vigezo ikiwa mlolongo mzima + mzunguko wa mchezo
+//      vingeunganishwa bila kugawanywa.
+//   2. onyesho_hud_chora_kutoka_mchezo (hud.swa, kupitia mzunguko.swa)
+//      -- huchora takwimu za Mchezo HALISI (zamu, idadi ya watu, GDP)
+//      moja kwa moja kwenye bafa YOYOTE ya pikseli iliyopewa.
+//   3. mzunguko_hatua/MzungukoChanzo (mzunguko.swa) -- hatua MOJA ya
+//      mzunguko: SPACE husukuma Mchezo zamu moja mbele NA kuchora upya
+//      HUD kwenye fb iliyopewa; ESC huashiria mzunguko usimame. Bafa
+//      ya pikseli tunayopitisha kwa mzunguko_hatua HAPA ni shm_ptr ya
+//      dirisha HALISI (d.shm_ptr/d.stride) -- SIO framebuffer ya
+//      majaribio ya zamani -- kwa hiyo kila SPACE inayoshughulikiwa na
+//      mzunguko_hatua INACHORA MOJA KWA MOJA kwenye kumbukumbu
+//      inayoonekana dirishani, bila kunakili data popote.
+//
+// UKUBWA WA DIRISHA: badala ya 640x480 ya Awamu 2 (rangi moja),
+// dirisha hili ni ONYESHO_HUD_UPANA x ONYESHO_HUD_KIMO (480x280,
+// hud.swa) HASA -- hivyo d.shm_ptr NDIYO fb ya HUD moja kwa moja
+// (stride == pitch ya HUD), hakuna ubadilishaji/unakili wa pili
+// unaohitajika kati ya "bafa ya mchezo" na "bafa ya dirisha".
+//
+// ONYESHO UPYA KWA KILA ZAMU (SI mara moja tu): baada ya HUD ya
+// KWANZA kuchorwa kwenye configure ya kwanza (sawa na Awamu 2), KILA
+// zamu_ya_sasa inapobadilika (SPACE imeshughulikiwa na mzunguko_hatua)
+// tunaita TENA jdm_onyesha_upya (wayland_shm_jaza + attach +
+// damage_buffer + commit) -- ndiyo maana zamu ya pili/tatu nazo
+// zinaonekana dirishani, si zamu ya kwanza tu.
+//
+// SOKETI YA WAYLAND INASOMWA MARA KWA MARA KATI YA HATUA ZA MCHEZO:
+// jdm_pampu_matukio hufanya KAZI ILE ILE ya kitanzi cha matukio cha
+// Awamu 2 (soma zisizozuia, jibu ping->pong papo hapo) kwa muda
+// mfupi KABLA ya kila hatua ya mzunguko wa mchezo -- bila hii,
+// compositor angeona programu "haijibu" (ping isiyojibiwa) wakati
+// mzunguko wa mchezo (matukio ya SPACE yaliyowekwa mapema) unasubiri
+// kati ya hatua.
+//
+// UTHIBITISHO: matukio ya kibodi ni BANDIA, yaliyowekwa MAPEMA (SIO
+// kibodi halisi) -- kioo HASA cha jaribio_mzunguko.swa (MzungukoJaribuChanzo
+// + jm_chanzo_soma + jm_weka_tukio zimenakiliwa HAPA bila mabadiliko,
+// ni muundo wa jaribio ulioothibitishwa tayari, SI mantiki mpya ya
+// mchezo -- angalia maelezo ya jmz_glyph_sahihi kwenye jaribio_mzunguko.swa
+// kuhusu mkakati huu wa kunakili vifaa vya jaribio kati ya faili, ambao
+// ni desturi ya mradi tayari). Programu HII (executable) ndiyo
+// inayoendeshwa na skripti ya nje (hyprctl/grim) kuthibitisha dirisha
+// HALISI linaloonekana desktop-ni -- angalia ujumbe wa commit kwa
+// matokeo HASA ya uthibitisho huo.
+
+// JDM_XDG_TOPLEVEL_EV_CLOSE -- opcode ya tukio "close" la xdg_toplevel
+// (xdg-shell.xml, interface xdg_toplevel: configure=0, close=1) --
+// imethibitishwa dhidi ya
+// /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml. Dirisha
+// likifungwa na mtumiaji/WM (X ya kichwa cha dirisha), compositor
+// hutuma tukio hili -- tunatoka kwa heshima badala ya kuendelea
+// kusoma soketi iliyofungwa.
+n64 JDM_XDG_TOPLEVEL_EV_CLOSE = 1;
+
+// WaylandGlobals -- majina/matoleo ya globals tatu za msingi
+// zilizogunduliwa wakati wa get_registry + sync (angalia maelezo
+// kamili ya mlolongo huu kwenye jaribio_dirisha_halisi.swa). Imefungwa
+// kwenye muundo (zaidi ya hoja 6 zingehitajika bila hii -- kanuni ya
+// usanifu ya mradi, angalia maoni ya OnyeshoHudHoja kwenye hud.swa).
+muundo WaylandGlobals {
+    n64 registry_id;
+    n64 comp_name;
+    n64 comp_toleo;
+    n64 shm_name;
+    n64 shm_toleo;
+    n64 wmbase_name;
+    n64 wmbase_toleo;
+};
+
+// WaylandDirisha -- hali YOTE ya kudumu ya dirisha moja la Wayland
+// lililo wazi: vitambulisho vya object_id, hali ya shm (fd+kielekezi),
+// vipimo, NA hali ya bafa ya kupokea ujumbe (bafa/jumla/nafasi) --
+// hali hii LAZIMA idumu kati ya miito tofauti ya jdm_pampu_matukio
+// (ujumbe wa Wayland unaweza kufika ukiwa umekatika katikati ya baiti,
+// angalia maoni ya jaribio_dirisha_halisi.swa kuhusu "iliyobaki").
+muundo WaylandDirisha {
+    n64 fd;
+    n64 compositor_id;
+    n64 shm_id;
+    n64 wmbase_id;
+    n64 surface_id;
+    n64 pool_id;
+    n64 buffer_id;
+    n64 xdg_surface_id;
+    n64 toplevel_id;
+    n64 shm_fd;
+    n8* shm_ptr;
+    n64 upana;
+    n64 kimo;
+    n64 stride;
+    n64 ukubwa_shm;
+    n8* bafa;
+    n64 ukubwa_bafa;
+    n64 jumla;
+    n64 nafasi;
+};
+
+// jdm_pata_fd_na_globals -- TUMIA TENA mlolongo HASA wa
+// jaribio_dirisha_halisi.swa (unganisha kwenye soketi, get_registry +
+// sync, kusanya globals tatu za msingi). Hurudisha fd (>=0) ikiwa
+// imefaulu, -1 ikiwa imeshindwa (ujumbe wa FAIL tayari umeandikwa).
+n64 jdm_pata_fd_na_globals(n8** envp, WaylandGlobals* ng) {
+    n8* xdg = wayland_mazingira_tafuta(envp, "XDG_RUNTIME_DIR");
+    n8* wd = wayland_mazingira_tafuta(envp, "WAYLAND_DISPLAY");
+    kama (xdg == 0) {
+        andika_kosa("FAIL: XDG_RUNTIME_DIR haipo kwenye mazingira\n", 0, 0, 0, 0, 0, 0);
+        rudisha 0 - 1;
+    }
+    kama (wd == 0) {
+        andika_kosa("FAIL: WAYLAND_DISPLAY haipo kwenye mazingira\n", 0, 0, 0, 0, 0, 0);
+        rudisha 0 - 1;
+    }
+
+    n8* njia = tenga(256);
+    weka_sifuri(njia, 256);
+    unganisha_mfuatano(njia, xdg, "/");
+    n8* njia2 = tenga(256);
+    weka_sifuri(njia2, 256);
+    unganisha_mfuatano(njia2, njia, wd);
+
+    andika("INFO: soketi ya Wayland = %s\n", njia2, 0, 0, 0, 0, 0);
+
+    n64 fd = wayland_soketi_fungua();
+    kama (fd < 0) {
+        andika_kosa("FAIL: socket() imeshindwa rc=%d\n", fd, 0, 0, 0, 0, 0);
+        rudisha 0 - 1;
+    }
+    n64 rc = wayland_soketi_unganisha(fd, njia2);
+    kama (rc < 0) {
+        andika_kosa("FAIL: connect() kwenye %s imeshindwa rc=%d\n", njia2, rc, 0, 0, 0, 0);
+        rudisha 0 - 1;
+    }
+    andika("OK: connect() imefaulu, fd=%d\n", fd, 0, 0, 0, 0, 0);
+
+    ng->registry_id = 2;
+    n64 sync_id = 3;
+
+    n8* msg = wayland_waya_jenga_get_registry(ng->registry_id);
+    wayland_soketi_tuma(fd, msg, wayland_waya_get_registry_ukubwa());
+    msg = wayland_waya_jenga_sync(sync_id);
+    wayland_soketi_tuma(fd, msg, 12);
+    andika("OK: get_registry + sync zimetumwa, nasubiri burst ya globals...\n", 0, 0, 0, 0, 0, 0);
+
+    n64 ukubwa_bafa = 65536;
+    n8* bafa = tenga(ukubwa_bafa);
+    n64 jumla = 0;
+    n64 nafasi = 0;
+    n64 imekamilika = 0;
+
+    ng->comp_name = 0 - 1;
+    ng->comp_toleo = 0;
+    ng->shm_name = 0 - 1;
+    ng->shm_toleo = 0;
+    ng->wmbase_name = 0 - 1;
+    ng->wmbase_toleo = 0;
+
+    n64 obj = 0;
+    n64 op = 0;
+    n64 sz = 0;
+    n64 n = 0;
+    n64 iliyobaki = 0;
+
+    wakati (imekamilika == 0) {
+        wakati (1 == 1) {
+            kama (jumla - nafasi < 8) { acha; }
+            obj = wayland_waya_msg_object_id(bafa, nafasi);
+            op = wayland_waya_msg_opcode(bafa, nafasi);
+            sz = wayland_waya_msg_ukubwa(bafa, nafasi);
+            kama (sz < 8) {
+                andika_kosa("FAIL: ukubwa batili wa ujumbe (sz=%d)\n", sz, 0, 0, 0, 0, 0);
+                imekamilika = 1;
+                acha;
+            }
+            kama (jumla - nafasi < sz) { acha; }
+
+            kama (obj == ng->registry_id && op == WAYLAND_WAYA_REGISTRY_EV_GLOBAL) {
+                n64 jina = wayland_waya_global_name(bafa, nafasi);
+                n8* iface = wayland_waya_global_interface_ptr(bafa, nafasi);
+                n64 toleo = wayland_waya_global_version(bafa, nafasi);
+                kama (linganisha_mfuatano(iface, "wl_compositor") == 0) {
+                    ng->comp_name = jina;
+                    ng->comp_toleo = toleo;
+                }
+                kama (linganisha_mfuatano(iface, "wl_shm") == 0) {
+                    ng->shm_name = jina;
+                    ng->shm_toleo = toleo;
+                }
+                kama (linganisha_mfuatano(iface, "xdg_wm_base") == 0) {
+                    ng->wmbase_name = jina;
+                    ng->wmbase_toleo = toleo;
+                }
+            } sivyo {
+                kama (obj == sync_id && op == WAYLAND_WAYA_CALLBACK_EV_DONE) {
+                    andika("OK: wl_callback.done (sync) -- burst ya globals imekamilika\n", 0, 0, 0, 0, 0, 0);
+                    imekamilika = 1;
+                }
+            }
+
+            nafasi = nafasi + sz;
+            kama (imekamilika == 1) { acha; }
+        }
+        kama (imekamilika == 1) { acha; }
+
+        kama (nafasi > 0) {
+            iliyobaki = jumla - nafasi;
+            nakili(bafa, bafa + nafasi, iliyobaki);
+            jumla = iliyobaki;
+            nafasi = 0;
+        }
+
+        n = wayland_soketi_pokea(fd, bafa + jumla, ukubwa_bafa - jumla);
+        kama (n <= 0) {
+            andika_kosa("FAIL: recvmsg() imerudisha %d kabla ya sync.done\n", n, 0, 0, 0, 0, 0);
+            wayland_soketi_funga(fd);
+            rudisha 0 - 1;
+        }
+        jumla = jumla + n;
+    }
+
+    andika("GLOBALS: wl_compositor(name=%d,v=%d) wl_shm(name=%d,v=%d) xdg_wm_base(name=%d,v=%d)\n",
+        ng->comp_name, ng->comp_toleo, ng->shm_name, ng->shm_toleo, ng->wmbase_name, ng->wmbase_toleo);
+
+    kama (ng->comp_name == (0 - 1) || ng->shm_name == (0 - 1) || ng->wmbase_name == (0 - 1)) {
+        andika_kosa("FAIL: moja au zaidi ya globals za msingi hazikupatikana\n", 0, 0, 0, 0, 0, 0);
+        wayland_soketi_funga(fd);
+        rudisha 0 - 1;
+    }
+
+    rudisha fd;
+}
+
+// jdm_jenga_dirisha -- TUMIA TENA mlolongo HASA wa
+// jaribio_dirisha_halisi.swa (bind x3, create_surface, memfd+shm,
+// create_pool kupitia SCM_RIGHTS, create_buffer, get_xdg_surface,
+// get_toplevel, set_title, commit YA AWALI tupu). `d->fd`, `d->upana`
+// na `d->kimo` LAZIMA ziwe zimewekwa na mwitaji KABLA ya kuita kazi
+// hii. Hurudisha 0 ikiwa imefaulu, -1 ikiwa imeshindwa.
+n64 jdm_jenga_dirisha(WaylandGlobals* ng, WaylandDirisha* d, n8* kichwa) {
+    d->compositor_id = 4;
+    d->shm_id = 5;
+    d->wmbase_id = 6;
+    d->surface_id = 7;
+    d->pool_id = 8;
+    d->buffer_id = 9;
+    d->xdg_surface_id = 10;
+    d->toplevel_id = 11;
+
+    n8* msg = wayland_waya_jenga_bind(ng->registry_id, ng->comp_name, "wl_compositor", ng->comp_toleo, d->compositor_id);
+    wayland_soketi_tuma(d->fd, msg, wayland_waya_bind_ukubwa("wl_compositor"));
+    msg = wayland_waya_jenga_bind(ng->registry_id, ng->shm_name, "wl_shm", ng->shm_toleo, d->shm_id);
+    wayland_soketi_tuma(d->fd, msg, wayland_waya_bind_ukubwa("wl_shm"));
+    msg = wayland_waya_jenga_bind(ng->registry_id, ng->wmbase_name, "xdg_wm_base", ng->wmbase_toleo, d->wmbase_id);
+    wayland_soketi_tuma(d->fd, msg, wayland_waya_bind_ukubwa("xdg_wm_base"));
+    andika("OK: bind x3 (wl_compositor=%d wl_shm=%d xdg_wm_base=%d) zimetumwa\n", d->compositor_id, d->shm_id, d->wmbase_id, 0, 0, 0);
+
+    msg = wayland_waya_jenga_create_surface(d->compositor_id, d->surface_id);
+    wayland_soketi_tuma(d->fd, msg, 12);
+    andika("OK: wl_compositor.create_surface (surface=%d) imetumwa\n", d->surface_id, 0, 0, 0, 0, 0);
+
+    d->stride = d->upana * 4;
+    d->ukubwa_shm = d->stride * d->kimo;
+
+    d->shm_fd = wayland_shm_unda(d->ukubwa_shm);
+    kama (d->shm_fd < 0) {
+        andika_kosa("FAIL: memfd_create/ftruncate ya shm imeshindwa rc=%d\n", d->shm_fd, 0, 0, 0, 0, 0);
+        rudisha 0 - 1;
+    }
+    d->shm_ptr = tenga(d->ukubwa_shm);
+    andika("OK: memfd (fd=%d, ukubwa=%d baiti) imeundwa\n", d->shm_fd, d->ukubwa_shm, 0, 0, 0, 0);
+
+    msg = wayland_waya_jenga_create_pool(d->shm_id, d->pool_id, d->ukubwa_shm);
+    n64 s_cp = wayland_soketi_tuma_na_fd(d->fd, msg, 16, d->shm_fd);
+    kama (s_cp < 0) {
+        andika_kosa("FAIL: sendmsg ya wl_shm.create_pool (SCM_RIGHTS) imeshindwa rc=%d\n", s_cp, 0, 0, 0, 0, 0);
+        rudisha 0 - 1;
+    }
+    andika("OK: wl_shm.create_pool (pool=%d, fd kupitia SCM_RIGHTS) imetumwa\n", d->pool_id, 0, 0, 0, 0, 0);
+
+    msg = wayland_waya_jenga_create_buffer(d->pool_id, d->buffer_id, 0, d->upana, d->kimo, d->stride, WAYLAND_WAYA_SHM_FORMAT_XRGB8888);
+    wayland_soketi_tuma(d->fd, msg, 32);
+    andika("OK: wl_shm_pool.create_buffer (buffer=%d, %dx%d) imetumwa\n", d->buffer_id, d->upana, d->kimo, 0, 0, 0);
+
+    msg = wayland_waya_jenga_get_xdg_surface(d->wmbase_id, d->xdg_surface_id, d->surface_id);
+    wayland_soketi_tuma(d->fd, msg, 16);
+    andika("OK: xdg_wm_base.get_xdg_surface (xdg_surface=%d) imetumwa\n", d->xdg_surface_id, 0, 0, 0, 0, 0);
+
+    msg = wayland_waya_jenga_get_toplevel(d->xdg_surface_id, d->toplevel_id);
+    wayland_soketi_tuma(d->fd, msg, 12);
+    andika("OK: xdg_surface.get_toplevel (toplevel=%d) imetumwa\n", d->toplevel_id, 0, 0, 0, 0, 0);
+
+    msg = wayland_waya_jenga_set_title(d->toplevel_id, kichwa);
+    wayland_soketi_tuma(d->fd, msg, wayland_waya_set_title_ukubwa(kichwa));
+    andika("OK: xdg_toplevel.set_title(%s) imetumwa\n", kichwa, 0, 0, 0, 0, 0);
+
+    msg = wayland_waya_jenga_commit(d->surface_id);
+    wayland_soketi_tuma(d->fd, msg, 8);
+    andika("OK: wl_surface.commit (commit ya AWALI, tupu) imetumwa -- nasubiri configure ya kwanza\n", 0, 0, 0, 0, 0, 0);
+
+    rudisha 0;
+}
+
+// jdm_onyesha_upya -- "onyesha upya" ya dirisha: nakili shm_ptr
+// kwenye memfd (wayland_shm_jaza), kisha attach+damage_buffer+commit.
+// Hii ndiyo kazi inayoitwa TENA kwa KILA zamu (si mara moja tu) --
+// angalia maelezo juu ya faili.
+w0 jdm_onyesha_upya(WaylandDirisha* d) {
+    wayland_shm_jaza(d->shm_fd, d->shm_ptr, d->ukubwa_shm);
+    n8* msg = wayland_waya_jenga_attach(d->surface_id, d->buffer_id, 0, 0);
+    wayland_soketi_tuma(d->fd, msg, 20);
+    msg = wayland_waya_jenga_damage_buffer(d->surface_id, 0, 0, d->upana, d->kimo);
+    wayland_soketi_tuma(d->fd, msg, 24);
+    msg = wayland_waya_jenga_commit(d->surface_id);
+    wayland_soketi_tuma(d->fd, msg, 8);
+}
+
+// jdm_subiri_configure_ya_kwanza -- TUMIA TENA kitanzi cha matukio
+// cha jaribio_dirisha_halisi.swa: soma zisizozuia, jibu ping/pong,
+// subiri xdg_surface.configure YA KWANZA (ack_configure), kisha
+// -- BADALA ya kujaza rangi moja -- chora HUD YA KWANZA kutoka Mchezo
+// HALISI (`g`) kwenye d->shm_ptr na uonyeshe (jdm_onyesha_upya).
+// Hurudisha 0 ikiwa HUD ya kwanza imechorwa na kuonyeshwa, -1 ikiwa
+// soketi imefungwa/imeshindwa au hakuna configure ndani ya muda.
+n64 jdm_subiri_configure_ya_kwanza(WaylandDirisha* d, Mchezo* g) {
+    wayland_soketi_weka_zisizozuia(d->fd);
+
+    n64 kwanza_kimechorwa = 0;
+    n64 mwanzo = civ_muda_sasa();
+    n64 SEKUNDE_KUNGOJA = 5;
+    n64 serial = 0;
+    n64 obj = 0;
+    n64 op = 0;
+    n64 sz = 0;
+    n64 n = 0;
+    n64 iliyobaki = 0;
+    n8* msg;
+
+    wakati ((civ_muda_sasa() - mwanzo) < SEKUNDE_KUNGOJA && kwanza_kimechorwa == 0) {
+        n = wayland_soketi_pokea(d->fd, d->bafa + d->jumla, d->ukubwa_bafa - d->jumla);
+        kama (n > 0) {
+            d->jumla = d->jumla + n;
+
+            wakati (1 == 1) {
+                kama (d->jumla - d->nafasi < 8) { acha; }
+                obj = wayland_waya_msg_object_id(d->bafa, d->nafasi);
+                op = wayland_waya_msg_opcode(d->bafa, d->nafasi);
+                sz = wayland_waya_msg_ukubwa(d->bafa, d->nafasi);
+                kama (sz < 8) {
+                    andika_kosa("WARN: ukubwa batili wa ujumbe wakati wa kusubiri configure (sz=%d)\n", sz, 0, 0, 0, 0, 0);
+                    acha;
+                }
+                kama (d->jumla - d->nafasi < sz) { acha; }
+
+                kama (obj == d->wmbase_id && op == WAYLAND_WAYA_XDG_WM_BASE_EV_PING) {
+                    serial = wayland_waya_ev_serial(d->bafa, d->nafasi);
+                    msg = wayland_waya_jenga_pong(d->wmbase_id, serial);
+                    wayland_soketi_tuma(d->fd, msg, 12);
+                    andika("OK: xdg_wm_base.ping(serial=%d) -> pong imetumwa\n", serial, 0, 0, 0, 0, 0);
+                } sivyo {
+                    kama (obj == d->xdg_surface_id && op == WAYLAND_WAYA_XDG_SURFACE_EV_CONFIGURE) {
+                        serial = wayland_waya_ev_serial(d->bafa, d->nafasi);
+                        msg = wayland_waya_jenga_ack_configure(d->xdg_surface_id, serial);
+                        wayland_soketi_tuma(d->fd, msg, 12);
+                        andika("OK: xdg_surface.configure(serial=%d) -> ack_configure imetumwa\n", serial, 0, 0, 0, 0, 0);
+
+                        kama (kwanza_kimechorwa == 0) {
+                            weka_sifuri(d->shm_ptr, d->stride * d->kimo);
+                            onyesho_hud_chora_kutoka_mchezo(g, d->shm_ptr, d->stride);
+                            jdm_onyesha_upya(d);
+                            kwanza_kimechorwa = 1;
+                            andika("OK: HUD ya KWANZA imechorwa kutoka Mchezo halisi + attach + damage_buffer + commit -- DIRISHA LINAPASWA KUONEKANA SASA\n", 0, 0, 0, 0, 0, 0);
+                        }
+                    }
+                }
+
+                d->nafasi = d->nafasi + sz;
+            }
+
+            kama (d->nafasi > 0) {
+                iliyobaki = d->jumla - d->nafasi;
+                nakili(d->bafa, d->bafa + d->nafasi, iliyobaki);
+                d->jumla = iliyobaki;
+                d->nafasi = 0;
+            }
+        } sivyo {
+            kama (n == 0) {
+                andika_kosa("WARN: soketi imefungwa na compositor wakati wa kusubiri configure ya kwanza\n", 0, 0, 0, 0, 0, 0);
+                rudisha 0 - 1;
+            } sivyo {
+                kama (n != WAYLAND_SOKETI_EAGAIN) {
+                    andika_kosa("WARN: recvmsg() rc=%d (si EAGAIN) wakati wa kusubiri configure ya kwanza\n", n, 0, 0, 0, 0, 0);
+                }
+                wayland_soketi_lala_ms(50);
+            }
+        }
+    }
+
+    kama (kwanza_kimechorwa == 0) {
+        andika_kosa("FAIL: hakuna xdg_surface.configure iliyopokelewa ndani ya sekunde %d -- dirisha HALIKUCHORWA\n", SEKUNDE_KUNGOJA, 0, 0, 0, 0, 0);
+        rudisha 0 - 1;
+    }
+    rudisha 0;
+}
+
+// jdm_pampu_matukio -- soma soketi ya Wayland zisizozuia kwa
+// `sekunde` (kujibu ping->pong papo hapo, TUMIA TENA utaratibu ULE
+// ULE wa jdm_subiri_configure_ya_kwanza/jaribio_dirisha_halisi.swa),
+// bila kuchora -- configure baada ya ya kwanza HAZIBADILISHI maudhui
+// (hakuna resize inayoshughulikiwa bado). Hutambua pia
+// xdg_toplevel.close (dirisha limefungwa na X/WM) na kurudisha -1
+// papo hapo ili mwitaji atoke kwa heshima. Hurudisha 0 (endelea) au
+// -1 (soketi imefungwa/dirisha limefungwa -- mwitaji LAZIMA asimame).
+n64 jdm_pampu_matukio(WaylandDirisha* d, n64 sekunde) {
+    n64 mwanzo = civ_muda_sasa();
+    n64 obj = 0;
+    n64 op = 0;
+    n64 sz = 0;
+    n64 n = 0;
+    n64 iliyobaki = 0;
+    n64 serial = 0;
+    n8* msg;
+
+    wakati ((civ_muda_sasa() - mwanzo) < sekunde) {
+        n = wayland_soketi_pokea(d->fd, d->bafa + d->jumla, d->ukubwa_bafa - d->jumla);
+        kama (n > 0) {
+            d->jumla = d->jumla + n;
+
+            wakati (1 == 1) {
+                kama (d->jumla - d->nafasi < 8) { acha; }
+                obj = wayland_waya_msg_object_id(d->bafa, d->nafasi);
+                op = wayland_waya_msg_opcode(d->bafa, d->nafasi);
+                sz = wayland_waya_msg_ukubwa(d->bafa, d->nafasi);
+                kama (sz < 8) {
+                    andika_kosa("WARN: ukubwa batili wa ujumbe kwenye pampu ya matukio (sz=%d)\n", sz, 0, 0, 0, 0, 0);
+                    acha;
+                }
+                kama (d->jumla - d->nafasi < sz) { acha; }
+
+                kama (obj == d->wmbase_id && op == WAYLAND_WAYA_XDG_WM_BASE_EV_PING) {
+                    serial = wayland_waya_ev_serial(d->bafa, d->nafasi);
+                    msg = wayland_waya_jenga_pong(d->wmbase_id, serial);
+                    wayland_soketi_tuma(d->fd, msg, 12);
+                    andika("OK: xdg_wm_base.ping(serial=%d) -> pong imetumwa (pampu)\n", serial, 0, 0, 0, 0, 0);
+                } sivyo {
+                    kama (obj == d->toplevel_id && op == JDM_XDG_TOPLEVEL_EV_CLOSE) {
+                        andika("INFO: xdg_toplevel.close imepokelewa -- dirisha limefungwa na mtumiaji/WM\n", 0, 0, 0, 0, 0, 0);
+                        rudisha 0 - 1;
+                    }
+                }
+
+                d->nafasi = d->nafasi + sz;
+            }
+
+            kama (d->nafasi > 0) {
+                iliyobaki = d->jumla - d->nafasi;
+                nakili(d->bafa, d->bafa + d->nafasi, iliyobaki);
+                d->jumla = iliyobaki;
+                d->nafasi = 0;
+            }
+        } sivyo {
+            kama (n == 0) {
+                andika_kosa("WARN: soketi imefungwa na compositor wakati wa pampu ya matukio\n", 0, 0, 0, 0, 0, 0);
+                rudisha 0 - 1;
+            } sivyo {
+                kama (n != WAYLAND_SOKETI_EAGAIN) {
+                    andika_kosa("WARN: recvmsg() rc=%d (si EAGAIN) wakati wa pampu ya matukio\n", n, 0, 0, 0, 0, 0);
+                }
+                wayland_soketi_lala_ms(50);
+            }
+        }
+    }
+    rudisha 0;
+}
+
+// ---------------------------------------------------------------
+// Vifaa vya JARIBIO LA KIOTOMATIKI -- matukio ya kibodi BANDIA,
+// yaliyowekwa MAPEMA (SIO kibodi halisi). Kioo HASA cha
+// MzungukoJaribuChanzo/jm_chanzo_soma/jm_weka_tukio vya
+// jaribio_mzunguko.swa (vimenakiliwa bila mabadiliko ya mantiki --
+// ni vifaa vya jaribio, SI mantiki ya mchezo/dirisha; kunakili vifaa
+// vya jaribio kati ya faili ni desturi iliyopo tayari ya mradi huu,
+// angalia maoni ya jmz_glyph_sahihi kwenye jaribio_mzunguko.swa).
+// ---------------------------------------------------------------
+
+muundo MzungukoJaribuChanzo {
+    n8* matukio;
+    n64 idadi;
+    n64 faharisi;
+    n64 idadi_ya_miito;
+};
+
+n64 jm_chanzo_soma(n64 muktadha, n8* nje) {
+    MzungukoJaribuChanzo* jc = muktadha;
+    jc->idadi_ya_miito = jc->idadi_ya_miito + 1;
+    kama (jc->faharisi >= jc->idadi) {
+        rudisha 0 - 1;
+    }
+    n8* chanzo_tukio = jc->matukio + (jc->faharisi * 24);
+    nakili(nje, chanzo_tukio, 24);
+    jc->faharisi = jc->faharisi + 1;
+    rudisha 1;
+}
+
+w0 jm_weka_tukio(n8* matukio, n64 faharisi, n64 kanuni, n64 thamani) {
+    n8* t = matukio + (faharisi * 24);
+    weka_sifuri(t, 24);
+    weka_u16(t, 16, 1);        // type = EV_KEY
+    weka_u16(t, 18, kanuni);   // code
+    weka_u32(t, 20, thamani);  // value
+}
+
+n32 anza(n32 argc, n8** argv) {
+    n8** envp = wayland_mazingira_pata_envp(argv);
+
+    onyesho_fonti_pakia();
+
+    // ---------- Unda Mchezo KAMILI HALISI (mifumo 47) ----------
+    Mchezo* g = mchezo_unda();
+    kama (g == 0) {
+        andika_kosa("FAIL: mchezo_unda imerudisha 0\n", 0, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) {
+        andika_kosa("FAIL: mchezo_anzisha haikurudi CIV_SAWA\n", 0, 0, 0, 0, 0, 0);
+        mchezo_uharibu(g);
+        rudisha 1;
+    }
+
+    // Mbegu ya ardhi (sawa HASA na jaribio_mzunguko.swa / jaribio_hud_mchezo_halisi.swa) --
+    // bila hii GDP ingebaki 0 milele; mzunguko wa mchezo bado unaendelea sahihi bila hii.
+    DuniaRamani* ramani = mchezo_pata_ramani(g);
+    n32 y_seed = 0;
+    wakati (y_seed < ramani->urefu) {
+        n32 x_seed = 0;
+        wakati (x_seed < ramani->upana) {
+            DuniaRamaniKipande* kp = dunia_ramani_pata_kipande(ramani, x_seed, y_seed);
+            kama (kp != 0) {
+                kp->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_NYASI;
+                kp->rutuba = 0.5;
+                kp->mwinuko = 0.3;
+            }
+            x_seed = x_seed + 1;
+        }
+        y_seed = y_seed + 1;
+    }
+    TaifaMfumo* taifa = mchezo_pata_taifa(g);
+    dunia_taifa_mfumo_dai_maeneo_yote(taifa, ramani);
+
+    // ---------- Unganisha kwenye Wayland + pata globals ----------
+    WaylandGlobals ng;
+    n64 fd = jdm_pata_fd_na_globals(envp, &ng);
+    kama (fd < 0) {
+        mchezo_uharibu(g);
+        rudisha 1;
+    }
+
+    // ---------- Jenga dirisha (ukubwa == HUD canvas HASA) ----------
+    WaylandDirisha d;
+    d.fd = fd;
+    d.upana = ONYESHO_HUD_UPANA;
+    d.kimo = ONYESHO_HUD_KIMO;
+    d.ukubwa_bafa = 65536;
+    d.bafa = tenga(d.ukubwa_bafa);
+    d.jumla = 0;
+    d.nafasi = 0;
+
+    n64 rc_jenga = jdm_jenga_dirisha(&ng, &d, "Dominion");
+    kama (rc_jenga < 0) {
+        wayland_soketi_funga(fd);
+        mchezo_uharibu(g);
+        rudisha 1;
+    }
+
+    // ---------- Subiri configure ya kwanza + chora HUD ya kwanza ----------
+    n64 rc_subiri = jdm_subiri_configure_ya_kwanza(&d, g);
+    kama (rc_subiri < 0) {
+        wayland_soketi_funga(fd);
+        mchezo_uharibu(g);
+        rudisha 1;
+    }
+
+    // ---------- Orodha ya matukio BANDIA: SPACE x3 kisha ESC ----------
+    // (sawa na SCENARIO A ya jaribio_mzunguko.swa: release/repeat
+    // kati ya mabonyezo huthibitisha HAZISABABISHI zamu ya ziada)
+    n64 idadi_matukio = 6;
+    n8* matukio = tenga(24 * idadi_matukio);
+    jm_weka_tukio(matukio, 0, MZUNGUKO_KEY_SPACE, 1);
+    jm_weka_tukio(matukio, 1, MZUNGUKO_KEY_SPACE, 0);
+    jm_weka_tukio(matukio, 2, MZUNGUKO_KEY_SPACE, 1);
+    jm_weka_tukio(matukio, 3, MZUNGUKO_KEY_SPACE, 0);
+    jm_weka_tukio(matukio, 4, MZUNGUKO_KEY_SPACE, 1);
+    jm_weka_tukio(matukio, 5, MZUNGUKO_KEY_ESC, 1);
+
+    MzungukoJaribuChanzo jc;
+    jc.matukio = matukio;
+    jc.idadi = idadi_matukio;
+    jc.faharisi = 0;
+    jc.idadi_ya_miito = 0;
+
+    MzungukoChanzo chanzo;
+    chanzo.soma_kazi = &jm_chanzo_soma;
+    chanzo.muktadha = &jc;
+
+    n64 zamu_awali = g->zamu_ya_sasa;
+    n64 SEKUNDE_KATI_YA_HATUA = 2;
+    n32 inaendelea = 1;
+    n64 zamu_kabla;
+    n64 rc_hatua;
+    n64 rc_pampu;
+
+    // ---------- Mzunguko: pampu matukio ya Wayland (ping/close) KATI
+    // ya kila hatua ya mchezo, kisha hatua MOJA ya SPACE/ESC ----------
+    wakati (inaendelea == 1) {
+        rc_pampu = jdm_pampu_matukio(&d, SEKUNDE_KATI_YA_HATUA);
+        kama (rc_pampu < 0) {
+            andika("INFO: dirisha limefungwa wakati wa kusubiri -- natoka\n", 0, 0, 0, 0, 0, 0);
+            inaendelea = 0;
+            acha;
+        }
+
+        zamu_kabla = g->zamu_ya_sasa;
+        rc_hatua = mzunguko_hatua(g, &chanzo, d.shm_ptr, d.stride);
+        kama (rc_hatua < 0) {
+            inaendelea = 0;
+            acha;
+        }
+        kama (g->zamu_ya_sasa != zamu_kabla) {
+            jdm_onyesha_upya(&d);
+            andika("OK: zamu mpya (%d) imechorwa upya na kuonyeshwa dirishani\n", g->zamu_ya_sasa, 0, 0, 0, 0, 0);
+        }
+    }
+
+    andika("INFO: mzunguko wa mchezo umekamilika (ESC au mwisho wa matukio), nafunga dirisha kwa heshima\n", 0, 0, 0, 0, 0, 0);
+    n8* msg_destroy = wayland_waya_jenga_surface_destroy(d.surface_id);
+    wayland_soketi_tuma(d.fd, msg_destroy, 8);
+    wayland_soketi_funga(d.fd);
+
+    // ---------- Uthibitisho wa ndani (jumla na mzunguko_hatua tayari
+    // vimepima kila hatua -- hapa tunapima MATOKEO YA MWISHO) ----------
+    n64 zamu_mwisho = g->zamu_ya_sasa;
+    n64 jdm_yalioshindwa = 0;
+    kama (jc.idadi_ya_miito != idadi_matukio) {
+        andika_kosa("FAIL: chanzo cha matukio hakikuitwa idadi sahihi ya mara (%d badala ya %d)\n", jc.idadi_ya_miito, idadi_matukio, 0, 0, 0, 0);
+        jdm_yalioshindwa = jdm_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: chanzo cha matukio kimeitwa idadi sahihi ya mara (%d)\n", jc.idadi_ya_miito, 0, 0, 0, 0, 0);
+    }
+    kama (zamu_mwisho != zamu_awali + 3) {
+        andika_kosa("FAIL: idadi ya zamu si sahihi (zamu_awali=%d, zamu_mwisho=%d, zilizotarajiwa=%d)\n", zamu_awali, zamu_mwisho, zamu_awali + 3, 0, 0, 0);
+        jdm_yalioshindwa = jdm_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: Mchezo umeenda mbele kwa HASA zamu 3 (kutoka %d hadi %d)\n", zamu_awali, zamu_mwisho, 0, 0, 0, 0);
+    }
+
+    achilia d.bafa;
+    achilia d.shm_ptr;
+    achilia matukio;
+    mchezo_uharibu(g);
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", jdm_yalioshindwa, 0, 0, 0, 0, 0);
+    kama (jdm_yalioshindwa > 0) { rudisha 1; }
+    andika("DONE: dirisha la mchezo la Dominion limeonekana na mzunguko wa SPACE/ESC umekamilika kwa zamu 3\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

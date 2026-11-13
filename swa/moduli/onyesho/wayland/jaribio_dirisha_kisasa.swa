@@ -1,0 +1,627 @@
+husisha { moduli/onyesho/wayland/mazingira.swa }
+husisha { moduli/onyesho/wayland/soketi.swa }
+husisha { moduli/onyesho/wayland/waya.swa }
+husisha { moduli/onyesho/wayland/shm.swa }
+husisha { moduli/onyesho/ramani_onyesho.swa }
+husisha { moduli/onyesho/chati.swa }
+husisha { moduli/onyesho/uhuishaji.swa }
+husisha { moduli/onyesho/mzunguko.swa }
+
+// jaribio_dirisha_kisasa.swa -- Awamu I ("Ramani Halisi + Uhuishaji +
+// Dirisha la Kisasa"): hatua ya MWISHO inayounganisha KAZI ZOTE
+// zilizothibitishwa tayari kivyake (G1 ramani bapa, G2 duara la 3D,
+// G3 mgawanyo wa kieneo, C/J chati, F hud ya eneo, H uhuishaji) kuwa
+// DIRISHA MOJA la Wayland la 1080x400 lenye PANELI MBILI (ramani
+// kushoto 720px, takwimu kulia 360px) na FRAME-PACING HALISI
+// (wl_surface.frame + wl_callback.done, SI kitanzi cha sleep()
+// kinachojifanya).
+//
+// IMEANDIKWA MOJA KWA MOJA (SIO kupitia Agent) kwa sababu inagusa
+// faili za wayland/ moja kwa moja -- kioo cha jinsi TAB/LEFT/RIGHT
+// (mzunguko.swa) na kazi zingine za wayland/ zilivyofanywa awali.
+//
+// MLOLONGO WA KUANZISHA DIRISHA umenakiliwa HASA kutoka
+// jaribio_dirisha_mchezo.swa (hakuna opcode mpya ya Wayland
+// iliyovumbuliwa isipokuwa wl_surface.frame, Awamu I pekee --
+// imeongezwa kwenye waya.swa, imethibitishwa dhidi ya wayland.xml
+// moja kwa moja: wl_surface request order ni destroy=0,attach=1,
+// damage=2,frame=3,set_opaque_region=4,set_input_region=5,commit=6).
+//
+// MZUNGUKO WA FREMU HALISI: kila fremu -- (1) soma tukio MOJA la
+// kibodi (bandia, lililowekwa mapema -- angalia MzungukoJaribuChanzo
+// chini) kama lipo, (2) sasisha uhuishaji (MchoroThamaniHuishwa ya
+// GDP ya jumla), (3) chora upya paneli zote mbili kulingana na hali
+// ya sasa, (4) attach+damage_buffer+FRAME(callback mpya)+commit kwa
+// WAKATI MMOJA, (5) SUBIRI wl_callback.done ya callback HIYO (huku
+// ukijibu ping/pong na kugundua xdg_toplevel.close kama inatokea)
+// KABLA ya kuendelea na fremu inayofuata -- HII NDIYO frame-pacing
+// halisi: compositor NDIYE anayeamua lini "ni wakati mzuri wa
+// kuchora fremu mpya", SI timer ya bandia.
+//
+// FUNGUO: SPACE -> zamu mbele + gdp animation inapata lengwa jipya
+// (SI kuruka papo hapo -- itaonekana ikisogea taratibu kwenye fremu
+// kadhaa zinazofuata). M (scancode 50, KEY_M) -> badilisha paneli ya
+// ramani kati ya "bapa" (0) -> "duara la 3D" (1) -> "mgawanyo wa
+// kieneo" (2) -> inarudi 0. ESC -> funga kwa heshima.
+
+n64 JDK_KEY_M = 50;
+n64 JDK_XDG_TOPLEVEL_EV_CLOSE = 1;
+
+n64 JDK_UPANA = 1080;
+n64 JDK_KIMO = 400;
+n64 JDK_RAMANI_UPANA = 720;
+n64 JDK_TAKWIMU_X = 720;
+n64 JDK_TAKWIMU_UPANA = 360;
+
+muundo WaylandGlobals {
+    n64 registry_id;
+    n64 comp_name;
+    n64 comp_toleo;
+    n64 shm_name;
+    n64 shm_toleo;
+    n64 wmbase_name;
+    n64 wmbase_toleo;
+};
+
+muundo WaylandDirisha {
+    n64 fd;
+    n64 compositor_id;
+    n64 shm_id;
+    n64 wmbase_id;
+    n64 surface_id;
+    n64 pool_id;
+    n64 buffer_id;
+    n64 xdg_surface_id;
+    n64 toplevel_id;
+    n64 shm_fd;
+    n8* shm_ptr;
+    n64 upana;
+    n64 kimo;
+    n64 stride;
+    n64 ukubwa_shm;
+    n8* bafa;
+    n64 ukubwa_bafa;
+    n64 jumla;
+    n64 nafasi;
+};
+
+n64 jdk_pata_fd_na_globals(n8** envp, WaylandGlobals* ng) {
+    n8* xdg = wayland_mazingira_tafuta(envp, "XDG_RUNTIME_DIR");
+    n8* wd = wayland_mazingira_tafuta(envp, "WAYLAND_DISPLAY");
+    kama (xdg == 0) { andika_kosa("FAIL: XDG_RUNTIME_DIR haipo\n", 0, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+    kama (wd == 0) { andika_kosa("FAIL: WAYLAND_DISPLAY haipo\n", 0, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+
+    n8* njia = tenga(256);
+    weka_sifuri(njia, 256);
+    unganisha_mfuatano(njia, xdg, "/");
+    n8* njia2 = tenga(256);
+    weka_sifuri(njia2, 256);
+    unganisha_mfuatano(njia2, njia, wd);
+
+    n64 fd = wayland_soketi_fungua();
+    kama (fd < 0) { andika_kosa("FAIL: socket() rc=%d\n", fd, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+    n64 rc = wayland_soketi_unganisha(fd, njia2);
+    kama (rc < 0) { andika_kosa("FAIL: connect() rc=%d\n", rc, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+    andika("OK: connect() imefaulu, fd=%d\n", fd, 0, 0, 0, 0, 0);
+
+    ng->registry_id = 2;
+    n64 sync_id = 3;
+    n8* msg = wayland_waya_jenga_get_registry(ng->registry_id);
+    wayland_soketi_tuma(fd, msg, wayland_waya_get_registry_ukubwa());
+    msg = wayland_waya_jenga_sync(sync_id);
+    wayland_soketi_tuma(fd, msg, 12);
+
+    n64 ukubwa_bafa = 65536;
+    n8* bafa = tenga(ukubwa_bafa);
+    n64 jumla = 0;
+    n64 nafasi = 0;
+    n64 imekamilika = 0;
+    ng->comp_name = 0 - 1; ng->comp_toleo = 0;
+    ng->shm_name = 0 - 1; ng->shm_toleo = 0;
+    ng->wmbase_name = 0 - 1; ng->wmbase_toleo = 0;
+    n64 obj = 0; n64 op = 0; n64 sz = 0; n64 n = 0; n64 iliyobaki = 0;
+
+    wakati (imekamilika == 0) {
+        wakati (1 == 1) {
+            kama (jumla - nafasi < 8) { acha; }
+            obj = wayland_waya_msg_object_id(bafa, nafasi);
+            op = wayland_waya_msg_opcode(bafa, nafasi);
+            sz = wayland_waya_msg_ukubwa(bafa, nafasi);
+            kama (sz < 8) { imekamilika = 1; acha; }
+            kama (jumla - nafasi < sz) { acha; }
+
+            kama (obj == ng->registry_id && op == WAYLAND_WAYA_REGISTRY_EV_GLOBAL) {
+                n64 jina = wayland_waya_global_name(bafa, nafasi);
+                n8* iface = wayland_waya_global_interface_ptr(bafa, nafasi);
+                n64 toleo = wayland_waya_global_version(bafa, nafasi);
+                kama (linganisha_mfuatano(iface, "wl_compositor") == 0) { ng->comp_name = jina; ng->comp_toleo = toleo; }
+                kama (linganisha_mfuatano(iface, "wl_shm") == 0) { ng->shm_name = jina; ng->shm_toleo = toleo; }
+                kama (linganisha_mfuatano(iface, "xdg_wm_base") == 0) { ng->wmbase_name = jina; ng->wmbase_toleo = toleo; }
+            } sivyo {
+                kama (obj == sync_id && op == WAYLAND_WAYA_CALLBACK_EV_DONE) { imekamilika = 1; }
+            }
+            nafasi = nafasi + sz;
+            kama (imekamilika == 1) { acha; }
+        }
+        kama (imekamilika == 1) { acha; }
+        kama (nafasi > 0) {
+            iliyobaki = jumla - nafasi;
+            nakili(bafa, bafa + nafasi, iliyobaki);
+            jumla = iliyobaki;
+            nafasi = 0;
+        }
+        n = wayland_soketi_pokea(fd, bafa + jumla, ukubwa_bafa - jumla);
+        kama (n <= 0) { andika_kosa("FAIL: recvmsg() rc=%d\n", n, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+        jumla = jumla + n;
+    }
+
+    andika("GLOBALS: wl_compositor(v=%d) wl_shm(v=%d) xdg_wm_base(v=%d)\n",
+        ng->comp_toleo, ng->shm_toleo, ng->wmbase_toleo, 0, 0, 0);
+    kama (ng->comp_name == (0 - 1) || ng->shm_name == (0 - 1) || ng->wmbase_name == (0 - 1)) {
+        andika_kosa("FAIL: globals za msingi hazikupatikana\n", 0, 0, 0, 0, 0, 0);
+        rudisha 0 - 1;
+    }
+    rudisha fd;
+}
+
+n64 jdk_jenga_dirisha(WaylandGlobals* ng, WaylandDirisha* d, n8* kichwa) {
+    d->compositor_id = 4;
+    d->shm_id = 5;
+    d->wmbase_id = 6;
+    d->surface_id = 7;
+    d->pool_id = 8;
+    d->buffer_id = 9;
+    d->xdg_surface_id = 10;
+    d->toplevel_id = 11;
+
+    n8* msg = wayland_waya_jenga_bind(ng->registry_id, ng->comp_name, "wl_compositor", ng->comp_toleo, d->compositor_id);
+    wayland_soketi_tuma(d->fd, msg, wayland_waya_bind_ukubwa("wl_compositor"));
+    msg = wayland_waya_jenga_bind(ng->registry_id, ng->shm_name, "wl_shm", ng->shm_toleo, d->shm_id);
+    wayland_soketi_tuma(d->fd, msg, wayland_waya_bind_ukubwa("wl_shm"));
+    msg = wayland_waya_jenga_bind(ng->registry_id, ng->wmbase_name, "xdg_wm_base", ng->wmbase_toleo, d->wmbase_id);
+    wayland_soketi_tuma(d->fd, msg, wayland_waya_bind_ukubwa("xdg_wm_base"));
+
+    msg = wayland_waya_jenga_create_surface(d->compositor_id, d->surface_id);
+    wayland_soketi_tuma(d->fd, msg, 12);
+
+    d->stride = d->upana * 4;
+    d->ukubwa_shm = d->stride * d->kimo;
+    d->shm_fd = wayland_shm_unda(d->ukubwa_shm);
+    kama (d->shm_fd < 0) { andika_kosa("FAIL: shm_unda rc=%d\n", d->shm_fd, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+    d->shm_ptr = tenga(d->ukubwa_shm);
+    andika("OK: dirisha %dx%d (shm fd=%d, baiti=%d)\n", d->upana, d->kimo, d->shm_fd, d->ukubwa_shm, 0, 0);
+
+    msg = wayland_waya_jenga_create_pool(d->shm_id, d->pool_id, d->ukubwa_shm);
+    n64 s_cp = wayland_soketi_tuma_na_fd(d->fd, msg, 16, d->shm_fd);
+    kama (s_cp < 0) { andika_kosa("FAIL: create_pool sendmsg rc=%d\n", s_cp, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+
+    msg = wayland_waya_jenga_create_buffer(d->pool_id, d->buffer_id, 0, d->upana, d->kimo, d->stride, WAYLAND_WAYA_SHM_FORMAT_XRGB8888);
+    wayland_soketi_tuma(d->fd, msg, 32);
+
+    msg = wayland_waya_jenga_get_xdg_surface(d->wmbase_id, d->xdg_surface_id, d->surface_id);
+    wayland_soketi_tuma(d->fd, msg, 16);
+    msg = wayland_waya_jenga_get_toplevel(d->xdg_surface_id, d->toplevel_id);
+    wayland_soketi_tuma(d->fd, msg, 12);
+    msg = wayland_waya_jenga_set_title(d->toplevel_id, kichwa);
+    wayland_soketi_tuma(d->fd, msg, wayland_waya_set_title_ukubwa(kichwa));
+    msg = wayland_waya_jenga_commit(d->surface_id);
+    wayland_soketi_tuma(d->fd, msg, 8);
+    rudisha 0;
+}
+
+w0 jdk_onyesha_upya(WaylandDirisha* d) {
+    wayland_shm_jaza(d->shm_fd, d->shm_ptr, d->ukubwa_shm);
+    n8* msg = wayland_waya_jenga_attach(d->surface_id, d->buffer_id, 0, 0);
+    wayland_soketi_tuma(d->fd, msg, 20);
+    msg = wayland_waya_jenga_damage_buffer(d->surface_id, 0, 0, d->upana, d->kimo);
+    wayland_soketi_tuma(d->fd, msg, 24);
+    msg = wayland_waya_jenga_commit(d->surface_id);
+    wayland_soketi_tuma(d->fd, msg, 8);
+}
+
+// jdk_onyesha_upya_na_frame -- kioo cha jdk_onyesha_upya LAKINI
+// inaongeza ombi la wl_surface.frame KABLA ya commit (Awamu I,
+// frame-pacing HALISI -- frame+commit ni "batch" MOJA kwa mujibu wa
+// itifaki: callback inahusiana na commit INAYOFUATA mara moja).
+// Hurudisha object_id ya callback mpya (daima IMEDUMU 12 -- callback
+// ya zamani tayari imejiharibu [type=destructor] mara "done"
+// ilipopokelewa, hivyo ni salama kutumia namba ileile tena).
+n64 JDK_FRAME_CALLBACK_ID = 12;
+
+n64 jdk_onyesha_upya_na_frame(WaylandDirisha* d) {
+    wayland_shm_jaza(d->shm_fd, d->shm_ptr, d->ukubwa_shm);
+    n8* msg = wayland_waya_jenga_attach(d->surface_id, d->buffer_id, 0, 0);
+    wayland_soketi_tuma(d->fd, msg, 20);
+    msg = wayland_waya_jenga_damage_buffer(d->surface_id, 0, 0, d->upana, d->kimo);
+    wayland_soketi_tuma(d->fd, msg, 24);
+    msg = wayland_waya_jenga_frame(d->surface_id, JDK_FRAME_CALLBACK_ID);
+    wayland_soketi_tuma(d->fd, msg, 12);
+    msg = wayland_waya_jenga_commit(d->surface_id);
+    wayland_soketi_tuma(d->fd, msg, 8);
+    rudisha JDK_FRAME_CALLBACK_ID;
+}
+
+n64 jdk_subiri_configure_ya_kwanza(WaylandDirisha* d) {
+    wayland_soketi_weka_zisizozuia(d->fd);
+    n64 kwanza = 0;
+    n64 mwanzo = civ_muda_sasa();
+    n64 SEKUNDE = 5;
+    n64 serial = 0; n64 obj = 0; n64 op = 0; n64 sz = 0; n64 n = 0; n64 iliyobaki = 0;
+    n8* msg;
+
+    wakati ((civ_muda_sasa() - mwanzo) < SEKUNDE && kwanza == 0) {
+        n = wayland_soketi_pokea(d->fd, d->bafa + d->jumla, d->ukubwa_bafa - d->jumla);
+        kama (n > 0) {
+            d->jumla = d->jumla + n;
+            wakati (1 == 1) {
+                kama (d->jumla - d->nafasi < 8) { acha; }
+                obj = wayland_waya_msg_object_id(d->bafa, d->nafasi);
+                op = wayland_waya_msg_opcode(d->bafa, d->nafasi);
+                sz = wayland_waya_msg_ukubwa(d->bafa, d->nafasi);
+                kama (sz < 8) { acha; }
+                kama (d->jumla - d->nafasi < sz) { acha; }
+
+                kama (obj == d->wmbase_id && op == WAYLAND_WAYA_XDG_WM_BASE_EV_PING) {
+                    serial = wayland_waya_ev_serial(d->bafa, d->nafasi);
+                    msg = wayland_waya_jenga_pong(d->wmbase_id, serial);
+                    wayland_soketi_tuma(d->fd, msg, 12);
+                } sivyo {
+                    kama (obj == d->xdg_surface_id && op == WAYLAND_WAYA_XDG_SURFACE_EV_CONFIGURE) {
+                        serial = wayland_waya_ev_serial(d->bafa, d->nafasi);
+                        msg = wayland_waya_jenga_ack_configure(d->xdg_surface_id, serial);
+                        wayland_soketi_tuma(d->fd, msg, 12);
+                        kwanza = 1;
+                    }
+                }
+                d->nafasi = d->nafasi + sz;
+            }
+            kama (d->nafasi > 0) {
+                iliyobaki = d->jumla - d->nafasi;
+                nakili(d->bafa, d->bafa + d->nafasi, iliyobaki);
+                d->jumla = iliyobaki; d->nafasi = 0;
+            }
+        } sivyo {
+            kama (n == 0) { andika_kosa("WARN: soketi imefungwa\n", 0, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+            wayland_soketi_lala_ms(20);
+        }
+    }
+    kama (kwanza == 0) { andika_kosa("FAIL: hakuna configure ya kwanza\n", 0, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+    rudisha 0;
+}
+
+// jdk_subiri_frame_done -- SUBIRI HASA tukio la wl_callback.done la
+// `callback_id` iliyotumwa (Awamu I -- hii NDIYO frame-pacing HALISI,
+// kusubiri ISHARA YA COMPOSITOR, si kusubiri "muda fulani umepita").
+// Inajibu ping/pong na kugundua xdg_toplevel.close wakati huo huo.
+// Hurudisha: 1 (frame-done imepokelewa, endelea), -1 (dirisha
+// limefungwa/soketi imeharibika -- mwitaji LAZIMA asimame).
+n64 jdk_subiri_frame_done(WaylandDirisha* d, n64 callback_id) {
+    n64 imepokelewa = 0;
+    n64 mwanzo = civ_muda_sasa();
+    n64 SEKUNDE_KIKOMO = 3;
+    n64 obj = 0; n64 op = 0; n64 sz = 0; n64 n = 0; n64 iliyobaki = 0; n64 serial = 0;
+    n8* msg;
+
+    wakati (imepokelewa == 0 && (civ_muda_sasa() - mwanzo) < SEKUNDE_KIKOMO) {
+        n = wayland_soketi_pokea(d->fd, d->bafa + d->jumla, d->ukubwa_bafa - d->jumla);
+        kama (n > 0) {
+            d->jumla = d->jumla + n;
+            wakati (1 == 1) {
+                kama (d->jumla - d->nafasi < 8) { acha; }
+                obj = wayland_waya_msg_object_id(d->bafa, d->nafasi);
+                op = wayland_waya_msg_opcode(d->bafa, d->nafasi);
+                sz = wayland_waya_msg_ukubwa(d->bafa, d->nafasi);
+                kama (sz < 8) { acha; }
+                kama (d->jumla - d->nafasi < sz) { acha; }
+
+                kama (obj == d->wmbase_id && op == WAYLAND_WAYA_XDG_WM_BASE_EV_PING) {
+                    serial = wayland_waya_ev_serial(d->bafa, d->nafasi);
+                    msg = wayland_waya_jenga_pong(d->wmbase_id, serial);
+                    wayland_soketi_tuma(d->fd, msg, 12);
+                } sivyo {
+                    kama (obj == d->toplevel_id && op == JDK_XDG_TOPLEVEL_EV_CLOSE) {
+                        andika("INFO: xdg_toplevel.close -- dirisha limefungwa na mtumiaji/WM\n", 0, 0, 0, 0, 0, 0);
+                        rudisha 0 - 1;
+                    } sivyo {
+                        kama (obj == callback_id && op == WAYLAND_WAYA_CALLBACK_EV_DONE) {
+                            imepokelewa = 1;
+                        }
+                    }
+                }
+                d->nafasi = d->nafasi + sz;
+            }
+            kama (d->nafasi > 0) {
+                iliyobaki = d->jumla - d->nafasi;
+                nakili(d->bafa, d->bafa + d->nafasi, iliyobaki);
+                d->jumla = iliyobaki; d->nafasi = 0;
+            }
+        } sivyo {
+            kama (n == 0) { andika_kosa("WARN: soketi imefungwa wakati wa kusubiri frame\n", 0, 0, 0, 0, 0, 0); rudisha 0 - 1; }
+            wayland_soketi_lala_ms(10);
+        }
+    }
+    kama (imepokelewa == 0) {
+        andika_kosa("FAIL: wl_callback.done haikupokelewa ndani ya muda\n", 0, 0, 0, 0, 0, 0);
+        rudisha 0 - 1;
+    }
+    rudisha 1;
+}
+
+// ---------------------------------------------------------------
+// Chanzo cha matukio BANDIA ya kibodi (kioo cha jaribio_mzunguko.swa/
+// jaribio_dirisha_mchezo.swa) -- kila "fremu" inasoma kiingilio
+// KIMOJA cha orodha hii. Viingilio vya "KIMYA" (kanuni=0) vinaiga
+// "hakuna tukio fremu hii" (mfumo wa kibodi halisi ungetoa EAGAIN
+// humo) -- vinaruhusu fremu NYINGI za kweli (zinazosubiriwa kwa
+// wl_callback.done HALISI) kupita KATI ya vitendo vya kweli, ili
+// uhuishaji uonekane ukisogea TARATIBU kwenye fremu kadhaa, SI
+// fremu moja tu.
+// ---------------------------------------------------------------
+
+muundo MzungukoJaribuChanzo {
+    n8* matukio;
+    n64 idadi;
+    n64 faharisi;
+    n64 idadi_ya_miito;
+};
+
+n64 jm_chanzo_soma(n64 muktadha, n8* nje) {
+    MzungukoJaribuChanzo* jc = muktadha;
+    jc->idadi_ya_miito = jc->idadi_ya_miito + 1;
+    kama (jc->faharisi >= jc->idadi) { rudisha 0 - 1; }
+    n8* chanzo_tukio = jc->matukio + (jc->faharisi * 24);
+    nakili(nje, chanzo_tukio, 24);
+    jc->faharisi = jc->faharisi + 1;
+    n64 kanuni = kifaa_tukio_kanuni(nje);
+    kama (kanuni == 0) { rudisha 0; }
+    rudisha 1;
+}
+
+w0 jm_weka_tukio(n8* matukio, n64 faharisi, n64 kanuni, n64 thamani) {
+    n8* t = matukio + (faharisi * 24);
+    weka_sifuri(t, 24);
+    weka_u16(t, 16, 1);
+    weka_u16(t, 18, kanuni);
+    weka_u32(t, 20, thamani);
+}
+
+w0 jm_weka_kimya(n8* matukio, n64 faharisi) {
+    n8* t = matukio + (faharisi * 24);
+    weka_sifuri(t, 24);
+}
+
+// jdk_chora_paneli_ramani -- chagua kati ya G1/G2/G3 kulingana na
+// `hali` (0=bapa,1=duara,2=mgawanyo wa taifa 0).
+w0 jdk_chora_paneli_ramani(Mchezo* g, n32 modi, n8* fb, n64 pitch) {
+    DuniaRamani* ramani = mchezo_pata_ramani(g);
+    TaifaMfumo* taifa = mchezo_pata_taifa(g);
+    kama (modi == 0) {
+        onyesho_ramani_chora(ramani, taifa, fb, pitch, 0, 0, JDK_RAMANI_UPANA, JDK_KIMO);
+    } sivyo { kama (modi == 1) {
+        onyesho_dunia_duara_chora(ramani, taifa, fb, pitch, JDK_UPANA, JDK_KIMO, 360, 200, 180);
+    } sivyo {
+        TaifaNchi* t0 = dunia_taifa_mfumo_pata_kwa_faharisi(taifa, 0);
+        kama (t0 != 0) {
+            onyesho_taifa_mgawanyo_chora(t0, fb, pitch, JDK_RAMANI_UPANA, JDK_KIMO, 0, 0, JDK_RAMANI_UPANA, JDK_KIMO);
+        }
+    } }
+}
+
+// jdk_chora_paneli_takwimu -- HUD (nusu ya juu) + chati ya pau MOJA
+// (GDP ya jumla iliyohuishwa, nusu ya chini).
+w0 jdk_chora_paneli_takwimu(Mchezo* g, MchoroThamaniHuishwa* gdp_anim, n8* fb, n64 pitch) {
+    onyesho_hud_chora_kutoka_mchezo_eneo(g, fb, pitch, JDK_TAKWIMU_X, 0, JDK_TAKWIMU_UPANA, 200);
+
+    n8* jina0 = "GDP";
+    d64 thamani0[1];
+    thamani0[0] = gdp_anim->sasa;
+    n8* majina0[1];
+    majina0[0] = jina0;
+
+    ChatiPauHoja hp;
+    hp.fb = fb;
+    hp.pitch = pitch;
+    hp.canvas_w = JDK_TAKWIMU_UPANA;
+    hp.canvas_h = 200;
+    hp.x = JDK_TAKWIMU_X;
+    hp.y = 200;
+    hp.w = JDK_TAKWIMU_UPANA;
+    hp.h = 180;
+    hp.majina = majina0;
+    hp.thamani = thamani0;
+    hp.idadi = 1;
+    chati_pau(&hp);
+}
+
+n32 anza(n32 argc, n8** argv) {
+    n8** envp = wayland_mazingira_pata_envp(argv);
+    onyesho_fonti_pakia();
+
+    Mchezo* g = mchezo_unda();
+    kama (g == 0) { andika_kosa("FAIL: mchezo_unda\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) { andika_kosa("FAIL: mchezo_anzisha\n", 0, 0, 0, 0, 0, 0); mchezo_uharibu(g); rudisha 1; }
+
+    DuniaRamani* ramani = mchezo_pata_ramani(g);
+    n32 y_seed = 0;
+    wakati (y_seed < ramani->urefu) {
+        n32 x_seed = 0;
+        wakati (x_seed < ramani->upana) {
+            DuniaRamaniKipande* kp = dunia_ramani_pata_kipande(ramani, x_seed, y_seed);
+            kama (kp != 0) {
+                kp->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_NYASI;
+                kp->rutuba = 0.5;
+                kp->mwinuko = 0.3;
+            }
+            x_seed = x_seed + 1;
+        }
+        y_seed = y_seed + 1;
+    }
+    TaifaMfumo* taifa = mchezo_pata_taifa(g);
+    dunia_taifa_mfumo_dai_maeneo_yote(taifa, ramani);
+
+    MchoroThamaniHuishwa* gdp_anim = uhuishaji_unda(mchezo_hesabu_gdp_jumla(g), 2.0);
+    n32 ramani_hali = 0;
+
+    WaylandGlobals ng;
+    n64 fd = jdk_pata_fd_na_globals(envp, &ng);
+    kama (fd < 0) { mchezo_uharibu(g); rudisha 1; }
+
+    WaylandDirisha d;
+    d.fd = fd;
+    d.upana = JDK_UPANA;
+    d.kimo = JDK_KIMO;
+    d.ukubwa_bafa = 65536;
+    d.bafa = tenga(d.ukubwa_bafa);
+    d.jumla = 0;
+    d.nafasi = 0;
+
+    n64 rc_jenga = jdk_jenga_dirisha(&ng, &d, "Dominion");
+    kama (rc_jenga < 0) { wayland_soketi_funga(fd); mchezo_uharibu(g); rudisha 1; }
+
+    n64 rc_cfg = jdk_subiri_configure_ya_kwanza(&d);
+    kama (rc_cfg < 0) { wayland_soketi_funga(fd); mchezo_uharibu(g); rudisha 1; }
+
+    weka_sifuri(d.shm_ptr, d.stride * d.kimo);
+    jdk_chora_paneli_ramani(g, ramani_hali, d.shm_ptr, d.stride);
+    jdk_chora_paneli_takwimu(g, gdp_anim, d.shm_ptr, d.stride);
+    jdk_onyesha_upya(&d);
+    andika("OK: fremu ya KWANZA imechorwa (paneli mbili) -- DIRISHA LINAPASWA KUONEKANA SASA\n", 0, 0, 0, 0, 0, 0);
+
+    // ---------- Matukio bandia: SPACE, kimya x5, M, kimya x2, M,
+    // kimya x2, ESC ----------
+    n64 idadi_matukio = 12;
+    n8* matukio = tenga(24 * idadi_matukio);
+    jm_weka_tukio(matukio, 0, MZUNGUKO_KEY_SPACE, 1);
+    jm_weka_kimya(matukio, 1);
+    jm_weka_kimya(matukio, 2);
+    jm_weka_kimya(matukio, 3);
+    jm_weka_kimya(matukio, 4);
+    jm_weka_kimya(matukio, 5);
+    jm_weka_tukio(matukio, 6, JDK_KEY_M, 1);
+    jm_weka_kimya(matukio, 7);
+    jm_weka_kimya(matukio, 8);
+    jm_weka_tukio(matukio, 9, JDK_KEY_M, 1);
+    jm_weka_kimya(matukio, 10);
+    jm_weka_tukio(matukio, 11, MZUNGUKO_KEY_ESC, 1);
+
+    MzungukoJaribuChanzo jc;
+    jc.matukio = matukio;
+    jc.idadi = idadi_matukio;
+    jc.faharisi = 0;
+    jc.idadi_ya_miito = 0;
+
+    n64 zamu_awali = g->zamu_ya_sasa;
+    d64 gdp_baada_ya_space = 0.0;
+    n32 yalioshindwa = 0;
+    n64 idadi_ya_fremu = 0;
+    n32 inaendelea = 1;
+    n8 tukio[24];
+    n64 callback_id;
+    n64 rc_frame;
+    n64 rc_hatua;
+
+    wakati (inaendelea == 1) {
+        rc_hatua = jm_chanzo_soma(&jc, tukio);
+        kama (rc_hatua < 0) {
+            andika("INFO: mwisho wa matukio -- nafunga kwa heshima\n", 0, 0, 0, 0, 0, 0);
+            inaendelea = 0;
+            acha;
+        }
+        kama (rc_hatua == 1) {
+            n64 kanuni = kifaa_tukio_kanuni(tukio);
+            kama (kanuni == MZUNGUKO_KEY_ESC) {
+                andika("INFO: ESC -- nafunga kwa heshima\n", 0, 0, 0, 0, 0, 0);
+                inaendelea = 0;
+                acha;
+            }
+            kama (kanuni == MZUNGUKO_KEY_SPACE) {
+                mchezo_sasisha(g);
+                mchezo_maliza_zamu(g);
+                uhuishaji_weka_lengwa(gdp_anim, mchezo_hesabu_gdp_jumla(g));
+                andika("OK: SPACE -- zamu mpya=%d, GDP lengwa mpya imewekwa\n", g->zamu_ya_sasa, 0, 0, 0, 0, 0);
+            }
+            kama (kanuni == JDK_KEY_M) {
+                ramani_hali = ramani_hali + 1;
+                kama (ramani_hali > 2) { ramani_hali = 0; }
+                andika("OK: M -- paneli ya ramani sasa hali=%d\n", ramani_hali, 0, 0, 0, 0, 0);
+            }
+        }
+
+        uhuishaji_sasisha(gdp_anim, 0.1);
+
+        weka_sifuri(d.shm_ptr, d.stride * d.kimo);
+        jdk_chora_paneli_ramani(g, ramani_hali, d.shm_ptr, d.stride);
+        jdk_chora_paneli_takwimu(g, gdp_anim, d.shm_ptr, d.stride);
+
+        callback_id = jdk_onyesha_upya_na_frame(&d);
+        idadi_ya_fremu = idadi_ya_fremu + 1;
+
+        kama (idadi_ya_fremu == 2) {
+            gdp_baada_ya_space = gdp_anim->sasa;
+            kama (gdp_baada_ya_space == gdp_anim->lengwa) {
+                andika_kosa("FAIL: GDP imefika lengwa MARA MOJA (hakuna uhuishaji wa taratibu)\n", 0, 0, 0, 0, 0, 0);
+                yalioshindwa = yalioshindwa + 1;
+            } sivyo {
+                // MUHIMU: andika() haiwezi kupokea usemi wa d64 MOJA KWA
+                // MOJA kama hoja (hitilafu ya mkusanyaji iliyogunduliwa
+                // HAPA, SI ya mantiki ya mchezo -- angalia
+                // jaribio_andika_d64_sanity.swa: kupitisha usemi wa d64
+                // moja kwa moja kwenye andika() hutoa takataka [thamani
+                // inayofanana na anwani ya kumbukumbu], LAKINI kuihifadhi
+                // kwenye kigezo cha n64 KWANZA hutoa matokeo SAHIHI kila
+                // wakati -- epuka hitilafu hii kwa kuhifadhi KABLA ya
+                // kuandika, SIO kubadilisha ndani ya wito wa andika).
+                n64 sasa_disp = gdp_baada_ya_space * 1000.0;
+                n64 lengwa_disp = gdp_anim->lengwa * 1000.0;
+                andika("PASS: GDP (fremu 2, baada ya SPACE) iko KATI YA awali na lengwa (sasa=%d*1000, lengwa=%d*1000)\n",
+                    sasa_disp, lengwa_disp, 0, 0, 0, 0);
+            }
+        }
+
+        rc_frame = jdk_subiri_frame_done(&d, callback_id);
+        kama (rc_frame < 0) {
+            inaendelea = 0;
+            acha;
+        }
+    }
+
+    andika("INFO: jumla ya fremu halisi (wl_callback.done) zilizopokelewa: %d\n", idadi_ya_fremu, 0, 0, 0, 0, 0);
+    kama (idadi_ya_fremu < 5) {
+        andika_kosa("FAIL: fremu chache mno zilipokelewa (%d, zilizotarajiwa angalau 5)\n", idadi_ya_fremu, 0, 0, 0, 0, 0);
+        yalioshindwa = yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: fremu za kutosha zilipokelewa kupitia frame-pacing HALISI (%d)\n", idadi_ya_fremu, 0, 0, 0, 0, 0);
+    }
+
+    kama (g->zamu_ya_sasa != zamu_awali + 1) {
+        andika_kosa("FAIL: SPACE haikusonga zamu moja (awali=%d, mwisho=%d)\n", zamu_awali, g->zamu_ya_sasa, 0, 0, 0, 0);
+        yalioshindwa = yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: SPACE ilisonga zamu MOJA HASA (%d -> %d)\n", zamu_awali, g->zamu_ya_sasa, 0, 0, 0, 0);
+    }
+
+    kama (ramani_hali != 2) {
+        andika_kosa("FAIL: hali ya ramani si 2 baada ya M mara mbili, ni %d\n", ramani_hali, 0, 0, 0, 0, 0);
+        yalioshindwa = yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: M mara mbili ilisogeza hali ya ramani 0->1->2 HASA\n", 0, 0, 0, 0, 0, 0);
+    }
+
+    n8* msg_destroy = wayland_waya_jenga_surface_destroy(d.surface_id);
+    wayland_soketi_tuma(d.fd, msg_destroy, 8);
+    wayland_soketi_funga(d.fd);
+
+    achilia d.bafa;
+    achilia d.shm_ptr;
+    achilia matukio;
+    uhuishaji_uharibu(gdp_anim);
+    mchezo_uharibu(g);
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", yalioshindwa, 0, 0, 0, 0, 0);
+    kama (yalioshindwa > 0) { rudisha 1; }
+    andika("DONE: dirisha la kisasa la Dominion -- paneli mbili, frame-pacing halisi, uhuishaji halisi\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

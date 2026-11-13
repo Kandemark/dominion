@@ -1,0 +1,179 @@
+// ramani_halisi.swa — tafsiri ya src/core/world/real_world_map.c
+// (na .h) kwenda Swa. Kupakia data halisi ya ramani ya Dunia
+// (landmask ya ardhi/maji, azimio la equirectangular) kutoka faili
+// ya kibinari na kujaza DuniaRamani iliyopo.
+//
+// Kiambishi: dunia_ramani_halisi_ — angalia ../../KANUNI-MAJINA.md.
+//
+// SASISHO (2026-09-10): faili hili AWALI liliainishwa kama "100%
+// I/O ya faili, hakuna kinachoweza kuokolewa" — tathmini hiyo
+// ilikuwa YA HARAKA MNO. Chanzo cha C kina mantiki HALISI ya
+// mchezo (kukokotoa mwinuko/unyevu/joto/rutuba/aina-ya-ardhi kwa
+// kila kipande kulingana na latitudo na ardhi-dhidi-ya-maji) --
+// SI I/O tu. Sasa limewezekana kwa sababu ya `bin_soma.swa`
+// (visaidizi vya kusoma binary, vilivyojengwa baadaye kwenye kikao
+// hiki) na mfano ulioothibitishwa wa `dunia_mataifa_pakia` na
+// wenzake.
+//
+// Muundo wa faili (endian ndogo, ukubwa wa kichwa: baiti 56):
+//   magic(u32) version(u32) width(i32) height(i32) sea_level(f32)
+//   seed(u32) reserved[8](u32, haitumiki) -- kisha landmask: baiti
+//   moja kwa kila kipande (0=maji, >0=ardhi), kwa mpangilio wa
+//   safu-kwanza (row-major).
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - `is_polar` (kigezo cha ndani cha C) kinakokotolewa lakini
+//     HAKITUMIKI POPOTE kwenye mantiki halisi ya kuweka field za
+//     kipande (msimbo mfu kwenye C ya asili) -- hakijaletwa hapa.
+//   - `map` (civ_map_t* iliyotengwa tayari na mwito) inabaki
+//     DuniaRamani* iliyoundwa na dunia_ramani_unda() -- vipimo
+//     (upana/urefu) lazima vifanane na faili, sawa na C.
+//   - Vipande vinapatikana kupitia dunia_ramani_pata_kipande
+//     (tayari n64*-kama-anwani, #185) -- ramani KUBWA (2048x1024
+//     kama chaguo-msingi la C) haziwezekani bado (zingehitaji
+//     tenga() milioni 2 tofauti); jaribio hili linatumia vipimo
+//     vidogo (angalia jaribio), sawa na onyo lililopo tayari kwenye
+//     ramani.swa.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/faili.swa }
+husisha { msingi/maktaba/bin_soma.swa }
+husisha { moduli/dunia/ramani.swa }
+
+// "EARTH" endian ndogo = 0x48545241 = 1213485633.
+n32 DUNIA_RAMANI_HALISI_MAGIC = 1213485633;
+n32 DUNIA_RAMANI_HALISI_KICHWA_UKUBWA = 56;
+
+CivMatokeo dunia_ramani_halisi_pakia(DuniaRamani* ramani, n8* njia) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (ramani == 0 || njia == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "hoja tupu";
+        rudisha r;
+    }
+
+    n32 upana = ramani->upana;
+    n32 urefu = ramani->urefu;
+    n32 idadi_ya_vipande = upana * urefu;
+
+    // MUHIMU: faili_soma_yote() inasoma baiti (uwezo - 1) TU -- baiti
+    // moja ya mwisho ya "uwezo" imehifadhiwa kwa NUL (angalia maelezo
+    // kwenye faili.swa). Data hii ni ya kibinari (si mfuatano), kwa
+    // hiyo lazima tuongeze +1 hapa ili baiti ZOTE za kweli (hasa
+    // baiti ya mwisho ya landmask) zisomwe -- bila hii, kipande cha
+    // mwisho cha ramani kingepata data ya NUL (0) badala ya thamani
+    // yake halisi ya landmask kimya kimya (imegunduliwa kwa jaribio
+    // moja kwa moja, si kwa kudhani).
+    n32 uwezo_bafa = DUNIA_RAMANI_HALISI_KICHWA_UKUBWA + idadi_ya_vipande + 1;
+    n8* buf = tenga(uwezo_bafa);
+    n64 urefu_uliosomwa = faili_soma_yote(njia, buf, uwezo_bafa);
+    kama (urefu_uliosomwa < 56) {
+        r.hitilafu = CIV_HITILAFU_HAIJAPATIKANA;
+        r.ujumbe = "faili halifunguki au kichwa ni kifupi mno";
+        rudisha r;
+    }
+
+    n32 magic = civ_bin_u32le(buf, 0);
+    kama (magic != DUNIA_RAMANI_HALISI_MAGIC) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        r.ujumbe = "faili si ramani halali ya Dunia (magic si sahihi)";
+        rudisha r;
+    }
+
+    n32 upana_wa_faili = civ_bin_u32le(buf, 8);
+    n32 urefu_wa_faili = civ_bin_u32le(buf, 12);
+    kama (upana_wa_faili != upana || urefu_wa_faili != urefu) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        r.ujumbe = "vipimo vya ramani ya Dunia havifanani na ramani ya mchezo";
+        rudisha r;
+    }
+
+    d64 kiwango_cha_bahari = civ_bin_f32le(buf, 16);
+    n32 mbegu = civ_bin_u32le(buf, 20);
+    ramani->kiwango_cha_bahari = kiwango_cha_bahari;
+    ramani->mbegu = mbegu;
+
+    n64 baiti_zinazohitajika = DUNIA_RAMANI_HALISI_KICHWA_UKUBWA;
+    baiti_zinazohitajika = baiti_zinazohitajika + idadi_ya_vipande;
+    kama (urefu_uliosomwa < baiti_zinazohitajika) {
+        r.hitilafu = CIV_HITILAFU_HAIJAPATIKANA;
+        r.ujumbe = "data ya ramani ya Dunia imekatika (truncated)";
+        rudisha r;
+    }
+
+    ramani->idadi_ya_vipande_vya_ardhi = 0;
+
+    n32 y = 0;
+    wakati (y < urefu) {
+        d64 y_d = y;
+        d64 urefu_m1_d = urefu - 1;
+        d64 ny = y_d / urefu_m1_d;
+        d64 tofauti = ny - 0.5;
+        kama (tofauti < 0.0) { tofauti = 0.0 - tofauti; }
+        d64 kipengele_cha_latitudo = 1.0 - tofauti * 2.0;
+
+        n32 x = 0;
+        wakati (x < upana) {
+            DuniaRamaniKipande* kipande = dunia_ramani_pata_kipande(ramani, x, y);
+            kama (kipande != 0) {
+                n32 faharisi_ya_landmask = DUNIA_RAMANI_HALISI_KICHWA_UKUBWA + y * upana + x;
+                n32 mask = civ_bin_u8(buf, faharisi_ya_landmask);
+                n32 ni_ardhi = 0;
+                kama (mask > 0) { ni_ardhi = 1; }
+
+                kipande->x = x;
+                kipande->y = y;
+
+                kama (ni_ardhi != 0) {
+                    kipande->mwinuko = 0.4 + 0.3 * kipengele_cha_latitudo;
+                    kipande->unyevu = 0.3 + 0.4 * kipengele_cha_latitudo;
+                    kipande->ardhi = MAZINGIRA_ARDHI_TAMBARARE;
+                    kipande->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_NYASI;
+                    kipande->rutuba = 0.3 + 0.4 * kipengele_cha_latitudo;
+                    kipande->uoto_msongamano = 0.2 + 0.5 * kipengele_cha_latitudo;
+                    kipande->rasilimali = 0.3;
+                    kipande->ushawishi_wa_kisiasa = 0.3;
+                    kipande->msongamano_wa_watu = 0.2;
+                    kipande->ushawishi_wa_kiutamaduni = 0.2;
+                    ramani->idadi_ya_vipande_vya_ardhi = ramani->idadi_ya_vipande_vya_ardhi + 1;
+                } sivyo {
+                    kipande->mwinuko = 0.05 + 0.1 * (1.0 - kipengele_cha_latitudo);
+                    kipande->unyevu = 1.0;
+                    kipande->ardhi = MAZINGIRA_ARDHI_PWANI;
+                    kipande->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_MAJI;
+                    kipande->rutuba = 0.0;
+                    kipande->uoto_msongamano = 0.0;
+                    kipande->rasilimali = 0.0;
+                    kipande->ushawishi_wa_kisiasa = 0.0;
+                    kipande->msongamano_wa_watu = 0.0;
+                    kipande->ushawishi_wa_kiutamaduni = 0.0;
+                }
+
+                kipande->joto = kipengele_cha_latitudo;
+                kipande->kina_mto = 0;
+                kipande->kina_rasilimali = 0;
+                kipande->kimechunguzwa = 1;
+                kipande->kinaonekana = 0;
+                kipande->mmiliki_id = "";
+            }
+            x = x + 1;
+        }
+        y = y + 1;
+    }
+
+    r.ujumbe = "ramani ya Dunia imepakiwa";
+    rudisha r;
+}
+
+n32 dunia_ramani_halisi_ni_halali(n8* njia) {
+    kama (njia == 0) { rudisha 0; }
+    n32 uwezo_bafa = DUNIA_RAMANI_HALISI_KICHWA_UKUBWA + 1;
+    n8* buf = tenga(uwezo_bafa);
+    n64 urefu_uliosomwa = faili_soma_yote(njia, buf, uwezo_bafa);
+    kama (urefu_uliosomwa < 56) { rudisha 0; }
+    n32 magic = civ_bin_u32le(buf, 0);
+    kama (magic != DUNIA_RAMANI_HALISI_MAGIC) { rudisha 0; }
+    rudisha 1;
+}

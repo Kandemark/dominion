@@ -1,0 +1,294 @@
+husisha { moduli/onyesho/mzunguko.swa }
+
+// jaribio_mzunguko.swa -- jaribio la mkono la mzunguko.swa
+// (mzunguko_hatua/mzunguko_endesha) likilisha MATUKIO BANDIA ya
+// kibodi, yaliyoandikwa kwa mkono (SI kutoka /dev/input/eventN
+// halisi), kupitia MzungukoChanzo cha majaribio (jm_chanzo_soma
+// chini) -- hii inawezekana KWA SABABU mzunguko_hatua/mzunguko_endesha
+// hazitegemei kifaa_fungua/kifaa_soma_tukio moja kwa moja, bali
+// zinapokea CHANZO CHA TUKIO kama hoja (angalia maelezo kamili juu
+// ya mzunguko.swa). Hakuna mtu wa kubonyeza kitufe halisi wakati wa
+// jaribio hili la kiotomatiki -- orodha ya matukio HAPA CHINI ndiyo
+// "kibodi" nzima ya jaribio hili.
+//
+// MTINDO WA UTHIBITISHO: Mchezo KAMILI HALISI (mchezo_unda +
+// mchezo_anzisha, mifumo 47, ardhi imepandwa sawa na
+// jaribio_hud_mchezo_halisi.swa), kisha matukio BANDIA yanalishwa
+// MOJA KWA MOJA kwa mzunguko_hatua (si mzunguko_endesha -- tunataka
+// kukagua framebuffer BAADA YA KILA bonyezo, si mwishoni tu), kila
+// bonyezo la SPACE linathibitishwa kusababisha zamu_ya_sasa KUONGEZEKA
+// KWA HASA 1 na HUD KUCHORWA UPYA ikionyesha zamu HIYO HASA (tarakimu
+// za ZAMU zinasomwa pikseli kwa pikseli dhidi ya ONYESHO_FONTI_DATA,
+// mtindo ule ule ulioothibitishwa na jaribio_hud_mchezo_halisi.swa --
+// SI kwa kutumia mfuatano_umbiza, ili kuepuka jaribio linalojithibitisha
+// lenyewe).
+
+n32 jmz_yalioshindwa = 0;
+
+w0 jmz_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jmz_yalioshindwa = jmz_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+// jmz_glyph_sahihi -- sawa HASA na jh_glyph_sahihi/jhm_glyph_sahihi
+// (jaribio_hud.swa / jaribio_hud_mchezo_halisi.swa): linganisha glyph
+// HALISI iliyochorwa kwenye (gx,gy) dhidi ya ONYESHO_FONTI_DATA,
+// pikseli kwa pikseli.
+n32 jmz_glyph_sahihi(n8* fb, n64 pitch, n64 gx, n64 gy, n32 faharisi, n64 nyeupe) {
+    kama (faharisi < 0) { rudisha 0; }
+    n64 msingi = faharisi * 16;
+    n32 safu = 0;
+    wakati (safu < 16) {
+        n32 byte = ONYESHO_FONTI_DATA[msingi + safu] & 255;
+        n32 col = 0;
+        wakati (col < 8) {
+            n32 biti = (byte >> (7 - col)) & 1;
+            n64 pikseli = mchoro_pata_pikseli(fb, pitch, gx + col, gy + safu);
+            n32 imewashwa = (pikseli == nyeupe);
+            kama (biti == 1 && imewashwa == 0) { rudisha 0; }
+            kama (biti == 0 && pikseli != 0) { rudisha 0; }
+            col = col + 1;
+        }
+        safu = safu + 1;
+    }
+    rudisha 1;
+}
+
+// jmz_zamu_sahihi -- thibitisha kwamba tarakimu za "ZAMU: %d"
+// zilizochorwa HALISI kwenye framebuffer (y=32, baada ya "ZAMU: ")
+// zinalingana na `thamani` iliyotolewa (mod/div ya moja kwa moja,
+// huru na mfuatano_umbiza).
+w0 jmz_zamu_sahihi(n8* fb, n64 pitch, n64 thamani, n64 nyeupe, n8* jina) {
+    // "ZAMU: " ina herufi 6 -- angalia hud.swa:onyesho_hud_chora.
+    n64 x0 = ONYESHO_HUD_X_KINGO + 6 * 8;
+    n64 y = 32;
+
+    n32 tarakimu[24];
+    n32 idadi = 0;
+    n64 tmp = thamani;
+    kama (tmp == 0) {
+        tarakimu[0] = 0;
+        idadi = 1;
+    } sivyo {
+        wakati (tmp > 0) {
+            tarakimu[idadi] = tmp % 10;
+            tmp = tmp / 10;
+            idadi = idadi + 1;
+        }
+    }
+    n32 kushoto = 0;
+    n32 kulia = idadi - 1;
+    wakati (kushoto < kulia) {
+        n32 t = tarakimu[kushoto];
+        tarakimu[kushoto] = tarakimu[kulia];
+        tarakimu[kulia] = t;
+        kushoto = kushoto + 1;
+        kulia = kulia - 1;
+    }
+
+    n32 zote_sahihi = 1;
+    n32 i = 0;
+    wakati (i < idadi) {
+        n32 d = tarakimu[i];
+        n32 faharisi = onyesho_fonti_faharisi_ascii(48 + d);
+        n32 sahihi = jmz_glyph_sahihi(fb, pitch, x0 + i * 8, y, faharisi, nyeupe);
+        kama (sahihi == 0) { zote_sahihi = 0; }
+        i = i + 1;
+    }
+    jmz_thibitisha(zote_sahihi, jina);
+}
+
+// MzungukoJaribuChanzo -- muktadha wa chanzo cha majaribio: orodha ya
+// matukio YALIYOWEKWA MAPEMA (kila moja baiti 24, mfululizo kwenye
+// `matukio`), faharisi ya sasa, na idadi ya mara jm_chanzo_soma
+// imeitwa (kuthibitisha HAKUNA usomaji wa ziada BAADA ya ESC).
+muundo MzungukoJaribuChanzo {
+    n8* matukio;
+    n64 idadi;
+    n64 faharisi;
+    n64 idadi_ya_miito;
+};
+
+// jm_chanzo_soma -- saini inayolingana HASA na MzungukoChanzo.soma_kazi
+// (n64 (n64 muktadha, n8* nje)). `muktadha` ni MzungukoJaribuChanzo*
+// iliyobadilishwa kuwa n64 (angalia mzunguko_chanzo_weka_kifaa kwa
+// muundo ule ule upande wa kifaa halisi).
+n64 jm_chanzo_soma(n64 muktadha, n8* nje) {
+    MzungukoJaribuChanzo* jc = muktadha;
+    jc->idadi_ya_miito = jc->idadi_ya_miito + 1;
+    kama (jc->faharisi >= jc->idadi) {
+        rudisha -1;  // orodha imeisha -- sawa na "chanzo kimeisha"
+    }
+    n8* chanzo_tukio = jc->matukio + (jc->faharisi * 24);
+    nakili(nje, chanzo_tukio, 24);
+    jc->faharisi = jc->faharisi + 1;
+    rudisha 1;
+}
+
+// jm_weka_tukio -- andika TUKIO MOJA la EV_KEY (aina=1, offsets HALISI
+// za struct input_event -- angalia kifaa/ingizo.swa) kwenye
+// (matukio + faharisi*24).
+w0 jm_weka_tukio(n8* matukio, n64 faharisi, n64 kanuni, n64 thamani) {
+    n8* t = matukio + (faharisi * 24);
+    weka_sifuri(t, 24);
+    weka_u16(t, 16, 1);        // type = EV_KEY
+    weka_u16(t, 18, kanuni);   // code
+    weka_u32(t, 20, thamani);  // value
+}
+
+n32 anza() {
+    onyesho_fonti_pakia();
+
+    // ---------- Unda Mchezo KAMILI HALISI (mifumo 47) ----------
+    Mchezo* g = mchezo_unda();
+    n32 g_sio_tupu = (g != 0);
+    jmz_thibitisha(g_sio_tupu, "mchezo_unda inarudisha kielekezi");
+
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    n32 anzisha_sawa = (r.hitilafu == CIV_SAWA);
+    jmz_thibitisha(anzisha_sawa, "mchezo_anzisha inarudi CIV_SAWA");
+
+    // Mbegu ya ardhi (sawa HASA na jaribio_hud_mchezo_halisi.swa --
+    // angalia maelezo yake kamili): bila hii GDP ingebaki 0 milele,
+    // lakini hatuhitaji GDP kwenye jaribio hili -- ni ZAMU pekee
+    // tunayoithibitisha kwenye HUD. Mbegu bado inawekwa kwa uthabiti
+    // na mchezo_sasisha/HUD zisizotarajia ramani tupu.
+    DuniaRamani* ramani_jh = mchezo_pata_ramani(g);
+    n32 y_seed = 0;
+    wakati (y_seed < ramani_jh->urefu) {
+        n32 x_seed = 0;
+        wakati (x_seed < ramani_jh->upana) {
+            DuniaRamaniKipande* kp = dunia_ramani_pata_kipande(ramani_jh, x_seed, y_seed);
+            kama (kp != 0) {
+                kp->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_NYASI;
+                kp->rutuba = 0.5;
+                kp->mwinuko = 0.3;
+            }
+            x_seed = x_seed + 1;
+        }
+        y_seed = y_seed + 1;
+    }
+    TaifaMfumo* taifa_jh = mchezo_pata_taifa(g);
+    dunia_taifa_mfumo_dai_maeneo_yote(taifa_jh, ramani_jh);
+
+    // ---------- Framebuffer ----------
+    n64 canvas_w = ONYESHO_HUD_UPANA;
+    n64 canvas_h = ONYESHO_HUD_KIMO;
+    n64 pitch = canvas_w * 4;
+    n8* fb = tenga(pitch * canvas_h);
+    weka_sifuri(fb, pitch * canvas_h);
+    n64 nyeupe = ONYESHO_HUD_RANGI_MAANDISHI;
+
+    // ---------- Orodha ya matukio BANDIA (SCENARIO A: mzunguko_hatua) ----------
+    // 0: SPACE bonyezwa (thamani=1)  -> zamu 1 (HUD inachorwa upya)
+    // 1: SPACE kuachiliwa (thamani=0) -> HAIFANYI KAZI (puuzwa)
+    // 2: SPACE kurudia (thamani=2)    -> HAIFANYI KAZI (puuzwa)
+    // 3: SPACE bonyezwa (thamani=1)  -> zamu 2 (HUD inachorwa upya)
+    // 4: SPACE bonyezwa (thamani=1)  -> zamu 3 (HUD inachorwa upya)
+    // 5: ESC bonyezwa (thamani=1)    -> mzunguko unasimama
+    n64 idadi_matukio = 6;
+    n8* matukio = tenga(24 * idadi_matukio);
+    jm_weka_tukio(matukio, 0, MZUNGUKO_KEY_SPACE, 1);
+    jm_weka_tukio(matukio, 1, MZUNGUKO_KEY_SPACE, 0);
+    jm_weka_tukio(matukio, 2, MZUNGUKO_KEY_SPACE, 2);
+    jm_weka_tukio(matukio, 3, MZUNGUKO_KEY_SPACE, 1);
+    jm_weka_tukio(matukio, 4, MZUNGUKO_KEY_SPACE, 1);
+    jm_weka_tukio(matukio, 5, MZUNGUKO_KEY_ESC, 1);
+
+    MzungukoJaribuChanzo jc;
+    jc.matukio = matukio;
+    jc.idadi = idadi_matukio;
+    jc.faharisi = 0;
+    jc.idadi_ya_miito = 0;
+
+    MzungukoChanzo chanzo;
+    chanzo.soma_kazi = &jm_chanzo_soma;
+    chanzo.muktadha = &jc;
+
+    n64 zamu_awali = g->zamu_ya_sasa;
+    jmz_thibitisha(zamu_awali == 1, "zamu_ya_sasa == 1 mara tu baada ya mchezo_anzisha (kabla ya mzunguko)");
+
+    // ---------- Hatua 1: SPACE bonyezwa -> zamu 1 iliyoongezeka ----------
+    n64 rc1 = mzunguko_hatua(g, &chanzo, fb, pitch);
+    jmz_thibitisha(rc1 == 1, "mzunguko_hatua inarudi 1 (endelea) baada ya SPACE bonyezwa #1");
+    jmz_thibitisha(g->zamu_ya_sasa == zamu_awali + 1, "zamu_ya_sasa imeongezeka kwa HASA 1 baada ya bonyezo la kwanza la SPACE");
+    jmz_zamu_sahihi(fb, pitch, g->zamu_ya_sasa, nyeupe, "HUD inaonyesha ZAMU sahihi kwenye framebuffer BAADA ya bonyezo la 1");
+
+    // ---------- Hatua 2: SPACE kuachiliwa (thamani=0) -- HAKUNA zamu ya ziada ----------
+    n64 zamu_kabla_ya_kuachiliwa = g->zamu_ya_sasa;
+    n64 rc2 = mzunguko_hatua(g, &chanzo, fb, pitch);
+    jmz_thibitisha(rc2 == 1, "mzunguko_hatua inarudi 1 (endelea) kwa tukio la kuachiliwa (thamani=0)");
+    jmz_thibitisha(g->zamu_ya_sasa == zamu_kabla_ya_kuachiliwa, "tukio la SPACE kuachiliwa (thamani=0) HALISABABISHI zamu ya ziada");
+
+    // ---------- Hatua 3: SPACE kurudia (thamani=2) -- HAKUNA zamu ya ziada ----------
+    n64 rc3 = mzunguko_hatua(g, &chanzo, fb, pitch);
+    jmz_thibitisha(rc3 == 1, "mzunguko_hatua inarudi 1 (endelea) kwa tukio la kurudia (thamani=2)");
+    jmz_thibitisha(g->zamu_ya_sasa == zamu_kabla_ya_kuachiliwa, "tukio la SPACE kurudia (thamani=2) HALISABABISHI zamu ya ziada");
+
+    // ---------- Hatua 4: SPACE bonyezwa -> zamu 2 iliyoongezeka ----------
+    n64 rc4 = mzunguko_hatua(g, &chanzo, fb, pitch);
+    jmz_thibitisha(rc4 == 1, "mzunguko_hatua inarudi 1 (endelea) baada ya SPACE bonyezwa #2");
+    jmz_thibitisha(g->zamu_ya_sasa == zamu_awali + 2, "zamu_ya_sasa imeongezeka kwa HASA 2 jumla baada ya bonyezo la pili la SPACE");
+    jmz_zamu_sahihi(fb, pitch, g->zamu_ya_sasa, nyeupe, "HUD inaonyesha ZAMU sahihi kwenye framebuffer BAADA ya bonyezo la 2");
+
+    // ---------- Hatua 5: SPACE bonyezwa -> zamu 3 iliyoongezeka ----------
+    n64 rc5 = mzunguko_hatua(g, &chanzo, fb, pitch);
+    jmz_thibitisha(rc5 == 1, "mzunguko_hatua inarudi 1 (endelea) baada ya SPACE bonyezwa #3");
+    jmz_thibitisha(g->zamu_ya_sasa == zamu_awali + 3, "zamu_ya_sasa imeongezeka kwa HASA 3 jumla baada ya bonyezo la tatu la SPACE");
+    jmz_zamu_sahihi(fb, pitch, g->zamu_ya_sasa, nyeupe, "HUD inaonyesha ZAMU sahihi kwenye framebuffer BAADA ya bonyezo la 3");
+
+    // ---------- Hatua 6: ESC -> mzunguko unaamriwa kusimama ----------
+    n64 rc6 = mzunguko_hatua(g, &chanzo, fb, pitch);
+    jmz_thibitisha(rc6 == -1, "mzunguko_hatua inarudi -1 (simama) HASA baada ya tukio la ESC");
+    jmz_thibitisha(g->zamu_ya_sasa == zamu_awali + 3, "ESC yenyewe HAISABABISHI zamu ya ziada");
+    jmz_thibitisha(jc.idadi_ya_miito == 6, "chanzo kimeitwa HASA mara 6 (hakuna usomaji wa ziada BAADA ya ESC)");
+
+    // Jaribu kusoma TENA baada ya mwisho wa orodha (faharisi >= idadi) --
+    // chanzo kinapaswa kuendelea kurudisha -1 (hakikisha hakikwami).
+    n64 rc7 = mzunguko_hatua(g, &chanzo, fb, pitch);
+    jmz_thibitisha(rc7 == -1, "chanzo kinaendelea kurudisha -1 (hakikwami) likitakiwa kusoma baada ya mwisho");
+
+    // ---------- SCENARIO B: mzunguko_endesha (kitanzi kamili) ----------
+    // Orodha mpya, chanzo kipya, Mchezo ULE ULE (unaendelea kutoka
+    // zamu_awali+3) -- inathibitisha mzunguko_endesha inarudisha
+    // idadi HASA ya zamu MPYA (delta), si jumla kamili, na inasimama
+    // HASA mahali panapotarajiwa.
+    n64 idadi_matukio_b = 4;
+    n8* matukio_b = tenga(24 * idadi_matukio_b);
+    jm_weka_tukio(matukio_b, 0, MZUNGUKO_KEY_SPACE, 1);
+    jm_weka_tukio(matukio_b, 1, MZUNGUKO_KEY_SPACE, 1);
+    jm_weka_tukio(matukio_b, 2, 999, 1);               // kitufe kisichojulikana -- puuzwa
+    jm_weka_tukio(matukio_b, 3, MZUNGUKO_KEY_ESC, 1);
+
+    MzungukoJaribuChanzo jc_b;
+    jc_b.matukio = matukio_b;
+    jc_b.idadi = idadi_matukio_b;
+    jc_b.faharisi = 0;
+    jc_b.idadi_ya_miito = 0;
+
+    MzungukoChanzo chanzo_b;
+    chanzo_b.soma_kazi = &jm_chanzo_soma;
+    chanzo_b.muktadha = &jc_b;
+
+    n64 zamu_kabla_ya_b = g->zamu_ya_sasa;
+    n64 delta_b = mzunguko_endesha(g, &chanzo_b, fb, pitch);
+    jmz_thibitisha(delta_b == 2, "mzunguko_endesha inarudisha idadi HASA ya zamu MPYA (2) kwa mzunguko wa pili");
+    jmz_thibitisha(g->zamu_ya_sasa == zamu_kabla_ya_b + 2, "Mchezo ULE ULE umeendelea kwa zamu 2 za ziada (jumla sasa zamu_awali+5)");
+    jmz_thibitisha(jc_b.idadi_ya_miito == 4, "mzunguko_endesha haikusoma zaidi ya matukio 4 yaliyopo (kitufe kisichojulikana hakisababishi usomaji wa ziada)");
+    jmz_zamu_sahihi(fb, pitch, g->zamu_ya_sasa, nyeupe, "HUD inaonyesha ZAMU sahihi baada ya mzunguko_endesha (Scenario B)");
+
+    achilia fb;
+    mchezo_uharibu(g);
+    andika("mchezo_uharibu(g) imekamilika bila kuanguka\n", 0, 0, 0, 0, 0, 0);
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", jmz_yalioshindwa, 0, 0, 0, 0, 0);
+    kama (jmz_yalioshindwa > 0) { rudisha 1; }
+    andika("DONE\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

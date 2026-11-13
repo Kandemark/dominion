@@ -1,0 +1,368 @@
+// wasifu.swa — tafsiri ya src/core/profile.c (na .h) kwenda Swa.
+// Wasifu wa mchezaji na usimamizi wa maeneo ya kuhifadhi (save slots)
+// kwa kila wasifu.
+//
+// Kiambishi: wasifu_ — angalia ../../KANUNI-MAJINA.md.
+//
+// TOFAUTI KUBWA kutoka kwa chanzo cha C: chanzo kilitumia SDL3 moja
+// kwa moja (SDL_CreateDirectory, SDL_IOFromFile, SDL_EnumerateDirectory)
+// kwa sababu Swa haina maktaba ya juu ya faili/saraka bado. Badala ya
+// kuruka uwezo huu (kama ilivyofanyika kwa map_view.c/flag_system.c
+// zilizohitaji uwakilishi wa picha), NIMEANDIKA MOJA KWA MOJA
+// kupitia syscalls ghafi za Linux x86-64 (wito_wa_mfumo, kutoka
+// kumbukumbu.swa, ile ile inayotumika na faili.swa kwa open/read/
+// write/close/unlink):
+//   - mkdir(njia, ruhusa) ni syscall 83 — imejaribiwa moja kwa moja,
+//     inaunda saraka halisi kwenye faili mfumo, inarudisha -17
+//     (-EEXIST) ikiwa saraka ipo tayari, kama C.
+//   - Uorodheshaji wa saraka (kuchukua nafasi ya SDL_EnumerateDirectory)
+//     umetekelezwa kwa getdents64 (syscall 217): fungua saraka kwa
+//     open(njia, O_DIRECTORY=65536), kisha piga getdents64 mara kwa
+//     mara kwenye bafa ya 4096 hadi irudishe 0. Muundo wa rekodi
+//     (linux_dirent64): d_ino (n64, 8 baiti) + d_off (n64, 8 baiti)
+//     + d_reclen (n16, 2 baiti, kwenye nafasi 16) + d_type (n8,
+//     nafasi 18) + d_name (mfuatano wenye NUL, kuanzia nafasi 19).
+//     MUHIMU: n8 kwenye Swa INA ALAMA (signed) — thamani 128-255
+//     zinarudi HASI zikipanuliwa kuwa n32 (imethibitishwa kwa
+//     jaribio dogo). Kusoma d_reclen (baiti mbili) bila
+//     kuzingatia hili kunatoa matokeo yasiyo sahihi kwa saraka
+//     zenye majina marefu. Suluhisho: `v & 255` (bitwise AND,
+//     inatumika sahihi bila kujali alama) kabla ya kuunganisha
+//     baiti ya chini na ya juu (`lo + hi*256`).
+//
+// Muundo wa faili ya profile.dat: MSTARI MMOJA KWA KILA FIELD (si
+// unakili wa muundo mzima kama baiti ghafi kama C, kwa sababu
+// WasifuMchezaji ina vielekezi vya n8* -- kunakili muundo wenye
+// vielekezi moja kwa moja kwenye faili hakungefanya kazi baada ya
+// mchakato kuanzishwa upya, tofauti na C ambayo ilitumia safu za
+// herufi zisizobadilika ndani ya muundo wenyewe): jina, kitambulisho,
+// aliyeundwa, alicheza_mwisho, njia_ya_picha -- kila moja mstari
+// wake, ikisomwa kwa faili_soma_mstari (tayari ipo kwenye faili.swa).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/faili.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+n32 WASIFU_JINA_UPEO = 32;
+n32 WASIFU_ID_UPEO = 32;
+n32 WASIFU_NJIA_UPEO = 64;
+n32 WASIFU_RUHUSA_SARAKA = 493;   // 0755
+n32 WASIFU_O_DIRECTORY = 65536;  // O_DIRECTORY, bendera ya open(2)
+n32 WASIFU_URUFU_WA_MSTARI = 300;
+
+muundo WasifuMchezaji {
+    n8* jina;
+    n8* kitambulisho;    // id
+    n64 aliyeundwa;       // created_at
+    n64 alicheza_mwisho;  // last_played
+    n8* njia_ya_picha;    // avatar_path
+};
+
+// WasifuOrodha: safu inayokua ya mfuatano (majina ya wasifu au
+// majina ya slots) -- n64* ya vielekezi vya n8*, angalia
+// lugha-swa/swa#185 (TYPE** ingehesabu hatua isiyo sahihi).
+muundo WasifuOrodha {
+    n64* majina;
+    n32 idadi;
+    n32 uwezo;
+};
+
+n32 wasifu_baiti_bila_alama(n8 b) {
+    n32 v = b;
+    rudisha v & 255;
+}
+
+n32 wasifu_saraka_unda(n8* njia) {
+    rudisha wito_wa_mfumo(83, njia, WASIFU_RUHUSA_SARAKA, 0, 0, 0);
+}
+
+w0 wasifu_hakikisha_saraka_kuu() {
+    wasifu_saraka_unda("saves");
+    wasifu_saraka_unda("saves/profiles");
+}
+
+n8* wasifu_njia_ya_saraka(n8* id) {
+    n8* tmp = tenga(WASIFU_URUFU_WA_MSTARI);
+    unganisha_mfuatano(tmp, "saves/profiles", "/");
+    n8* matokeo = tenga(WASIFU_URUFU_WA_MSTARI);
+    unganisha_mfuatano(matokeo, tmp, id);
+    achilia tmp;
+    rudisha matokeo;
+}
+
+n8* wasifu_njia_ya_slots(n8* id) {
+    n8* dir = wasifu_njia_ya_saraka(id);
+    n8* tmp = tenga(WASIFU_URUFU_WA_MSTARI);
+    unganisha_mfuatano(tmp, dir, "/");
+    n8* matokeo = tenga(WASIFU_URUFU_WA_MSTARI);
+    unganisha_mfuatano(matokeo, tmp, "slots");
+    achilia dir;
+    achilia tmp;
+    rudisha matokeo;
+}
+
+n8* wasifu_njia_ya_meta(n8* id) {
+    n8* dir = wasifu_njia_ya_saraka(id);
+    n8* tmp = tenga(WASIFU_URUFU_WA_MSTARI);
+    unganisha_mfuatano(tmp, dir, "/");
+    n8* matokeo = tenga(WASIFU_URUFU_WA_MSTARI);
+    unganisha_mfuatano(matokeo, tmp, "profile.dat");
+    achilia dir;
+    achilia tmp;
+    rudisha matokeo;
+}
+
+w0 wasifu_hakikisha_saraka_za_wasifu(n8* id) {
+    n8* dir = wasifu_njia_ya_saraka(id);
+    wasifu_saraka_unda(dir);
+    n8* slots = wasifu_njia_ya_slots(id);
+    wasifu_saraka_unda(slots);
+    achilia dir;
+    achilia slots;
+}
+
+WasifuMchezaji* wasifu_unda(n8* jina) {
+    WasifuMchezaji* p = tenga(ukubwa(WasifuMchezaji));
+
+    n64 ujina = urefu_wa_mfuatano(jina);
+    n8* jina_buf = tenga(ujina + 1);
+    nakili_mfuatano(jina_buf, jina);
+    p->jina = jina_buf;
+
+    n64 muda = civ_muda_sasa();
+    n8* muda_str = tenga(32);
+    nambari_kwa_mfuatano_n64(muda, muda_str);
+
+    n8* id_tmp = tenga(WASIFU_URUFU_WA_MSTARI);
+    unganisha_mfuatano(id_tmp, jina, "_");
+    n8* id_buf = tenga(WASIFU_URUFU_WA_MSTARI);
+    unganisha_mfuatano(id_buf, id_tmp, muda_str);
+    achilia id_tmp;
+    achilia muda_str;
+
+    // safisha: badilisha ' ' '/' '\' ':' '.' kuwa '_' (sawa na chanzo
+    // cha C).
+    n64 i = 0;
+    wakati (id_buf[i] != 0) {
+        n8 c = id_buf[i];
+        kama (c == 32 || c == 47 || c == 92 || c == 58 || c == 46) {
+            id_buf[i] = 95;
+        }
+        i = i + 1;
+    }
+    p->kitambulisho = id_buf;
+
+    p->aliyeundwa = muda;
+    p->alicheza_mwisho = muda;
+
+    n8* njia_tupu = tenga(1);
+    njia_tupu[0] = 0;
+    p->njia_ya_picha = njia_tupu;
+
+    rudisha p;
+}
+
+w0 wasifu_uharibu(WasifuMchezaji* p) {
+    achilia p;
+}
+
+w0 wasifu_ondoa_mstari_mpya(n8* s, n32 urefu) {
+    kama (urefu > 0 && s[urefu - 1] == 10) {
+        s[urefu - 1] = 0;
+    }
+}
+
+n32 wasifu_hifadhi(WasifuMchezaji* p) {
+    kama (p == 0) { rudisha 0; }
+
+    wasifu_hakikisha_saraka_kuu();
+    wasifu_hakikisha_saraka_za_wasifu(p->kitambulisho);
+
+    n8* njia = wasifu_njia_ya_meta(p->kitambulisho);
+    n8* f = faili_fungua(njia, "w");
+    achilia njia;
+    kama (f == 0) { rudisha 0; }
+
+    n8* mstari = tenga(WASIFU_URUFU_WA_MSTARI);
+    n8* nambari = tenga(32);
+    n64 u;
+
+    unganisha_mfuatano(mstari, p->jina, "\n");
+    u = urefu_wa_mfuatano(mstari);
+    faili_andika(mstari, 1, u, f);
+
+    unganisha_mfuatano(mstari, p->kitambulisho, "\n");
+    u = urefu_wa_mfuatano(mstari);
+    faili_andika(mstari, 1, u, f);
+
+    nambari_kwa_mfuatano_n64(p->aliyeundwa, nambari);
+    unganisha_mfuatano(mstari, nambari, "\n");
+    u = urefu_wa_mfuatano(mstari);
+    faili_andika(mstari, 1, u, f);
+
+    nambari_kwa_mfuatano_n64(p->alicheza_mwisho, nambari);
+    unganisha_mfuatano(mstari, nambari, "\n");
+    u = urefu_wa_mfuatano(mstari);
+    faili_andika(mstari, 1, u, f);
+
+    unganisha_mfuatano(mstari, p->njia_ya_picha, "\n");
+    u = urefu_wa_mfuatano(mstari);
+    faili_andika(mstari, 1, u, f);
+
+    faili_funga(f);
+    achilia mstari;
+    achilia nambari;
+    rudisha 1;
+}
+
+WasifuMchezaji* wasifu_pakia(n8* id) {
+    n8* njia = wasifu_njia_ya_meta(id);
+    n8* f = faili_fungua(njia, "r");
+    achilia njia;
+    kama (f == 0) { rudisha 0; }
+
+    WasifuMchezaji* p = tenga(ukubwa(WasifuMchezaji));
+    n8* buf = tenga(WASIFU_URUFU_WA_MSTARI);
+    n32 n;
+
+    n = faili_soma_mstari(f, buf, WASIFU_URUFU_WA_MSTARI);
+    kama (n < 0) { faili_funga(f); achilia p; achilia buf; rudisha 0; }
+    wasifu_ondoa_mstari_mpya(buf, n);
+    n8* jina_buf = tenga(urefu_wa_mfuatano(buf) + 1);
+    nakili_mfuatano(jina_buf, buf);
+    p->jina = jina_buf;
+
+    n = faili_soma_mstari(f, buf, WASIFU_URUFU_WA_MSTARI);
+    kama (n < 0) { faili_funga(f); achilia p; achilia buf; rudisha 0; }
+    wasifu_ondoa_mstari_mpya(buf, n);
+    n8* id_buf = tenga(urefu_wa_mfuatano(buf) + 1);
+    nakili_mfuatano(id_buf, buf);
+    p->kitambulisho = id_buf;
+
+    n = faili_soma_mstari(f, buf, WASIFU_URUFU_WA_MSTARI);
+    kama (n < 0) { faili_funga(f); achilia p; achilia buf; rudisha 0; }
+    wasifu_ondoa_mstari_mpya(buf, n);
+    p->aliyeundwa = mfuatano_hadi_n64(buf);
+
+    n = faili_soma_mstari(f, buf, WASIFU_URUFU_WA_MSTARI);
+    kama (n < 0) { faili_funga(f); achilia p; achilia buf; rudisha 0; }
+    wasifu_ondoa_mstari_mpya(buf, n);
+    p->alicheza_mwisho = mfuatano_hadi_n64(buf);
+
+    n = faili_soma_mstari(f, buf, WASIFU_URUFU_WA_MSTARI);
+    kama (n < 0) { faili_funga(f); achilia p; achilia buf; rudisha 0; }
+    wasifu_ondoa_mstari_mpya(buf, n);
+    n8* picha_buf = tenga(urefu_wa_mfuatano(buf) + 1);
+    nakili_mfuatano(picha_buf, buf);
+    p->njia_ya_picha = picha_buf;
+
+    faili_funga(f);
+    achilia buf;
+    rudisha p;
+}
+
+n8* wasifu_njia_ya_kuhifadhi(n8* id, n8* jina_la_kipande) {
+    wasifu_hakikisha_saraka_kuu();
+    wasifu_hakikisha_saraka_za_wasifu(id);
+
+    n8* slots = wasifu_njia_ya_slots(id);
+    n8* tmp1 = tenga(WASIFU_URUFU_WA_MSTARI);
+    unganisha_mfuatano(tmp1, slots, "/");
+    n8* tmp2 = tenga(WASIFU_URUFU_WA_MSTARI);
+    unganisha_mfuatano(tmp2, tmp1, jina_la_kipande);
+    n8* matokeo = tenga(WASIFU_URUFU_WA_MSTARI);
+    unganisha_mfuatano(matokeo, tmp2, ".civ");
+
+    achilia slots;
+    achilia tmp1;
+    achilia tmp2;
+    rudisha matokeo;
+}
+
+n8* wasifu_orodha_pata(WasifuOrodha* orodha, n32 idx) {
+    rudisha orodha->majina[idx];
+}
+
+WasifuOrodha* wasifu_orodhesha_saraka(n8* njia_ya_saraka) {
+    WasifuOrodha* orodha = tenga(ukubwa(WasifuOrodha));
+    orodha->uwezo = 16;
+    orodha->idadi = 0;
+    orodha->majina = tenga(ukubwa(n64) * orodha->uwezo);
+
+    n32 fd = wito_wa_mfumo(2, njia_ya_saraka, WASIFU_O_DIRECTORY, 0, 0, 0);
+    kama (fd < 0) { rudisha orodha; }
+
+    n8* buf = tenga(4096);
+    n32 kuendelea = 1;
+    wakati (kuendelea != 0) {
+        n64 n = wito_wa_mfumo(217, fd, buf, 4096, 0, 0);
+        kama (n <= 0) {
+            kuendelea = 0;
+        } sivyo {
+            n64 nafasi = 0;
+            wakati (nafasi < n) {
+                n32 reclen_lo = wasifu_baiti_bila_alama(buf[nafasi + 16]);
+                n32 reclen_hi = wasifu_baiti_bila_alama(buf[nafasi + 17]);
+                n32 reclen = reclen_lo + reclen_hi * 256;
+
+                n8* jina_kipengele = buf + nafasi + 19;
+                n32 ni_nukta = linganisha_mfuatano(jina_kipengele, ".");
+                n32 ni_nukta_mbili = linganisha_mfuatano(jina_kipengele, "..");
+                kama (ni_nukta != 0 && ni_nukta_mbili != 0) {
+                    kama (orodha->idadi >= orodha->uwezo) {
+                        orodha->uwezo = orodha->uwezo * 2;
+                        orodha->majina = badili(orodha->majina, ukubwa(n64) * orodha->uwezo);
+                    }
+                    n64 ujina = urefu_wa_mfuatano(jina_kipengele);
+                    n8* nakala = tenga(ujina + 1);
+                    nakili_mfuatano(nakala, jina_kipengele);
+                    orodha->majina[orodha->idadi] = nakala;
+                    orodha->idadi = orodha->idadi + 1;
+                }
+
+                nafasi = nafasi + reclen;
+            }
+        }
+    }
+
+    wito_wa_mfumo(3, fd, 0, 0, 0, 0);
+    achilia buf;
+    rudisha orodha;
+}
+
+WasifuOrodha* wasifu_orodhesha_wasifu() {
+    wasifu_hakikisha_saraka_kuu();
+    rudisha wasifu_orodhesha_saraka("saves/profiles");
+}
+
+WasifuOrodha* wasifu_orodhesha_vipande(n8* id) {
+    wasifu_hakikisha_saraka_kuu();
+    wasifu_hakikisha_saraka_za_wasifu(id);
+
+    n8* slots = wasifu_njia_ya_slots(id);
+    WasifuOrodha* ghafi = wasifu_orodhesha_saraka(slots);
+    achilia slots;
+
+    n32 i = 0;
+    wakati (i < ghafi->idadi) {
+        n8* jina = wasifu_orodha_pata(ghafi, i);
+        n32 ina_civ = isha_kwa_mfuatano(jina, ".civ");
+        kama (ina_civ != 0) {
+            n64 u = urefu_wa_mfuatano(jina);
+            jina[u - 4] = 0;
+        }
+        i = i + 1;
+    }
+    rudisha ghafi;
+}
+
+w0 wasifu_orodha_huru(WasifuOrodha* orodha) {
+    n32 i = 0;
+    wakati (i < orodha->idadi) {
+        n8* jina = wasifu_orodha_pata(orodha, i);
+        achilia jina;
+        i = i + 1;
+    }
+    achilia orodha->majina;
+    achilia orodha;
+}

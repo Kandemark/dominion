@@ -1,0 +1,181 @@
+husisha { moduli/mchezo.swa }
+
+// jaribio_mchezo.swa -- jaribio la mkono dhidi ya Mchezo (mchezo.swa)
+// baada ya kuunganisha mipaka_hai/majanga/eneo (wimbi la sita,
+// 2026-10-01). Halijaribu "haikuanguka" tu -- linathibitisha THAMANI
+// HALISI za shamba baada ya kuunda na kusasisha, kwa mujibu wa somo
+// la mradi huu: "haikuanguka" si sawa na "ni sahihi".
+//
+// MUHIMU -- KWA NINI jaribio hili HALIITI mchezo_anzisha(): wakati wa
+// kuandika jaribio hili iligundulika kuwa mchezo_anzisha() (HATA
+// KABLA ya mabadiliko ya wimbi la sita, imethibitishwa dhidi ya
+// mchezo.swa HALISI ya awali bila kubadilishwa) HUANGUKA (SIGSEGV)
+// pale INAPOUNGANISHWA na mnyororo KAMILI wa husisha wa mchezo.swa
+// (moduli ~45+, kazi 444+) -- hitilafu hii haitokani na moduli
+// yoyote mahususi, bali inaonekana kuhusiana na UKUBWA WA JUMLA wa
+// programu moja ikiwa IMEUNGANISHWA. Kwa hiyo jaribio hili linajenga
+// Mchezo KWA MKONO (kupitia mchezo_unda + mchezo_weka_* moja kwa
+// moja) badala ya kutegemea mchezo_anzisha -- hii inathibitisha
+// UNGANISHO HALISI (wiring) wa mipaka_hai/majanga/eneo ndani ya
+// mchezo_sasisha/mchezo_uharibu BILA kutegemea kurekebishwa kwa
+// hitilafu hiyo tofauti kabisa.
+//
+// SASISHO (2026-10-02) -- lugha-swa/swa#292 IMETHIBITIKA KUREKEBISHWA:
+// kamili mpya kabisa iliyojengwa kutoka `main` (d768113) haianguki
+// tena ikiendesha programu hii (kazi 1136, mnyororo mzima wa
+// mchezo.swa wa wimbi la tisa) -- PASS 16/16 zote zinatokea kwa
+// THAMANI SAHIHI (angalia uchapishaji wa [dbg] chini: mvutano
+// 0.0 -> 0.049, eneo la mkoa 8.0 HALISI, idadi_ya_sasisho == 1).
+//
+// Wakati wa kuthibitisha hili, ziligundulika mambo MAWILI tofauti:
+//
+// (A) PENGO LA JARIBIO HILI LENYEWE (limerekebishwa hapa chini):
+//     mchezo_sasisha ina ukaguzi wa mlango
+//     "kama (g->inafanya_kazi == 0 || ...) rudisha;" na
+//     g->inafanya_kazi huwekwa 1 NDANI ya mchezo_anzisha PEKEE
+//     (mchezo_unda huiacha 0). Kwa kuwa jaribio hili kwa makusudi
+//     HALIITI mchezo_anzisha (ili kuepuka #292 hapo juu),
+//     mchezo_sasisha ilikuwa ikirudi mapema kimya bila kufanya
+//     chochote -- si kwa sababu ya mdudu wowote kwenye
+//     mipaka_hai/majanga/eneo wenyewe. Bendera hiyo sasa inawekwa
+//     kwa mkono (mstari mmoja) kabla ya mchezo_sasisha(g).
+//
+// (B) HITILAFU MPYA, TOFAUTI KABISA, YA MKUSANYAJI (imeripotiwa kama
+//     lugha-swa/swa#295, SI kurekebishwa humu -- nje ya wigo wa
+//     mradi huu): pale idadi ya JUMLA ya kazi kwenye programu
+//     inapovuka kiwango fulani kati ya kazi 1128 na 1136 (bisection:
+//     commit 150b2a6 ya dominion, kazi 1128, ni SAFI KABISA; commit
+//     45350b1 (HEAD), kazi 1136, ina dalili), anwani za string
+//     literal zinachanganyikiwa (mfano: thibitisho linalopaswa
+//     kuchapisha jina lake sahihi linachapisha "B" badala yake --
+//     anwani ya hoja ya mfuatano ya wito ULIOTANGULIA) na sehemu ya
+//     mwisho ya anza() (uchapishaji wa "[muhtasari]"/"DONE")
+//     inaonekana kuchapishwa MAPEMA kabla ya wakati wake kisha
+//     TENA mwishoni halisi. Hii ni thabiti (deterministic, si
+//     uharibifu wa nasibu wa kumbukumbu) na HAIATHIRI usahihi wa
+//     HESABU halisi (ALU/FPU) -- ni maonyesho (stdout
+//     ordering/anwani za literal) pekee yanayoathiriwa, kama
+//     ilivyothibitishwa na uchapishaji wa [dbg] wa thamani halisi
+//     chini. Angalia #295 kwa maelezo kamili ya bisection.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_mchezo_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    Mchezo* g = mchezo_unda();
+    n32 g_sio_tupu = (g != 0);
+    jaribio_mchezo_thibitisha(g_sio_tupu, "mchezo_unda inarudisha kielekezi");
+    jaribio_mchezo_thibitisha(g->mipaka_hai_addr == 0, "mipaka_hai_addr ni 0 mara tu baada ya mchezo_unda");
+    jaribio_mchezo_thibitisha(g->majanga_addr == 0, "majanga_addr ni 0 mara tu baada ya mchezo_unda");
+    jaribio_mchezo_thibitisha(g->eneo_addr == 0, "eneo_addr ni 0 mara tu baada ya mchezo_unda");
+
+    // Unda mifumo mitatu mipya kwa mkono (badala ya mchezo_anzisha,
+    // angalia maelezo juu ya faili) na uiunganishe kwenye g kupitia
+    // accessor zilizothibitishwa (mtindo wa #186).
+    mchezo_weka_mipaka_hai(g, dunia_mpaka_hai_unda());
+    mchezo_weka_majanga(g, mazingira_majanga_unda());
+    mchezo_weka_eneo(g, dunia_eneo_msimamizi_unda());
+
+    DuniaMipakaHai* mipaka = mchezo_pata_mipaka_hai(g);
+    MazingiraMajangaMfumo* majanga = mchezo_pata_majanga(g);
+    DuniaEneoMsimamizi* eneo = mchezo_pata_eneo(g);
+    n32 mipaka_sio_tupu = (mipaka != 0);
+    n32 majanga_sio_tupu = (majanga != 0);
+    n32 eneo_sio_tupu = (eneo != 0);
+    jaribio_mchezo_thibitisha(mipaka_sio_tupu, "mchezo_pata_mipaka_hai inarudisha kile kilichowekwa");
+    jaribio_mchezo_thibitisha(majanga_sio_tupu, "mchezo_pata_majanga inarudisha kile kilichowekwa");
+    jaribio_mchezo_thibitisha(eneo_sio_tupu, "mchezo_pata_eneo inarudisha kile kilichowekwa");
+    jaribio_mchezo_thibitisha(mipaka->idadi == 0, "mipaka_hai huanza bila vipande");
+    jaribio_mchezo_thibitisha(majanga->idadi_ya_majanga == 0, "majanga huanza bila majanga");
+    jaribio_mchezo_thibitisha(eneo->idadi == 0, "eneo huanza bila mikoa");
+
+    // Jaza kipande kimoja cha mpaka kinachobishaniwa kwa mkono ili
+    // kuthibitisha kuwa mchezo_sasisha HALISI huongeza mvutano wake
+    // (sivyo kama ingekuwa 0 isiyobadilika, jaribio hili lingeshindwa).
+    DuniaMpakaHoja hoja;
+    hoja.eneo_a = "A";
+    hoja.eneo_b = "B";
+    hoja.mwanzo_x = 0.0;
+    hoja.mwanzo_y = 0.0;
+    hoja.mwisho_x = 1.0;
+    hoja.mwisho_y = 1.0;
+    hoja.aina = DUNIA_MPAKA_UNAOBISHANIWA;
+    dunia_mpaka_hai_unda_kipande(mipaka, &hoja);
+    jaribio_mchezo_thibitisha(mipaka->idadi == 1, "kipande cha mpaka kimeongezwa");
+    d64 mvutano_kabla = dunia_mpaka_hai_pata_mvutano(mipaka, "A", "B");
+    jaribio_mchezo_thibitisha(mvutano_kabla == 0.0, "mvutano wa awali ni 0.0");
+
+    // Ongeza mkoa mmoja wa pembetatu kwenye eneo ili kuthibitisha
+    // hesabu halisi ya eneo/katikati (si bandia).
+    DuniaEneoMkoa* mkoa = dunia_eneo_mkoa_unda("X");
+    dunia_eneo_mkoa_ongeza_nukta(mkoa, 0.0, 0.0);
+    dunia_eneo_mkoa_ongeza_nukta(mkoa, 4.0, 0.0);
+    dunia_eneo_mkoa_ongeza_nukta(mkoa, 0.0, 4.0);
+    dunia_eneo_msimamizi_ongeza_mkoa(eneo, mkoa);
+    jaribio_mchezo_thibitisha(eneo->idadi == 1, "mkoa umeongezwa kwenye eneo");
+    // eneo la pembetatu (0,0)-(4,0)-(0,4) = 8.0 HALISI (shoelace formula)
+    d64 tofauti_eneo = mkoa->eneo - 8.0;
+    kama (tofauti_eneo < 0.0) { tofauti_eneo = 0.0 - tofauti_eneo; }
+    jaribio_mchezo_thibitisha(tofauti_eneo < 0.0001, "eneo la mkoa limehesabiwa sahihi (8.0)");
+
+    // Sasisha mzunguko mmoja wa Mchezo MZIMA (mchezo_sasisha HALISI,
+    // kazi ambayo mchezo.c -> mchezo_sasisha_mifumo_huru huita mifumo
+    // mitatu hii) na uthibitishe kuwa mvutano wa mpaka unaobishaniwa
+    // UMEONGEZEKA -- tabia halisi ya dunia_mpaka_hai_sasisha kwa
+    // DUNIA_MPAKA_UNAOBISHANIWA, si tu kuwa haikuanguka. Mifumo
+    // mingine yote ya g bado ni 0 (hatukuita mchezo_anzisha), hivyo
+    // mchezo_sasisha inaziruka salama (kila moja ina ukaguzi wa
+    // "kama (x != 0)") -- hii inathibitisha kuwa muunganisho wa
+    // mifumo mitatu mipya HAUTEGEMEI mifumo mingine yoyote kuwepo.
+    //
+    // GUNDUA (2026-10-02, baada ya #292 kurekebishwa): mchezo_sasisha
+    // ina ukaguzi wa mlango kwenye mstari wa kwanza --
+    // "kama (g->inafanya_kazi == 0 || g->imesimamishwa != 0) rudisha;"
+    // -- na g->inafanya_kazi huwekwa 1 NDANI ya mchezo_anzisha pekee
+    // (mchezo_unda huiacha 0, angalia mchezo.swa). Kwa kuwa jaribio
+    // hili kwa makusudi HALIITI mchezo_anzisha (ili kuepuka #292),
+    // mchezo_sasisha ingerudi mapema kimya bila kufanya chochote --
+    // si kwa sababu ya mdudu wowote kwenye mipaka_hai/majanga/eneo
+    // wenyewe, bali kwa sababu ya mlango huu wa ulinzi tu. Tunaweka
+    // bendera hiyo kwa mkono hapa (si kupitia mchezo_anzisha) ili
+    // kuendana na muundo wa jaribio hili (kujenga Mchezo kwa mkono).
+    g->inafanya_kazi = 1;
+    mchezo_sasisha(g);
+    d64 mvutano_baada = dunia_mpaka_hai_pata_mvutano(mipaka, "A", "B");
+    // Uchapishaji wa [dbg] wa THAMANI HALISI (si tu PASS/FAIL) --
+    // %f haiungwi mkono (andika inasaidia %d/%u/%x/%s/%c pekee,
+    // angalia kumbukumbu.swa), kwa hiyo d64 inazidishwa kwa 1000 na
+    // kuonyeshwa kama n64 kwa usahihi wa desimali 3. Hii ndiyo
+    // uthibitisho wa moja kwa moja uliotumika kugundua #295 (angalia
+    // maelezo juu ya faili) -- thamani hizi ni SAHIHI hata pale
+    // mpangilio wa uchapishaji wa PASS/FAIL unapoharibika na #295.
+    n64 mvutano_kabla_x1000 = mvutano_kabla * 1000.0;
+    n64 mvutano_baada_x1000 = mvutano_baada * 1000.0;
+    n64 eneo_mkoa_x1000 = mkoa->eneo * 1000.0;
+    andika("[dbg] mvutano_kabla*1000=%d mvutano_baada*1000=%d eneo_mkoa*1000=%d\n", mvutano_kabla_x1000, mvutano_baada_x1000, eneo_mkoa_x1000, 0, 0, 0);
+    jaribio_mchezo_thibitisha(mvutano_baada > mvutano_kabla, "mvutano wa mpaka umeongezeka baada ya mchezo_sasisha moja");
+
+    n64 idadi_sasisho = g->utendaji.idadi_ya_sasisho;
+    andika("[dbg] idadi_ya_sasisho=%d\n", idadi_sasisho, 0, 0, 0, 0, 0);
+    jaribio_mchezo_thibitisha(idadi_sasisho == 1, "idadi_ya_sasisho == 1 baada ya mzunguko mmoja");
+
+    // mchezo_uharibu -> mchezo_zima huita dunia_mpaka_hai_uharibu/
+    // mazingira_majanga_uharibu/dunia_eneo_msimamizi_uharibu kwa
+    // mifumo hii mitatu -- ikianguka hapa, jaribio zima
+    // linashindwa kwa sauti (segfault), ambalo ni ukaguzi wa kutosha
+    // (hakuna thamani ya kurudi ya kuangalia baada ya uharibifu).
+    mchezo_uharibu(g);
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    kama (jaribio_hesabu_yalioshindwa > 0) { rudisha 1; }
+    andika("DONE\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

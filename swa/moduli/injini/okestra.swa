@@ -1,0 +1,313 @@
+// okestra.swa — tafsiri ya src/core/simulation_engine/system_orchestrator.c
+// (na .h, na interfaces/iupdatable.h) kwenda Swa. Usajili na
+// uratibu wa mifumo mingi ya uigaji (economy, governance, n.k.)
+// yenye mpangilio wa utegemezi.
+//
+// Kiambishi: injini_okestra_ — angalia ../../KANUNI-MAJINA.md.
+//
+// MUHIMU — tofauti ya kimakusudi, IMEBORESHWA kuliko C ya asili:
+// `civ_system_orchestrator_calculate_order` ya C HAIFANYI upangaji
+// wa kitopolojia halisi kabisa — maoni yake mwenyewe yanasema
+// "Create new order (simplified - just use registration order)" na
+// dependencies/dep_count zinazopitishwa kwenye register() HAZITUMIKI
+// KAMWE. Hapa tumetekeleza upangaji wa kitopolojia HALISI (DFS),
+// kwa sababu ndiyo tabia iliyokusudiwa (jina la kazi, hoja za
+// utegemezi) hata kama C ya sasa haikuikamilisha. Mzunguko wa
+// utegemezi (cycle) haukatai kimya — mfumo unaozunguka unawekwa
+// kwenye mpangilio mara moja tu bila kusubiri utegemezi wake wa
+// mzunguko (badala ya kuzama kwenye recursion isiyoisha).
+//
+// Tofauti nyingine:
+//   - `civ_updatable_t` (muundo wa "interface" wenye vielekezi 6 vya
+//     kazi) imekuwa vigezo vya n64 (anwani za kazi), vikiitwa kupitia
+//     kigezo cha ndani -- mtindo ulioothibitishwa (matukio/tukio.swa,
+//     injini/msambazaji.swa). Kazi ya update INAPASWA kurudisha w0
+//     (si muundo civ_result_t) -- vishughulikia vya n64 lazima
+//     virudishe w0 pekee (angalia maelezo ya tukio.swa).
+//   - `char** execution_order`/`dependencies` (safu za mfuatano)
+//     zimekuwa vigezo vyenye majina (utegemezi_0..7, upeo wa
+//     utegemezi 8 kwa kila mfumo) -- kama n8** ingekuwa na hatua
+//     isiyo sahihi (#185).
+//   - `civ_system_status_t`/`get_status` (isiyotekelezwa kamwe kwenye
+//     C, inarudisha NULL kila mara) HAIKULETWA.
+//   - `parallel_execution`/`max_workers` (havitumiki kwenye mantiki
+//     yoyote halisi ya C) HAVIKULETWA.
+//   - `get_overall_health` inarudisha 1.0 kila mara, sawa na C
+//     (maoni yake: "Simplified - would track health per system").
+//
+// Faili hili limewekwa DOGO KWA MAKUSUDI (struct 2 tu, husisha chache)
+// kuepuka hatari ya lugha-swa/swa#192 (uharibifu wa kimya wa field
+// kwenye graph kubwa) -- halihitaji kuvuta moduli za uchumi/utawala
+// kufanya kazi kama primitive ya uratibu inayojitegemea.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+n32 INJINI_OKESTRA_UTEGEMEZI_UPEO = 8;
+
+muundo InjiniMfumo {
+    n8* jina;
+    n64 system_addr;
+    n64 update_fn;
+    n64 initialize_fn;
+    n64 destroy_fn;
+    n64 is_enabled_fn;
+    n64 set_enabled_fn;
+    n32 imewezeshwa;
+
+    n32 idadi_ya_utegemezi;
+    n8* utegemezi_0; n8* utegemezi_1; n8* utegemezi_2; n8* utegemezi_3;
+    n8* utegemezi_4; n8* utegemezi_5; n8* utegemezi_6; n8* utegemezi_7;
+
+    n32 alama_ya_dfs;  // 0=hajaguswa, 1=anaendelea (kwenye stack), 2=kakamilika
+};
+
+muundo InjiniOkestra {
+    n64* mifumo;
+    n32 idadi;
+    n32 uwezo;
+
+    n64* mpangilio;
+    n32 idadi_ya_mpangilio;
+    n32 uwezo_wa_mpangilio;
+};
+
+InjiniMfumo* injini_mfumo_unda(n8* jina, n64 system_addr, n64 update_fn) {
+    InjiniMfumo* m = tenga(ukubwa(InjiniMfumo));
+    m->jina = jina;
+    m->system_addr = system_addr;
+    m->update_fn = update_fn;
+    m->initialize_fn = 0;
+    m->destroy_fn = 0;
+    m->is_enabled_fn = 0;
+    m->set_enabled_fn = 0;
+    m->imewezeshwa = 1;
+    m->idadi_ya_utegemezi = 0;
+    m->alama_ya_dfs = 0;
+    rudisha m;
+}
+
+w0 injini_mfumo_weka_kazi_ya_awali(InjiniMfumo* m, n64 initialize_fn) {
+    m->initialize_fn = initialize_fn;
+}
+
+w0 injini_mfumo_weka_kazi_ya_kuharibu(InjiniMfumo* m, n64 destroy_fn) {
+    m->destroy_fn = destroy_fn;
+}
+
+w0 injini_mfumo_weka_kazi_za_uwezo(InjiniMfumo* m, n64 is_enabled_fn, n64 set_enabled_fn) {
+    m->is_enabled_fn = is_enabled_fn;
+    m->set_enabled_fn = set_enabled_fn;
+}
+
+n32 injini_mfumo_ongeza_utegemezi(InjiniMfumo* m, n8* jina_la_utegemezi) {
+    kama (m->idadi_ya_utegemezi >= INJINI_OKESTRA_UTEGEMEZI_UPEO) { rudisha 0; }
+    kama (m->idadi_ya_utegemezi == 0) { m->utegemezi_0 = jina_la_utegemezi; }
+    sivyo { kama (m->idadi_ya_utegemezi == 1) { m->utegemezi_1 = jina_la_utegemezi; }
+    sivyo { kama (m->idadi_ya_utegemezi == 2) { m->utegemezi_2 = jina_la_utegemezi; }
+    sivyo { kama (m->idadi_ya_utegemezi == 3) { m->utegemezi_3 = jina_la_utegemezi; }
+    sivyo { kama (m->idadi_ya_utegemezi == 4) { m->utegemezi_4 = jina_la_utegemezi; }
+    sivyo { kama (m->idadi_ya_utegemezi == 5) { m->utegemezi_5 = jina_la_utegemezi; }
+    sivyo { kama (m->idadi_ya_utegemezi == 6) { m->utegemezi_6 = jina_la_utegemezi; }
+    sivyo { m->utegemezi_7 = jina_la_utegemezi; } } } } } } }
+    m->idadi_ya_utegemezi = m->idadi_ya_utegemezi + 1;
+    rudisha 1;
+}
+
+n8* injini_mfumo_pata_utegemezi(InjiniMfumo* m, n32 idx) {
+    kama (idx == 0) { rudisha m->utegemezi_0; }
+    kama (idx == 1) { rudisha m->utegemezi_1; }
+    kama (idx == 2) { rudisha m->utegemezi_2; }
+    kama (idx == 3) { rudisha m->utegemezi_3; }
+    kama (idx == 4) { rudisha m->utegemezi_4; }
+    kama (idx == 5) { rudisha m->utegemezi_5; }
+    kama (idx == 6) { rudisha m->utegemezi_6; }
+    rudisha m->utegemezi_7;
+}
+
+InjiniOkestra* injini_okestra_unda() {
+    InjiniOkestra* o = tenga(ukubwa(InjiniOkestra));
+    o->uwezo = 32;
+    o->idadi = 0;
+    o->mifumo = tenga(ukubwa(n64) * o->uwezo);
+    o->uwezo_wa_mpangilio = 32;
+    o->idadi_ya_mpangilio = 0;
+    o->mpangilio = tenga(ukubwa(n64) * o->uwezo_wa_mpangilio);
+    rudisha o;
+}
+
+w0 injini_okestra_uharibu(InjiniOkestra* o) {
+    achilia o->mifumo;
+    achilia o->mpangilio;
+    achilia o;
+}
+
+InjiniMfumo* injini_okestra_pata(InjiniOkestra* o, n32 idx) {
+    rudisha o->mifumo[idx];
+}
+
+InjiniMfumo* injini_okestra_tafuta(InjiniOkestra* o, n8* jina) {
+    n32 i = 0;
+    wakati (i < o->idadi) {
+        InjiniMfumo* m = injini_okestra_pata(o, i);
+        kama (linganisha_mfuatano(m->jina, jina) == 0) { rudisha m; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+w0 injini_okestra_dfs(InjiniOkestra* o, InjiniMfumo* m) {
+    kama (m->alama_ya_dfs == 2) { rudisha; }
+    kama (m->alama_ya_dfs == 1) { rudisha; }  // mzunguko umegunduliwa, epuka recursion isiyoisha
+    m->alama_ya_dfs = 1;
+
+    n32 i = 0;
+    wakati (i < m->idadi_ya_utegemezi) {
+        n8* jina_la_utegemezi = injini_mfumo_pata_utegemezi(m, i);
+        InjiniMfumo* utegemezi = injini_okestra_tafuta(o, jina_la_utegemezi);
+        kama (utegemezi != 0) {
+            injini_okestra_dfs(o, utegemezi);
+        }
+        i = i + 1;
+    }
+
+    m->alama_ya_dfs = 2;
+    kama (o->idadi_ya_mpangilio >= o->uwezo_wa_mpangilio) {
+        n32 uwezo_mpya = o->uwezo_wa_mpangilio * 2;
+        n64* mpangilio_mpya = tenga(ukubwa(n64) * uwezo_mpya);
+        n32 j = 0;
+        wakati (j < o->idadi_ya_mpangilio) {
+            mpangilio_mpya[j] = o->mpangilio[j];
+            j = j + 1;
+        }
+        achilia o->mpangilio;
+        o->mpangilio = mpangilio_mpya;
+        o->uwezo_wa_mpangilio = uwezo_mpya;
+    }
+    o->mpangilio[o->idadi_ya_mpangilio] = m;
+    o->idadi_ya_mpangilio = o->idadi_ya_mpangilio + 1;
+}
+
+CivMatokeo injini_okestra_hesabu_mpangilio(InjiniOkestra* o) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (o == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    n32 i = 0;
+    wakati (i < o->idadi) {
+        InjiniMfumo* m = injini_okestra_pata(o, i);
+        m->alama_ya_dfs = 0;
+        i = i + 1;
+    }
+    o->idadi_ya_mpangilio = 0;
+
+    i = 0;
+    wakati (i < o->idadi) {
+        InjiniMfumo* m = injini_okestra_pata(o, i);
+        injini_okestra_dfs(o, m);
+        i = i + 1;
+    }
+
+    rudisha r;
+}
+
+InjiniMfumo* injini_okestra_pata_mpangilio(InjiniOkestra* o, n32 idx) {
+    rudisha o->mpangilio[idx];
+}
+
+CivMatokeo injini_okestra_sajili(InjiniOkestra* o, InjiniMfumo* m) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (o == 0 || m == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Okestra au mfumo ni tupu";
+        rudisha r;
+    }
+
+    InjiniMfumo* uliopo = injini_okestra_tafuta(o, m->jina);
+    kama (uliopo != 0) {
+        r.hitilafu = CIV_HITILAFU_HALI_MBAYA;
+        r.ujumbe = "Mfumo tayari umesajiliwa";
+        rudisha r;
+    }
+
+    kama (o->idadi >= o->uwezo) {
+        n32 uwezo_mpya = o->uwezo * 2;
+        n64* mifumo_mpya = tenga(ukubwa(n64) * uwezo_mpya);
+        n32 j = 0;
+        wakati (j < o->idadi) {
+            mifumo_mpya[j] = o->mifumo[j];
+            j = j + 1;
+        }
+        achilia o->mifumo;
+        o->mifumo = mifumo_mpya;
+        o->uwezo = uwezo_mpya;
+    }
+
+    o->mifumo[o->idadi] = m;
+    o->idadi = o->idadi + 1;
+
+    injini_okestra_hesabu_mpangilio(o);
+    rudisha r;
+}
+
+w0 injini_okestra_ondoa(InjiniOkestra* o, n8* jina) {
+    kama (o == 0 || jina == 0) { rudisha; }
+    n32 i = 0;
+    wakati (i < o->idadi) {
+        InjiniMfumo* m = injini_okestra_pata(o, i);
+        kama (linganisha_mfuatano(m->jina, jina) == 0) {
+            n32 j = i;
+            wakati (j < o->idadi - 1) {
+                o->mifumo[j] = o->mifumo[j + 1];
+                j = j + 1;
+            }
+            o->idadi = o->idadi - 1;
+            injini_okestra_hesabu_mpangilio(o);
+            rudisha;
+        }
+        i = i + 1;
+    }
+}
+
+w0 injini_okestra_sasisha_zote(InjiniOkestra* o, d64 dt) {
+    kama (o == 0) { rudisha; }
+    n32 i = 0;
+    wakati (i < o->idadi_ya_mpangilio) {
+        InjiniMfumo* m = injini_okestra_pata_mpangilio(o, i);
+
+        n32 amewezeshwa = m->imewezeshwa;
+        kama (m->is_enabled_fn != 0) {
+            n64 kagua = m->is_enabled_fn;
+            amewezeshwa = kagua(m->system_addr);
+        }
+
+        kama (amewezeshwa != 0 && m->update_fn != 0) {
+            n64 sasisha = m->update_fn;
+            sasisha(m->system_addr, dt);
+        }
+        i = i + 1;
+    }
+}
+
+w0 injini_okestra_wezesha(InjiniOkestra* o, n8* jina, n32 imewezeshwa) {
+    kama (o == 0 || jina == 0) { rudisha; }
+    InjiniMfumo* m = injini_okestra_tafuta(o, jina);
+    kama (m == 0) { rudisha; }
+    m->imewezeshwa = imewezeshwa;
+    kama (m->set_enabled_fn != 0) {
+        n64 weka = m->set_enabled_fn;
+        weka(m->system_addr, imewezeshwa);
+    }
+}
+
+d64 injini_okestra_afya_ya_jumla(InjiniOkestra* o) {
+    kama (o == 0 || o->idadi == 0) { rudisha 1.0; }
+    rudisha 1.0;
+}

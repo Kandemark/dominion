@@ -1,0 +1,293 @@
+// bunge.swa — tafsiri ya src/core/governance/branches/legislative.c
+// (na .h) kwenda Swa. Mfumo wa kibunge unaobadilika — vyombo vya
+// kutunga sheria (mabunge, mabaraza, n.k.) vyenye uwezo wa
+// kutunga/kufuta kanuni za katiba.
+//
+// Kiambishi: utawala_bunge_ — angalia ../../../KANUNI-MAJINA.md.
+// bodies[]/active_bills[] (safu zinazokua, malloc+realloc) zimekuwa
+// kikomo kisichobadilika cha vyombo 8 na miswada 8 (vigezo vyenye
+// majina + kazi za kupata), mtindo uleule wa baraza.swa/mtendaji.swa.
+//
+// civ_bill_t.proposed_rule (UtawalaKanuni* ndani ya muundo mwingine)
+// imehifadhiwa kama n64 (#186) na kazi za pata/weka zinazofanya
+// ubadilishaji wa aina kupitia aina ya kurudisha — mtindo uleule wa
+// akili/mbinu.swa's base_ai.
+//
+// snprintf(id, "leg_%ld", time(NULL)) ya asili imebadilishwa kuwa
+// kaunta ya kimataifa (haiwezi kutumia sehemu za faragha/static za
+// Swa) + nambari_kwa_mfuatano_n64/unganisha_mfuatano — inatoa
+// vitambulisho vya kipekee bila kuhitaji saa ya mfumo.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/utawala/legal/katiba.swa }
+
+n32 UTAWALA_BUNGE_KURA_WENGI_MENGI = 0;
+n32 UTAWALA_BUNGE_KURA_WENGI_MAALUM = 1;
+n32 UTAWALA_BUNGE_KURA_WOTE = 2;
+n32 UTAWALA_BUNGE_KURA_MAMLAKA_KAMILI = 3;
+
+n32 UTAWALA_BUNGE_KIKAO_BUNGE = 0;
+n32 UTAWALA_BUNGE_KIKAO_MAHAKAMA = 1;
+n32 UTAWALA_BUNGE_KIKAO_BARAZA_TENDAJI = 2;
+
+n32 UTAWALA_BUNGE_VYOMBO_UPEO = 8;
+n32 UTAWALA_BUNGE_MISWADA_UPEO = 8;
+
+n64 UTAWALA_BUNGE_KAUNTA_GLOBAL = 0;
+
+muundo UtawalaBungeChombo {
+    n8* kitambulisho;
+    n8* jina;
+    n32 aina_ya_kikao;
+    n8* jukumu_linalohitajika;
+    n32 idadi_ya_wanachama;
+    n32 mbinu_ya_kura;
+    d64 kizingiti_maalum;
+    n32 kiko_kikaoni;
+    n32 kikao_kinachofuata;
+};
+
+muundo UtawalaBungeMswada {
+    n8* kitambulisho;
+    n8* kichwa;
+    n64 kanuni_addr;
+    n32 ni_ufutaji;
+    n8* mpendekezaji;
+    n32 kura_ndiyo;
+    n32 kura_hapana;
+    n32 kura_kutojali;
+    n32 imetatuliwa;
+    n32 imepita;
+};
+
+muundo UtawalaBungeMfumo {
+    UtawalaBungeChombo chombo_0; UtawalaBungeChombo chombo_1;
+    UtawalaBungeChombo chombo_2; UtawalaBungeChombo chombo_3;
+    UtawalaBungeChombo chombo_4; UtawalaBungeChombo chombo_5;
+    UtawalaBungeChombo chombo_6; UtawalaBungeChombo chombo_7;
+    n32 idadi_ya_vyombo;
+
+    UtawalaBungeMswada mswada_0; UtawalaBungeMswada mswada_1;
+    UtawalaBungeMswada mswada_2; UtawalaBungeMswada mswada_3;
+    UtawalaBungeMswada mswada_4; UtawalaBungeMswada mswada_5;
+    UtawalaBungeMswada mswada_6; UtawalaBungeMswada mswada_7;
+    n32 idadi_ya_miswada;
+};
+
+UtawalaBungeChombo* utawala_bunge_pata_chombo(UtawalaBungeMfumo* m, n32 idx) {
+    kama (idx == 0) { rudisha &m->chombo_0; }
+    kama (idx == 1) { rudisha &m->chombo_1; }
+    kama (idx == 2) { rudisha &m->chombo_2; }
+    kama (idx == 3) { rudisha &m->chombo_3; }
+    kama (idx == 4) { rudisha &m->chombo_4; }
+    kama (idx == 5) { rudisha &m->chombo_5; }
+    kama (idx == 6) { rudisha &m->chombo_6; }
+    rudisha &m->chombo_7;
+}
+
+UtawalaBungeMswada* utawala_bunge_pata_mswada(UtawalaBungeMfumo* m, n32 idx) {
+    kama (idx == 0) { rudisha &m->mswada_0; }
+    kama (idx == 1) { rudisha &m->mswada_1; }
+    kama (idx == 2) { rudisha &m->mswada_2; }
+    kama (idx == 3) { rudisha &m->mswada_3; }
+    kama (idx == 4) { rudisha &m->mswada_4; }
+    kama (idx == 5) { rudisha &m->mswada_5; }
+    kama (idx == 6) { rudisha &m->mswada_6; }
+    rudisha &m->mswada_7;
+}
+
+UtawalaKanuni* utawala_bunge_mswada_pata_kanuni(UtawalaBungeMswada* b) {
+    rudisha b->kanuni_addr;
+}
+
+w0 utawala_bunge_mswada_weka_kanuni(UtawalaBungeMswada* b, UtawalaKanuni* k) {
+    b->kanuni_addr = k;
+}
+
+n8* utawala_bunge_tengeneza_kitambulisho(n8* kiambishi) {
+    n8* buf_nambari = tenga(32);
+    nambari_kwa_mfuatano_n64(UTAWALA_BUNGE_KAUNTA_GLOBAL, buf_nambari);
+    UTAWALA_BUNGE_KAUNTA_GLOBAL = UTAWALA_BUNGE_KAUNTA_GLOBAL + 1;
+    n8* matokeo = tenga(64);
+    unganisha_mfuatano(matokeo, kiambishi, buf_nambari);
+    achilia buf_nambari;
+    rudisha matokeo;
+}
+
+UtawalaBungeMfumo* utawala_bunge_unda() {
+    UtawalaBungeMfumo* m = tenga(ukubwa(UtawalaBungeMfumo));
+    m->idadi_ya_vyombo = 0;
+    m->idadi_ya_miswada = 0;
+    rudisha m;
+}
+
+w0 utawala_bunge_uharibu(UtawalaBungeMfumo* m) {
+    achilia m;
+}
+
+UtawalaBungeChombo* utawala_bunge_chombo_unda(n8* jina, n8* jukumu_linalohitajika) {
+    UtawalaBungeChombo* c = tenga(ukubwa(UtawalaBungeChombo));
+    c->kitambulisho = utawala_bunge_tengeneza_kitambulisho("leg_");
+    c->jina = jina;
+    c->aina_ya_kikao = UTAWALA_BUNGE_KIKAO_BUNGE;
+    kama (jukumu_linalohitajika != 0) {
+        c->jukumu_linalohitajika = jukumu_linalohitajika;
+    } sivyo {
+        c->jukumu_linalohitajika = 0;
+    }
+    c->idadi_ya_wanachama = 0;
+    c->mbinu_ya_kura = UTAWALA_BUNGE_KURA_WENGI_MENGI;
+    c->kizingiti_maalum = 0.5;
+    c->kiko_kikaoni = 1;
+    c->kikao_kinachofuata = 0;
+    rudisha c;
+}
+
+CivMatokeo utawala_bunge_ongeza_chombo(UtawalaBungeMfumo* m, UtawalaBungeChombo* chombo) {
+    CivMatokeo r;
+    kama (m == 0 || chombo == 0) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        r.ujumbe = "Hoja batili";
+        rudisha r;
+    }
+    kama (m->idadi_ya_vyombo >= UTAWALA_BUNGE_VYOMBO_UPEO) {
+        r.hitilafu = CIV_HITILAFU_KUMBUKUMBU_IMEISHA;
+        r.ujumbe = "Kikomo cha vyombo kimefikiwa";
+        rudisha r;
+    }
+
+    UtawalaBungeChombo* nafasi = utawala_bunge_pata_chombo(m, m->idadi_ya_vyombo);
+    nafasi->kitambulisho = chombo->kitambulisho;
+    nafasi->jina = chombo->jina;
+    nafasi->aina_ya_kikao = chombo->aina_ya_kikao;
+    nafasi->jukumu_linalohitajika = chombo->jukumu_linalohitajika;
+    nafasi->idadi_ya_wanachama = chombo->idadi_ya_wanachama;
+    nafasi->mbinu_ya_kura = chombo->mbinu_ya_kura;
+    nafasi->kizingiti_maalum = chombo->kizingiti_maalum;
+    nafasi->kiko_kikaoni = chombo->kiko_kikaoni;
+    nafasi->kikao_kinachofuata = chombo->kikao_kinachofuata;
+    m->idadi_ya_vyombo = m->idadi_ya_vyombo + 1;
+
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = "Chombo kimeongezwa";
+    rudisha r;
+}
+
+CivMatokeo utawala_bunge_pendekeza_mswada(UtawalaBungeMfumo* m, n8* chombo_id,
+                                            UtawalaKanuni* kanuni, n32 ni_ufutaji) {
+    CivMatokeo r;
+    kama (m == 0 || chombo_id == 0 || kanuni == 0) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        r.ujumbe = "Hoja batili";
+        rudisha r;
+    }
+    kama (m->idadi_ya_miswada >= UTAWALA_BUNGE_MISWADA_UPEO) {
+        r.hitilafu = CIV_HITILAFU_KUMBUKUMBU_IMEISHA;
+        r.ujumbe = "Kikomo cha miswada kimefikiwa";
+        rudisha r;
+    }
+
+    UtawalaBungeMswada* mswada = utawala_bunge_pata_mswada(m, m->idadi_ya_miswada);
+    mswada->kitambulisho = utawala_bunge_tengeneza_kitambulisho("bill_");
+
+    n8* kiini = "Tunga ";
+    kama (ni_ufutaji != 0) { kiini = "Futa "; }
+    n8* kichwa = tenga(128);
+    unganisha_mfuatano(kichwa, kiini, kanuni->jina);
+    mswada->kichwa = kichwa;
+
+    utawala_bunge_mswada_weka_kanuni(mswada, kanuni);
+    mswada->ni_ufutaji = ni_ufutaji;
+    mswada->mpendekezaji = 0;
+    mswada->kura_ndiyo = 0;
+    mswada->kura_hapana = 0;
+    mswada->kura_kutojali = 0;
+    mswada->imetatuliwa = 0;
+    mswada->imepita = 0;
+    m->idadi_ya_miswada = m->idadi_ya_miswada + 1;
+
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = "Mswada umependekezwa";
+    rudisha r;
+}
+
+CivMatokeo utawala_bunge_piga_kura(UtawalaBungeMfumo* m, n8* mswada_id, n32 kura) {
+    CivMatokeo r;
+    kama (m == 0 || mswada_id == 0) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        r.ujumbe = "Hoja batili";
+        rudisha r;
+    }
+
+    n32 i = 0;
+    wakati (i < m->idadi_ya_miswada) {
+        UtawalaBungeMswada* b = utawala_bunge_pata_mswada(m, i);
+        kama (linganisha_mfuatano(b->kitambulisho, mswada_id) == 0) {
+            kama (kura > 0) { b->kura_ndiyo = b->kura_ndiyo + 1; }
+            sivyo { kama (kura < 0) { b->kura_hapana = b->kura_hapana + 1; }
+            sivyo { b->kura_kutojali = b->kura_kutojali + 1; } }
+            r.hitilafu = CIV_SAWA;
+            r.ujumbe = "Kura imepigwa";
+            rudisha r;
+        }
+        i = i + 1;
+    }
+
+    r.hitilafu = CIV_HITILAFU_HAIJAPATIKANA;
+    r.ujumbe = "Mswada haukupatikana";
+    rudisha r;
+}
+
+CivMatokeo utawala_bunge_tatua_mswada(UtawalaBungeMfumo* m, n8* mswada_id,
+                                        UtawalaKatiba* katiba_lengwa) {
+    CivMatokeo r;
+    kama (m == 0 || mswada_id == 0 || katiba_lengwa == 0) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        r.ujumbe = "Hoja batili";
+        rudisha r;
+    }
+
+    n32 i = 0;
+    wakati (i < m->idadi_ya_miswada) {
+        UtawalaBungeMswada* b = utawala_bunge_pata_mswada(m, i);
+        kama (linganisha_mfuatano(b->kitambulisho, mswada_id) == 0) {
+            kama (b->imetatuliwa != 0) {
+                r.hitilafu = CIV_HITILAFU_HALI_MBAYA;
+                r.ujumbe = "Tayari imetatuliwa";
+                rudisha r;
+            }
+
+            n32 kura_jumla = b->kura_ndiyo + b->kura_hapana;
+            n32 imepita = 0;
+            kama (kura_jumla > 0) {
+                d64 ndiyo_d = b->kura_ndiyo;
+                d64 jumla_d = kura_jumla;
+                kama (ndiyo_d / jumla_d > 0.5) { imepita = 1; }
+            }
+
+            kama (imepita != 0) {
+                b->imepita = 1;
+                UtawalaKanuni* kanuni = utawala_bunge_mswada_pata_kanuni(b);
+                kama (b->ni_ufutaji != 0) {
+                    utawala_katiba_ondoa_kanuni(katiba_lengwa, kanuni->kitambulisho);
+                } sivyo {
+                    utawala_katiba_ongeza_kanuni(katiba_lengwa, kanuni);
+                }
+            } sivyo {
+                b->imepita = 0;
+            }
+
+            b->imetatuliwa = 1;
+            r.hitilafu = CIV_SAWA;
+            kama (b->imepita != 0) { r.ujumbe = "Mswada umepita"; }
+            sivyo { r.ujumbe = "Mswada umeshindwa"; }
+            rudisha r;
+        }
+        i = i + 1;
+    }
+
+    r.hitilafu = CIV_HITILAFU_HAIJAPATIKANA;
+    r.ujumbe = "Mswada haukupatikana";
+    rudisha r;
+}
