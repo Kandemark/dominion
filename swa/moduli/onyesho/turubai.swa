@@ -142,11 +142,18 @@ w0 turubai_jaza(Turubai* t, n64 x, n64 y, n64 w, n64 h) {
     }
 }
 
-// Kipeuo cha pili cha namba kamili (sakafu), kwa njia ya Newton.
+// Kipeuo cha pili cha namba kamili (sakafu), kwa njia ya Newton. Kisio
+// la kwanza ni 2^(k+1) ambapo 4^k <= n: juu ya jibu, na ndani ya mara
+// mbili yake -- hivyo marudio 3-5 badala ya ~30 (kila moja ni kugawanya).
 n64 turubai_kipeuo(n64 n) {
     kama (n <= 0) { rudisha 0; }
-    n64 x = n;
-    n64 y = (x + 1) / 2;
+    n64 m = n;
+    n64 s = 1;
+    wakati (m >= 256) { m = m >> 8; s = s << 4; }
+    wakati (m >= 4) { m = m >> 2; s = s << 1; }
+    n64 x = s * 2;
+    kama (x > n) { x = n; }
+    n64 y = (x + n / x) / 2;
     wakati (y < x) {
         x = y;
         y = (x + n / x) / 2;
@@ -198,6 +205,21 @@ w0 turubai_mviringo(Turubai* t, n64 x, n64 y, n64 w, n64 h, n64 r) {
     }
 }
 
+// Duara lenye kitovu na nusu-kipenyo kwa 1/256 ya pikseli.
+w0 turubai_duara256(Turubai* t, n64 cx256, n64 cy256, n64 r256) {
+    n64 r = r256 / 256 + 2;
+    n64 y = (cy256 >> 8) - r;
+    wakati (y <= (cy256 >> 8) + r) {
+        n64 x = (cx256 >> 8) - r;
+        wakati (x <= (cx256 >> 8) + r) {
+            n64 f = turubai_funiko_duara(x, y, cx256, cy256, r256);
+            kama (f > 0) { turubai_changanya(t, x, y, f); }
+            x = x + 1;
+        }
+        y = y + 1;
+    }
+}
+
 // Duara lililojazwa, kingo laini. (cx,cy) ni kitovu kwa pikseli.
 w0 turubai_duara(Turubai* t, n64 cx, n64 cy, n64 r) {
     turubai_mviringo(t, cx - r, cy - r, r * 2, r * 2, r);
@@ -242,21 +264,32 @@ w0 turubai_mpaka(Turubai* t, n64 x, n64 y, n64 w, n64 h, n64 r) {
 // Funiko la kila pikseli ni unene/2 - umbali wake kutoka kipande cha mstari
 // + 1/2. Hutembelea sanduku la mstari pekee -- inatosha kwa chati na ramani.
 w0 turubai_mstari(Turubai* t, n64 x0, n64 y0, n64 x1, n64 y1, n64 unene256) {
+    turubai_mstari256(t, x0 * 256 + 128, y0 * 256 + 128, x1 * 256 + 128, y1 * 256 + 128, unene256);
+}
+
+// Kama turubai_mstari, lakini ncha ziko kwa 1/256 ya pikseli -- kwa
+// mistari ya ramani ambayo ncha zake hazilingani na pikseli nzima.
+w0 turubai_mstari256(Turubai* t, n64 ax, n64 ay, n64 bx, n64 by, n64 unene256) {
     n64 nusu = unene256 / 2;
     n64 pembeni = nusu / 256 + 2;
-    n64 ax = x0 * 256 + 128;
-    n64 ay = y0 * 256 + 128;
-    n64 bx = x1 * 256 + 128;
-    n64 by = y1 * 256 + 128;
     n64 vx = bx - ax;
     n64 vy = by - ay;
     n64 urefu2 = vx * vx + vy * vy;
+    n64 x0 = ax >> 8;
+    n64 y0 = ay >> 8;
+    n64 x1 = bx >> 8;
+    n64 y1 = by >> 8;
     n64 chini_x = x0;
     n64 juu_x = x1;
     kama (x1 < x0) { chini_x = x1; juu_x = x0; }
     n64 chini_y = y0;
     n64 juu_y = y1;
     kama (y1 < y0) { chini_y = y1; juu_y = y0; }
+    // kata sanduku kwa eneo la kukata kabla ya kuzunguka
+    kama (chini_x - pembeni < t->kx0) { chini_x = t->kx0 + pembeni; }
+    kama (juu_x + pembeni >= t->kx1) { juu_x = t->kx1 - 1 - pembeni; }
+    kama (chini_y - pembeni < t->ky0) { chini_y = t->ky0 + pembeni; }
+    kama (juu_y + pembeni >= t->ky1) { juu_y = t->ky1 - 1 - pembeni; }
     n64 py = chini_y - pembeni;
     wakati (py <= juu_y + pembeni) {
         n64 px = chini_x - pembeni;
