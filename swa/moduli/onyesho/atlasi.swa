@@ -402,3 +402,15 @@ w0 atlasi_chora_msingi(Atlasi* a, Turubai* t, n64 x0, n64 y0, n64 kipimo) {
     achilia pwani;
     achilia mwinuko;
 }
+
+w0 atlasi_uharibu(Atlasi* a) {
+    kama (a == 0) { rudisha; }
+    achilia a->mji_x;
+    achilia a->mji_y;
+    achilia a->uzito;
+    achilia a->rangi;
+    achilia a->seli_mwanzo;
+    achilia a->seli_idadi;
+    achilia a->seli_orodha;
+    achilia a;
+}

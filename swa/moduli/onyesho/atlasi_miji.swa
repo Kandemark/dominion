@@ -334,6 +334,33 @@ Miji* atlasi_unda_miji(Atlasi* a) {
     rudisha m;
 }
 
+// Achilia miji, majina yao, barabara na gridi ya maji. Majina ya mataifa
+// (taifa_jina) yanaweza kuwa yamekopwa na TaifaNchi -- yanaachiliwa hapa
+// pia, hivyo miji iharibiwe baada ya mataifa yanayoyatumia.
+w0 atlasi_miji_uharibu(Miji* m, n64 mataifa) {
+    kama (m == 0) { rudisha; }
+    n64 i = 0;
+    wakati (i < m->idadi) { achilia m->jina[i]; i = i + 1; }
+    i = 0;
+    wakati (i < mataifa) { achilia m->taifa_jina[i]; i = i + 1; }
+    achilia m->x;
+    achilia m->y;
+    achilia m->taifa;
+    achilia m->daraja;
+    achilia m->bandari;
+    achilia m->jina;
+    achilia m->taifa_jina;
+    achilia m->ba;
+    achilia m->bb;
+    achilia m->bdaraja;
+    achilia m->bx;
+    achilia m->by;
+    achilia m->maji;
+    achilia m->kundi_ukubwa;
+    achilia m->kundi_ukingo;
+    achilia m;
+}
+
 // ---------- maji: bahari na maziwa ----------
 
 n64 ATLASI_SELI_YA_MAJI = 256;           // robo ya kizio

@@ -936,9 +936,7 @@ TaifaNchi* dunia_taifa_tafuta_mmiliki(TaifaMfumo* m, DuniaRamani* ramani, n32 tx
     rudisha 0;
 }
 
-w0 dunia_taifa_hesabu_uchumi(TaifaNchi* t, DuniaRamani* ramani, DuniaRasilimaliRamani* rm) {
-    kama (t == 0 || ramani == 0) { rudisha; }
-
+w0 dunia_taifa_uchumi_sifuri(TaifaNchi* t) {
     t->uchumi.pato_ghafi = 0.0;
     t->uchumi.pato_kwa_kila_mtu = 0.0;
     t->uchumi.ukuaji_wa_pato = 0.0;
@@ -954,6 +952,11 @@ w0 dunia_taifa_hesabu_uchumi(TaifaNchi* t, DuniaRamani* ramani, DuniaRasilimaliR
     t->uchumi.mshahara_wa_wastani = 0.0;
     t->uchumi.vipande_vya_ardhi = 0;
     t->uchumi.vipande_vya_maji = 0;
+}
+
+w0 dunia_taifa_hesabu_uchumi(TaifaNchi* t, DuniaRamani* ramani, DuniaRasilimaliRamani* rm) {
+    kama (t == 0 || ramani == 0) { rudisha; }
+    dunia_taifa_uchumi_sifuri(t);
 
     TaifaRasilimaliWasifu* rp = tenga(ukubwa(TaifaRasilimaliWasifu));
     dunia_taifa_hesabu_rasilimali(t, ramani, rm, rp);
@@ -984,6 +987,16 @@ w0 dunia_taifa_hesabu_uchumi(TaifaNchi* t, DuniaRamani* ramani, DuniaRasilimaliR
         y = y + 1;
     }
 
+    dunia_taifa_uchumi_kutoka_jumla(t, vipande_vya_ardhi, vipande_vya_maji, jumla_ya_mwinuko, jumla_ya_rutuba, rp);
+    achilia rp;
+}
+
+// Fomula ya uchumi kutoka jumla za vipande vya taifa (zilizokusanywa na
+// dunia_taifa_hesabu_uchumi kwa taifa moja, au na
+// dunia_taifa_hesabu_uchumi_wote kwa pasi moja ya ramani kwa mataifa yote).
+// Haiachilii rp.
+w0 dunia_taifa_uchumi_kutoka_jumla(TaifaNchi* t, n32 vipande_vya_ardhi, n32 vipande_vya_maji,
+                                    d64 jumla_ya_mwinuko, d64 jumla_ya_rutuba, TaifaRasilimaliWasifu* rp) {
     t->uchumi.vipande_vya_ardhi = vipande_vya_ardhi;
     t->uchumi.vipande_vya_maji = vipande_vya_maji;
 
@@ -1021,7 +1034,6 @@ w0 dunia_taifa_hesabu_uchumi(TaifaNchi* t, DuniaRamani* ramani, DuniaRasilimaliR
     t->uchumi.matumizi_ya_chakula = idadi_d * 2500.0 * 365.0 / 1000000.0;
 
     d64 rasilimali_nishati_d = rp->mafuta + rp->gesi_asilia + rp->makaa;
-    achilia rp;
     t->uchumi.uzalishaji_wa_nishati = vipande_ardhi_d * 0.1 * kipengele_cha_tekno + rasilimali_nishati_d * 0.5;
     kama (t->uchumi.uzalishaji_wa_nishati < 1.0) { t->uchumi.uzalishaji_wa_nishati = 1.0; }
 
@@ -1047,19 +1059,85 @@ w0 dunia_taifa_hesabu_uchumi_wote(TaifaMfumo* m, DuniaRamani* ramani,
         jumla_nje->vipande_vya_maji = 0;
     }
 
+    // Pasi MOJA ya ramani kwa mataifa yote (zamani: pasi kamili kwa kila
+    // taifa, kila kipande kikilinganishwa kwa mfuatano -- vipande 64800 x
+    // mataifa 160 = ulinganisho milioni 10 kwa kila mchezo_sasisha).
+    // Mmiliki wa kipande hutambuliwa kwa kielekezi kwanza (dai_eneo huweka
+    // kielekezi kile kile cha t->kitambulisho), kisha kwa mfuatano; jibu la
+    // mwisho huhifadhiwa kwa sababu vipande jirani vina mmiliki mmoja.
+    n32 n = m->idadi;
+    n32* ardhi = tenga(4 * n + 4);
+    n32* maji = tenga(4 * n + 4);
+    d64* mwinuko = tenga(8 * n + 8);
+    d64* rutuba = tenga(8 * n + 8);
+    n32 k = 0;
+    wakati (k < n) {
+        ardhi[k] = 0; maji[k] = 0; mwinuko[k] = 0.0; rutuba[k] = 0.0;
+        k = k + 1;
+    }
+    n8* id_ya_mwisho = 0;
+    n32 faharisi_ya_mwisho = 0 - 1;
+    n32 y = 0;
+    wakati (y < ramani->urefu) {
+        n32 x = 0;
+        wakati (x < ramani->upana) {
+            DuniaRamaniKipande* kp = dunia_ramani_pata_kipande(ramani, x, y);
+            kama (kp != 0 && kp->mmiliki_id != 0) {
+                kama (kp->mmiliki_id != id_ya_mwisho) {
+                    id_ya_mwisho = kp->mmiliki_id;
+                    faharisi_ya_mwisho = 0 - 1;
+                    n32 q = 0;
+                    wakati (q < n && faharisi_ya_mwisho < 0) {
+                        TaifaNchi* tq = m->mataifa[q];
+                        kama (tq->kitambulisho == id_ya_mwisho) { faharisi_ya_mwisho = q; }
+                        q = q + 1;
+                    }
+                    q = 0;
+                    wakati (q < n && faharisi_ya_mwisho < 0) {
+                        TaifaNchi* tq = m->mataifa[q];
+                        kama (tq->kitambulisho != 0 && linganisha_mfuatano(tq->kitambulisho, id_ya_mwisho) == 0) { faharisi_ya_mwisho = q; }
+                        q = q + 1;
+                    }
+                }
+                n32 f = faharisi_ya_mwisho;
+                kama (f >= 0) {
+                    kama (kp->matumizi_ya_ardhi == MAZINGIRA_MATUMIZI_MAJI) {
+                        maji[f] = maji[f] + 1;
+                    } sivyo {
+                        ardhi[f] = ardhi[f] + 1;
+                        mwinuko[f] = mwinuko[f] + kp->mwinuko;
+                        rutuba[f] = rutuba[f] + kp->rutuba;
+                    }
+                }
+            }
+            x = x + 1;
+        }
+        y = y + 1;
+    }
+
     d64 jumla_ya_pato = 0.0;
     n32 mataifa_yenye_ardhi = 0;
 
     n32 i = 0;
     wakati (i < m->idadi) {
         TaifaNchi* t = m->mataifa[i];
-        dunia_taifa_hesabu_uchumi(t, ramani, rm);
+        dunia_taifa_uchumi_sifuri(t);
+        TaifaRasilimaliWasifu* rp = tenga(ukubwa(TaifaRasilimaliWasifu));
+        dunia_taifa_hesabu_rasilimali(t, ramani, rm, rp);
+        d64 mw = mwinuko[i];
+        d64 ru = rutuba[i];
+        dunia_taifa_uchumi_kutoka_jumla(t, ardhi[i], maji[i], mw, ru, rp);
+        achilia rp;
         kama (t->uchumi.vipande_vya_ardhi > 0) {
             jumla_ya_pato = jumla_ya_pato + t->uchumi.pato_ghafi;
             mataifa_yenye_ardhi = mataifa_yenye_ardhi + 1;
         }
         i = i + 1;
     }
+    achilia ardhi;
+    achilia maji;
+    achilia mwinuko;
+    achilia rutuba;
 
     kama (jumla_nje != 0 && mataifa_yenye_ardhi > 0) {
         d64 idadi_d = mataifa_yenye_ardhi;

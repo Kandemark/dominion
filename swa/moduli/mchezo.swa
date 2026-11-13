@@ -190,6 +190,7 @@ husisha { moduli/dunia/makazi.swa }
 husisha { moduli/akili/mfumo.swa }
 husisha { moduli/diplomasia/diplomasia.swa }
 husisha { moduli/dunia/taifa.swa }
+husisha { moduli/dunia/dunia_atlasi.swa }
 husisha { moduli/uchumi/uchumi_mkuu.swa }
 husisha { moduli/uchumi/nguvukazi.swa }
 husisha { moduli/uchumi/sera.swa }
@@ -298,6 +299,8 @@ muundo MchezoUsanidi {
     n32 muda_wa_hifadhi_otomatiki;
     n32 kiwango_cha_juu_cha_kumbukumbu_matukio;
 };
+
+n64 MCHEZO_MBEGU_YA_DUNIA = 7;
 
 muundo MchezoUtendaji {
     n64 idadi_ya_sasisho;
@@ -435,6 +438,10 @@ muundo Mchezo {
     // AWAMU D (2026-10-05): data/takwimu_historia.swa -- angalia
     // maelezo kamili juu ya faili karibu na husisha husika.
     n64 gdp_historia_addr;
+    // Dunia yenyewe (dunia_atlasi.swa): atlasi na miji yake. Ramani ya
+    // vipande na mataifa hujazwa kutoka hapa, na onyesho huchora hii hii.
+    n64 atlasi_addr;
+    n64 miji_addr;
 
     // i18n (lugha_dominion.swa) -- TOFAUTI na mageuko_lugha_addr.
     n64 lugha_addr;
@@ -634,6 +641,10 @@ w0 mchezo_weka_siasa(Mchezo* g, SiasaMfumo* v) { g->siasa_addr = v; }
 
 TakwimuHistoria* mchezo_pata_gdp_historia(Mchezo* g) { rudisha g->gdp_historia_addr; }
 w0 mchezo_weka_gdp_historia(Mchezo* g, TakwimuHistoria* v) { g->gdp_historia_addr = v; }
+Atlasi* mchezo_pata_atlasi(Mchezo* g) { rudisha g->atlasi_addr; }
+w0 mchezo_weka_atlasi(Mchezo* g, Atlasi* v) { g->atlasi_addr = v; }
+Miji* mchezo_pata_miji(Mchezo* g) { rudisha g->miji_addr; }
+w0 mchezo_weka_miji(Mchezo* g, Miji* v) { g->miji_addr = v; }
 
 LughaMfumo* mchezo_pata_lugha_mfumo(Mchezo* g) { rudisha g->lugha_addr; }
 w0 mchezo_weka_lugha_mfumo(Mchezo* g, LughaMfumo* v) { g->lugha_addr = v; }
@@ -728,6 +739,8 @@ Mchezo* mchezo_unda() {
     g->historia_db_addr = 0;
     g->soko_fedha_addr = 0;
     g->gdp_historia_addr = 0;
+    g->atlasi_addr = 0;
+    g->miji_addr = 0;
     g->utendaji.idadi_ya_sasisho = 0;
     g->utendaji.muda_wa_wastani_wa_sasisho = 0.0;
     g->utendaji.muda_wa_mwisho_wa_sasisho = 0.0;
@@ -763,31 +776,29 @@ CivMatokeo mchezo_anzisha(Mchezo* g, MchezoUsanidi* usanidi) {
     mchezo_weka_muda(g, injini_muda_unda());
     mchezo_weka_idadi_ya_watu(g, idadi_ya_watu_unda());
     mchezo_weka_serikali(g, utawala_serikali_unda(usanidi->jina));
-    // Ukubwa wa ramani: mfano wa 360x180 (shahada moja kwa kila
-    // kipande) — angalia maelezo ya wigo juu ya faili kuhusu
-    // earth_2048x1024.earth halisi ambayo bado haijaunganishwa hapa.
-    mchezo_weka_ramani(g, dunia_ramani_unda(360, 180, 12345));
+    // Dunia: atlasi ya mataifa 160 (dunia_atlasi.swa) ndiyo jiografia.
+    // Ramani ya vipande 360x180 (shahada moja kwa kipande) hujazwa
+    // kutoka atlasi -- nchi kavu, mwinuko, hali ya hewa, matumizi ya
+    // ardhi -- hivyo uigaji na ramani inayochorwa ni dunia moja.
+    Atlasi* atlasi = atlasi_unda(MCHEZO_MBEGU_YA_DUNIA, 160, 64, 36);
+    Miji* miji = atlasi_unda_miji(atlasi);
+    mchezo_weka_atlasi(g, atlasi);
+    mchezo_weka_miji(g, miji);
+    DuniaRamani* ramani_mpya = dunia_ramani_unda(360, 180, MCHEZO_MBEGU_YA_DUNIA);
+    dunia_atlasi_jaza_ramani(ramani_mpya, atlasi, miji);
+    mchezo_weka_ramani(g, ramani_mpya);
     mchezo_weka_makazi(g, dunia_makazi_msimamizi_unda());
     mchezo_weka_akili(g, akili_mfumo_unda());
     mchezo_weka_diplomasia(g, diplomasia_unda());
 
-    // Taifa (nation.c): mfumo wa mataifa, yakidai eneo kutoka ramani
-    // iliyokwisha undwa juu. Tunatumia njia ya data (anzisha_kutoka_data)
-    // badala ya chaguo_msingi moja kwa moja: Mchezo bado hana DuniaMipakaKisiasa
-    // wala DuniaMataifaData halisi (hazijawekwa bado kwenye mzunguko wa
-    // mchezo), hivyo tunapitisha 0/0 -- kazi yenyewe tayari ina ukaguzi
-    // sahihi (mipaka == 0 -> chaguo_msingi), hivyo tabia ya sasa ni sawa
-    // na kabla. Ukiwa na mipaka ya kisiasa halisi baadaye, njia hii
-    // itatumia data halisi bila mabadiliko zaidi hapa.
+    // Taifa (nation.c): mataifa ya atlasi, kila moja likimiliki vipande
+    // vya nchi kavu ambavyo atlasi inasema ni vyake.
     TaifaMfumo* taifa = dunia_taifa_mfumo_unda();
-    DuniaMataifaData* mataifa_data_bado_hakuna = 0;
-    DuniaMipakaKisiasa* mipaka_kisiasa_bado_hakuna = 0;
-    dunia_taifa_mfumo_anzisha_kutoka_data(taifa, mataifa_data_bado_hakuna, mipaka_kisiasa_bado_hakuna);
+    dunia_atlasi_unda_mataifa(taifa, ramani_mpya, atlasi, miji);
     mchezo_weka_taifa(g, taifa);
-    DuniaRamani* ramani_kwa_taifa = mchezo_pata_ramani(g);
-    kama (ramani_kwa_taifa != 0) {
-        dunia_taifa_mfumo_dai_maeneo_yote(taifa, ramani_kwa_taifa);
-    }
+    DuniaRasilimaliRamani* rm_ya_mwanzo = 0;
+    TaifaUchumi* jumla_ya_mwanzo = 0;
+    dunia_taifa_hesabu_uchumi_wote(taifa, ramani_mpya, rm_ya_mwanzo, jumla_ya_mwanzo);
 
     // Nguzo ya uchumi (moduli 20) — hakuna upakiaji wa data ya
     // jiografia halisi bado, hivyo baadhi ya hoja za "jiografia"
@@ -1526,6 +1537,18 @@ CivMatokeo mchezo_maliza_zamu(Mchezo* g) {
         wakala_injini_sasisha_zamu(wakala, saa->mwaka_wa_ulimwengu, saa->siku_ya_ulimwengu);
     }
 
+    // Mataifa hukua kila zamu; uchumi wao hukokotolewa upya mara moja
+    // hapa ili sampuli ya GDP iliyo chini ionyeshe zamu hii.
+    TaifaMfumo* taifa_zamu = mchezo_pata_taifa(g);
+    Atlasi* atlasi_zamu = mchezo_pata_atlasi(g);
+    DuniaRamani* ramani_zamu = mchezo_pata_ramani(g);
+    kama (taifa_zamu != 0 && atlasi_zamu != 0 && ramani_zamu != 0) {
+        dunia_atlasi_songesha_zamu(taifa_zamu, atlasi_zamu, g->zamu_ya_sasa);
+        DuniaRasilimaliRamani* rm_zamu = 0;
+        TaifaUchumi* jumla_zamu = 0;
+        dunia_taifa_hesabu_uchumi_wote(taifa_zamu, ramani_zamu, rm_zamu, jumla_zamu);
+    }
+
     // AWAMU D: sampuli MOJA ya GDP ya jumla ya dunia kwa kila zamu
     // iliyomalizika -- hapa (mchezo_maliza_zamu), SIYO mchezo_sasisha
     // (ambayo huendesha kwa kila dt, si kila zamu) -- kwa hiyo idadi
@@ -1573,6 +1596,11 @@ w0 mchezo_zima(Mchezo* g) {
 
     TaifaMfumo* taifa = mchezo_pata_taifa(g);
     kama (taifa != 0) { dunia_taifa_mfumo_uharibu(taifa); }
+    // baada ya mataifa: majina yao ni ya miji ya atlasi
+    Atlasi* atlasi = mchezo_pata_atlasi(g);
+    Miji* miji = mchezo_pata_miji(g);
+    kama (miji != 0 && atlasi != 0) { atlasi_miji_uharibu(miji, atlasi->idadi); }
+    kama (atlasi != 0) { atlasi_uharibu(atlasi); }
     UchumiMkuuMfumo* mkuu = mchezo_pata_uchumi_mkuu(g);
     kama (mkuu != 0) { uchumi_mkuu_uharibu(mkuu); }
     NguvukaziMfumo* nguvukazi = mchezo_pata_nguvukazi(g);

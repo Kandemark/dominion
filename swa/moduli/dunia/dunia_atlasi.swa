@@ -1,0 +1,295 @@
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/dunia/taifa.swa }
+husisha { moduli/dunia/ramani.swa }
+husisha { moduli/onyesho/atlasi_miji.swa }
+
+// dunia_atlasi.swa -- dunia ya mchezo kutoka atlasi.
+//
+// Atlasi (onyesho/atlasi.swa) ndiyo chanzo kimoja cha jiografia: ramani
+// inayochorwa na ramani ambayo uigaji unahesabu juu yake ni dunia ile ile.
+//
+//   dunia_atlasi_jaza_ramani    : kila kipande cha DuniaRamani (360x180)
+//                                 hupata nchi kavu/maji, mwinuko, joto,
+//                                 unyevu, matumizi ya ardhi na rutuba kutoka
+//                                 kazi za atlasi kwenye kitovu chake.
+//   dunia_atlasi_unda_mataifa   : TaifaNchi moja kwa kila taifa la atlasi --
+//                                 jina, rangi, mji mkuu, mikoa (miji yake),
+//                                 serikali; kisha kila kipande cha nchi kavu
+//                                 hupewa mmiliki wake wa atlasi.
+//
+// Vipande vya ramani ni shahada moja: x 0..359 ni longitudo -180..180, y
+// 0..179 ni latitudo 90..-90. Kipande (x,y) huchukua nukta ya dunia ya
+// atlasi kwenye kitovu chake.
+
+n64 dunia_atlasi_x(Atlasi* a, DuniaRamani* r, n32 x) {
+    n64 xx = x;
+    n64 upana = r->upana;
+    rudisha ((xx * 2 + 1) * a->upana * 1024) / (upana * 2);
+}
+
+n64 dunia_atlasi_y(Atlasi* a, DuniaRamani* r, n32 y) {
+    n64 yy = y;
+    n64 urefu = r->urefu;
+    rudisha ((yy * 2 + 1) * a->kimo * 1024) / (urefu * 2);
+}
+
+n32 dunia_atlasi_ni_maji(DuniaRamani* r, n32 x, n32 y) {
+    DuniaRamaniKipande* k = dunia_ramani_pata_kipande(r, x, y);
+    rudisha k->matumizi_ya_ardhi == MAZINGIRA_MATUMIZI_MAJI;
+}
+
+// Jaza vipande vyote vya ramani kutoka atlasi. Hurudisha idadi ya vipande
+// vya nchi kavu.
+n32 dunia_atlasi_jaza_ramani(DuniaRamani* r, Atlasi* a, Miji* mj) {
+    n32 w = r->upana;
+    n32 h = r->urefu;
+    n32 ardhi = 0;
+    n32 milima = 0;
+    d64 juu_ya_bahari = 65535 - ATLASI_USAWA_WA_BAHARI;
+    d64 usawa = ATLASI_USAWA_WA_BAHARI;
+    n32 y = 0;
+    wakati (y < h) {
+        d64 y_d = y;
+        d64 lat = 90.0 - ((y_d + 0.5) / 180.0) * 180.0;
+        d64 lat_kamili = lat;
+        kama (lat_kamili < 0.0) { lat_kamili = 0.0 - lat_kamili; }
+        n32 x = 0;
+        wakati (x < w) {
+            DuniaRamaniKipande* k = dunia_ramani_pata_kipande(r, x, y);
+            n64 wx = dunia_atlasi_x(a, r, x);
+            n64 wy = dunia_atlasi_y(a, r, y);
+            n64 e = atlasi_mwinuko(a, wx, wy);
+            d64 e_d = e;
+            n64 unyevu_n = atlasi_tabaka(wx >> 2, wy >> 2, a->mbegu + 999, 4);
+            d64 unyevu = unyevu_n;
+            unyevu = unyevu / 65535.0;
+            k->unyevu = unyevu;
+            k->mmiliki_id = 0;
+            k->rangi_ya_kisiasa = 0;
+            kama (e > ATLASI_USAWA_WA_BAHARI) {
+                d64 juu = (e_d - usawa) / juu_ya_bahari;    // 0..1
+                k->mwinuko = juu;
+                d64 joto = 28.0 - lat_kamili * 0.55 - juu * 25.0;
+                k->joto = joto;
+                ardhi = ardhi + 1;
+                kama (juu > 0.42) {
+                    k->ardhi = MAZINGIRA_ARDHI_MLIMA;
+                    milima = milima + 1;
+                } sivyo {
+                    kama (juu > 0.26) { k->ardhi = MAZINGIRA_ARDHI_KILIMA; }
+                    sivyo { k->ardhi = MAZINGIRA_ARDHI_TAMBARARE; }
+                }
+                kama (joto < 0.0 - 2.0) { k->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_TUNDRA; }
+                sivyo { kama (unyevu < 0.36 && joto > 14.0) { k->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_JANGWA; }
+                sivyo { kama (unyevu > 0.6) { k->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_MSITU; }
+                sivyo { kama (unyevu > 0.47) { k->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_KILIMO; }
+                sivyo { k->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_NYASI; } } } }
+                d64 rutuba = unyevu * (1.0 - juu) * 1.4;
+                kama (joto < 0.0) { rutuba = rutuba * 0.3; }
+                kama (rutuba > 1.0) { rutuba = 1.0; }
+                k->rutuba = rutuba;
+                k->uoto_msongamano = unyevu;
+            } sivyo {
+                k->mwinuko = (e_d - usawa) / usawa;               // -1..0
+                k->joto = 26.0 - lat_kamili * 0.45;
+                k->ardhi = MAZINGIRA_ARDHI_TAMBARARE;
+                k->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_MAJI;
+                k->rutuba = 0.0;
+                k->uoto_msongamano = 0.0;
+            }
+            x = x + 1;
+        }
+        y = y + 1;
+    }
+    // pwani: nchi kavu ya chini yenye jirani wa maji
+    y = 0;
+    wakati (y < h) {
+        n32 x = 0;
+        wakati (x < w) {
+            DuniaRamaniKipande* k = dunia_ramani_pata_kipande(r, x, y);
+            kama (k->matumizi_ya_ardhi != MAZINGIRA_MATUMIZI_MAJI && k->ardhi == MAZINGIRA_ARDHI_TAMBARARE) {
+                n32 maji = 0;
+                kama (x > 0 && dunia_atlasi_ni_maji(r, x - 1, y)) { maji = 1; }
+                kama (x < w - 1 && dunia_atlasi_ni_maji(r, x + 1, y)) { maji = 1; }
+                kama (y > 0 && dunia_atlasi_ni_maji(r, x, y - 1)) { maji = 1; }
+                kama (y < h - 1 && dunia_atlasi_ni_maji(r, x, y + 1)) { maji = 1; }
+                kama (maji) { k->ardhi = MAZINGIRA_ARDHI_PWANI; }
+            }
+            x = x + 1;
+        }
+        y = y + 1;
+    }
+    // miji: kipande chenye mji (si kijiji) ni cha mjini
+    n64 i = 0;
+    wakati (i < mj->idadi) {
+        kama (mj->daraja[i] >= 1) {
+            n64 tx = (mj->x[i] * w) / (a->upana * 1024);
+            n64 ty = (mj->y[i] * h) / (a->kimo * 1024);
+            DuniaRamaniKipande* k = dunia_ramani_pata_kipande(r, tx, ty);
+            kama (k != 0 && k->matumizi_ya_ardhi != MAZINGIRA_MATUMIZI_MAJI) {
+                k->matumizi_ya_ardhi = MAZINGIRA_MATUMIZI_MJINI;
+                k->msongamano_wa_watu = 1.0;
+            }
+        }
+        i = i + 1;
+    }
+    r->idadi_ya_vipande_vya_ardhi = ardhi;
+    r->idadi_ya_vipande_vya_mlima = milima;
+    rudisha ardhi;
+}
+
+d64 dunia_atlasi_lon(Atlasi* a, n64 wx) {
+    d64 x = wx;
+    d64 upana = a->upana * 1024;
+    rudisha (x / upana) * 360.0 - 180.0;
+}
+
+d64 dunia_atlasi_lat(Atlasi* a, n64 wy) {
+    d64 y = wy;
+    d64 kimo = a->kimo * 1024;
+    rudisha 90.0 - (y / kimo) * 180.0;
+}
+
+// Thamani 0..(upeo-1) inayotegemea taifa na chumvi -- sifa za kila taifa
+// ni za kudumu kwa mbegu ile ile.
+n32 dunia_atlasi_sifa(Atlasi* a, n64 taifa, n64 chumvi, n64 upeo) {
+    rudisha atlasi_heshi(taifa, chumvi, a->mbegu + 4242) % upeo;
+}
+
+// Unda mataifa ya mchezo kutoka atlasi, na uweke mmiliki wa kila kipande
+// cha nchi kavu. Ramani lazima iwe imejazwa na dunia_atlasi_jaza_ramani.
+w0 dunia_atlasi_unda_mataifa(TaifaMfumo* m, DuniaRamani* r, Atlasi* a, Miji* mj) {
+    n64 n = a->idadi;
+    kama (n > m->uwezo) { n = m->uwezo; }
+    m->idadi = 0;
+    n64 i = 0;
+    wakati (i < n) {
+        TaifaNchi* t = tenga(ukubwa(TaifaNchi));
+        weka_sifuri(t, ukubwa(TaifaNchi));
+        n8* id = tenga(24);
+        mfuatano_umbiza(id, 24, "taifa_%d", i, 0, 0, 0, 0, 0);
+        t->kitambulisho = id;
+        t->jina = mj->taifa_jina[i];
+        t->rangi = a->rangi[i];
+        t->rangi_pambizo = atlasi_changanya_rangi(a->rangi[i], 16777215, 128);
+        t->data_id = i;
+        t->mji_mkuu_lon = dunia_atlasi_lon(a, a->mji_x[i]);
+        t->mji_mkuu_lat = dunia_atlasi_lat(a, a->mji_y[i]);
+        t->kielezo_cha_teknolojia = 100 + dunia_atlasi_sifa(a, i, 1, 380);
+        t->kielezo_cha_uchumi = 80 + dunia_atlasi_sifa(a, i, 2, 380);
+        t->kielezo_cha_kijeshi = 60 + dunia_atlasi_sifa(a, i, 3, 360);
+        t->kielezo_cha_utamaduni = 60 + dunia_atlasi_sifa(a, i, 4, 380);
+        d64 gharama = dunia_atlasi_sifa(a, i, 5, 100);
+        t->gharama_ya_maisha = 0.7 + gharama / 200.0;
+        d64 pato_mtu = dunia_atlasi_sifa(a, i, 6, 9500);
+        t->pato_kwa_kila_mtu = 500.0 + pato_mtu;
+        // mikoa: miji ya taifa hili (mji mkuu na miji, si vijiji), hadi 16
+        t->idadi_ya_mgawanyo = 0;
+        n64 c = 0;
+        wakati (c < mj->idadi && t->idadi_ya_mgawanyo < DUNIA_TAIFA_MGAWANYO_IDADI) {
+            kama (mj->taifa[c] == i && mj->daraja[c] >= 1) {
+                TaifaMgawanyo* g = dunia_taifa_pata_mgawanyo(t, t->idadi_ya_mgawanyo);
+                n8* jina = tenga(64);
+                unganisha_mfuatano(jina, "Mkoa wa ", mj->jina[c]);
+                g->jina = jina;
+                n8* gid = tenga(24);
+                mfuatano_umbiza(gid, 24, "mkoa_%d", c, 0, 0, 0, 0, 0);
+                g->kitambulisho = gid;
+                g->rangi = t->rangi;
+                d64 lon = dunia_atlasi_lon(a, mj->x[c]);
+                d64 lat = dunia_atlasi_lat(a, mj->y[c]);
+                g->eneo.lon_chini = lon - 1.5;
+                g->eneo.lon_juu = lon + 1.5;
+                g->eneo.lat_chini = lat - 1.5;
+                g->eneo.lat_juu = lat + 1.5;
+                t->idadi_ya_mgawanyo = t->idadi_ya_mgawanyo + 1;
+            }
+            c = c + 1;
+        }
+        dunia_taifa_anzisha_serikali_chaguo_msingi(t);
+        m->mataifa[i] = t;
+        m->idadi = m->idadi + 1;
+        i = i + 1;
+    }
+    m->faharisi_ya_taifa_la_mchezaji = 0;
+
+    // mmiliki wa kila kipande cha nchi kavu, na sanduku la eneo la kila
+    // taifa (eneo_0) kwa kazi zinazouliza kwa longitudo/latitudo
+    n32* vipande = tenga(4 * n + 4);
+    i = 0;
+    wakati (i < n) {
+        vipande[i] = 0;
+        TaifaNchi* t = m->mataifa[i];
+        t->eneo_0.lon_chini = 180.0;
+        t->eneo_0.lon_juu = 0.0 - 180.0;
+        t->eneo_0.lat_chini = 90.0;
+        t->eneo_0.lat_juu = 0.0 - 90.0;
+        i = i + 1;
+    }
+    n32 y = 0;
+    wakati (y < r->urefu) {
+        d64 y_d = y;
+        d64 lat = 90.0 - ((y_d + 0.5) / 180.0) * 180.0;
+        n32 x = 0;
+        wakati (x < r->upana) {
+            DuniaRamaniKipande* k = dunia_ramani_pata_kipande(r, x, y);
+            kama (k->matumizi_ya_ardhi != MAZINGIRA_MATUMIZI_MAJI) {
+                n64 o = atlasi_mmiliki(a, dunia_atlasi_x(a, r, x), dunia_atlasi_y(a, r, y));
+                kama (o >= 0 && o < n) {
+                    TaifaNchi* t = m->mataifa[o];
+                    k->mmiliki_id = t->kitambulisho;
+                    k->rangi_ya_kisiasa = t->rangi;
+                    k->ushawishi_wa_kisiasa = 1.0;
+                    vipande[o] = vipande[o] + 1;
+                    d64 x_d = x;
+                    d64 lon = (x_d + 0.5) - 180.0;
+                    kama (lon < t->eneo_0.lon_chini) { t->eneo_0.lon_chini = lon - 0.5; }
+                    kama (lon > t->eneo_0.lon_juu) { t->eneo_0.lon_juu = lon + 0.5; }
+                    kama (lat < t->eneo_0.lat_chini) { t->eneo_0.lat_chini = lat - 0.5; }
+                    kama (lat > t->eneo_0.lat_juu) { t->eneo_0.lat_juu = lat + 0.5; }
+                }
+            }
+            x = x + 1;
+        }
+        y = y + 1;
+    }
+    // idadi ya watu hufuata ukubwa wa ardhi na msongamano wa kila taifa
+    i = 0;
+    wakati (i < n) {
+        TaifaNchi* t = m->mataifa[i];
+        kama (vipande[i] > 0) { t->idadi_ya_maeneo = 1; } sivyo { t->idadi_ya_maeneo = 0; }
+        n64 kwa_kipande = 60000 + dunia_atlasi_sifa(a, i, 7, 140000);
+        n64 v = vipande[i];
+        t->idadi_ya_watu = v * kwa_kipande + 400000 + dunia_atlasi_sifa(a, i, 8, 1600000);
+        i = i + 1;
+    }
+    achilia vipande;
+}
+
+// Kila zamu: idadi ya watu hukua, na viwango vya uchumi na teknolojia
+// husogea kidogo -- kwa kasi tofauti kwa kila taifa (sifa za kudumu),
+// pamoja na mtikisiko mdogo wa kila zamu. Uchumi wa kila taifa
+// unakokotolewa upya na dunia_taifa_hesabu_uchumi_wote kwenye
+// mchezo_sasisha, hivyo mabadiliko haya huonekana kwenye pato.
+w0 dunia_atlasi_songesha_zamu(TaifaMfumo* m, Atlasi* a, n32 zamu) {
+    kama (m == 0 || a == 0) { rudisha; }
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        TaifaNchi* t = m->mataifa[i];
+        // ukuaji wa watu: 0.2%..1.4% kwa zamu (1/100000)
+        n64 kasi = 200 + dunia_atlasi_sifa(a, i, 9, 1200);
+        t->idadi_ya_watu = t->idadi_ya_watu + (t->idadi_ya_watu * kasi) / 100000;
+        // uchumi: -1..+3 kwa zamu, kwa kasi ya taifa na mtikisiko wa zamu
+        n32 mtikisiko = atlasi_heshi(i, zamu, a->mbegu + 5151) % 5;
+        n32 mwelekeo = dunia_atlasi_sifa(a, i, 10, 3);
+        n32 badiliko = mwelekeo + mtikisiko - 3;
+        kama (badiliko < 0 - 1) { badiliko = 0 - 1; }
+        t->kielezo_cha_uchumi = t->kielezo_cha_uchumi + badiliko;
+        kama (t->kielezo_cha_uchumi < 20) { t->kielezo_cha_uchumi = 20; }
+        // teknolojia hupanda polepole, mara moja kila zamu 2-4
+        kama ((zamu + i) % (2 + dunia_atlasi_sifa(a, i, 11, 3)) == 0) {
+            t->kielezo_cha_teknolojia = t->kielezo_cha_teknolojia + 1;
+        }
+        i = i + 1;
+    }
+}

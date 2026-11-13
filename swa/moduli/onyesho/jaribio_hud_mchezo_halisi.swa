@@ -167,7 +167,8 @@ n32 anza() {
     IdadiYaWatuMsimamizi* pm = mchezo_pata_idadi_ya_watu(g);
     n64 idadi_ya_watu_halisi = idadi_ya_watu_pata_jumla(pm);
     TaifaMfumo* taifa = mchezo_pata_taifa(g);
-    jhm_thibitisha(taifa->idadi == 8, "mataifa 8 ya chaguo-msingi yameundwa ndani ya Mchezo halisi");
+    Atlasi* atlasi_ya_mchezo = mchezo_pata_atlasi(g);
+    jhm_thibitisha(taifa->idadi == atlasi_ya_mchezo->idadi && taifa->idadi > 8, "mataifa ya atlasi (si 8 ya zamani) yameundwa ndani ya Mchezo halisi");
     TaifaNchi* t0 = dunia_taifa_mfumo_pata_kwa_faharisi(taifa, 0);
     n64 gdp0_ghafi = t0->uchumi.pato_ghafi;
 

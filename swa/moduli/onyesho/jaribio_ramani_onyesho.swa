@@ -153,7 +153,8 @@ n32 anza() {
     // KABLA ya ardhi kuwepo, hivyo hakuna kilichodaiwa wakati huo).
     TaifaMfumo* taifa_jh = mchezo_pata_taifa(g);
     dunia_taifa_mfumo_dai_maeneo_yote(taifa_jh, ramani_jh);
-    jro_thibitisha(taifa_jh->idadi == 8, "mataifa 8 ya chaguo-msingi yameundwa ndani ya Mchezo halisi");
+    Atlasi* atlasi_ya_mchezo = mchezo_pata_atlasi(g);
+    jro_thibitisha(taifa_jh->idadi == atlasi_ya_mchezo->idadi && taifa_jh->idadi > 8, "mataifa ya atlasi (si 8 ya zamani) yameundwa ndani ya Mchezo halisi");
 
     // ---------- Vipande MAHSUSI vya uthibitisho (vinawekwa NJE ya
     // umiliki kwa makusudi -- rangi safi ya ardhi pekee, bila
