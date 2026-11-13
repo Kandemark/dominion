@@ -1,0 +1,120 @@
+husisha { moduli/skrini/muhtasari.swa }
+
+// diplomasia.swa -- skrini ya mahusiano ya taifa moja na majirani wake:
+// kila jirani wa nchi kavu, kiwango cha uhusiano (uadui, kati, urafiki,
+// umoja), imani, urefu wa mpaka, na pato ghafi lake kulinganisha.
+// Imepangwa kwa imani (marafiki juu). Data ni DiplomasiaMfumo ya mchezo.
+
+n8* skrini_jina_la_kiwango(n32 k) {
+    kama (k == DIPLOMASIA_KIWANGO_VITA) { rudisha "Vita"; }
+    kama (k == DIPLOMASIA_KIWANGO_UADUI) { rudisha "Uadui"; }
+    kama (k == DIPLOMASIA_KIWANGO_URAFIKI) { rudisha "Urafiki"; }
+    kama (k == DIPLOMASIA_KIWANGO_UMOJA) { rudisha "Umoja"; }
+    rudisha "Kati";
+}
+
+n64 skrini_rangi_ya_kiwango(n32 k) {
+    kama (k == DIPLOMASIA_KIWANGO_VITA || k == DIPLOMASIA_KIWANGO_UADUI) { rudisha SURA_HASI; }
+    kama (k == DIPLOMASIA_KIWANGO_URAFIKI) { rudisha SURA_CHANYA; }
+    kama (k == DIPLOMASIA_KIWANGO_UMOJA) { rudisha SURA_BAHARI; }
+    rudisha SURA_HAFIFU;
+}
+
+w0 skrini_diplomasia_chora(Mchezo* g, Turubai* t, n64 taifa) {
+    sura_anzisha(t);
+    turubai_brashi(t, SURA_USULI, 255);
+    turubai_jaza(t, 0, 0, t->upana, t->kimo);
+    skrini_upau_wa_juu(g, t);
+    skrini_urambazaji(t, 4);
+
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    DiplomasiaMfumo* ds = mchezo_pata_diplomasia(g);
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
+    kama (tn == 0 || ds == 0) { rudisha; }
+
+    n64 x = SKRINI_UPANA_WA_PEMBENI + 25;
+    n64 y = SKRINI_UPAU_WA_JUU + 25;
+    n64 w = t->upana - x - 24;
+
+    turubai_brashi(t, tn->rangi, 255);
+    turubai_mviringo(t, x, y + 6, 24, 16, 4);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(tn->jina, x + 36, y, 22);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo("Diplomasia", x + 44 + maandishi_upana(sura_nene, tn->jina, 22), y + 6, 15);
+    y = y + 44;
+
+    // majirani na uhusiano wao, yamepangwa kwa imani (juu kwanza)
+    n64* jirani = tenga(8 * tm->idadi + 8);
+    n64* uh = tenga(8 * tm->idadi + 8);
+    d64* imani_ya = tenga(8 * tm->idadi + 8);
+    n64 n = 0;
+    n64 b = 0;
+    wakati (b < tm->idadi) {
+        kama (dunia_atlasi_mpaka(taifa, b) > 0) {
+            TaifaNchi* tb = dunia_taifa_mfumo_pata_kwa_faharisi(tm, b);
+            DiplomasiaUhusiano* r = diplomasia_pata_kwa_taifa(ds, tn->kitambulisho, tb->kitambulisho);
+            kama (r != 0) {
+                d64 im = r->imani;
+                n64 p = n;
+                wakati (p > 0 && imani_ya[p - 1] < im) {
+                    jirani[p] = jirani[p - 1];
+                    uh[p] = uh[p - 1];
+                    imani_ya[p] = imani_ya[p - 1];
+                    p = p - 1;
+                }
+                jirani[p] = b;
+                uh[p] = r;
+                imani_ya[p] = im;
+                n = n + 1;
+            }
+        }
+        b = b + 1;
+    }
+
+    n64 kimo_cha_safu = SKRINI_KIMO_CHA_SAFU;
+    n8 kichwa[64];
+    mfuatano_umbiza(kichwa, 64, "MAJIRANI -- %d", n, 0, 0, 0, 0, 0);
+    sura_paneli(x, y, w, 76 + n * kimo_cha_safu, kichwa);
+    n64 x_taifa = x + 24;
+    n64 x_kiwango = x + 320;
+    n64 x_imani = x + 460;
+    n64 x_mpaka = x + 820;
+    n64 x_pato = x + 1000;
+    n64 yk = y + 44;
+    sura_kichwa_cha_safuwima("TAIFA", x_taifa, yk, 0);
+    sura_kichwa_cha_safuwima("UHUSIANO", x_kiwango, yk, 0);
+    sura_kichwa_cha_safuwima("IMANI", x_imani, yk, 0);
+    sura_kichwa_cha_safuwima("MPAKA (KM)", x_mpaka, yk, 1);
+    sura_kichwa_cha_safuwima("PATO GHAFI", x_pato, yk, 1);
+    n8 chombo[48];
+    n64 i = 0;
+    wakati (i < n && y + 66 + (i + 1) * kimo_cha_safu < t->kimo) {
+        TaifaNchi* tb = dunia_taifa_mfumo_pata_kwa_faharisi(tm, jirani[i]);
+        DiplomasiaUhusiano* r = uh[i];
+        n64 ys = y + 66 + i * kimo_cha_safu;
+        sura_safu(x + 8, ys, w - 16, kimo_cha_safu - 4, i, 0);
+        n64 ym = ys + 8;
+        turubai_brashi(sura_t, tb->rangi, 255);
+        turubai_duara(sura_t, x_taifa + 7, ys + 17, 6);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kati(tb->jina, x_taifa + 24, ym, 14);
+        sura_rangi(skrini_rangi_ya_kiwango(r->kiwango_cha_uhusiano));
+        sura_lebo_kati(skrini_jina_la_kiwango(r->kiwango_cha_uhusiano), x_kiwango, ym, 14);
+        d64 imani = r->imani * 1000.0;
+        n64 imani_n = imani;
+        sura_pau(x_imani, ys + 13, 240, 8, imani_n, skrini_rangi_ya_kiwango(r->kiwango_cha_uhusiano));
+        sura_asilimia(chombo, imani_n * 10, 0);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kulia(chombo, x_imani + 310, ym, 13);
+        // kipande kimoja cha mpaka ~ km 111
+        sura_namba(chombo, dunia_atlasi_mpaka(taifa, jirani[i]) * 111);
+        sura_lebo_kulia(chombo, x_mpaka, ym, 14);
+        sura_namba_fupi(chombo, skrini_pato_la_taifa(tb));
+        sura_lebo_kulia(chombo, x_pato, ym, 14);
+        i = i + 1;
+    }
+    achilia jirani;
+    achilia uh;
+    achilia imani_ya;
+}
