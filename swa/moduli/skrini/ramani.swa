@@ -14,6 +14,16 @@ n64 SKRINI_RAMANI_KM_KWA_KIZIO = 625;    // kizio 1 = 360/64 shahada ~ km 625
 Fonti* skrini_serifu = 0;
 Turubai* skrini_ramani_eneo = 0;
 
+// Akiba ya fremu kamili ya mwisho ya ramani (eneo la ramani pekee), kwa
+// hakikisho la haraka wakati ramani inaburutwa.
+n8* skrini_akiba = 0;
+n64 skrini_akiba_ukubwa = 0;
+n64 skrini_akiba_w = 0;
+n64 skrini_akiba_h = 0;
+n64 skrini_akiba_x = 0;         // kitovu cha dunia cha fremu iliyohifadhiwa
+n64 skrini_akiba_y = 0;
+n64 skrini_akiba_kipimo = 0;
+
 // Nafasi (1 = kubwa zaidi) ya taifa kwa pato ghafi.
 n64 skrini_nafasi_ya_taifa(TaifaMfumo* tm, n64 taifa) {
     TaifaNchi* t = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
@@ -179,5 +189,58 @@ w0 skrini_ramani_chora(Mchezo* g, Turubai* t, n64 kitovu_x, n64 kitovu_y, n64 ki
     atlasi_chora_juu(a, mj, e, x0, y0, kipimo, sura_nene, sura_kati, sura_kawaida, skrini_serifu);
     skrini_kipimo_cha_umbali(e, 24, h - 40, kipimo);
 
+    // hifadhi eneo la ramani kwa hakikisho la kuburuta
+    kama (skrini_akiba_ukubwa < w * h * 4) {
+        kama (skrini_akiba != 0) { achilia skrini_akiba; }
+        skrini_akiba_ukubwa = w * h * 4;
+        skrini_akiba = tenga(skrini_akiba_ukubwa);
+    }
+    n64 j = 0;
+    wakati (j < h) {
+        nakili(skrini_akiba + j * w * 4, e->pikseli + j * e->hatua, w * 4);
+        j = j + 1;
+    }
+    skrini_akiba_w = w;
+    skrini_akiba_h = h;
+    skrini_akiba_x = kitovu_x;
+    skrini_akiba_y = kitovu_y;
+    skrini_akiba_kipimo = kipimo;
+
     skrini_ramani_paneli(g, t, taifa);
+}
+
+// Hakikisho la haraka: fremu ya mwisho iliyohifadhiwa, imesogezwa kwa
+// tofauti ya kitovu (pikseli nzima), na bahari kwenye sehemu mpya
+// iliyofunuliwa. Hurudisha 0 ikiwa akiba haifai (ukubwa au kipimo
+// kimebadilika) -- mwitaji achore kikamilifu.
+n32 skrini_ramani_hakikisho(Mchezo* g, Turubai* t, n64 kitovu_x, n64 kitovu_y, n64 kipimo, n64 taifa) {
+    n64 x = SKRINI_UPANA_WA_PEMBENI + 1;
+    n64 y = SKRINI_UPAU_WA_JUU + 1;
+    n64 w = t->upana - x - SKRINI_RAMANI_PANELI;
+    n64 h = t->kimo - y;
+    kama (skrini_akiba == 0 || kipimo != skrini_akiba_kipimo || w != skrini_akiba_w || h != skrini_akiba_h) { rudisha 0; }
+    sura_anzisha(t);
+    turubai_brashi(t, SURA_USULI, 255);
+    turubai_jaza(t, 0, 0, t->upana, t->kimo);
+    skrini_upau_wa_juu(g, t);
+    skrini_urambazaji(t, 7);
+    // pikseli (i,j) ya sasa = pikseli (i+dx, j+dy) ya akiba
+    n64 dx = (kitovu_x - skrini_akiba_x) / kipimo;
+    n64 dy = (kitovu_y - skrini_akiba_y) / kipimo;
+    turubai_brashi(t, ATLASI_RANGI_BAHARI, 255);
+    turubai_jaza(t, x, y, w, h);
+    n64 i0 = 0;
+    kama (dx < 0) { i0 = 0 - dx; }
+    n64 i1 = w;
+    kama (dx > 0) { i1 = w - dx; }
+    n64 j = 0;
+    wakati (j < h) {
+        n64 js = j + dy;
+        kama (js >= 0 && js < h && i1 > i0) {
+            nakili(t->pikseli + (y + j) * t->hatua + (x + i0) * 4, skrini_akiba + js * w * 4 + (i0 + dx) * 4, (i1 - i0) * 4);
+        }
+        j = j + 1;
+    }
+    skrini_ramani_paneli(g, t, taifa);
+    rudisha 1;
 }

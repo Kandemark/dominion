@@ -113,6 +113,8 @@ w0 shughulikia(Mchezo* g, Hali* h, Dirisha* d) {
                 }
             } sivyo {
                 kama (h->inavutwa && h->imesogea == 0) { chagua_taifa(h, d, px, py); }
+                // mwisho wa kuburuta: fremu kamili mahali papya
+                kama (h->inavutwa && h->imesogea) { h->haja = 1; }
                 h->inavutwa = 0;
             }
         }
@@ -188,7 +190,12 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
         kama (h->haja && d->fremu_tayari && d->imefungwa == 0) {
             turubai_funga(t, dirisha_bafa(d), d->hatua, d->upana, d->kimo);
             kama (h->skrini == SKRINI_RAMANI) {
-                skrini_ramani_chora(g, t, h->kitovu_x, h->kitovu_y, h->kipimo, h->taifa);
+                // wakati wa kuburuta: hakikisho la haraka; fremu kamili ikiachiliwa
+                n32 haraka = 0;
+                kama (h->inavutwa && h->imesogea) {
+                    haraka = skrini_ramani_hakikisho(g, t, h->kitovu_x, h->kitovu_y, h->kipimo, h->taifa);
+                }
+                kama (haraka == 0) { skrini_ramani_chora(g, t, h->kitovu_x, h->kitovu_y, h->kipimo, h->taifa); }
             } sivyo {
                 skrini_muhtasari_chora(g, t);
             }
