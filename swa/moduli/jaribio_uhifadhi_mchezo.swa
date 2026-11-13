@@ -206,7 +206,13 @@ w0 ju_linganisha_dynamic1(Mchezo* g, Mchezo* g2) {
 
     DiplomasiaMfumo* d1 = mchezo_pata_diplomasia(g);
     DiplomasiaMfumo* d2 = mchezo_pata_diplomasia(g2);
-    ju_thibitisha(d1->uh_0.kiwango_cha_uhusiano == d2->uh_0.kiwango_cha_uhusiano, "diplomasia.uh_0.kiwango_cha_uhusiano");
+    ju_check_n64("diplomasia.idadi_ya_uhusiano", d1->idadi_ya_uhusiano, d2->idadi_ya_uhusiano);
+    kama (d1->idadi_ya_uhusiano > 0 && d2->idadi_ya_uhusiano > 0) {
+        DiplomasiaUhusiano* u1 = diplomasia_pata_uhusiano(d1, 0);
+        DiplomasiaUhusiano* u2 = diplomasia_pata_uhusiano(d2, 0);
+        ju_thibitisha(u1->kiwango_cha_uhusiano == u2->kiwango_cha_uhusiano, "diplomasia.mahusiano[0].kiwango_cha_uhusiano");
+        ju_check_d64("diplomasia.mahusiano[0].imani", u1->imani, u2->imani);
+    }
 
     DuniaMipakaHai* mp1 = mchezo_pata_mipaka_hai(g);
     DuniaMipakaHai* mp2 = mchezo_pata_mipaka_hai(g2);

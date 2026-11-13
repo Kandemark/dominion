@@ -769,6 +769,35 @@ Mchezo* mchezo_unda() {
 // mifumo saba ya msingi tu (angalia maelezo ya wigo juu ya faili),
 // SI mzunguko kamili wa civ_game_initialize (hauna upakiaji wa data
 // ya nje, hauna mifumo 18 ya uchumi, hauna NPC engine seeding).
+// Uhusiano mmoja kwa kila jozi ya majirani wa nchi kavu. Imani ya mwanzo
+// ni 0.35..0.75 kwa jozi (ya kudumu kwa mbegu), ikipunguzwa kidogo na
+// mpaka mrefu (mvutano zaidi); kiwango cha uhusiano hufuata imani.
+w0 mchezo_anzisha_mahusiano_ya_majirani(DiplomasiaMfumo* ds, TaifaMfumo* tm, Atlasi* a) {
+    n32 i = 0;
+    wakati (i < tm->idadi) {
+        n32 j = i + 1;
+        wakati (j < tm->idadi) {
+            n32 mpaka = dunia_atlasi_mpaka(i, j);
+            kama (mpaka > 0) {
+                TaifaNchi* ta = tm->mataifa[i];
+                TaifaNchi* tb = tm->mataifa[j];
+                diplomasia_anzisha_uhusiano(ds, ta->kitambulisho, tb->kitambulisho);
+                DiplomasiaUhusiano* r = diplomasia_pata_uhusiano(ds, ds->idadi_ya_uhusiano - 1);
+                d64 h = atlasi_heshi(i, j, a->mbegu + 8181) % 41;
+                d64 m = mpaka;
+                kama (m > 40.0) { m = 40.0; }
+                r->imani = 0.35 + h / 100.0 - m * 0.002;
+                kama (r->imani < 0.3) { r->kiwango_cha_uhusiano = DIPLOMASIA_KIWANGO_UADUI; }
+                sivyo { kama (r->imani < 0.4) { r->kiwango_cha_uhusiano = DIPLOMASIA_KIWANGO_KATI; }
+                sivyo { kama (r->imani < 0.7) { r->kiwango_cha_uhusiano = DIPLOMASIA_KIWANGO_URAFIKI; }
+                sivyo { r->kiwango_cha_uhusiano = DIPLOMASIA_KIWANGO_UMOJA; } } }
+            }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+}
+
 CivMatokeo mchezo_anzisha(Mchezo* g, MchezoUsanidi* usanidi) {
     CivMatokeo r;
     kama (g == 0 || usanidi == 0) {
@@ -809,6 +838,7 @@ CivMatokeo mchezo_anzisha(Mchezo* g, MchezoUsanidi* usanidi) {
     TaifaMfumo* taifa = dunia_taifa_mfumo_unda();
     dunia_atlasi_unda_mataifa(taifa, ramani_mpya, atlasi, miji);
     dunia_atlasi_hesabu_majirani(taifa, ramani_mpya);
+    mchezo_anzisha_mahusiano_ya_majirani(mchezo_pata_diplomasia(g), taifa, atlasi);
     mchezo_weka_taifa(g, taifa);
     DuniaRasilimaliRamani* rm_ya_mwanzo = 0;
     TaifaUchumi* jumla_ya_mwanzo = 0;
@@ -2238,53 +2268,40 @@ w0 mchezo_hifadhi_soma_mkataba(n8* f, DiplomasiaMkataba* k) {
 }
 w0 mchezo_hifadhi_andika_diplomasia(n8* f, DiplomasiaMfumo* d) {
     kama (d == 0) { rudisha; }
-    mchezo_hifadhi_andika_uhusiano(f, &d->uh_0);
-    mchezo_hifadhi_andika_uhusiano(f, &d->uh_1);
-    mchezo_hifadhi_andika_uhusiano(f, &d->uh_2);
-    mchezo_hifadhi_andika_uhusiano(f, &d->uh_3);
-    mchezo_hifadhi_andika_uhusiano(f, &d->uh_4);
-    mchezo_hifadhi_andika_uhusiano(f, &d->uh_5);
-    mchezo_hifadhi_andika_uhusiano(f, &d->uh_6);
-    mchezo_hifadhi_andika_uhusiano(f, &d->uh_7);
-    mchezo_hifadhi_andika_uhusiano(f, &d->uh_8);
-    mchezo_hifadhi_andika_uhusiano(f, &d->uh_9);
-    mchezo_hifadhi_andika_uhusiano(f, &d->uh_10);
-    mchezo_hifadhi_andika_uhusiano(f, &d->uh_11);
     injini_uhifadhi_andika_n32(f, d->idadi_ya_uhusiano);
-    mchezo_hifadhi_andika_mkataba(f, &d->mk_0);
-    mchezo_hifadhi_andika_mkataba(f, &d->mk_1);
-    mchezo_hifadhi_andika_mkataba(f, &d->mk_2);
-    mchezo_hifadhi_andika_mkataba(f, &d->mk_3);
-    mchezo_hifadhi_andika_mkataba(f, &d->mk_4);
-    mchezo_hifadhi_andika_mkataba(f, &d->mk_5);
-    mchezo_hifadhi_andika_mkataba(f, &d->mk_6);
-    mchezo_hifadhi_andika_mkataba(f, &d->mk_7);
+    n32 i = 0;
+    wakati (i < d->idadi_ya_uhusiano) {
+        mchezo_hifadhi_andika_uhusiano(f, diplomasia_pata_uhusiano(d, i));
+        i = i + 1;
+    }
     injini_uhifadhi_andika_n32(f, d->idadi_ya_mikataba);
+    i = 0;
+    wakati (i < d->idadi_ya_mikataba) {
+        mchezo_hifadhi_andika_mkataba(f, diplomasia_pata_mkataba(d, i));
+        i = i + 1;
+    }
 }
 w0 mchezo_hifadhi_soma_diplomasia(n8* f, DiplomasiaMfumo* d) {
     kama (d == 0) { rudisha; }
-    mchezo_hifadhi_soma_uhusiano(f, &d->uh_0);
-    mchezo_hifadhi_soma_uhusiano(f, &d->uh_1);
-    mchezo_hifadhi_soma_uhusiano(f, &d->uh_2);
-    mchezo_hifadhi_soma_uhusiano(f, &d->uh_3);
-    mchezo_hifadhi_soma_uhusiano(f, &d->uh_4);
-    mchezo_hifadhi_soma_uhusiano(f, &d->uh_5);
-    mchezo_hifadhi_soma_uhusiano(f, &d->uh_6);
-    mchezo_hifadhi_soma_uhusiano(f, &d->uh_7);
-    mchezo_hifadhi_soma_uhusiano(f, &d->uh_8);
-    mchezo_hifadhi_soma_uhusiano(f, &d->uh_9);
-    mchezo_hifadhi_soma_uhusiano(f, &d->uh_10);
-    mchezo_hifadhi_soma_uhusiano(f, &d->uh_11);
-    d->idadi_ya_uhusiano = injini_uhifadhi_soma_n32(f);
-    mchezo_hifadhi_soma_mkataba(f, &d->mk_0);
-    mchezo_hifadhi_soma_mkataba(f, &d->mk_1);
-    mchezo_hifadhi_soma_mkataba(f, &d->mk_2);
-    mchezo_hifadhi_soma_mkataba(f, &d->mk_3);
-    mchezo_hifadhi_soma_mkataba(f, &d->mk_4);
-    mchezo_hifadhi_soma_mkataba(f, &d->mk_5);
-    mchezo_hifadhi_soma_mkataba(f, &d->mk_6);
-    mchezo_hifadhi_soma_mkataba(f, &d->mk_7);
-    d->idadi_ya_mikataba = injini_uhifadhi_soma_n32(f);
+    // mahusiano yaliyoundwa na mchezo_anzisha hubadilishwa na yaliyohifadhiwa
+    n32 i = 0;
+    wakati (i < d->idadi_ya_uhusiano) { achilia d->mahusiano[i]; i = i + 1; }
+    d->idadi_ya_uhusiano = 0;
+    i = 0;
+    wakati (i < d->idadi_ya_mikataba) { achilia d->mikataba[i]; i = i + 1; }
+    d->idadi_ya_mikataba = 0;
+    n32 n = injini_uhifadhi_soma_n32(f);
+    i = 0;
+    wakati (i < n) {
+        mchezo_hifadhi_soma_uhusiano(f, diplomasia_ongeza_uhusiano_tupu(d));
+        i = i + 1;
+    }
+    n = injini_uhifadhi_soma_n32(f);
+    i = 0;
+    wakati (i < n) {
+        mchezo_hifadhi_soma_mkataba(f, diplomasia_ongeza_mkataba_tupu(d));
+        i = i + 1;
+    }
 }
 
 // ---------- taifa (TaifaMfumo -- safu ya TaifaNchi*) ----------

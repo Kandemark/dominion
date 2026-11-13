@@ -2,11 +2,10 @@
 // kwenda Swa. Mahusiano ya kimataifa, imani, na mikataba.
 //
 // Kiambishi: diplomasia_ — angalia ../../KANUNI-MAJINA.md.
-// relations[] na treaties[] (safu zinazokua za muundo, uwezo wa
-// awali 100/50 zinazoongezeka mara mbili) zimekuwa vigezo 12/8
-// vyenye majina + kazi ya kupata (kikomo cha vitendo kwa mchezo,
-// kuepuka field ya kielekezi-kwenda-safu-ya-muundo — angalia
-// lugha-swa/swa#186 na #182(b)). Majina ya mataifa (nation_a/b,
+// relations[] na treaties[] ni safu zinazokua (vielekezi vya muundo
+// vilivyotengwa kando, uwezo huongezeka mara mbili) -- mataifa 160 ya
+// atlasi yana mahusiano ~500 kati ya majirani. (Zamani zilikuwa nafasi
+// 12/8 zenye majina, zilizotosha mataifa 8 tu.) Majina ya mataifa (nation_a/b,
 // char[N] kwenye C) yamekuwa n8* (vielekezi vya mfuatano
 // vinavyomilikiwa na mwitaji, sio nakala zilizowekwa) — mtindo
 // uleule uliotumika kwenye idadi_ya_watu.swa kwa majina ya maeneo.
@@ -26,9 +25,6 @@ n32 DIPLOMASIA_MKATABA_USIOSHAMBULIANA = 1;
 n32 DIPLOMASIA_MKATABA_ULINZI = 2;
 n32 DIPLOMASIA_MKATABA_JESHI = 3;
 n32 DIPLOMASIA_MKATABA_UTAFITI = 4;
-
-n32 DIPLOMASIA_UHUSIANO_KIWANGO_CHA_JUU = 12;
-n32 DIPLOMASIA_MKATABA_KIWANGO_CHA_JUU = 8;
 
 muundo DiplomasiaUhusiano {
     n8* taifa_a;
@@ -54,59 +50,72 @@ muundo DiplomasiaMkataba {
 };
 
 muundo DiplomasiaMfumo {
-    DiplomasiaUhusiano uh_0; DiplomasiaUhusiano uh_1; DiplomasiaUhusiano uh_2;
-    DiplomasiaUhusiano uh_3; DiplomasiaUhusiano uh_4; DiplomasiaUhusiano uh_5;
-    DiplomasiaUhusiano uh_6; DiplomasiaUhusiano uh_7; DiplomasiaUhusiano uh_8;
-    DiplomasiaUhusiano uh_9; DiplomasiaUhusiano uh_10; DiplomasiaUhusiano uh_11;
+    n64* mahusiano;             // DiplomasiaUhusiano*
     n32 idadi_ya_uhusiano;
-
-    DiplomasiaMkataba mk_0; DiplomasiaMkataba mk_1; DiplomasiaMkataba mk_2;
-    DiplomasiaMkataba mk_3; DiplomasiaMkataba mk_4; DiplomasiaMkataba mk_5;
-    DiplomasiaMkataba mk_6; DiplomasiaMkataba mk_7;
+    n32 uwezo_wa_uhusiano;
+    n64* mikataba;              // DiplomasiaMkataba*
     n32 idadi_ya_mikataba;
+    n32 uwezo_wa_mikataba;
 };
 
 DiplomasiaUhusiano* diplomasia_pata_uhusiano(DiplomasiaMfumo* ds, n32 faharisi) {
-    kama (faharisi == 0) { rudisha &ds->uh_0; }
-    kama (faharisi == 1) { rudisha &ds->uh_1; }
-    kama (faharisi == 2) { rudisha &ds->uh_2; }
-    kama (faharisi == 3) { rudisha &ds->uh_3; }
-    kama (faharisi == 4) { rudisha &ds->uh_4; }
-    kama (faharisi == 5) { rudisha &ds->uh_5; }
-    kama (faharisi == 6) { rudisha &ds->uh_6; }
-    kama (faharisi == 7) { rudisha &ds->uh_7; }
-    kama (faharisi == 8) { rudisha &ds->uh_8; }
-    kama (faharisi == 9) { rudisha &ds->uh_9; }
-    kama (faharisi == 10) { rudisha &ds->uh_10; }
-    rudisha &ds->uh_11;
+    kama (faharisi < 0 || faharisi >= ds->idadi_ya_uhusiano) { rudisha 0; }
+    rudisha ds->mahusiano[faharisi];
 }
 
 DiplomasiaMkataba* diplomasia_pata_mkataba(DiplomasiaMfumo* ds, n32 faharisi) {
-    kama (faharisi == 0) { rudisha &ds->mk_0; }
-    kama (faharisi == 1) { rudisha &ds->mk_1; }
-    kama (faharisi == 2) { rudisha &ds->mk_2; }
-    kama (faharisi == 3) { rudisha &ds->mk_3; }
-    kama (faharisi == 4) { rudisha &ds->mk_4; }
-    kama (faharisi == 5) { rudisha &ds->mk_5; }
-    kama (faharisi == 6) { rudisha &ds->mk_6; }
-    rudisha &ds->mk_7;
+    kama (faharisi < 0 || faharisi >= ds->idadi_ya_mikataba) { rudisha 0; }
+    rudisha ds->mikataba[faharisi];
 }
 
 DiplomasiaMfumo* diplomasia_unda() {
     DiplomasiaMfumo* ds = tenga(ukubwa(DiplomasiaMfumo));
     ds->idadi_ya_uhusiano = 0;
+    ds->uwezo_wa_uhusiano = 64;
+    ds->mahusiano = tenga(8 * 64);
     ds->idadi_ya_mikataba = 0;
+    ds->uwezo_wa_mikataba = 32;
+    ds->mikataba = tenga(8 * 32);
     rudisha ds;
 }
 
 w0 diplomasia_uharibu(DiplomasiaMfumo* ds) {
+    n32 i = 0;
+    wakati (i < ds->idadi_ya_uhusiano) { achilia ds->mahusiano[i]; i = i + 1; }
+    i = 0;
+    wakati (i < ds->idadi_ya_mikataba) { achilia ds->mikataba[i]; i = i + 1; }
+    achilia ds->mahusiano;
+    achilia ds->mikataba;
     achilia ds;
 }
 
-w0 diplomasia_anzisha_uhusiano(DiplomasiaMfumo* ds, n8* taifa_a, n8* taifa_b) {
-    kama (ds->idadi_ya_uhusiano >= DIPLOMASIA_UHUSIANO_KIWANGO_CHA_JUU) { rudisha; }
-    DiplomasiaUhusiano* r = diplomasia_pata_uhusiano(ds, ds->idadi_ya_uhusiano);
+// Ongeza uhusiano mtupu mwishoni (safu hukua inapojaa); hurudisha kielekezi.
+DiplomasiaUhusiano* diplomasia_ongeza_uhusiano_tupu(DiplomasiaMfumo* ds) {
+    kama (ds->idadi_ya_uhusiano >= ds->uwezo_wa_uhusiano) {
+        ds->uwezo_wa_uhusiano = ds->uwezo_wa_uhusiano * 2;
+        ds->mahusiano = badili(ds->mahusiano, 8 * ds->uwezo_wa_uhusiano);
+    }
+    DiplomasiaUhusiano* r = tenga(ukubwa(DiplomasiaUhusiano));
+    weka_sifuri(r, ukubwa(DiplomasiaUhusiano));
+    ds->mahusiano[ds->idadi_ya_uhusiano] = r;
     ds->idadi_ya_uhusiano = ds->idadi_ya_uhusiano + 1;
+    rudisha r;
+}
+
+DiplomasiaMkataba* diplomasia_ongeza_mkataba_tupu(DiplomasiaMfumo* ds) {
+    kama (ds->idadi_ya_mikataba >= ds->uwezo_wa_mikataba) {
+        ds->uwezo_wa_mikataba = ds->uwezo_wa_mikataba * 2;
+        ds->mikataba = badili(ds->mikataba, 8 * ds->uwezo_wa_mikataba);
+    }
+    DiplomasiaMkataba* k = tenga(ukubwa(DiplomasiaMkataba));
+    weka_sifuri(k, ukubwa(DiplomasiaMkataba));
+    ds->mikataba[ds->idadi_ya_mikataba] = k;
+    ds->idadi_ya_mikataba = ds->idadi_ya_mikataba + 1;
+    rudisha k;
+}
+
+w0 diplomasia_anzisha_uhusiano(DiplomasiaMfumo* ds, n8* taifa_a, n8* taifa_b) {
+    DiplomasiaUhusiano* r = diplomasia_ongeza_uhusiano_tupu(ds);
 
     r->taifa_a = taifa_a;
     r->taifa_b = taifa_b;
@@ -122,6 +131,8 @@ DiplomasiaUhusiano* diplomasia_pata_kwa_taifa(DiplomasiaMfumo* ds, n8* taifa_a, 
     n32 i = 0;
     wakati (i < ds->idadi_ya_uhusiano) {
         DiplomasiaUhusiano* r = diplomasia_pata_uhusiano(ds, i);
+        // vielekezi vile vile kwanza (vitambulisho vya TaifaNchi), kisha mfuatano
+        kama ((r->taifa_a == taifa_a && r->taifa_b == taifa_b) || (r->taifa_a == taifa_b && r->taifa_b == taifa_a)) { rudisha r; }
         n32 kwenda = 0;
         kama (linganisha_mfuatano(r->taifa_a, taifa_a) == 0 && linganisha_mfuatano(r->taifa_b, taifa_b) == 0) { kwenda = 1; }
         kama (linganisha_mfuatano(r->taifa_a, taifa_b) == 0 && linganisha_mfuatano(r->taifa_b, taifa_a) == 0) { kwenda = 1; }
@@ -179,13 +190,7 @@ CivMatokeo diplomasia_pendekeza_mkataba(DiplomasiaMfumo* ds, n8* mpendekezaji, n
         rudisha matokeo;
     }
 
-    kama (ds->idadi_ya_mikataba >= DIPLOMASIA_MKATABA_KIWANGO_CHA_JUU) {
-        matokeo.hitilafu = CIV_HITILAFU_HALI_MBAYA;
-        rudisha matokeo;
-    }
-
-    DiplomasiaMkataba* mk = diplomasia_pata_mkataba(ds, ds->idadi_ya_mikataba);
-    ds->idadi_ya_mikataba = ds->idadi_ya_mikataba + 1;
+    DiplomasiaMkataba* mk = diplomasia_ongeza_mkataba_tupu(ds);
 
     mk->kitambulisho = 0;
     mk->aina = aina;
