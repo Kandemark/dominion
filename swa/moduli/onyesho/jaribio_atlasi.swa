@@ -1,0 +1,25 @@
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/onyesho/atlasi.swa }
+
+// jaribio_atlasi.swa -- chora tabaka la msingi la atlasi na uandike fremu
+// ghafi.   jaribio_atlasi <njia> [mbegu] [kipimo]
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    n64 mbegu = 7;
+    n64 kipimo = 5;
+    kama (idadi_ya_hoja > 2) { mbegu = mfuatano_hadi_n64(hoja_za_mstari[2]); }
+    kama (idadi_ya_hoja > 3) { kipimo = mfuatano_hadi_n64(hoja_za_mstari[3]); }
+    Atlasi* a = atlasi_unda(mbegu, 160, 64, 36);
+    andika("mataifa %d\n", a->idadi, 0, 0, 0, 0, 0);
+    Turubai* t = turubai_unda(1600, 900);
+    n64 x0 = 1024;
+    n64 y0 = 512;
+    kama (idadi_ya_hoja > 5) { x0 = mfuatano_hadi_n64(hoja_za_mstari[4]); y0 = mfuatano_hadi_n64(hoja_za_mstari[5]); }
+    atlasi_chora_msingi(a, t, x0, y0, kipimo);
+    kama (idadi_ya_hoja > 1) {
+        n64 fd = mfumo_fungua(hoja_za_mstari[1], 577, 420);
+        mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
+        mfumo_funga(fd);
+    }
+    rudisha 0;
+}
