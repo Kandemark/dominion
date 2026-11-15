@@ -902,15 +902,21 @@ w0 atlasi_maandishi(Turubai* t, Fonti* f, n8* s, n64 x, n64 y, n64 ukubwa_px, n6
 
 // Maandishi yenye nafasi kati ya herufi (majina ya mataifa). Hurudisha upana.
 n64 atlasi_maandishi_mapana(Turubai* t, Fonti* f, n8* s, n64 x, n64 y, n64 ukubwa_px, n64 nafasi, n64 chora, n64 rangi) {
-    n8* herufi = tenga(2);
-    herufi[1] = 0;
+    n8* herufi = tenga(8);
     n64 kalamu = x;
     n64 i = 0;
     wakati (s[i] != 0) {
-        herufi[0] = s[i];
+        // herufi moja ya UTF-8 nzima (baiti 1-4), si baiti moja -- la sivyo
+        // herufi kama "ü" huvunjika kuwa alama mbili zisizo sahihi
+        n64 c = s[i] & 255;
+        n64 urefu = 1;
+        kama (c >= 240) { urefu = 4; } sivyo { kama (c >= 224) { urefu = 3; } sivyo { kama (c >= 192) { urefu = 2; } } }
+        n64 k = 0;
+        wakati (k < urefu && s[i + k] != 0) { herufi[k] = s[i + k]; k = k + 1; }
+        herufi[k] = 0;
         kama (chora) { atlasi_maandishi(t, f, herufi, kalamu, y, ukubwa_px, rangi, 210); }
         kalamu = kalamu + maandishi_upana(f, herufi, ukubwa_px) + nafasi;
-        i = i + 1;
+        i = i + k;
     }
     achilia herufi;
     rudisha kalamu - nafasi - x;

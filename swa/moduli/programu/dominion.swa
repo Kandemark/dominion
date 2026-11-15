@@ -39,7 +39,8 @@ muundo Hali {
     n64 kitovu_x;
     n64 kitovu_y;
     n64 kipimo;
-    n64 taifa;
+    n64 taifa;              // taifa la mchezo (Uchumi, Diplomasia)
+    n64 taifa_dunia;        // taifa lililochaguliwa kwenye ramani ya dunia iliyokubaliwa
     n64 inavutwa;           // kitufe cha kushoto kimebonyezwa juu ya ramani
     n64 imesogea;           // tangu kubonyeza (bofya dhidi ya kuburuta)
     n64 vuta_x;
@@ -51,10 +52,15 @@ muundo Hali {
 n64 ramani_x() { rudisha SKRINI_UPANA_WA_PEMBENI + 1; }
 n64 ramani_y() { rudisha SKRINI_UPAU_WA_JUU + 1; }
 
+// Mipaka ya ukuzaji: atlasi ya zamani (vizio 1/1024 kwa pikseli) au dunia
+// iliyokubaliwa (pikseli za dunia * 256 kwa pikseli: 24 = mara ~10, 1100 = dunia nzima).
+n64 KIPIMO_CHINI = 3;
+n64 KIPIMO_JUU = 60;
+
 w0 badili_kipimo(Hali* h, Dirisha* d, n64 kipimo_kipya, n64 px, n64 py) {
     n64 k = kipimo_kipya;
-    kama (k < 3) { k = 3; }
-    kama (k > 60) { k = 60; }
+    kama (k < KIPIMO_CHINI) { k = KIPIMO_CHINI; }
+    kama (k > KIPIMO_JUU) { k = KIPIMO_JUU; }
     kama (k == h->kipimo) { rudisha; }
     // nukta ya dunia chini ya kielekezi ibaki pale pale
     n64 w = d->upana - ramani_x() - SKRINI_RAMANI_PANELI;
@@ -70,6 +76,16 @@ w0 badili_kipimo(Hali* h, Dirisha* d, n64 kipimo_kipya, n64 px, n64 py) {
 }
 
 w0 chagua_taifa(Hali* h, Dirisha* d, n64 px, n64 py) {
+    kama (skrini_dunia != 0) {
+        kama (dh_wamiliki_skrini == 0) { rudisha; }
+        n64 w2 = d->upana - ramani_x() - SKRINI_RAMANI_PANELI;
+        n64 i2 = px - ramani_x();
+        n64 j2 = py - ramani_y();
+        kama (i2 < 0 || j2 < 0 || i2 >= w2 || j2 >= d->kimo - ramani_y()) { rudisha; }
+        n64 o2 = dh_wamiliki_skrini[j2 * w2 + i2];
+        kama (o2 >= 0) { h->taifa_dunia = o2; h->haja = 1; }
+        rudisha;
+    }
     kama (atlasi_wamiliki == 0) { rudisha; }
     n64 w = d->upana - ramani_x() - SKRINI_RAMANI_PANELI;
     n64 hh = d->kimo - ramani_y();
@@ -186,6 +202,16 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     h->kitovu_x = a->mji_x[h->taifa];
     h->kitovu_y = a->mji_y[h->taifa];
     h->kipimo = 12;
+    // dunia iliyokubaliwa ikiwepo: ramani huionyesha (bara la nyumbani, ukuzaji 1)
+    DuniaHalisi* dh = skrini_dunia_pata();
+    kama (dh != 0) {
+        KIPIMO_CHINI = 24;
+        KIPIMO_JUU = 1100;
+        h->kitovu_x = 2250 * 256;
+        h->kitovu_y = 600 * 256;
+        h->kipimo = 256;
+        h->taifa_dunia = 0 - 1;
+    }
     h->skrini = SKRINI_RAMANI;
     h->haja = 1;
 
@@ -200,9 +226,20 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
                 // wakati wa kuburuta: hakikisho la haraka; fremu kamili ikiachiliwa
                 n32 haraka = 0;
                 kama (h->inavutwa && h->imesogea) {
-                    haraka = skrini_ramani_hakikisho(g, t, h->kitovu_x, h->kitovu_y, h->kipimo, h->taifa);
+                    n64 tt = h->taifa;
+                    kama (skrini_dunia != 0) { tt = h->taifa_dunia; }
+                    haraka = skrini_ramani_hakikisho(g, t, h->kitovu_x, h->kitovu_y, h->kipimo, tt);
                 }
-                kama (haraka == 0) { skrini_ramani_chora(g, t, h->kitovu_x, h->kitovu_y, h->kipimo, h->taifa); }
+                kama (haraka == 0) {
+                    kama (skrini_dunia != 0) {
+                        // mipaka ya kaskazini-kusini; mashariki-magharibi huzunguka
+                        kama (h->kitovu_y < 0) { h->kitovu_y = 0; }
+                        kama (h->kitovu_y > skrini_dunia->kimo * 256) { h->kitovu_y = skrini_dunia->kimo * 256; }
+                        skrini_dunia_chora(g, t, skrini_dunia, h->kitovu_x, h->kitovu_y, h->kipimo, h->taifa_dunia);
+                    } sivyo {
+                        skrini_ramani_chora(g, t, h->kitovu_x, h->kitovu_y, h->kipimo, h->taifa);
+                    }
+                }
             } sivyo {
                 kama (h->skrini == SKRINI_UCHUMI) { skrini_uchumi_chora(g, t, h->taifa); }
                 sivyo { kama (h->skrini == SKRINI_DIPLOMASIA) { skrini_diplomasia_chora(g, t, h->taifa); }
