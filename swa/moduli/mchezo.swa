@@ -830,7 +830,11 @@ CivMatokeo mchezo_anzisha(Mchezo* g, MchezoUsanidi* usanidi) {
     mchezo_weka_atlasi(g, atlasi);
     mchezo_weka_miji(g, miji);
     DuniaRamani* ramani_mpya = dunia_ramani_unda(360, 180, MCHEZO_MBEGU_YA_DUNIA);
-    dunia_atlasi_jaza_ramani(ramani_mpya, atlasi, miji);
+    // dunia iliyokubaliwa (rasilimali/dunia.bin) ikiwepo ndiyo jiografia na
+    // mataifa ya uigaji; atlasi ya kelele hubaki kwa mbegu za sifa tu
+    dunia_halisi_ya_mchezo = dunia_halisi_pakia("rasilimali/dunia.bin");
+    kama (dunia_halisi_ya_mchezo != 0) { dunia_halisi_jaza_ramani(ramani_mpya, dunia_halisi_ya_mchezo); }
+    sivyo { dunia_atlasi_jaza_ramani(ramani_mpya, atlasi, miji); }
     mchezo_weka_ramani(g, ramani_mpya);
     mchezo_weka_makazi(g, dunia_makazi_msimamizi_unda());
     mchezo_weka_akili(g, akili_mfumo_unda());
@@ -839,7 +843,8 @@ CivMatokeo mchezo_anzisha(Mchezo* g, MchezoUsanidi* usanidi) {
     // Taifa (nation.c): mataifa ya atlasi, kila moja likimiliki vipande
     // vya nchi kavu ambavyo atlasi inasema ni vyake.
     TaifaMfumo* taifa = dunia_taifa_mfumo_unda();
-    dunia_atlasi_unda_mataifa(taifa, ramani_mpya, atlasi, miji);
+    kama (dunia_halisi_ya_mchezo != 0) { dunia_halisi_unda_mataifa(taifa, ramani_mpya, dunia_halisi_ya_mchezo, atlasi); }
+    sivyo { dunia_atlasi_unda_mataifa(taifa, ramani_mpya, atlasi, miji); }
     dunia_atlasi_hesabu_majirani(taifa, ramani_mpya);
     mchezo_anzisha_mahusiano_ya_majirani(mchezo_pata_diplomasia(g), taifa, atlasi);
     mchezo_weka_taifa(g, taifa);

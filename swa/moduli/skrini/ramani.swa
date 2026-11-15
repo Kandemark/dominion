@@ -182,7 +182,8 @@ n64* skrini_dunia_eneo = 0;          // pikseli za dunia kwa kila taifa
 DuniaHalisi* skrini_dunia_pata() {
     kama (skrini_dunia_imejaribiwa == 0) {
         skrini_dunia_imejaribiwa = 1;
-        skrini_dunia = dunia_halisi_pakia("rasilimali/dunia.bin");
+        skrini_dunia = dunia_halisi_ya_mchezo;           // dunia ile ile ya uigaji
+        kama (skrini_dunia == 0) { skrini_dunia = dunia_halisi_pakia("rasilimali/dunia.bin"); }
         kama (skrini_dunia != 0) {
             DuniaHalisi* d = skrini_dunia;
             skrini_dunia_eneo = tenga(8 * d->mataifa);
@@ -273,7 +274,8 @@ w0 skrini_dunia_paneli(Turubai* t, DuniaHalisi* d, n64 taifa) {
     sura_kichwa_cha_safuwima("LARGEST CITIES", px, py, 0);
     py = py + 24;
     // miji 8 mikubwa zaidi: chagua mara 8 kubwa zaidi kuliko iliyotangulia
-    n64 juu_ya = 1 << 40;
+    n64 moja = 1;                 // halisi 1 ni n32: (1 << 40) ingekuwa 256 (swa#399)
+    n64 juu_ya = moja << 40;
     n64 k = 0;
     wakati (k < 8) {
         n64 bora = 0 - 1;

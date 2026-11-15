@@ -154,7 +154,10 @@ n32 anza() {
     TaifaMfumo* taifa_jh = mchezo_pata_taifa(g);
     dunia_taifa_mfumo_dai_maeneo_yote(taifa_jh, ramani_jh);
     Atlasi* atlasi_ya_mchezo = mchezo_pata_atlasi(g);
-    jro_thibitisha(taifa_jh->idadi == atlasi_ya_mchezo->idadi && taifa_jh->idadi > 8, "mataifa ya atlasi (si 8 ya zamani) yameundwa ndani ya Mchezo halisi");
+    // dunia iliyokubaliwa (rasilimali/dunia.bin) ikiwepo: mataifa yake 232; la sivyo ya atlasi
+    n64 mataifa_ya_dunia = atlasi_ya_mchezo->idadi;
+    kama (dunia_halisi_ya_mchezo != 0) { mataifa_ya_dunia = dunia_halisi_ya_mchezo->mataifa; }
+    jro_thibitisha(taifa_jh->idadi == mataifa_ya_dunia && taifa_jh->idadi > 8, "mataifa ya dunia (si 8 ya zamani) yameundwa ndani ya Mchezo halisi");
 
     // ---------- Vipande MAHSUSI vya uthibitisho (vinawekwa NJE ya
     // umiliki kwa makusudi -- rangi safi ya ardhi pekee, bila

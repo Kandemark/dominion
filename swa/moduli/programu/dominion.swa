@@ -83,7 +83,7 @@ w0 chagua_taifa(Hali* h, Dirisha* d, n64 px, n64 py) {
         n64 j2 = py - ramani_y();
         kama (i2 < 0 || j2 < 0 || i2 >= w2 || j2 >= d->kimo - ramani_y()) { rudisha; }
         n64 o2 = dh_wamiliki_skrini[j2 * w2 + i2];
-        kama (o2 >= 0) { h->taifa_dunia = o2; h->haja = 1; }
+        kama (o2 >= 0) { h->taifa_dunia = o2; h->taifa = o2; h->haja = 1; }
         rudisha;
     }
     kama (atlasi_wamiliki == 0) { rudisha; }
@@ -207,10 +207,15 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     kama (dh != 0) {
         KIPIMO_CHINI = 24;
         KIPIMO_JUU = 1100;
+        // anza kwenye mji mkuu wa taifa la mchezaji (taifa la mchezo == taifa la ramani)
+        h->taifa_dunia = h->taifa;
         h->kitovu_x = 2250 * 256;
         h->kitovu_y = 600 * 256;
-        h->kipimo = 256;
-        h->taifa_dunia = 0 - 1;
+        kama (h->taifa >= 0 && h->taifa < dh->mataifa) {
+            h->kitovu_x = dh->mji_x[h->taifa] * 256;
+            h->kitovu_y = dh->mji_y[h->taifa] * 256;
+        }
+        h->kipimo = 128;
     }
     h->skrini = SKRINI_RAMANI;
     h->haja = 1;
