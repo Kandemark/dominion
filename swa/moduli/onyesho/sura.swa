@@ -1,5 +1,6 @@
 husisha { msingi/maktaba/kumbukumbu.swa }
 husisha { moduli/onyesho/maandishi.swa }
+husisha { moduli/onyesho/maneno.swa }
 
 // sura.swa -- vipengele vya skrini za data za Dominion, juu ya turubai na
 // maandishi: paneli, lebo, kadi za takwimu, pau, safu za jedwali, tabo,
@@ -75,9 +76,9 @@ n64 sura_namba_fupi(n8* chombo, n64 thamani) {
     kama (v < 0) { v = 0 - v; }
     kama (v < 1000000) { rudisha sura_namba(chombo, thamani); }
     n64 kizio = 1000000;
-    n8* jina = " mil";
-    kama (v >= 1000000000000) { kizio = 1000000000000; jina = " tril"; }
-    sivyo { kama (v >= 1000000000) { kizio = 1000000000; jina = " bil"; } }
+    n8* jina = ui(" M");
+    kama (v >= 1000000000000) { kizio = 1000000000000; jina = ui(" T"); }
+    sivyo { kama (v >= 1000000000) { kizio = 1000000000; jina = ui(" B"); } }
     n64 nzima = v / kizio;
     n64 sehemu = ((v % kizio) * 100) / kizio;
     n64 k = 0;

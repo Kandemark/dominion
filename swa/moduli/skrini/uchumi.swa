@@ -78,21 +78,21 @@ w0 skrini_uchumi_bajeti(Mchezo* g, Turubai* t, n64 x, n64 y, n64 w) {
     BajetiMfumo* budget = mchezo_pata_bajeti(g);
     kama (budget == 0 || t->kimo < 840) { rudisha; }
     n64 fy = y + 132;
-    sura_paneli(x, fy, w, 108, "MGAWANYO WA MATUMIZI YA BAJETI — DUNIA");
+    sura_paneli(x, fy, w, 108, ui("BUDGET SPENDING BREAKDOWN — WORLD"));
     n8 total_text[32];
     sura_namba_fupi(total_text, budget->matumizi_jumla);
     n64 source_x = x + 16;
     n64 sink_x = x + w - 170;
     n64 source_y = fy + 56;
-    sura_sankey_nodi("Matumizi", total_text, source_x, source_y - 12, 124, 24, SURA_BAHARI, 255);
+    sura_sankey_nodi(ui("Spending"), total_text, source_x, source_y - 12, 124, 24, SURA_BAHARI, 255);
     d64 total = budget->matumizi_jumla;
     n64 sector = 0;
     wakati (sector < 4) {
-        n8* name = "Jeshi";
+        n8* name = ui("Military");
         n64 color = SURA_HASI;
-        kama (sector == 1) { name = "Miundombinu"; color = SURA_BAHARI; }
-        kama (sector == 2) { name = "Elimu"; color = SURA_CHANYA; }
-        kama (sector == 3) { name = "Afya"; color = SURA_LAFUDHI; }
+        kama (sector == 1) { name = ui("Infrastructure"); color = SURA_BAHARI; }
+        kama (sector == 2) { name = ui("Education"); color = SURA_CHANYA; }
+        kama (sector == 3) { name = ui("Health"); color = SURA_LAFUDHI; }
         d64 amount = bajeti_matumizi_ya(budget, sector);
         n64 amount_n = amount;
         n8 amount_text[24];
@@ -127,7 +127,7 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     // Kichwa cha ukurasa: taifa ndilo linalotawala, skrini inaelezwa chini.
     turubai_brashi(t, tn->rangi, 255);
     turubai_mviringo(t, x, y + 6, 24, 16, 4);
-    sura_kichwa_ukurasa(tn->jina, "UCHUMI WA TAIFA", x + 36, y - 5);
+    sura_kichwa_ukurasa(tn->jina, ui("NATIONAL ECONOMY"), x + 36, y - 5);
     y = y + 58;
 
     // kadi nne
@@ -152,26 +152,26 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 gdp_change = skrini_mabadiliko(h, 10);
     sura_asilimia(gdp_delta, gdp_change, 1);
     sura_namba_fupi(chombo, skrini_pato_la_taifa(tn));
-    sura_kadi_sparkline("PATO GHAFI", chombo, gdp_delta, gdp_change, gdp_trend, gdp_trend_n, x, y, wk, 92);
+    sura_kadi_sparkline(ui("GDP"), chombo, gdp_delta, gdp_change, gdp_trend, gdp_trend_n, x, y, wk, 92);
     kama (gdp_trend != 0) { achilia gdp_trend; }
     n64 tija = tn->pato_kwa_kila_mtu;
     sura_namba(chombo, tija);
-    sura_kadi(x + wk + pengo, y, wk, "PATO KWA KILA MTU", chombo, 0);
+    sura_kadi(x + wk + pengo, y, wk, ui("GDP PER CAPITA"), chombo, 0);
     d64 ukosefu = tn->uchumi.ukosefu_wa_kazi * 10000.0;
     n64 ukosefu_n = ukosefu;
     sura_asilimia(chombo, ukosefu_n, 0);
-    sura_kadi(x + 2 * (wk + pengo), y, wk, "UKOSEFU WA KAZI", chombo, 0);
+    sura_kadi(x + 2 * (wk + pengo), y, wk, ui("UNEMPLOYMENT"), chombo, 0);
     d64 kodi = tn->uchumi.mapato_ya_kodi * 1000000.0;
     n64 kodi_n = kodi;
     sura_namba_fupi(chombo, kodi_n);
-    sura_kadi(x + 3 * (wk + pengo), y, wk, "MAPATO YA KODI", chombo, 0);
+    sura_kadi(x + 3 * (wk + pengo), y, wk, ui("TAX REVENUE"), chombo, 0);
     y = y + 92 + pengo;
 
     // historia (kushoto) na uzalishaji (kulia)
     n64 w_kushoto = (w * 3) / 5;
     n64 w_kulia = w - w_kushoto - pengo;
     n64 kimo_cha_safu = 300;
-    sura_paneli(x, y, w_kushoto, kimo_cha_safu, "PATO GHAFI -- HISTORIA");
+    sura_paneli(x, y, w_kushoto, kimo_cha_safu, ui("GDP -- HISTORY"));
     n64 controls_x = skrini_uchumi_muda_x(x, w_kushoto);
     n64 controls_y = y + 8;
     sura_segmenti("12T", controls_x, controls_y, 44, skrini_uchumi_dirisha_la_historia == 12, 0);
@@ -180,7 +180,7 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_segmenti("240T", controls_x + 138, controls_y, 50, skrini_uchumi_dirisha_la_historia >= 240, 0);
     kama (h == 0 || h->idadi < 2) {
         sura_rangi(SURA_HAFIFU);
-        sura_lebo("Historia itaonekana baada ya zamu mbili.", x + 16, y + 140, 14);
+        sura_lebo(ui("History appears after two turns."), x + 16, y + 140, 14);
     } sivyo {
         n64 n = h->idadi;
         kama (n > skrini_uchumi_dirisha_la_historia) { n = skrini_uchumi_dirisha_la_historia; }
@@ -198,12 +198,12 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     }
 
     n64 xr = x + w_kushoto + pengo;
-    sura_paneli(xr, y, w_kulia, kimo_cha_safu, "UZALISHAJI DHIDI YA MATUMIZI");
+    sura_paneli(xr, y, w_kulia, kimo_cha_safu, ui("PRODUCTION VS CONSUMPTION"));
     n64 py = y + 52;
-    skrini_safu_ya_uwiano("Chakula", tn->uchumi.uzalishaji_wa_chakula, tn->uchumi.matumizi_ya_chakula, xr + 16, py, w_kulia - 32);
+    skrini_safu_ya_uwiano(ui("Food"), tn->uchumi.uzalishaji_wa_chakula, tn->uchumi.matumizi_ya_chakula, xr + 16, py, w_kulia - 32);
     py = py + 34;
     sura_rangi(SURA_HAFIFU);
-    sura_lebo("Nguvukazi", xr + 16, py, 13);
+    sura_lebo(ui("Labour force"), xr + 16, py, 13);
     d64 nk = tn->uchumi.nguvukazi;
     n64 nk_n = nk;
     sura_namba_fupi(chombo, nk_n);
@@ -211,7 +211,7 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_lebo_kulia(chombo, xr + w_kulia - 16, py, 13);
     py = py + 26;
     sura_rangi(SURA_HAFIFU);
-    sura_lebo("Mshahara wa wastani", xr + 16, py, 13);
+    sura_lebo(ui("Average wage"), xr + 16, py, 13);
     d64 msh = tn->uchumi.mshahara_wa_wastani;
     n64 msh_n = msh;
     sura_namba(chombo, msh_n);
@@ -219,7 +219,7 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_lebo_kulia(chombo, xr + w_kulia - 16, py, 13);
     py = py + 26;
     sura_rangi(SURA_HAFIFU);
-    sura_lebo("Nishati (GWh kwa mwaka)", xr + 16, py, 13);
+    sura_lebo(ui("Energy (GWh per year)"), xr + 16, py, 13);
     d64 nis = tn->uchumi.uzalishaji_wa_nishati;
     n64 nis_n = nis;
     sura_namba(chombo, nis_n);
@@ -227,7 +227,7 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_lebo_kulia(chombo, xr + w_kulia - 16, py, 13);
     py = py + 26;
     sura_rangi(SURA_HAFIFU);
-    sura_lebo("Pato la viwanda", xr + 16, py, 13);
+    sura_lebo(ui("Industrial output"), xr + 16, py, 13);
     d64 vw = tn->uchumi.uzalishaji_wa_viwanda * 1000000.0;
     n64 vw_n = vw;
     sura_namba_fupi(chombo, vw_n);
@@ -235,7 +235,7 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_lebo_kulia(chombo, xr + w_kulia - 16, py, 13);
     py = py + 26;
     sura_rangi(SURA_HAFIFU);
-    sura_lebo("Malighafi", xr + 16, py, 13);
+    sura_lebo(ui("Raw materials"), xr + 16, py, 13);
     d64 mg = tn->uchumi.malighafi * 1000000.0;
     n64 mg_n = mg;
     sura_namba_fupi(chombo, mg_n);
@@ -243,13 +243,13 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_lebo_kulia(chombo, xr + w_kulia - 16, py, 13);
     py = py + 26;
     sura_rangi(SURA_HAFIFU);
-    sura_lebo("Ardhi (vipande)", xr + 16, py, 13);
+    sura_lebo(ui("Land (tiles)"), xr + 16, py, 13);
     sura_namba(chombo, tn->uchumi.vipande_vya_ardhi);
     sura_rangi(SURA_MAANDISHI);
     sura_lebo_kulia(chombo, xr + w_kulia - 16, py, 13);
     py = py + 26;
     sura_rangi(SURA_HAFIFU);
-    sura_lebo("Ukuaji wa pato", xr + 16, py, 13);
+    sura_lebo(ui("GDP growth"), xr + 16, py, 13);
     d64 ukuaji = tn->uchumi.ukuaji_wa_pato * 1000.0;
     n64 ukuaji_n = ukuaji;
     sura_asilimia(chombo, ukuaji_n, 1);
@@ -257,7 +257,7 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_lebo_kulia(chombo, xr + w_kulia - 16, py, 13);
     py = py + 26;
     sura_rangi(SURA_HAFIFU);
-    sura_lebo("Mfumuko wa bei", xr + 16, py, 13);
+    sura_lebo(ui("Inflation"), xr + 16, py, 13);
     d64 inflation = tn->uchumi.mfumuko * 1000.0;
     n64 inflation_n = inflation;
     sura_asilimia(chombo, inflation_n, 0);
@@ -266,15 +266,15 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     y = y + kimo_cha_safu + pengo;
 
     // nafasi kati ya mataifa yote
-    sura_paneli(x, y, w, 120, "NAFASI KATI YA MATAIFA YOTE");
+    sura_paneli(x, y, w, 120, ui("RANK AMONG ALL NATIONS"));
     n64 wn = (w - 32) / 4;
     n64 k = 0;
     wakati (k < 4) {
         n64 xn = x + 16 + k * wn;
-        n8* jina = "Pato ghafi";
-        kama (k == 1) { jina = "Pato kwa kila mtu"; }
-        kama (k == 2) { jina = "Watu"; }
-        kama (k == 3) { jina = "Ardhi"; }
+        n8* jina = ui("row|GDP");
+        kama (k == 1) { jina = ui("GDP per capita"); }
+        kama (k == 2) { jina = ui("Population"); }
+        kama (k == 3) { jina = ui("Land"); }
         sura_rangi(SURA_HAFIFU);
         sura_lebo(jina, xn, y + 44, 13);
         n64 nafasi = skrini_nafasi_kwa_kipimo(tm, taifa, k);

@@ -19,7 +19,7 @@ w0 skrini_siasa_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 w = t->upana - x - 24;
     turubai_brashi(t, tn->rangi, 255);
     turubai_mviringo(t, x, y + 6, 24, 16, 4);
-    sura_kichwa_ukurasa(tn->jina, "SIASA YA DUNIA · DATA ZA TAIFA HAZIJAUNGANISHWA", x + 36, y - 5);
+    sura_kichwa_ukurasa(tn->jina, ui("WORLD POLITICS · NATIONAL DATA NOT YET LINKED"), x + 36, y - 5);
     y = y + 66;
 
     n8 value[48];
@@ -32,26 +32,26 @@ w0 skrini_siasa_chora(Mchezo* g, Turubai* t, n64 taifa) {
         stability = si->utulivu * 1000.0;
     }
     sura_asilimia(value, legitimacy, 0);
-    sura_kadi(x, y, card_w, "HALALI (DUNIA)", value, 0);
+    sura_kadi(x, y, card_w, ui("LEGITIMACY (WORLD)"), value, 0);
     sura_asilimia(value, stability, 0);
-    sura_kadi(x + card_w + gap, y, card_w, "UTULIVU (DUNIA)", value, 0);
+    sura_kadi(x + card_w + gap, y, card_w, ui("STABILITY (WORLD)"), value, 0);
     n8 count_text[24];
     n64 faction_count = 0;
     kama (vik != 0) { faction_count = vik->idadi; }
     sura_namba(count_text, faction_count);
-    sura_kadi(x + 2 * (card_w + gap), y, card_w, "VIKUNDI VYA SIASA", count_text, 0);
+    sura_kadi(x + 2 * (card_w + gap), y, card_w, ui("POLITICAL FACTIONS"), count_text, 0);
     sura_namba(count_text, g->zamu_ya_sasa);
-    sura_kadi(x + 3 * (card_w + gap), y, card_w, "ZAMU YA SASA", count_text, 0);
+    sura_kadi(x + 3 * (card_w + gap), y, card_w, ui("CURRENT TURN"), count_text, 0);
     y = y + 108;
 
     n64 left_w = (w - gap) * 3 / 5;
     n64 right_x = x + left_w + gap;
     n64 right_w = w - left_w - gap;
     n64 panel_h = t->kimo - y - 24;
-    sura_paneli(x, y, left_w, panel_h, "UWAKILISHI WA VIKUNDI");
-    sura_paneli(right_x, y, right_w, panel_h, "HALI YA UTAWALA");
+    sura_paneli(x, y, left_w, panel_h, ui("FACTION REPRESENTATION"));
+    sura_paneli(right_x, y, right_w, panel_h, ui("STATE OF GOVERNMENT"));
     kama (vik == 0 || vik->idadi == 0) {
-        sura_hali_tupu("Hakuna vikundi vilivyoundwa", "Mfumo wa kisiasa bado unasubiri vikundi vya mwanzo.", 0,
+        sura_hali_tupu(ui("No factions formed"), ui("The political system is waiting for its first factions."), 0,
                        x + 12, y + 56, left_w - 24, panel_h - 72);
     } sivyo {
         n64 row = 0;
@@ -68,24 +68,24 @@ w0 skrini_siasa_chora(Mchezo* g, Turubai* t, n64 taifa) {
             n8 percent[24];
             sura_asilimia(percent, support, 0);
             sura_lebo_kulia(percent, x + left_w - 20, ry + 4, 12);
-            sura_mita("Uungwaji mkono", 0, x + 26, ry + 24, left_w - 62, support, SURA_LAFUDHI);
+            sura_mita(ui("Support"), 0, x + 26, ry + 24, left_w - 62, support, SURA_LAFUDHI);
             row = row + 1;
         }
     }
     n8 percent2[24];
     sura_rangi(SURA_HAFIFU);
-    sura_lebo("Uhalali wa serikali", right_x + 18, y + 58, 12);
+    sura_lebo(ui("Government legitimacy"), right_x + 18, y + 58, 12);
     sura_asilimia(percent2, legitimacy, 0);
     sura_rangi(SURA_MAANDISHI);
     sura_lebo_kulia(percent2, right_x + right_w - 18, y + 58, 12);
     sura_mita(0, 0, right_x + 18, y + 82, right_w - 36, legitimacy, SURA_BAHARI);
     sura_rangi(SURA_HAFIFU);
-    sura_lebo("Utulivu wa kisiasa", right_x + 18, y + 118, 12);
+    sura_lebo(ui("Political stability"), right_x + 18, y + 118, 12);
     sura_asilimia(percent2, stability, 0);
     sura_rangi(SURA_MAANDISHI);
     sura_lebo_kulia(percent2, right_x + right_w - 18, y + 118, 12);
     sura_mita(0, 0, right_x + 18, y + 142, right_w - 36, stability, SURA_CHANYA);
     sura_kigawanyaji(right_x + 18, y + 174, right_w - 36, SURA_MPAKA, 255);
     sura_rangi(SURA_HAFIFU);
-    sura_lebo("Viashiria ni hali za simulizi; sera na kura bado hazijaunganishwa.", right_x + 18, y + 190, 11);
+    sura_lebo(ui("Indicators are simulation state; policy and votes are not yet linked."), right_x + 18, y + 190, 11);
 }

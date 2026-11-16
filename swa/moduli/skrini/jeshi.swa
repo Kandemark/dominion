@@ -16,7 +16,7 @@ w0 skrini_jeshi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 w = t->upana - x - 24;
     turubai_brashi(t, tn->rangi, 255);
     turubai_mviringo(t, x, y + 6, 24, 16, 4);
-    sura_kichwa_ukurasa(tn->jina, "VIKOSI VYA DUNIA · VITENGO BADO HAVIHUSISHWI NA TAIFA", x + 36, y - 5);
+    sura_kichwa_ukurasa(tn->jina, ui("WORLD FORCES · UNITS NOT YET ASSIGNED TO NATIONS"), x + 36, y - 5);
     y = y + 66;
     n64 total_units = 0;
     n64 total_strength = 0;
@@ -35,20 +35,20 @@ w0 skrini_jeshi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 gap = 16;
     n64 cw = (w - 3 * gap) / 4;
     sura_namba(value, total_units);
-    sura_kadi(x, y, cw, "VITENGO VYA DUNIA", value, 0);
+    sura_kadi(x, y, cw, ui("WORLD UNITS"), value, 0);
     sura_namba_fupi(value, total_strength);
-    sura_kadi(x + cw + gap, y, cw, "NGUVU YA VIKOSI", value, 0);
+    sura_kadi(x + cw + gap, y, cw, ui("FORCE STRENGTH"), value, 0);
     n64 morale = 0;
     kama (total_units > 0) { morale = morale_sum / total_units; }
     sura_asilimia(value, morale, 0);
-    sura_kadi(x + 2 * (cw + gap), y, cw, "MORALE WASTANI", value, 0);
+    sura_kadi(x + 2 * (cw + gap), y, cw, ui("AVERAGE MORALE"), value, 0);
     sura_namba(value, tn->kielezo_cha_kijeshi);
-    sura_kadi(x + 3 * (cw + gap), y, cw, "KIASHIRIA CHA JESHI", value, 0);
+    sura_kadi(x + 3 * (cw + gap), y, cw, ui("MILITARY INDEX"), value, 0);
     y = y + 108;
     n64 panel_h = t->kimo - y - 24;
-    sura_paneli(x, y, w, panel_h, "ORODHA YA VIKOSI");
+    sura_paneli(x, y, w, panel_h, ui("ORDER OF BATTLE"));
     kama (army == 0 || army->idadi == 0) {
-        sura_hali_tupu("Hakuna vitengo vya kijeshi", "Vikosi vitaonekana hapa baada ya kuundwa na simulizi.", 0,
+        sura_hali_tupu(ui("No military units"), ui("Forces appear here once the simulation raises them."), 0,
                        x + 16, y + 55, w - 32, panel_h - 70);
     } sivyo {
         n64 row = 0;
@@ -63,7 +63,7 @@ w0 skrini_jeshi_chora(Mchezo* g, Turubai* t, n64 taifa) {
             sura_rangi(SURA_HAFIFU);
             sura_lebo(stat, x + 330, ry + 5, 11);
             n64 morale_pct = u->morali * 1000.0;
-            sura_mita("Morale", 0, x + 460, ry + 15, w - 510, morale_pct, SURA_CHANYA);
+            sura_mita(ui("Morale"), 0, x + 460, ry + 15, w - 510, morale_pct, SURA_CHANYA);
             row = row + 1;
         }
     }

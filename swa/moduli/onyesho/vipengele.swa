@@ -1,5 +1,6 @@
 husisha { moduli/onyesho/sura.swa }
 husisha { moduli/onyesho/uhuishaji.swa }
+husisha { msingi/maktaba/hesabu.swa }
 
 // vipengele.swa -- maktaba ya vipengele vya kiwango cha juu vya Dominion.
 //
@@ -634,7 +635,7 @@ w0 sura_tafuta_compact(n8* thamani, n64 x, n64 y, n64 w, n64 focused) {
     turubai_mpaka(sura_t, x, y, w, 30, 7);
     sura_ikoni(x + 15, y + 15, 8, SURA_ICON_SEARCH, SURA_HAFIFU, 255);
     n8* text = thamani;
-    kama (text == 0 || text[0] == 0) { text = "Tafuta taifa"; }
+    kama (text == 0 || text[0] == 0) { text = ui("Search nations"); }
     sura_rangi(SURA_HAFIFU);
     sura_lebo(text, x + 29, y + 8, 11);
 }
@@ -790,3 +791,126 @@ n32 sura_fab_hit(n64 cx, n64 cy, n64 radius, n64 px, n64 py) {
     rudisha dx * dx + dy * dy <= radius * radius;
 }
 
+
+// ---------- maandishi yaliyotawanywa na bunge ----------
+
+// Urefu wa herufi moja ya UTF-8 inayoanzia baiti b.
+n64 sura_urefu_wa_herufi(n64 b) {
+    kama (b >= 240) { rudisha 4; }
+    kama (b >= 224) { rudisha 3; }
+    kama (b >= 192) { rudisha 2; }
+    rudisha 1;
+}
+
+// Upana wa maandishi yenye pengo la ziada kati ya herufi.
+n64 sura_upana_mapana(Fonti* f, n8* s, n64 px, n64 pengo) {
+    n8 h[8];
+    n64 w = 0;
+    n64 i = 0;
+    wakati (s[i] != 0) {
+        n64 n = sura_urefu_wa_herufi(s[i] & 255);
+        n64 k = 0;
+        wakati (k < n && s[i + k] != 0) { h[k] = s[i + k]; k = k + 1; }
+        h[k] = 0;
+        w = w + maandishi_upana(f, h, px);
+        i = i + k;
+        kama (s[i] != 0) { w = w + pengo; }
+    }
+    rudisha w;
+}
+
+// Maandishi yaliyotawanywa (herufi kwa herufi), kitovu chake kikiwa cx.
+// Rangi na uwazi ni vya brashi ya sasa.
+w0 sura_maandishi_mapana(Fonti* f, n8* s, n64 cx, n64 y, n64 px, n64 pengo) {
+    kama (sura_t == 0 || s == 0) { rudisha; }
+    n8 h[8];
+    n64 x = cx - sura_upana_mapana(f, s, px, pengo) / 2;
+    n64 i = 0;
+    wakati (s[i] != 0) {
+        n64 n = sura_urefu_wa_herufi(s[i] & 255);
+        n64 k = 0;
+        wakati (k < n && s[i + k] != 0) { h[k] = s[i + k]; k = k + 1; }
+        h[k] = 0;
+        maandishi_chora(sura_t, f, h, x, y, px);
+        x = x + maandishi_upana(f, h, px) + pengo;
+        i = i + k;
+    }
+}
+
+// Bunge: viti kwenye nusu-duara, kila nukta ni kiti kimoja. Viti hugawiwa
+// vyama kwa mpangilio wa pembe kutoka kushoto hadi kulia, hivyo kila chama
+// ni kabari moja na idadi ya nukta zake ni sawa kabisa na viti vyake.
+//   (cx, cy)  kitovu cha nusu-duara (cy ni mstari wa chini)
+//   r0, dr    nusu kipenyo cha safu ya ndani na pengo kati ya safu
+//   viti/rangi/uwazi  kwa kila chama (uwazi 0..255)
+w0 sura_bunge(n64 cx, n64 cy, n64 r0, n64 dr, n64 safu, n64 r_kiti256, n64* viti, n64* rangi, n64* uwazi, n64 vyama) {
+    kama (sura_t == 0 || safu <= 0 || vyama <= 0) { rudisha; }
+    n64 jumla = 0;
+    n64 c = 0;
+    wakati (c < vyama) { jumla = jumla + viti[c]; c = c + 1; }
+    kama (jumla <= 0) { rudisha; }
+    // viti kwa kila safu, kwa uwiano wa nusu kipenyo
+    n64 jumla_r = 0;
+    n64 i = 0;
+    wakati (i < safu) { jumla_r = jumla_r + r0 + i * dr; i = i + 1; }
+    n64* pembe = tenga(8 * jumla);       // sehemu ya pembe * 1,000,000
+    n64* px = tenga(8 * jumla);
+    n64* py = tenga(8 * jumla);
+    d64 pi = pi_hesabu();
+    n64 n = 0;
+    n64 zilizobaki = jumla;
+    i = 0;
+    wakati (i < safu) {
+        n64 r = r0 + i * dr;
+        n64 ni = (jumla * r + jumla_r / 2) / jumla_r;
+        kama (i == safu - 1 || ni > zilizobaki) { ni = zilizobaki; }
+        zilizobaki = zilizobaki - ni;
+        n64 k = 0;
+        wakati (k < ni) {
+            n64 sehemu = ((2 * k + 1) * 500000) / ni;
+            kama (ni > 1) { sehemu = (k * 1000000) / (ni - 1); }
+            d64 sd = sehemu;
+            d64 a = pi * (1.0 - sd / 1000000.0);
+            d64 rd = r * 256;
+            n64 dx = rd * cos_hesabu(a);
+            n64 dy = rd * sin_hesabu(a);
+            pembe[n] = sehemu * 16 + i;      // safu huvunja sare
+            px[n] = cx * 256 + dx;
+            py[n] = cy * 256 - dy;
+            n = n + 1;
+            k = k + 1;
+        }
+        i = i + 1;
+    }
+    // panga kwa pembe (kuingiza; viti ni mamia machache)
+    i = 1;
+    wakati (i < n) {
+        n64 kp = pembe[i];
+        n64 kx = px[i];
+        n64 ky = py[i];
+        n64 j = i - 1;
+        wakati (j >= 0 && pembe[j] > kp) {
+            pembe[j + 1] = pembe[j];
+            px[j + 1] = px[j];
+            py[j + 1] = py[j];
+            j = j - 1;
+        }
+        pembe[j + 1] = kp;
+        px[j + 1] = kx;
+        py[j + 1] = ky;
+        i = i + 1;
+    }
+    n64 chama = 0;
+    n64 ndani = 0;
+    i = 0;
+    wakati (i < n) {
+        wakati (chama < vyama - 1 && ndani >= viti[chama]) { chama = chama + 1; ndani = 0; }
+        turubai_brashi(sura_t, rangi[chama], uwazi[chama]);
+        turubai_duara256(sura_t, px[i], py[i], r_kiti256);
+        ndani = ndani + 1;
+        i = i + 1;
+    }
+    achilia pembe;
+    achilia px;
+    achilia py;
+}

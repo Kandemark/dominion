@@ -20,7 +20,7 @@ w0 skrini_utamaduni_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 w = t->upana - x - 24;
     turubai_brashi(t, tn->rangi, 255);
     turubai_mviringo(t, x, y + 6, 24, 16, 4);
-    sura_kichwa_ukurasa(tn->jina, "UTAMADUNI WA DUNIA · UTAMBULISHO, IMANI NA MAWAZO", x + 36, y - 5);
+    sura_kichwa_ukurasa(tn->jina, ui("WORLD CULTURE · IDENTITY, FAITH AND IDEAS"), x + 36, y - 5);
     y = y + 66;
     n64 gap = 16;
     n64 cw = (w - 3 * gap) / 4;
@@ -34,22 +34,22 @@ w0 skrini_utamaduni_chora(Mchezo* g, Turubai* t, n64 taifa) {
     kama (ideologies != 0) { ideology_count = ideologies->idadi; }
     kama (diffusion != 0) { diffusion_count = diffusion->idadi_ya_matukio; }
     sura_namba(value, culture_count);
-    sura_kadi(x, y, cw, "UTAMBULISHO", value, 0);
+    sura_kadi(x, y, cw, ui("IDENTITIES"), value, 0);
     sura_namba(value, faith_count);
-    sura_kadi(x + cw + gap, y, cw, "IMANI", value, 0);
+    sura_kadi(x + cw + gap, y, cw, ui("FAITHS"), value, 0);
     sura_namba(value, ideology_count);
-    sura_kadi(x + 2 * (cw + gap), y, cw, "MIKONDO YA MAWAZO", value, 0);
+    sura_kadi(x + 2 * (cw + gap), y, cw, ui("SCHOOLS OF THOUGHT"), value, 0);
     sura_namba(value, diffusion_count);
-    sura_kadi(x + 3 * (cw + gap), y, cw, "MATUKIO YA KUENEA", value, 0);
+    sura_kadi(x + 3 * (cw + gap), y, cw, ui("DIFFUSION EVENTS"), value, 0);
     y = y + 108;
     n64 left_w = (w - gap) / 2;
     n64 right_x = x + left_w + gap;
     n64 right_w = w - left_w - gap;
     n64 panel_h = t->kimo - y - 24;
-    sura_paneli(x, y, left_w, panel_h, "UTAMBULISHO WA JAMII");
-    sura_paneli(right_x, y, right_w, panel_h, "IMANI NA MIKONDO YA MAWAZO");
+    sura_paneli(x, y, left_w, panel_h, ui("SOCIAL IDENTITY"));
+    sura_paneli(right_x, y, right_w, panel_h, ui("FAITHS AND SCHOOLS OF THOUGHT"));
     kama (cultures == 0 || culture_count == 0) {
-        sura_hali_tupu("Hakuna utambulisho uliorekodiwa", "Mifumo ya utamaduni ipo tayari; data yake bado haijazalishwa.", 0,
+        sura_hali_tupu(ui("No identities recorded"), ui("Cultural systems are ready; their data has not been generated yet."), 0,
                        x + 12, y + 52, left_w - 24, panel_h - 64);
     } sivyo {
         n64 i = 0;
@@ -61,12 +61,12 @@ w0 skrini_utamaduni_chora(Mchezo* g, Turubai* t, n64 taifa) {
             sura_lebo(c->jina, x + 26, ry + 4, 13);
             n8 cohesion[24];
             sura_asilimia(cohesion, c->mshikamano * 1000.0, 0);
-            sura_mita("Mshikamano", cohesion, x + 26, ry + 24, left_w - 54, c->mshikamano * 1000.0, SURA_BAHARI);
+            sura_mita(ui("Cohesion"), cohesion, x + 26, ry + 24, left_w - 54, c->mshikamano * 1000.0, SURA_BAHARI);
             i = i + 1;
         }
     }
     kama ((faiths == 0 || faith_count == 0) && (ideologies == 0 || ideology_count == 0)) {
-        sura_hali_tupu("Bado hakuna imani au itikadi", "Imani, maadili na mitazamo itaonekana baada ya kuibuka.", 0,
+        sura_hali_tupu(ui("No faiths or ideologies yet"), ui("Faiths, values and outlooks appear once they emerge."), 0,
                        right_x + 12, y + 52, right_w - 24, panel_h - 64);
     } sivyo {
         n64 row = 0;
@@ -77,7 +77,7 @@ w0 skrini_utamaduni_chora(Mchezo* g, Turubai* t, n64 taifa) {
             sura_rangi(SURA_MAANDISHI);
             sura_lebo(d->jina, right_x + 26, ry + 5, 12);
             sura_rangi(SURA_HAFIFU);
-            sura_lebo("Imani", right_x + right_w - 85, ry + 5, 10);
+            sura_lebo(ui("Trust"), right_x + right_w - 85, ry + 5, 10);
             row = row + 1;
         }
         n64 base = y + 50 + row * 46;

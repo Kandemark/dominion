@@ -39,7 +39,7 @@ w0 skrini_upau_wa_juu(Mchezo* g, Turubai* t) {
     n8 chombo[64];
     n8 namba[32];
     sura_namba(namba, g->zamu_ya_sasa);
-    mfuatano_umbiza(chombo, 64, "Zamu %s", namba, 0, 0, 0, 0, 0);
+    mfuatano_umbiza(chombo, 64, ui("Turn %s"), namba, 0, 0, 0, 0, 0);
     sura_rangi(SURA_HAFIFU);
     sura_lebo_kulia(chombo, t->upana - 24, 19, 14);
 }
@@ -50,14 +50,16 @@ w0 skrini_urambazaji(Turubai* t, n64 hai) {
     turubai_brashi(t, SURA_MPAKA, 255);
     turubai_jaza(t, SKRINI_UPANA_WA_PEMBENI, SKRINI_UPAU_WA_JUU + 1, 1, t->kimo);
     n64 y = SKRINI_UPAU_WA_JUU + 20;
-    sura_urambazaji("Muhtasari", 12, y, SKRINI_UPANA_WA_PEMBENI - 24, hai == 0);
-    sura_urambazaji("Uchumi", 12, y + 40, SKRINI_UPANA_WA_PEMBENI - 24, hai == 1);
-    sura_urambazaji("Siasa", 12, y + 80, SKRINI_UPANA_WA_PEMBENI - 24, hai == 2);
-    sura_urambazaji("Jeshi", 12, y + 120, SKRINI_UPANA_WA_PEMBENI - 24, hai == 3);
-    sura_urambazaji("Diplomasia", 12, y + 160, SKRINI_UPANA_WA_PEMBENI - 24, hai == 4);
-    sura_urambazaji("Utamaduni", 12, y + 200, SKRINI_UPANA_WA_PEMBENI - 24, hai == 5);
-    sura_urambazaji("Teknolojia", 12, y + 240, SKRINI_UPANA_WA_PEMBENI - 24, hai == 6);
-    sura_urambazaji("Ramani", 12, y + 280, SKRINI_UPANA_WA_PEMBENI - 24, hai == 7);
+    sura_urambazaji(ui("Overview"), 12, y, SKRINI_UPANA_WA_PEMBENI - 24, hai == 0);
+    sura_urambazaji(ui("Economy"), 12, y + 40, SKRINI_UPANA_WA_PEMBENI - 24, hai == 1);
+    sura_urambazaji(ui("Politics"), 12, y + 80, SKRINI_UPANA_WA_PEMBENI - 24, hai == 2);
+    sura_urambazaji(ui("Military"), 12, y + 120, SKRINI_UPANA_WA_PEMBENI - 24, hai == 3);
+    sura_urambazaji(ui("Diplomacy"), 12, y + 160, SKRINI_UPANA_WA_PEMBENI - 24, hai == 4);
+    sura_urambazaji(ui("Culture"), 12, y + 200, SKRINI_UPANA_WA_PEMBENI - 24, hai == 5);
+    sura_urambazaji(ui("Technology"), 12, y + 240, SKRINI_UPANA_WA_PEMBENI - 24, hai == 6);
+    sura_urambazaji(ui("Map"), 12, y + 280, SKRINI_UPANA_WA_PEMBENI - 24, hai == 7);
+    // mipangilio hukaa chini kabisa, mbali na skrini za taifa
+    sura_urambazaji(ui("Settings"), 12, t->kimo - 54, SKRINI_UPANA_WA_PEMBENI - 24, hai == 8);
 }
 
 n64 SKRINI_SAFU_ZA_JEDWALI = 9;
@@ -167,9 +169,9 @@ w0 skrini_jedwali_la_mataifa(Mchezo* g, n64 x, n64 y, n64 w, n64 kikomo_cha_safu
     n64 ukurasa_wa_kwanza = skrini_muhtasari_ukurasa * kikomo_cha_safu;
     kama (ukurasa_wa_kwanza >= filtered_count) { skrini_muhtasari_ukurasa = 0; ukurasa_wa_kwanza = 0; }
     kama (filtered_count == 0) {
-        sura_paneli(x, y, w, 148, "MATAIFA");
+        sura_paneli(x, y, w, 148, ui("NATIONS"));
         sura_tafuta_compact(skrini_muhtasari_tafuta, x + 300, y + 8, 220, skrini_muhtasari_tafuta_fokasi);
-        sura_hali_tupu("Hakuna taifa linalolingana", "Jaribu jina lingine au futa utafutaji.", 0,
+        sura_hali_tupu(ui("No matching nation"), ui("Try another name or clear the search."), 0,
                        x + 20, y + 44, w - 40, 92);
         rudisha;
     }
@@ -181,13 +183,13 @@ w0 skrini_jedwali_la_mataifa(Mchezo* g, n64 x, n64 y, n64 w, n64 kikomo_cha_safu
     sura_namba(range_text, ukurasa_wa_kwanza + 1);
     n8 range_end[32];
     sura_namba(range_end, ukurasa_wa_kwanza + n);
-    mfuatano_umbiza(kichwa, 64, "MATAIFA %s-%s / %d", range_text, range_end, filtered_count, 0, 0, 0);
+    mfuatano_umbiza(kichwa, 64, ui("NATIONS %s-%s / %d"), range_text, range_end, filtered_count, 0, 0, 0);
     sura_paneli(x, y, w, 76 + n * kimo_cha_safu, kichwa);
     sura_tafuta_compact(skrini_muhtasari_tafuta, x + 300, y + 8, 220, skrini_muhtasari_tafuta_fokasi);
     n64 sort_x = x + w - 260;
-    sura_segmenti("PATO", sort_x, y + 7, 52, skrini_muhtasari_mpangilio == 0, 0);
-    sura_segmenti("WATU", sort_x + 54, y + 7, 52, skrini_muhtasari_mpangilio == 1, 0);
-    sura_segmenti("TEK", sort_x + 108, y + 7, 48, skrini_muhtasari_mpangilio == 2, 0);
+    sura_segmenti(ui("tab|GDP"), sort_x, y + 7, 52, skrini_muhtasari_mpangilio == 0, 0);
+    sura_segmenti(ui("POP"), sort_x + 54, y + 7, 52, skrini_muhtasari_mpangilio == 1, 0);
+    sura_segmenti(ui("TECH"), sort_x + 108, y + 7, 48, skrini_muhtasari_mpangilio == 2, 0);
     n8 page_label[16];
     sura_namba(page_label, skrini_muhtasari_ukurasa + 1);
     sura_rangi(SURA_HAFIFU);
@@ -234,14 +236,14 @@ w0 skrini_jedwali_la_mataifa(Mchezo* g, n64 x, n64 y, n64 w, n64 kikomo_cha_safu
     n64 x_viashiria = x + 840;
     n64 yk = y + 44;
     sura_kichwa_cha_safuwima("#", x + 20, yk, 0);
-    sura_kichwa_cha_safuwima("TAIFA", x_taifa, yk, 0);
-    sura_kichwa_cha_safuwima("WATU", x_watu, yk, 1);
-    sura_kichwa_cha_safuwima("PATO GHAFI", x_pato, yk, 1);
-    sura_kichwa_cha_safuwima("KWA KILA MTU", x_kila_mtu, yk, 1);
-    sura_kichwa_cha_safuwima("TEKNOLOJIA", x_viashiria, yk, 0);
-    sura_kichwa_cha_safuwima("UCHUMI", x_viashiria + 110, yk, 0);
-    sura_kichwa_cha_safuwima("JESHI", x_viashiria + 220, yk, 0);
-    sura_kichwa_cha_safuwima("UTAMADUNI", x_viashiria + 330, yk, 0);
+    sura_kichwa_cha_safuwima(ui("NATION"), x_taifa, yk, 0);
+    sura_kichwa_cha_safuwima(ui("POP"), x_watu, yk, 1);
+    sura_kichwa_cha_safuwima(ui("GDP"), x_pato, yk, 1);
+    sura_kichwa_cha_safuwima(ui("PER CAPITA"), x_kila_mtu, yk, 1);
+    sura_kichwa_cha_safuwima(ui("TECHNOLOGY"), x_viashiria, yk, 0);
+    sura_kichwa_cha_safuwima(ui("ECONOMY"), x_viashiria + 110, yk, 0);
+    sura_kichwa_cha_safuwima(ui("MILITARY"), x_viashiria + 220, yk, 0);
+    sura_kichwa_cha_safuwima(ui("CULTURE"), x_viashiria + 330, yk, 0);
 
     // nafasi ya taifa la mchezaji
     n64 nafasi_ya_mchezaji = 0;
@@ -291,11 +293,11 @@ w0 skrini_jedwali_la_mataifa(Mchezo* g, n64 x, n64 y, n64 w, n64 kikomo_cha_safu
 
 // Historia ya pato ghafi la dunia kama chati ya mstari.
 w0 skrini_historia_ya_pato(Mchezo* g, n64 x, n64 y, n64 w, n64 chart_h) {
-    sura_paneli(x, y, w, chart_h, "PATO GHAFI LA DUNIA -- HISTORIA");
+    sura_paneli(x, y, w, chart_h, ui("WORLD GDP -- HISTORY"));
     TakwimuHistoria* h = mchezo_pata_gdp_historia(g);
     kama (h == 0 || h->idadi < 2) {
         sura_rangi(SURA_HAFIFU);
-        sura_lebo("Historia itaonekana baada ya zamu mbili.", x + 16, y + chart_h / 2 - 8, 14);
+        sura_lebo(ui("History appears after two turns."), x + 16, y + chart_h / 2 - 8, 14);
         rudisha;
     }
     n64 n = h->idadi;
@@ -339,15 +341,15 @@ w0 skrini_muhtasari_chora(Mchezo* g, Turubai* t) {
     n64 wk = (w - 3 * pengo) / 4;
     n8 chombo[48];
     sura_namba(chombo, tm->idadi);
-    sura_kadi(x, y, wk, "MATAIFA", chombo, 0);
+    sura_kadi(x, y, wk, ui("NATIONS"), chombo, 0);
     sura_namba_fupi(chombo, watu);
-    sura_kadi(x + wk + pengo, y, wk, "IDADI YA WATU", chombo, 0);
+    sura_kadi(x + wk + pengo, y, wk, ui("POPULATION"), chombo, 0);
     sura_namba_fupi(chombo, pato);
-    sura_kadi(x + 2 * (wk + pengo), y, wk, "PATO GHAFI LA DUNIA", chombo, 0);
+    sura_kadi(x + 2 * (wk + pengo), y, wk, ui("WORLD GDP"), chombo, 0);
     n64 kila_mtu = 0;
     kama (watu > 0) { kila_mtu = pato / watu; }
     sura_namba(chombo, kila_mtu);
-    sura_kadi(x + 3 * (wk + pengo), y, wk, "PATO KWA KILA MTU", chombo, 0);
+    sura_kadi(x + 3 * (wk + pengo), y, wk, ui("GDP PER CAPITA"), chombo, 0);
 
     // Punguza safu na kimo cha chati kwenye dirisha fupi ili historia
     // ibaki ndani ya fremu; fremu pana huonyesha hadi nchi tisa.

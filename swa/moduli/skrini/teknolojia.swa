@@ -16,23 +16,23 @@ w0 skrini_teknolojia_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 w = t->upana - x - 24;
     turubai_brashi(t, tn->rangi, 255);
     turubai_mviringo(t, x, y + 6, 24, 16, 4);
-    sura_kichwa_ukurasa(tn->jina, "UTAFITI WA TEKNOLOJIA WA DUNIA", x + 36, y - 5);
+    sura_kichwa_ukurasa(tn->jina, ui("WORLD TECHNOLOGY RESEARCH"), x + 36, y - 5);
     y = y + 66;
     n64 gap = 16;
     n64 cw = (w - 3 * gap) / 4;
     n8 value[40];
     sura_namba(value, tech->kiwango_jumla);
-    sura_kadi(x, y, cw, "KIWANGO CHA JUMLA", value, 0);
+    sura_kadi(x, y, cw, ui("TOTAL LEVEL"), value, 0);
     sura_namba(value, tech->cheo_jumla);
-    sura_kadi(x + cw + gap, y, cw, "CHEO CHA MUDA", value, 0);
+    sura_kadi(x + cw + gap, y, cw, ui("PROVISIONAL RANK"), value, 0);
     n64 budget = tech->bajeti_jumla * 1000.0;
     sura_namba_fupi(value, budget);
-    sura_kadi(x + 2 * (cw + gap), y, cw, "BAJETI YA UTAFITI", value, 0);
+    sura_kadi(x + 2 * (cw + gap), y, cw, ui("RESEARCH BUDGET"), value, 0);
     sura_namba(value, TEKNOLOJIA_IDADI_YA_NYANJA);
-    sura_kadi(x + 3 * (cw + gap), y, cw, "NYANJA ZA UTAFITI", value, 0);
+    sura_kadi(x + 3 * (cw + gap), y, cw, ui("RESEARCH FIELDS"), value, 0);
     y = y + 108;
     n64 panel_h = t->kimo - y - 24;
-    sura_paneli(x, y, w, panel_h, "RAMANI YA UTAFITI · NAFASI ZA DUNIA NI ZA MUDA");
+    sura_paneli(x, y, w, panel_h, ui("RESEARCH MAP · WORLD RANKS ARE PROVISIONAL"));
     n64 col_w = (w - 40) / 2;
     n64 i = 0;
     wakati (i < TEKNOLOJIA_IDADI_YA_NYANJA) {
@@ -56,7 +56,7 @@ w0 skrini_teknolojia_chora(Mchezo* g, Turubai* t, n64 taifa) {
         sura_namba(lv, level);
         sura_namba(rk, rank);
         sura_namba(avg, mean);
-        mfuatano_umbiza(detail, 40, "Kiwango %s  |  Nafasi %s / %s", lv, rk, avg, 0, 0, 0);
+        mfuatano_umbiza(detail, 40, ui("Level %s  |  Rank %s / %s"), lv, rk, avg, 0, 0, 0);
         sura_rangi(SURA_HAFIFU);
         sura_lebo(detail, rx + 12, ry + 25, 10);
         sura_pau(rx + col_w - 100, ry + 18, 78, 5, progress, SURA_BAHARI);

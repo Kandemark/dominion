@@ -115,57 +115,57 @@ w0 skrini_ramani_paneli(Mchezo* g, Turubai* t, n64 taifa) {
     n8 chombo[64];
     n8 namba[32];
     sura_rangi(SURA_HAFIFU);
-    mfuatano_umbiza(chombo, 64, "Mji mkuu: %s", mj->jina[taifa], 0, 0, 0, 0, 0);
+    mfuatano_umbiza(chombo, 64, ui("Capital: %s"), mj->jina[taifa], 0, 0, 0, 0, 0);
     sura_lebo(chombo, px, py, 13);
     py = py + 36;
 
     sura_namba_fupi(namba, tn->idadi_ya_watu);
-    skrini_safu_ya_taarifa("Watu", namba, px, py, pw);
+    skrini_safu_ya_taarifa(ui("Population"), namba, px, py, pw);
     py = py + 26;
     sura_namba_fupi(namba, skrini_pato_la_taifa(tn));
-    skrini_safu_ya_taarifa("Pato ghafi", namba, px, py, pw);
+    skrini_safu_ya_taarifa(ui("row|GDP"), namba, px, py, pw);
     py = py + 26;
     n8 nafasi[32];
     sura_namba(namba, skrini_nafasi_ya_taifa(tm, taifa));
     n8 jumla[16];
     sura_namba(jumla, tm->idadi);
     mfuatano_umbiza(nafasi, 32, "%s / %s", namba, jumla, 0, 0, 0, 0);
-    skrini_safu_ya_taarifa("Nafasi kwa pato", nafasi, px, py, pw);
+    skrini_safu_ya_taarifa(ui("GDP rank"), nafasi, px, py, pw);
     py = py + 26;
     // kipande 1 = shahada 1 x 1 ~ km 111 x 111 (bila kurekebisha latitudo)
     n64 eneo_km2 = tn->uchumi.vipande_vya_ardhi * 12321;
     sura_namba(namba, eneo_km2);
     mfuatano_umbiza(chombo, 64, "%s km2", namba, 0, 0, 0, 0, 0);
-    skrini_safu_ya_taarifa("Eneo", chombo, px, py, pw);
+    skrini_safu_ya_taarifa(ui("Area"), chombo, px, py, pw);
     py = py + 26;
     sura_namba(namba, tn->idadi_ya_mgawanyo);
-    skrini_safu_ya_taarifa("Mikoa", namba, px, py, pw);
+    skrini_safu_ya_taarifa(ui("Provinces"), namba, px, py, pw);
     py = py + 26;
     n64 lugha = mj->lugha_ya_taifa[taifa];
     mfuatano_umbiza(chombo, 64, "%s (%s)", lugha_jina(lugha), lugha_familia_jina(lugha_familia(lugha)), 0, 0, 0, 0);
-    skrini_safu_ya_taarifa("Lugha", chombo, px, py, pw);
+    skrini_safu_ya_taarifa(ui("Language"), chombo, px, py, pw);
     py = py + 40;
 
-    sura_kichwa_cha_safuwima("VIASHIRIA", px, py, 0);
+    sura_kichwa_cha_safuwima(ui("INDICATORS"), px, py, 0);
     py = py + 24;
     sura_rangi(SURA_HAFIFU);
-    sura_lebo("Teknolojia", px, py, 13);
+    sura_lebo(ui("Technology"), px, py, 13);
     sura_pau(px + 110, py + 5, pw - 110, 8, (tn->kielezo_cha_teknolojia * 1000) / 500, SURA_BAHARI);
     py = py + 24;
     sura_rangi(SURA_HAFIFU);
-    sura_lebo("Uchumi", px, py, 13);
+    sura_lebo(ui("Economy"), px, py, 13);
     sura_pau(px + 110, py + 5, pw - 110, 8, (tn->kielezo_cha_uchumi * 1000) / 500, SURA_CHANYA);
     py = py + 24;
     sura_rangi(SURA_HAFIFU);
-    sura_lebo("Jeshi", px, py, 13);
+    sura_lebo(ui("Military"), px, py, 13);
     sura_pau(px + 110, py + 5, pw - 110, 8, (tn->kielezo_cha_kijeshi * 1000) / 500, SURA_HASI);
     py = py + 24;
     sura_rangi(SURA_HAFIFU);
-    sura_lebo("Utamaduni", px, py, 13);
+    sura_lebo(ui("Culture"), px, py, 13);
     sura_pau(px + 110, py + 5, pw - 110, 8, (tn->kielezo_cha_utamaduni * 1000) / 500, SURA_LAFUDHI);
     py = py + 40;
 
-    sura_kichwa_cha_safuwima("MIJI MIKUBWA", px, py, 0);
+    sura_kichwa_cha_safuwima(ui("LARGEST CITIES"), px, py, 0);
     py = py + 24;
     n64 daraja = 3;
     n64 imeonyeshwa = 0;
@@ -179,8 +179,8 @@ w0 skrini_ramani_paneli(Mchezo* g, Turubai* t, n64 taifa) {
                 kama (daraja >= 2) { sura_lebo_kati(mj->jina[i], px + 20, py, 13); }
                 sivyo { sura_lebo(mj->jina[i], px + 20, py, 13); }
                 sura_rangi(SURA_HAFIFU);
-                kama (daraja == 3) { sura_lebo_kulia("mji mkuu", px + pw, py, 12); }
-                sivyo { kama (mj->bandari[i]) { sura_lebo_kulia("bandari", px + pw, py, 12); } }
+                kama (daraja == 3) { sura_lebo_kulia(ui("capital"), px + pw, py, 12); }
+                sivyo { kama (mj->bandari[i]) { sura_lebo_kulia(ui("port"), px + pw, py, 12); } }
                 py = py + 22;
                 imeonyeshwa = imeonyeshwa + 1;
             }
@@ -225,7 +225,7 @@ w0 skrini_dunia_paneli(Turubai* t, DuniaHalisi* d, n64 taifa) {
     turubai_jaza(t, x, y, 1, t->kimo - y);
     kama (taifa < 0 || taifa >= d->mataifa) {
         sura_rangi(SURA_HAFIFU);
-        sura_lebo("Click a nation on the map", x + 24, y + 24, 13);
+        sura_lebo(ui("Click a nation on the map"), x + 24, y + 24, 13);
         rudisha;
     }
     n8* p = d->data;
@@ -248,7 +248,7 @@ w0 skrini_dunia_paneli(Turubai* t, DuniaHalisi* d, n64 taifa) {
     py = py + 20;
     n8 chombo[96];
     n8 namba[32];
-    mfuatano_umbiza(chombo, 96, "Capital: %s", dh_jina(p, d->mji_jina[taifa]), 0, 0, 0, 0, 0);
+    mfuatano_umbiza(chombo, 96, ui("Capital: %s"), dh_jina(p, d->mji_jina[taifa]), 0, 0, 0, 0, 0);
     sura_lebo(chombo, px, py, 13);
     py = py + 34;
     // takwimu kutoka makazi yake
@@ -268,26 +268,26 @@ w0 skrini_dunia_paneli(Turubai* t, DuniaHalisi* d, n64 taifa) {
         i = i + 1;
     }
     sura_namba_fupi(namba, watu);
-    skrini_safu_ya_taarifa("Population", namba, px, py, pw);
+    skrini_safu_ya_taarifa(ui("Population"), namba, px, py, pw);
     py = py + 26;
     // pikseli 1 ya dunia ~ km 9.77 x 9.77 (wastani bila latitudo)
     sura_namba(namba, skrini_dunia_eneo[taifa] * 95);
     mfuatano_umbiza(chombo, 96, "%s km2", namba, 0, 0, 0, 0, 0);
-    skrini_safu_ya_taarifa("Area", chombo, px, py, pw);
+    skrini_safu_ya_taarifa(ui("Area"), chombo, px, py, pw);
     py = py + 26;
     sura_namba(namba, idadi[0] + idadi[1]);
-    skrini_safu_ya_taarifa("Cities", namba, px, py, pw);
+    skrini_safu_ya_taarifa(ui("Cities"), namba, px, py, pw);
     py = py + 26;
     sura_namba(namba, idadi[2]);
-    skrini_safu_ya_taarifa("Towns", namba, px, py, pw);
+    skrini_safu_ya_taarifa(ui("Towns"), namba, px, py, pw);
     py = py + 26;
     sura_namba(namba, idadi[3]);
-    skrini_safu_ya_taarifa("Villages", namba, px, py, pw);
+    skrini_safu_ya_taarifa(ui("Villages"), namba, px, py, pw);
     py = py + 26;
     sura_namba(namba, bandari);
-    skrini_safu_ya_taarifa("Ports", namba, px, py, pw);
+    skrini_safu_ya_taarifa(ui("Ports"), namba, px, py, pw);
     py = py + 40;
-    sura_kichwa_cha_safuwima("LARGEST CITIES", px, py, 0);
+    sura_kichwa_cha_safuwima(ui("LARGEST CITIES"), px, py, 0);
     py = py + 24;
     // miji 8 mikubwa zaidi: chagua mara 8 kubwa zaidi kuliko iliyotangulia
     n64 moja = 1;                 // halisi 1 ni n32: (1 << 40) ingekuwa 256 (swa#399)
