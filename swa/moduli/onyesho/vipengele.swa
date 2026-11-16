@@ -757,8 +757,8 @@ w0 sura_sankey_nodi(n8* lebo, n8* thamani, n64 x, n64 y, n64 w, n64 h, n64 rangi
     turubai_brashi(sura_t, rangi, alpha);
     turubai_mpaka(sura_t, x, y, w, h, 7);
     sura_rangi(SURA_MAANDISHI);
-    sura_lebo(lebo, x + 10, y + 8, 12);
-    kama (thamani != 0) { sura_rangi(SURA_HAFIFU); sura_lebo_kulia(thamani, x + w - 10, y + 8, 11); }
+    sura_lebo(lebo, x + 10, y + (h - 16) / 2, 12);
+    kama (thamani != 0) { sura_rangi(SURA_HAFIFU); sura_lebo_kulia(thamani, x + w - 10, y + (h - 15) / 2, 11); }
 }
 
 // ---------- modal ya uthibitisho na menu ya vitufe vinavyoelea ----------

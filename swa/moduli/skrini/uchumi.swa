@@ -97,12 +97,12 @@ w0 skrini_uchumi_bajeti(Mchezo* g, Turubai* t, n64 x, n64 y, n64 w) {
         n64 amount_n = amount;
         n8 amount_text[24];
         sura_namba_fupi(amount_text, amount_n);
-        n64 row_y = fy + 35 + sector * 17;
+        n64 row_y = fy + 30 + sector * 19;
         n64 thickness = 2;
         kama (total > 0.0) { thickness = 2 + (amount * 80.0) / total; }
         kama (thickness > 10) { thickness = 10; }
-        sura_sankey_mtiririko(source_x + 124, source_y, sink_x, row_y + 10, thickness, color, 150);
-        sura_sankey_nodi(name, amount_text, sink_x, row_y, 154, 19, color, 255);
+        sura_sankey_mtiririko(source_x + 124, source_y, sink_x, row_y + 8, thickness, color, 150);
+        sura_sankey_nodi(name, amount_text, sink_x, row_y, 154, 16, color, 255);
         sector = sector + 1;
     }
 }

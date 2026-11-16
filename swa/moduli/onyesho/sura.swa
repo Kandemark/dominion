@@ -134,13 +134,12 @@ w0 sura_rangi(n64 rangi) {
 
 // ---------- vyombo ----------
 
-// Paneli: uso ulioinuka wenye pembe za mviringo na mpaka hafifu. Kichwa
-// (kama kipo) ni herufi ndogo zilizotawanywa juu-kushoto.
+// Paneli: uso ulioinuka kwa toni pekee, bila mpaka -- nafasi na toni
+// hutenganisha sehemu, si mistari. Kichwa (kama kipo) ni herufi ndogo
+// juu-kushoto.
 w0 sura_paneli(n64 x, n64 y, n64 w, n64 h, n8* kichwa) {
     turubai_brashi(sura_t, SURA_PANELI, 255);
-    turubai_mviringo(sura_t, x, y, w, h, 10);
-    turubai_brashi(sura_t, SURA_MPAKA, 255);
-    turubai_mpaka(sura_t, x, y, w, h, 10);
+    turubai_mviringo(sura_t, x, y, w, h, 8);
     kama (kichwa != 0) {
         turubai_brashi(sura_t, SURA_HAFIFU, 255);
         maandishi_chora(sura_t, sura_kati, kichwa, x + 16, y + 12, 12);
