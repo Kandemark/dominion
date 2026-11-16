@@ -19,7 +19,12 @@ n64 skrini_pato_la_taifa(TaifaNchi* t) {
     rudisha v;
 }
 
+// Skrini inapochorwa ndani ya dirisha linaloelea, fremu ya mchezo (upau wa
+// juu na urambazaji) haichorwi: dirisha lina kichwa chake.
+n64 skrini_bila_fremu = 0;
+
 w0 skrini_upau_wa_juu(Mchezo* g, Turubai* t) {
+    kama (skrini_bila_fremu) { rudisha; }
     turubai_brashi(t, SURA_PANELI, 255);
     turubai_jaza(t, 0, 0, t->upana, SKRINI_UPAU_WA_JUU);
     turubai_brashi(t, SURA_MPAKA, 255);
@@ -45,6 +50,7 @@ w0 skrini_upau_wa_juu(Mchezo* g, Turubai* t) {
 }
 
 w0 skrini_urambazaji(Turubai* t, n64 hai) {
+    kama (skrini_bila_fremu) { rudisha; }
     turubai_brashi(t, SURA_PANELI, 255);
     turubai_jaza(t, 0, SKRINI_UPAU_WA_JUU + 1, SKRINI_UPANA_WA_PEMBENI, t->kimo);
     turubai_brashi(t, SURA_MPAKA, 255);
