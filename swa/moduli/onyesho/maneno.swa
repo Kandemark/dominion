@@ -199,6 +199,11 @@ w0 maneno_jaza() {
     maneno_sajili("Swearing in the cabinet", "Kuapisha baraza la mawaziri", "Prestation de serment du cabinet");
     maneno_sajili("Press any key to take office", "Bonyeza kitufe chochote kuingia ofisini", "Appuyez sur une touche pour entrer en fonction");
     maneno_sajili("FAITHS", "IMANI", "FOIS");
+    maneno_sajili("Hemicycle", "Nusu-duara", "Hémicycle");
+    maneno_sajili("Horseshoe", "Kiatu cha farasi", "Fer à cheval");
+    maneno_sajili("In the round", "Duara", "En cercle");
+    maneno_sajili("Opposing benches", "Pande zinazotazamana", "Bancs opposés");
+    maneno_sajili("Classroom", "Darasa", "Salle de classe");
 }
 
 // Jina la lugha kwa lugha yenyewe (halitafsiriwi).

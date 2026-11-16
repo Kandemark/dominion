@@ -1,0 +1,252 @@
+husisha { moduli/onyesho/vipengele.swa }
+
+// bunge.swa -- michoro ya mabunge: kila nukta ni kiti kimoja, kila chama ni
+// kundi moja la nukta zenye rangi yake, na idadi ya nukta ni sawa kabisa na
+// viti vya chama.
+//
+// Mabunge ya dunia hayakai kwa namna moja. Miundo mitano:
+//   nusu-duara    viti vinazunguka mimbari kwa tao la 180 (mabunge mengi ya bara)
+//   kiatu         tao la 270, wazi upande wa spika (kiatu cha farasi)
+//   duara         duara kamili, hakuna upande wa mbele (baraza la makubaliano)
+//   Westminster   pande mbili zinazotazamana: serikali na upinzani, njia katikati
+//   darasa        safu zilizonyooka zinazotazama mbele (kumbi za kusikiliza)
+//
+// Vyama hupewa viti kwa mpangilio uliotolewa: kwenye matao kutoka kushoto
+// hadi kulia, kwenye Westminster serikali kwanza upande wa kushoto.
+
+n64 BUNGE_NUSU_DUARA = 0;
+n64 BUNGE_KIATU = 1;
+n64 BUNGE_DUARA = 2;
+n64 BUNGE_WESTMINSTER = 3;
+n64 BUNGE_DARASA = 4;
+n64 BUNGE_AINA_IDADI = 5;
+
+n64 bunge_viti_vilivyochorwa = 0;        // jumla ya nukta za mchoro wa mwisho
+
+n8* bunge_aina_jina(n64 aina) {
+    kama (aina == BUNGE_KIATU) { rudisha ui("Horseshoe"); }
+    kama (aina == BUNGE_DUARA) { rudisha ui("In the round"); }
+    kama (aina == BUNGE_WESTMINSTER) { rudisha ui("Opposing benches"); }
+    kama (aina == BUNGE_DARASA) { rudisha ui("Classroom"); }
+    rudisha ui("Hemicycle");
+}
+
+// Chora viti n vilivyopangwa tayari, ukivigawa kwa vyama kwa mfuatano.
+w0 bunge_gawa(n64* px, n64* py, n64 n, n64 r256, n64* viti, n64* rangi, n64* uwazi, n64 vyama) {
+    n64 chama = 0;
+    n64 ndani = 0;
+    n64 i = 0;
+    wakati (i < n) {
+        wakati (chama < vyama - 1 && ndani >= viti[chama]) { chama = chama + 1; ndani = 0; }
+        turubai_brashi(sura_t, rangi[chama], uwazi[chama]);
+        turubai_duara256(sura_t, px[i], py[i], r256);
+        ndani = ndani + 1;
+        i = i + 1;
+    }
+    bunge_viti_vilivyochorwa = n;
+}
+
+n64 bunge_jumla(n64* viti, n64 vyama) {
+    n64 jumla = 0;
+    n64 c = 0;
+    wakati (c < vyama) { jumla = jumla + viti[c]; c = c + 1; }
+    rudisha jumla;
+}
+
+// Bunge la tao: safu za viti kwenye tao la `upeo` digrii (180, 270 au 360)
+// kuzunguka (cx, cy). Viti hupangwa kwa pembe, hivyo kila chama ni kabari.
+w0 sura_bunge_tao(n64 cx, n64 cy, n64 r0, n64 dr, n64 safu, n64 r_kiti256, n64 upeo, n64* viti, n64* rangi, n64* uwazi, n64 vyama) {
+    kama (sura_t == 0 || safu <= 0 || vyama <= 0) { rudisha; }
+    n64 jumla = bunge_jumla(viti, vyama);
+    kama (jumla <= 0) { rudisha; }
+    n64 jumla_r = 0;
+    n64 i = 0;
+    wakati (i < safu) { jumla_r = jumla_r + r0 + i * dr; i = i + 1; }
+    n64* pembe = tenga(8 * jumla);
+    n64* px = tenga(8 * jumla);
+    n64* py = tenga(8 * jumla);
+    d64 pi = pi_hesabu();
+    d64 upeo_d = upeo;
+    d64 tao = pi * upeo_d / 180.0;
+    d64 mwanzo = pi / 2.0 + tao / 2.0;
+    n64 n = 0;
+    n64 zilizobaki = jumla;
+    i = 0;
+    wakati (i < safu) {
+        n64 r = r0 + i * dr;
+        n64 ni = (jumla * r + jumla_r / 2) / jumla_r;
+        kama (i == safu - 1 || ni > zilizobaki) { ni = zilizobaki; }
+        zilizobaki = zilizobaki - ni;
+        n64 k = 0;
+        wakati (k < ni) {
+            // sehemu ya tao 0..1,000,000; duara kamili halirudii nukta ya mwisho
+            n64 sehemu = ((2 * k + 1) * 500000) / ni;
+            kama (upeo < 360 && ni > 1) { sehemu = (k * 1000000) / (ni - 1); }
+            d64 sd = sehemu;
+            d64 a = mwanzo - tao * sd / 1000000.0;
+            d64 rd = r * 256;
+            n64 dx = rd * cos_hesabu(a);
+            n64 dy = rd * sin_hesabu(a);
+            pembe[n] = sehemu * 16 + i;
+            px[n] = cx * 256 + dx;
+            py[n] = cy * 256 - dy;
+            n = n + 1;
+            k = k + 1;
+        }
+        i = i + 1;
+    }
+    i = 1;
+    wakati (i < n) {
+        n64 kp = pembe[i];
+        n64 kx = px[i];
+        n64 ky = py[i];
+        n64 j = i - 1;
+        wakati (j >= 0 && pembe[j] > kp) {
+            pembe[j + 1] = pembe[j];
+            px[j + 1] = px[j];
+            py[j + 1] = py[j];
+            j = j - 1;
+        }
+        pembe[j + 1] = kp;
+        px[j + 1] = kx;
+        py[j + 1] = ky;
+        i = i + 1;
+    }
+    bunge_gawa(px, py, n, r_kiti256, viti, rangi, uwazi, vyama);
+    achilia pembe;
+    achilia px;
+    achilia py;
+}
+
+// Nusu-duara yenye vipimo vya wazi (skrini ya kupakia huitumia).
+w0 sura_bunge(n64 cx, n64 cy, n64 r0, n64 dr, n64 safu, n64 r_kiti256, n64* viti, n64* rangi, n64* uwazi, n64 vyama) {
+    sura_bunge_tao(cx, cy, r0, dr, safu, r_kiti256, 180, viti, rangi, uwazi, vyama);
+}
+
+// Tao lililotoshelezwa ndani ya sanduku (x, y, w, h).
+w0 bunge_tao_ndani(n64 upeo, n64 x, n64 y, n64 w, n64 h, n64 safu, n64* viti, n64* rangi, n64* uwazi, n64 vyama) {
+    n64 jumla = bunge_jumla(viti, vyama);
+    kama (jumla <= 0 || safu <= 0) { rudisha; }
+    n64 r_nje = w / 2;
+    n64 cy = y + h;
+    n64 ndani_kwa_mia = 40;
+    kama (upeo == 180) {
+        kama (r_nje > h) { r_nje = h; }
+        r_nje = r_nje - 10;
+        cy = y + h - 10;
+    }
+    kama (upeo == 270) {
+        n64 kwa_kimo = (h * 1000) / 1707;
+        kama (r_nje > kwa_kimo) { r_nje = kwa_kimo; }
+        r_nje = r_nje - 10;
+        cy = y + r_nje + 10;
+        ndani_kwa_mia = 50;
+    }
+    kama (upeo == 360) {
+        kama (r_nje > h / 2) { r_nje = h / 2; }
+        r_nje = r_nje - 10;
+        cy = y + h / 2;
+        ndani_kwa_mia = 50;
+    }
+    n64 r0 = (r_nje * ndani_kwa_mia) / 100;
+    n64 dr = 0;
+    kama (safu > 1) { dr = (r_nje - r0) / (safu - 1); }
+    // nusu kipenyo cha kiti: kisizidi pengo la safu wala pengo la tao
+    n64 jumla_r = safu * r0 + (dr * safu * (safu - 1)) / 2;
+    n64 pengo256 = (upeo * 4468 * jumla_r) / (jumla * 1000);      // (pi/180)*256 = 4.468
+    n64 r256 = (dr * 256 * 38) / 100;
+    kama (safu == 1 || r256 > (pengo256 * 42) / 100) { r256 = (pengo256 * 42) / 100; }
+    kama (r256 < 256) { r256 = 256; }
+    sura_bunge_tao(x + w / 2, cy, r0, dr, safu, r256, upeo, viti, rangi, uwazi, vyama);
+}
+
+// Idadi ya safu inayofanya gridi ya viti n ifanane na umbo la sanduku w x h.
+n64 bunge_safu_za_gridi(n64 n, n64 w, n64 h) {
+    kama (w <= 0 || h <= 0 || n <= 0) { rudisha 1; }
+    n64 safu = turubai_kipeuo((n * h) / w);
+    kama (safu < 1) { safu = 1; }
+    kama (safu > n) { safu = n; }
+    rudisha safu;
+}
+
+// Darasa: safu zilizonyooka zinazotazama mbele, vyama kama kanda wima
+// kutoka kushoto. Idadi ya safu hufuata umbo la sanduku.
+w0 bunge_darasa(n64 x, n64 y, n64 w, n64 h, n64* viti, n64* rangi, n64* uwazi, n64 vyama) {
+    n64 jumla = bunge_jumla(viti, vyama);
+    kama (jumla <= 0) { rudisha; }
+    n64 juu = 22;                                   // nafasi ya mimbari
+    n64 safu = bunge_safu_za_gridi(jumla, w, h - juu);
+    n64 nguzo = (jumla + safu - 1) / safu;
+    n64 hatua = (w * 256) / nguzo;
+    kama (hatua > ((h - juu) * 256) / safu) { hatua = ((h - juu) * 256) / safu; }
+    kama (hatua > 30 * 256) { hatua = 30 * 256; }
+    n64 x0 = x * 256 + (w * 256 - nguzo * hatua) / 2;
+    n64 y0 = y * 256 + juu * 256 + ((h - juu) * 256 - safu * hatua) / 2;
+    n64* px = tenga(8 * jumla);
+    n64* py = tenga(8 * jumla);
+    n64 s = 0;
+    wakati (s < jumla) {
+        px[s] = x0 + (s / safu) * hatua + hatua / 2;
+        py[s] = y0 + (s % safu) * hatua + hatua / 2;
+        s = s + 1;
+    }
+    turubai_brashi(sura_t, 16777215, 46);
+    turubai_mviringo(sura_t, x + w / 2 - 24, y0 / 256 - 18, 48, 10, 4);
+    bunge_gawa(px, py, jumla, (hatua * 40) / 100, viti, rangi, uwazi, vyama);
+    achilia px;
+    achilia py;
+}
+
+// Westminster: viti vya serikali (vya kwanza `serikali`) juu ya njia,
+// vilivyobaki chini yake, pande zikitazamana; kiti cha spika mwanzoni mwa
+// njia upande wa kushoto. Vyama ni kanda wima kutoka kwa spika.
+w0 bunge_westminster(n64 x, n64 y, n64 w, n64 h, n64* viti, n64* rangi, n64* uwazi, n64 vyama, n64 serikali) {
+    n64 jumla = bunge_jumla(viti, vyama);
+    kama (jumla <= 0) { rudisha; }
+    n64 juu_n = serikali;
+    kama (juu_n < 0) { juu_n = 0; }
+    kama (juu_n > jumla) { juu_n = jumla; }
+    n64 chini_n = jumla - juu_n;
+    n64 kubwa = juu_n;
+    kama (chini_n > kubwa) { kubwa = chini_n; }
+    n64 spika = 30;                                 // nafasi ya kiti cha spika
+    // kina cha kila upande (safu) na urefu wake (nguzo); njia ni hatua 1.5
+    n64 kina = bunge_safu_za_gridi(kubwa, w - spika, h / 2);
+    n64 nguzo = (kubwa + kina - 1) / kina;
+    n64 hatua = ((w - spika) * 256) / nguzo;
+    n64 kwa_kimo = (h * 512) / (4 * kina + 3);      // h = (2*kina + 1.5) * hatua
+    kama (hatua > kwa_kimo) { hatua = kwa_kimo; }
+    kama (hatua > 30 * 256) { hatua = 30 * 256; }
+    n64 x0 = x * 256 + spika * 256 + ((w - spika) * 256 - nguzo * hatua) / 2;
+    n64 cy = y * 256 + (h * 256) / 2;
+    n64 njia = (hatua * 3) / 4;
+    n64* px = tenga(8 * jumla);
+    n64* py = tenga(8 * jumla);
+    n64 s = 0;
+    wakati (s < jumla) {
+        n64 k = s;
+        n64 upande = 0 - 1;
+        kama (s >= juu_n) { k = s - juu_n; upande = 1; }
+        px[s] = x0 + (k / kina) * hatua + hatua / 2;
+        py[s] = cy + upande * (njia + (k % kina) * hatua + hatua / 2);
+        s = s + 1;
+    }
+    turubai_brashi(sura_t, 16777215, 46);
+    turubai_mviringo(sura_t, x0 / 256 - 22, cy / 256 - 14, 10, 28, 4);
+    bunge_gawa(px, py, jumla, (hatua * 40) / 100, viti, rangi, uwazi, vyama);
+    achilia px;
+    achilia py;
+}
+
+// Bunge la muundo wowote ndani ya sanduku (x, y, w, h). `serikali` ni idadi
+// ya viti vya upande wa serikali (Westminster pekee); `safu` ni ya matao --
+// gridi huchagua safu zake kufuata umbo la sanduku.
+w0 sura_bunge_aina(n64 aina, n64 x, n64 y, n64 w, n64 h, n64 safu, n64* viti, n64* rangi, n64* uwazi, n64 vyama, n64 serikali) {
+    kama (sura_t == 0) { rudisha; }
+    bunge_viti_vilivyochorwa = 0;
+    kama (aina == BUNGE_KIATU) { bunge_tao_ndani(270, x, y, w, h, safu, viti, rangi, uwazi, vyama); rudisha; }
+    kama (aina == BUNGE_DUARA) { bunge_tao_ndani(360, x, y, w, h, safu, viti, rangi, uwazi, vyama); rudisha; }
+    kama (aina == BUNGE_WESTMINSTER) { bunge_westminster(x, y, w, h, viti, rangi, uwazi, vyama, serikali); rudisha; }
+    kama (aina == BUNGE_DARASA) { bunge_darasa(x, y, w, h, viti, rangi, uwazi, vyama); rudisha; }
+    bunge_tao_ndani(180, x, y, w, h, safu, viti, rangi, uwazi, vyama);
+}

@@ -1,4 +1,6 @@
 husisha { moduli/skrini/muhtasari.swa }
+husisha { moduli/onyesho/bunge.swa }
+husisha { moduli/skrini/mandhari.swa }
 
 // kuwasha.swa -- skrini za kuwaka kwa mchezo: nembo ya studio (Kajara),
 // kisha skrini ya kupakia.
@@ -9,7 +11,7 @@ husisha { moduli/skrini/muhtasari.swa }
 // mipaka, kuhesabu watu, kuapisha baraza.
 
 n64 KUWASHA_USULI = 395279;          // 0x06080F -- karibu nyeusi, yenye buluu kidogo
-n64 KUWASHA_VITI = 300;
+n64 KUWASHA_VITI = 180;
 
 // Nembo ya Kajara: duara jembamba lenye K ya mistari mitatu.
 w0 kuwasha_nembo(Turubai* t, n64 cx, n64 cy, n64 r, n64 uwazi) {
@@ -43,8 +45,16 @@ w0 skrini_kuwasha_studio(Turubai* t, n64 uwazi) {
 // tayari = 1 huonyesha mwaliko wa kuingia, ukipumua kwa `mpigo` (fremu).
 w0 skrini_kuwasha_kupakia(Turubai* t, n64 maendeleo, n8* hatua, n64 tayari, n64 mpigo) {
     sura_anzisha(t);
-    turubai_brashi(t, KUWASHA_USULI, 255);
-    turubai_jaza(t, 0, 0, t->upana, t->kimo);
+    // mapinduzi nyuma, yakiwa yamefifishwa ili bunge na maandishi yatawale
+    mandhari_mapinduzi(t, 56);
+    // juu hutiwa giza zaidi ili jina lisomeke juu ya anga
+    n64 giza = (t->kimo * 45) / 100;
+    n64 j = 0;
+    wakati (j < giza) {
+        turubai_brashi(t, KUWASHA_USULI, (190 * (giza - j)) / giza);
+        turubai_jaza(t, 0, j, t->upana, 2);
+        j = j + 2;
+    }
     n64 cx = t->upana / 2;
     n64 p = maendeleo;
     kama (p < 0) { p = 0; }
@@ -58,13 +68,14 @@ w0 skrini_kuwasha_kupakia(Turubai* t, n64 maendeleo, n8* hatua, n64 tayari, n64 
     sura_maandishi_mapana(sura_kawaida, ui("A grand strategy of nations"), cx + 1, juu + 86, 14, 3);
 
     // bunge
-    n64 r_nje = t->upana / 2 - 120;
-    n64 r_kimo = (t->kimo * 40) / 100;
+    // bunge dogo chini, juu ya umati: jengo na bendera hubaki wazi
+    n64 r_nje = t->upana / 8;
+    n64 r_kimo = (t->kimo * 21) / 100;
     kama (r_nje > r_kimo) { r_nje = r_kimo; }
-    n64 safu = 8;
+    n64 safu = 6;
     n64 r0 = (r_nje * 40) / 100;
     n64 dr = (r_nje - r0) / (safu - 1);
-    n64 cy = (t->kimo * 76) / 100;
+    n64 cy = (t->kimo * 85) / 100;
     n64 viti[4];
     n64 rangi[4];
     n64 uwazi[4];
@@ -84,15 +95,15 @@ w0 skrini_kuwasha_kupakia(Turubai* t, n64 maendeleo, n8* hatua, n64 tayari, n64 
     uwazi[0] = 255;
     uwazi[1] = 255;
     uwazi[2] = 255;
-    uwazi[3] = 22;
+    uwazi[3] = 34;
     sura_bunge(cx, cy, r0, dr, safu, (dr * 256 * 38) / 100, viti, rangi, uwazi, 4);
     // mimbari ya spika
     turubai_brashi(t, 16777215, 30);
-    turubai_mviringo(t, cx - 30, cy - 12, 60, 12, 4);
+    turubai_mviringo(t, cx - 18, cy - 8, 36, 8, 3);
 
     // hatua na maendeleo
-    n64 chini = cy + 44;
-    n64 upana_pau = 360;
+    n64 chini = cy + 26;
+    n64 upana_pau = 2 * r_nje + 24;
     turubai_brashi(t, 16777215, 24);
     turubai_mviringo(t, cx - upana_pau / 2, chini, upana_pau, 2, 1);
     turubai_brashi(t, SURA_LAFUDHI, 255);
@@ -102,13 +113,13 @@ w0 skrini_kuwasha_kupakia(Turubai* t, n64 maendeleo, n8* hatua, n64 tayari, n64 
         n64 awamu = mpigo % 120;
         kama (awamu > 60) { awamu = 120 - awamu; }
         turubai_brashi(t, SURA_MAANDISHI, 110 + (awamu * 145) / 60);
-        sura_maandishi_mapana(sura_kati, ui("Press any key to take office"), cx, chini + 20, 14, 2);
+        sura_maandishi_mapana(sura_kati, ui("Press any key to take office"), cx, chini + 16, 14, 2);
     } sivyo {
         kama (hatua != 0) {
             turubai_brashi(t, SURA_HAFIFU, 255);
-            sura_maandishi_mapana(sura_kawaida, hatua, cx, chini + 20, 13, 1);
+            sura_maandishi_mapana(sura_kawaida, hatua, cx, chini + 16, 13, 1);
         }
     }
     turubai_brashi(t, SURA_HAFIFU, 140);
-    sura_maandishi_mapana(sura_kati, "KAJARA", cx + 3, t->kimo - 40, 11, 7);
+    sura_maandishi_mapana(sura_kati, "KAJARA", cx + 3, t->kimo - 30, 11, 7);
 }

@@ -2,7 +2,8 @@ husisha { moduli/skrini/kuwasha.swa }
 husisha { moduli/skrini/mipangilio.swa }
 
 // jaribio_kuwasha.swa -- chora skrini za kuwaka na ya mipangilio, na uandike
-// fremu ghafi (BGRA) tatu: <njia>.studio, <njia>.kupakia, <njia>.mipangilio.
+// fremu ghafi (BGRA) nne: <njia>.studio, <njia>.mandhari, <njia>.kupakia,
+// <njia>.mipangilio.
 //   jaribio_kuwasha <njia> [lugha 0..2]
 
 w0 andika_fremu(n8* njia, n8* kiambishi, Turubai* t) {
@@ -37,6 +38,8 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     kama (idadi_ya_hoja > 1) {
         skrini_kuwasha_studio(t, 255);
         andika_fremu(hoja_za_mstari[1], ".studio", t);
+        mandhari_mapinduzi(t, 0);
+        andika_fremu(hoja_za_mstari[1], ".mandhari", t);
         skrini_kuwasha_kupakia(t, 640, ui("Drawing the borders"), 0, 0);
         andika_fremu(hoja_za_mstari[1], ".kupakia", t);
         skrini_mipangilio_chora(g, t);
