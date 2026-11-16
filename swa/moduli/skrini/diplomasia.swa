@@ -1,5 +1,7 @@
 husisha { moduli/skrini/muhtasari.swa }
 
+n64 skrini_diplomasia_mstari_mteule = -1;
+
 // diplomasia.swa -- skrini ya mahusiano ya taifa moja na majirani wake:
 // kila jirani wa nchi kavu, kiwango cha uhusiano (uadui, kati, urafiki,
 // umoja), imani, urefu wa mpaka, na pato ghafi lake kulinganisha.
@@ -49,12 +51,18 @@ w0 skrini_diplomasia_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64* uh = tenga(8 * tm->idadi + 8);
     d64* imani_ya = tenga(8 * tm->idadi + 8);
     n64 n = 0;
+    n64 urafiki = 0;
+    n64 uadui = 0;
+    n64 vita = 0;
     n64 b = 0;
     wakati (b < tm->idadi) {
         kama (dunia_atlasi_mpaka(taifa, b) > 0) {
             TaifaNchi* tb = dunia_taifa_mfumo_pata_kwa_faharisi(tm, b);
             DiplomasiaUhusiano* r = diplomasia_pata_kwa_taifa(ds, tn->kitambulisho, tb->kitambulisho);
             kama (r != 0) {
+                kama (r->kiwango_cha_uhusiano >= DIPLOMASIA_KIWANGO_URAFIKI) { urafiki = urafiki + 1; }
+                kama (r->kiwango_cha_uhusiano == DIPLOMASIA_KIWANGO_UADUI) { uadui = uadui + 1; }
+                kama (r->kiwango_cha_uhusiano == DIPLOMASIA_KIWANGO_VITA) { vita = vita + 1; }
                 d64 im = r->imani;
                 n64 p = n;
                 wakati (p > 0 && imani_ya[p - 1] < im) {
@@ -72,10 +80,33 @@ w0 skrini_diplomasia_chora(Mchezo* g, Turubai* t, n64 taifa) {
         b = b + 1;
     }
 
+    n64 gap = 12;
+    n64 card_w = (w - 3 * gap) / 4;
+    n8 metric[32];
+    sura_namba(metric, n);
+    sura_kadi(x, y + 52, card_w, "MAJIRANI", metric, 0);
+    sura_namba(metric, urafiki);
+    sura_kadi(x + card_w + gap, y + 52, card_w, "URAFIKI / MIUNGANO", metric, 0);
+    sura_namba(metric, uadui + vita);
+    sura_kadi(x + 2 * (card_w + gap), y + 52, card_w, "UADUI / VITA", metric, 0);
+    n64 active_treaties = 0;
+    n64 treaty = 0;
+    wakati (treaty < ds->idadi_ya_mikataba) {
+        DiplomasiaMkataba* mkataba = diplomasia_pata_mkataba(ds, treaty);
+        kama (mkataba != 0 && mkataba->unafanya_kazi) { active_treaties = active_treaties + 1; }
+        treaty = treaty + 1;
+    }
+    sura_namba(metric, active_treaties);
+    sura_kadi(x + 3 * (card_w + gap), y + 52, card_w, "MIKATABA HAI (DUNIA)", metric, 0);
+    y = y + 158;
+
     n64 kimo_cha_safu = SKRINI_KIMO_CHA_SAFU;
+    n64 visible_n = (t->kimo - y - 90) / kimo_cha_safu;
+    kama (visible_n < 0) { visible_n = 0; }
+    kama (visible_n > n) { visible_n = n; }
     n8 kichwa[64];
     mfuatano_umbiza(kichwa, 64, "MAJIRANI -- %d", n, 0, 0, 0, 0, 0);
-    sura_paneli(x, y, w, 76 + n * kimo_cha_safu, kichwa);
+    sura_paneli(x, y, w, 76 + visible_n * kimo_cha_safu, kichwa);
     n64 x_taifa = x + 24;
     n64 x_kiwango = x + 320;
     n64 x_imani = x + 460;
@@ -89,11 +120,11 @@ w0 skrini_diplomasia_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_kichwa_cha_safuwima("PATO GHAFI", x_pato, yk, 1);
     n8 chombo[48];
     n64 i = 0;
-    wakati (i < n && y + 66 + (i + 1) * kimo_cha_safu < t->kimo) {
+    wakati (i < visible_n) {
         TaifaNchi* tb = dunia_taifa_mfumo_pata_kwa_faharisi(tm, jirani[i]);
         DiplomasiaUhusiano* r = uh[i];
         n64 ys = y + 66 + i * kimo_cha_safu;
-        sura_safu(x + 8, ys, w - 16, kimo_cha_safu - 4, i, 0);
+        sura_safu(x + 8, ys, w - 16, kimo_cha_safu - 4, i, skrini_diplomasia_mstari_mteule == i);
         n64 ym = ys + 8;
         turubai_brashi(sura_t, tb->rangi, 255);
         turubai_duara(sura_t, x_taifa + 7, ys + 17, 6);
@@ -113,6 +144,44 @@ w0 skrini_diplomasia_chora(Mchezo* g, Turubai* t, n64 taifa) {
         sura_namba_fupi(chombo, skrini_pato_la_taifa(tb));
         sura_lebo_kulia(chombo, x_pato, ym, 14);
         i = i + 1;
+    }
+    kama (skrini_diplomasia_mstari_mteule >= 0 && skrini_diplomasia_mstari_mteule < visible_n) {
+        n64 picked = jirani[skrini_diplomasia_mstari_mteule];
+        TaifaNchi* partner = dunia_taifa_mfumo_pata_kwa_faharisi(tm, picked);
+        DiplomasiaUhusiano* rel = uh[skrini_diplomasia_mstari_mteule];
+        n64 fx = x + w - 340;
+        n64 fy = t->kimo - 214;
+        sura_kadi_kuelea(fx, fy, 324, 194, 248, 0);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_nene(partner->jina, fx + 16, fy + 14, 17);
+        sura_kitufe_ikoni(fx + 302, fy + 23, 12, SURA_ICON_CLOSE, SURA_HALI_KAWAIDA, 255);
+        n64 relation_state = 3;
+        kama (rel->kiwango_cha_uhusiano >= DIPLOMASIA_KIWANGO_URAFIKI) { relation_state = 1; }
+        sura_beji(skrini_jina_la_kiwango(rel->kiwango_cha_uhusiano), fx + 16, fy + 46,
+                  relation_state, 255);
+        n8 trust[24];
+        sura_asilimia(trust, rel->imani * 1000.0, 0);
+        sura_mita("Imani", trust, fx + 16, fy + 82, 286, rel->imani * 1000.0, SURA_BAHARI);
+        n8 grievances[24];
+        sura_asilimia(grievances, rel->malalamiko * 1000.0, 0);
+        sura_mita("Malalamiko", grievances, fx + 16, fy + 124, 286, rel->malalamiko * 1000.0, SURA_HASI);
+        n64 pair_treaties = 0;
+        n64 ti = 0;
+        wakati (ti < ds->idadi_ya_mikataba) {
+            DiplomasiaMkataba* pact = diplomasia_pata_mkataba(ds, ti);
+            kama (pact != 0 && pact->unafanya_kazi && pact->mtia_saini_a != 0 && pact->mtia_saini_b != 0 &&
+                ((linganisha_mfuatano(pact->mtia_saini_a, tn->kitambulisho) == 0 && linganisha_mfuatano(pact->mtia_saini_b, partner->kitambulisho) == 0) ||
+                 (linganisha_mfuatano(pact->mtia_saini_b, tn->kitambulisho) == 0 && linganisha_mfuatano(pact->mtia_saini_a, partner->kitambulisho) == 0))) {
+                pair_treaties = pair_treaties + 1;
+            }
+            ti = ti + 1;
+        }
+        n8 pact_text[32];
+        sura_namba(pact_text, pair_treaties);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo("Mikataba hai", fx + 16, fy + 162, 11);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kulia(pact_text, fx + 302, fy + 162, 12);
     }
     achilia jirani;
     achilia uh;

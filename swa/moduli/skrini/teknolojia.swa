@@ -1,0 +1,65 @@
+husisha { moduli/skrini/muhtasari.swa }
+
+// Skrini ya teknolojia: uwekezaji na viwango halisi vya nyanja 12.
+w0 skrini_teknolojia_chora(Mchezo* g, Turubai* t, n64 taifa) {
+    sura_anzisha(t);
+    turubai_brashi(t, SURA_USULI, 255);
+    turubai_jaza(t, 0, 0, t->upana, t->kimo);
+    skrini_upau_wa_juu(g, t);
+    skrini_urambazaji(t, 6);
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
+    TeknolojiaMfumo* tech = mchezo_pata_teknolojia(g);
+    kama (tn == 0 || tech == 0) { rudisha; }
+    n64 x = SKRINI_UPANA_WA_PEMBENI + 25;
+    n64 y = SKRINI_UPAU_WA_JUU + 25;
+    n64 w = t->upana - x - 24;
+    turubai_brashi(t, tn->rangi, 255);
+    turubai_mviringo(t, x, y + 6, 24, 16, 4);
+    sura_kichwa_ukurasa(tn->jina, "UTAFITI WA TEKNOLOJIA WA DUNIA", x + 36, y - 5);
+    y = y + 66;
+    n64 gap = 16;
+    n64 cw = (w - 3 * gap) / 4;
+    n8 value[40];
+    sura_namba(value, tech->kiwango_jumla);
+    sura_kadi(x, y, cw, "KIWANGO CHA JUMLA", value, 0);
+    sura_namba(value, tech->cheo_jumla);
+    sura_kadi(x + cw + gap, y, cw, "CHEO CHA MUDA", value, 0);
+    n64 budget = tech->bajeti_jumla * 1000.0;
+    sura_namba_fupi(value, budget);
+    sura_kadi(x + 2 * (cw + gap), y, cw, "BAJETI YA UTAFITI", value, 0);
+    sura_namba(value, TEKNOLOJIA_IDADI_YA_NYANJA);
+    sura_kadi(x + 3 * (cw + gap), y, cw, "NYANJA ZA UTAFITI", value, 0);
+    y = y + 108;
+    n64 panel_h = t->kimo - y - 24;
+    sura_paneli(x, y, w, panel_h, "RAMANI YA UTAFITI · NAFASI ZA DUNIA NI ZA MUDA");
+    n64 col_w = (w - 40) / 2;
+    n64 i = 0;
+    wakati (i < TEKNOLOJIA_IDADI_YA_NYANJA) {
+        n64 col = i / 6;
+        n64 row = i % 6;
+        n64 rx = x + 16 + col * col_w;
+        n64 ry = y + 50 + row * 48;
+        n64 level = teknolojia_pata_kiwango(tech, i);
+        n64 progress = level * 2;
+        kama (progress < 0) { progress = 0; }
+        kama (progress > 1000) { progress = 1000; }
+        n64 rank = tech->cheo_duniani[i];
+        n64 mean = tech->wastani_duniani[i];
+        sura_safu(rx, ry, col_w - 12, 42, row, 0);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo(teknolojia_jina_la_nyanja(i), rx + 12, ry + 4, 12);
+        n8 detail[40];
+        n8 lv[18];
+        n8 rk[18];
+        n8 avg[18];
+        sura_namba(lv, level);
+        sura_namba(rk, rank);
+        sura_namba(avg, mean);
+        mfuatano_umbiza(detail, 40, "Kiwango %s  |  Nafasi %s / %s", lv, rk, avg, 0, 0, 0);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(detail, rx + 12, ry + 25, 10);
+        sura_pau(rx + col_w - 100, ry + 18, 78, 5, progress, SURA_BAHARI);
+        i = i + 1;
+    }
+}

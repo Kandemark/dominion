@@ -2,13 +2,17 @@ husisha { msingi/maktaba/mfuatano.swa }
 husisha { moduli/skrini/ramani.swa }
 husisha { moduli/skrini/uchumi.swa }
 husisha { moduli/skrini/diplomasia.swa }
+husisha { moduli/skrini/siasa.swa }
+husisha { moduli/skrini/jeshi.swa }
+husisha { moduli/skrini/utamaduni.swa }
+husisha { moduli/skrini/teknolojia.swa }
 husisha { moduli/onyesho/wayland/dirisha.swa }
 
 // dominion.swa -- programu ya mchezo: dirisha la Wayland, mchezo halisi,
 // na skrini zinazojibu ingizo la kweli.
 //
 //   kielekezi   bofya urambazaji kushoto kubadili skrini (Muhtasari,
-//               Uchumi na Diplomasia ya taifa lililochaguliwa, Ramani)
+//               Uchumi, Siasa, Jeshi, Diplomasia, Utamaduni, Teknolojia, Ramani)
 //   ramani      buruta kusogeza; gurudumu kukuza karibu na kielekezi;
 //               bofya taifa kulichagua
 //   Space       zamu inayofuata
@@ -31,7 +35,11 @@ n64 KEY_RIGHT = 106;
 
 n64 SKRINI_MUHTASARI = 0;
 n64 SKRINI_UCHUMI = 1;
+n64 SKRINI_SIASA = 2;
+n64 SKRINI_JESHI = 3;
 n64 SKRINI_DIPLOMASIA = 4;
+n64 SKRINI_UTAMADUNI = 5;
+n64 SKRINI_TEKNOLOJIA = 6;
 n64 SKRINI_RAMANI = 7;
 
 muundo Hali {
@@ -125,14 +133,83 @@ w0 shughulikia(Mchezo* g, Hali* h, Dirisha* d) {
                     n64 kipengele = (py - SKRINI_UPAU_WA_JUU - 20) / 40;
                     kama (kipengele == 0) { h->skrini = SKRINI_MUHTASARI; h->haja = 1; }
                     kama (kipengele == 1) { h->skrini = SKRINI_UCHUMI; h->haja = 1; }
+                    kama (kipengele == 2) { h->skrini = SKRINI_SIASA; h->haja = 1; }
+                    kama (kipengele == 3) { h->skrini = SKRINI_JESHI; h->haja = 1; }
                     kama (kipengele == 4) { h->skrini = SKRINI_DIPLOMASIA; h->haja = 1; }
+                    kama (kipengele == 5) { h->skrini = SKRINI_UTAMADUNI; h->haja = 1; }
+                    kama (kipengele == 6) { h->skrini = SKRINI_TEKNOLOJIA; h->haja = 1; }
                     kama (kipengele == 7) { h->skrini = SKRINI_RAMANI; h->haja = 1; }
                 }
+                kama (h->skrini == SKRINI_UCHUMI && py >= 255 && py < 287) {
+                    n64 body_x = SKRINI_UPANA_WA_PEMBENI + 25;
+                    n64 body_w = d->upana - body_x - 24;
+                    n64 control_x = skrini_uchumi_muda_x(body_x, (body_w * 3) / 5);
+                    kama (px >= control_x && px < control_x + 44) { skrini_uchumi_dirisha_la_historia = 12; h->haja = 1; }
+                    kama (px >= control_x + 46 && px < control_x + 90) { skrini_uchumi_dirisha_la_historia = 24; h->haja = 1; }
+                    kama (px >= control_x + 92 && px < control_x + 136) { skrini_uchumi_dirisha_la_historia = 60; h->haja = 1; }
+                    kama (px >= control_x + 138 && px < control_x + 188) { skrini_uchumi_dirisha_la_historia = 240; h->haja = 1; }
+                }
+                kama (h->skrini == SKRINI_MUHTASARI) {
+                    n64 search_x = SKRINI_UPANA_WA_PEMBENI + 25 + 300;
+                    kama (px >= search_x && px < search_x + 220 && py >= 196 && py < 226) { skrini_muhtasari_tafuta_fokasi = 1; }
+                    sivyo { skrini_muhtasari_tafuta_fokasi = 0; }
+                    h->haja = 1;
+                }
+                kama (h->skrini == SKRINI_MUHTASARI && py >= 196 && py < 228) {
+                    n64 table_x = SKRINI_UPANA_WA_PEMBENI + 25;
+                    n64 table_w = d->upana - table_x - 24;
+                    n64 sort_x = table_x + table_w - 260;
+                    n64 page_size = skrini_muhtasari_kikomo(d->kimo);
+                    kama (px >= sort_x && px < sort_x + 52) { skrini_muhtasari_mpangilio = 0; skrini_muhtasari_ukurasa = 0; h->haja = 1; }
+                    kama (px >= sort_x + 54 && px < sort_x + 106) { skrini_muhtasari_mpangilio = 1; skrini_muhtasari_ukurasa = 0; h->haja = 1; }
+                    kama (px >= sort_x + 108 && px < sort_x + 156) { skrini_muhtasari_mpangilio = 2; skrini_muhtasari_ukurasa = 0; h->haja = 1; }
+                    kama (px >= table_x + table_w - 78 && px < table_x + table_w - 54 && skrini_muhtasari_ukurasa > 0) { skrini_muhtasari_ukurasa = skrini_muhtasari_ukurasa - 1; h->haja = 1; }
+                    kama (px >= table_x + table_w - 44 && px < table_x + table_w - 20) {
+                        TaifaMfumo* current_countries = mchezo_pata_taifa(g);
+                        kama ((skrini_muhtasari_ukurasa + 1) * page_size < skrini_muhtasari_idadi_iliyofilteriwa(current_countries)) { skrini_muhtasari_ukurasa = skrini_muhtasari_ukurasa + 1; h->haja = 1; }
+                    }
+                }
+                kama (h->skrini == SKRINI_DIPLOMASIA) {
+                    n64 detail_x = SKRINI_UPANA_WA_PEMBENI + 25;
+                    n64 detail_w = d->upana - detail_x - 24;
+                    n64 detail_y = SKRINI_UPAU_WA_JUU + 25 + 44 + 158;
+                    n64 close_x = detail_x + detail_w - 50;
+                    kama (skrini_diplomasia_mstari_mteule >= 0 && px >= close_x && px < close_x + 24 && py >= d->kimo - 203 && py < d->kimo - 179) {
+                        skrini_diplomasia_mstari_mteule = -1;
+                        h->haja = 1;
+                    } sivyo { kama (px >= detail_x && px < detail_x + detail_w && py >= detail_y + 66) {
+                        TaifaMfumo* countries = mchezo_pata_taifa(g);
+                        DiplomasiaMfumo* diplomacy = mchezo_pata_diplomasia(g);
+                        n64 neighbor_count = 0;
+                        n64 ni = 0;
+                        wakati (ni < countries->idadi) {
+                            kama (dunia_atlasi_mpaka(h->taifa, ni) > 0) {
+                                TaifaNchi* neighbor = dunia_taifa_mfumo_pata_kwa_faharisi(countries, ni);
+                                kama (diplomasia_pata_kwa_taifa(diplomacy,
+                                    dunia_taifa_mfumo_pata_kwa_faharisi(countries, h->taifa)->kitambulisho,
+                                    neighbor->kitambulisho) != 0) { neighbor_count = neighbor_count + 1; }
+                            }
+                            ni = ni + 1;
+                        }
+                        n64 row = (py - detail_y - 66) / SKRINI_KIMO_CHA_SAFU;
+                        n64 row_limit = (d->kimo - detail_y - 90) / SKRINI_KIMO_CHA_SAFU;
+                        kama (row_limit > neighbor_count) { row_limit = neighbor_count; }
+                        kama (row >= 0 && row < row_limit) { skrini_diplomasia_mstari_mteule = row; h->haja = 1; }
+                    } }
+                }
                 kama (h->skrini == SKRINI_RAMANI && ndani_ya_ramani(d, px, py)) {
-                    h->inavutwa = 1;
-                    h->imesogea = 0;
-                    h->vuta_x = px;
-                    h->vuta_y = py;
+                    n64 zc_x = d->upana - SKRINI_RAMANI_PANELI - 98;
+                    n64 zc_y = skrini_ramani_vidhibiti_y();
+                    kama (py >= zc_y + 6 && py < zc_y + 36 && px >= zc_x + 10 && px < zc_x + 42) {
+                        badili_kipimo(h, d, (h->kipimo * 5) / 4 + 1, px, py);
+                    } sivyo { kama (py >= zc_y + 6 && py < zc_y + 36 && px >= zc_x + 43 && px < zc_x + 76) {
+                        badili_kipimo(h, d, (h->kipimo * 4) / 5, px, py);
+                    } sivyo {
+                        h->inavutwa = 1;
+                        h->imesogea = 0;
+                        h->vuta_x = px;
+                        h->vuta_y = py;
+                    } }
                 }
             } sivyo {
                 kama (h->inavutwa && h->imesogea == 0) { chagua_taifa(h, d, px, py); }
@@ -146,8 +223,15 @@ w0 shughulikia(Mchezo* g, Hali* h, Dirisha* d) {
             kama (a < 0) { badili_kipimo(h, d, (h->kipimo * 4) / 5, d->kielekezi_x, d->kielekezi_y); }
         }
         kama (aina == DIRISHA_KIBODI && b == 1) {
-            kama (a == KEY_ESC) { d->imefungwa = 1; }
-            kama (a == KEY_SPACE) {
+            kama (h->skrini == SKRINI_MUHTASARI && skrini_muhtasari_tafuta_fokasi) {
+                kama (a == KEY_ESC) {
+                    kama (skrini_muhtasari_tafuta[0] != 0) { skrini_muhtasari_tafuta[0] = 0; skrini_muhtasari_ukurasa = 0; }
+                    sivyo { skrini_muhtasari_tafuta_fokasi = 0; }
+                    h->haja = 1;
+                } sivyo { kama (a == 28) { skrini_muhtasari_tafuta_fokasi = 0; h->haja = 1; }
+                sivyo { skrini_muhtasari_tafuta_ingizo(a); h->haja = 1; } }
+            } sivyo { kama (a == KEY_ESC) { d->imefungwa = 1; } }
+            kama (a == KEY_SPACE && (h->skrini != SKRINI_MUHTASARI || skrini_muhtasari_tafuta_fokasi == 0)) {
                 mchezo_sasisha(g);
                 mchezo_maliza_zamu(g);
                 h->haja = 1;
@@ -166,6 +250,17 @@ w0 shughulikia(Mchezo* g, Hali* h, Dirisha* d) {
         }
         kama (aina == DIRISHA_UKUBWA) { h->haja = 1; }
     }
+}
+
+// Skrini zote zisizo ramani: kila moja huchora taifa lililochaguliwa.
+w0 chora_skrini_ya_taifa(Mchezo* g, Turubai* t, n64 skrini, n64 taifa) {
+    kama (skrini == SKRINI_UCHUMI) { skrini_uchumi_chora(g, t, taifa); rudisha; }
+    kama (skrini == SKRINI_SIASA) { skrini_siasa_chora(g, t, taifa); rudisha; }
+    kama (skrini == SKRINI_JESHI) { skrini_jeshi_chora(g, t, taifa); rudisha; }
+    kama (skrini == SKRINI_DIPLOMASIA) { skrini_diplomasia_chora(g, t, taifa); rudisha; }
+    kama (skrini == SKRINI_UTAMADUNI) { skrini_utamaduni_chora(g, t, taifa); rudisha; }
+    kama (skrini == SKRINI_TEKNOLOJIA) { skrini_teknolojia_chora(g, t, taifa); rudisha; }
+    skrini_muhtasari_chora(g, t);
 }
 
 n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
@@ -246,9 +341,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
                     }
                 }
             } sivyo {
-                kama (h->skrini == SKRINI_UCHUMI) { skrini_uchumi_chora(g, t, h->taifa); }
-                sivyo { kama (h->skrini == SKRINI_DIPLOMASIA) { skrini_diplomasia_chora(g, t, h->taifa); }
-                sivyo { skrini_muhtasari_chora(g, t); } }
+                chora_skrini_ya_taifa(g, t, h->skrini, h->taifa);
             }
             kama (dampo != 0) {
                 n64 fd = mfumo_fungua(dampo, 577, 420);

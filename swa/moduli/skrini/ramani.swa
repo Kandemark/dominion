@@ -12,6 +12,22 @@ husisha { moduli/onyesho/dunia_halisi.swa }
 n64 SKRINI_RAMANI_PANELI = 340;
 n64 SKRINI_RAMANI_KM_KWA_KIZIO = 625;    // kizio 1 = 360/64 shahada ~ km 625
 
+n64 skrini_ramani_vidhibiti_x(Turubai* t) {
+    rudisha t->upana - SKRINI_RAMANI_PANELI - 98;
+}
+
+n64 skrini_ramani_vidhibiti_y() {
+    rudisha SKRINI_UPAU_WA_JUU + 16;
+}
+
+w0 skrini_ramani_vidhibiti_chora(Turubai* t) {
+    n64 x = skrini_ramani_vidhibiti_x(t);
+    n64 y = skrini_ramani_vidhibiti_y();
+    sura_kadi_kuelea(x, y, 84, 42, 220, 0);
+    sura_kitufe_ikoni(x + 25, y + 21, 15, SURA_ICON_MINUS, SURA_HALI_KAWAIDA, 255);
+    sura_kitufe_ikoni(x + 59, y + 21, 15, SURA_ICON_PLUS, SURA_HALI_KAWAIDA, 255);
+}
+
 Fonti* skrini_serifu = 0;
 Turubai* skrini_ramani_eneo = 0;
 
@@ -366,6 +382,7 @@ w0 skrini_dunia_chora(Mchezo* g, Turubai* t, DuniaHalisi* d, n64 kitovu_x, n64 k
     skrini_akiba_x = kitovu_x;
     skrini_akiba_y = kitovu_y;
     skrini_akiba_kipimo = kipimo;
+    skrini_ramani_vidhibiti_chora(t);
     skrini_dunia_paneli(t, d, taifa);
 }
 
@@ -412,6 +429,7 @@ w0 skrini_ramani_chora(Mchezo* g, Turubai* t, n64 kitovu_x, n64 kitovu_y, n64 ki
     skrini_akiba_y = kitovu_y;
     skrini_akiba_kipimo = kipimo;
 
+    skrini_ramani_vidhibiti_chora(t);
     skrini_ramani_paneli(g, t, taifa);
 }
 
@@ -447,6 +465,7 @@ n32 skrini_ramani_hakikisho(Mchezo* g, Turubai* t, n64 kitovu_x, n64 kitovu_y, n
         }
         j = j + 1;
     }
+    skrini_ramani_vidhibiti_chora(t);
     kama (skrini_dunia != 0) { skrini_dunia_paneli(t, skrini_dunia, taifa); }
     sivyo { skrini_ramani_paneli(g, t, taifa); }
     rudisha 1;

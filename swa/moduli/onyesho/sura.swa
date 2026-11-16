@@ -10,16 +10,16 @@ husisha { moduli/onyesho/maandishi.swa }
 // kidogo, maandishi meupe-hafifu, na lafudhi moja ya dhahabu. Kijani na
 // nyekundu zimehifadhiwa kwa "imepanda"/"imeshuka" pekee.
 
-n64 SURA_USULI = 857109;          // 0x0D1415
-n64 SURA_PANELI = 1318690;        // 0x141F22
-n64 SURA_PANELI_JUU = 1714735;    // 0x1A2A2F
-n64 SURA_MPAKA = 2372927;         // 0x24353F
-n64 SURA_MAANDISHI = 15133419;    // 0xE6EAEB
-n64 SURA_HAFIFU = 9214095;        // 0x8C988F
-n64 SURA_LAFUDHI = 14922049;      // 0xE3B141 dhahabu
-n64 SURA_CHANYA = 4176208;        // 0x3FB950
-n64 SURA_HASI = 16273737;         // 0xF85149
-n64 SURA_BAHARI = 5809663;        // 0x58A5FF
+n64 SURA_USULI = 659488;          // 0x0A1020 -- usiku wa ramani
+n64 SURA_PANELI = 1120812;        // 0x111A2C
+n64 SURA_PANELI_JUU = 1647930;    // 0x19253A
+n64 SURA_MPAKA = 2766928;         // 0x2A3850
+n64 SURA_MAANDISHI = 15265528;    // 0xE8EEF8
+n64 SURA_HAFIFU = 10333892;       // 0x9DAEC4
+n64 SURA_LAFUDHI = 6477509;       // 0x62D6C5 -- turquoise ya mwingiliano
+n64 SURA_CHANYA = 4379538;        // 0x42D392
+n64 SURA_HASI = 16743818;         // 0xFF7D8A
+n64 SURA_BAHARI = 7972863;        // 0x79A7FF
 
 Turubai* sura_t = 0;
 Fonti* sura_kawaida = 0;
