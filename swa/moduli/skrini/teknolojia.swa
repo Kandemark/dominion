@@ -1,8 +1,9 @@
-husisha { moduli/skrini/muhtasari.swa }
+husisha { moduli/skrini/jopo.swa }
 
 // Skrini ya teknolojia: uwekezaji na viwango halisi vya nyanja 12.
 w0 skrini_teknolojia_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_anzisha(t);
+    bofya_anza();
     turubai_brashi(t, SURA_USULI, 255);
     turubai_jaza(t, 0, 0, t->upana, t->kimo);
     skrini_upau_wa_juu(g, t);
@@ -29,7 +30,20 @@ w0 skrini_teknolojia_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_namba(value, TEKNOLOJIA_IDADI_YA_NYANJA);
     sura_kadi(x + 3 * (cw + gap), y, cw, ui("RESEARCH FIELDS"), value, 0);
     y = y + 108;
-    n64 panel_h = t->kimo - y - 24;
+    // ramani ya utafiti kushoto, nafasi ya dunia kulia; chini mgawanyo,
+    // mtawanyiko, majirani na aina za utawala
+    n64 pengo = 12;
+    n64 panel_h = 6 * 48 + 62;
+    n64 w_ramani = (w * 62) / 100;
+    jopo_nafasi(g, taifa, KIPIMO_TEKNOLOJIA, ui("WORLD RANKING  ·  TECHNOLOGY"), x + w_ramani + pengo, y, w - w_ramani - pengo, panel_h);
+    n64 y_chini = y + panel_h + pengo;
+    n64 h_chini = t->kimo - y_chini - 24;
+    n64 w4 = (w - 3 * pengo) / 4;
+    jopo_mgawanyo(g, taifa, KIPIMO_TEKNOLOJIA, ui("DISTRIBUTION  ·  TECHNOLOGY"), x, y_chini, w4, h_chini);
+    jopo_mtawanyiko(g, taifa, KIPIMO_KWA_MTU, KIPIMO_TEKNOLOJIA, ui("EVERY NATION  ·  WEALTH / TECHNOLOGY"), x + (w4 + pengo), y_chini, w4, h_chini);
+    jopo_majirani(g, taifa, KIPIMO_TEKNOLOJIA, ui("NEIGHBOURS  ·  TECHNOLOGY"), x + 2 * (w4 + pengo), y_chini, w4, h_chini);
+    jopo_kwa_utawala(g, taifa, KIPIMO_TEKNOLOJIA, ui("TECHNOLOGY BY FORM OF GOVERNMENT"), x + 3 * (w4 + pengo), y_chini, w - 3 * (w4 + pengo), h_chini);
+    w = w_ramani;
     sura_paneli(x, y, w, panel_h, ui("RESEARCH MAP · WORLD RANKS ARE PROVISIONAL"));
     n64 col_w = (w - 40) / 2;
     n64 i = 0;

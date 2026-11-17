@@ -1,9 +1,10 @@
-husisha { moduli/skrini/muhtasari.swa }
+husisha { moduli/skrini/jopo.swa }
 
 // Skrini ya utamaduni: identities, imani na mawazo; inaonyesha tupu wazi
 // kwa sababu mifumo hii huanza bila rekodi kwenye mchezo mpya.
 w0 skrini_utamaduni_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_anzisha(t);
+    bofya_anza();
     turubai_brashi(t, SURA_USULI, 255);
     turubai_jaza(t, 0, 0, t->upana, t->kimo);
     skrini_upau_wa_juu(g, t);
@@ -40,6 +41,16 @@ w0 skrini_utamaduni_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_namba(value, diffusion_count);
     sura_kadi(x + 3 * (cw + gap), y, cw, ui("DIFFUSION EVENTS"), value, 0);
     y = y + 108;
+    // utamaduni kati ya mataifa, kisha majirani na aina za utawala
+    jopo_safu_ya_dunia(g, taifa, KIPIMO_UTAMADUNI, KIPIMO_TEKNOLOJIA, x, y, w, 300);
+    y = y + 300 + 12;
+    n64 w4 = (w - 3 * 12) / 4;
+    n64 h_chini = t->kimo - y - 24;
+    jopo_majirani(g, taifa, KIPIMO_UTAMADUNI, ui("NEIGHBOURS  ·  CULTURE"), x, y, w4, h_chini);
+    jopo_kwa_utawala(g, taifa, KIPIMO_UTAMADUNI, ui("CULTURE BY FORM OF GOVERNMENT"), x + w4 + 12, y, w4, h_chini);
+    x = x + 2 * (w4 + 12);
+    w = w - 2 * (w4 + 12);
+    gap = 12;
     n64 left_w = (w - gap) / 2;
     n64 right_x = x + left_w + gap;
     n64 right_w = w - left_w - gap;
