@@ -1136,6 +1136,7 @@ w0 kt_habari(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h) {
             kama (t->aina == TUKIO_SARAFU) { aina = "PEG BREAKS, DEVALUATION"; }
             kama (t->aina == TUKIO_SOKO) { aina = "MARKET SELL-OFF"; }
             kama (t->aina == TUKIO_MAANDAMANO) { aina = "PROTESTS"; }
+            kama (t->aina == TUKIO_KATIBA) { aina = "CONSTITUTION AMENDED"; }
             n8 tarehe[48];
             chati_tarehe_fupi(tarehe_siku_ya_zamu(t->zamu), tarehe);
             mfuatano_umbiza(m, 160, "%s  %s  %s", tarehe, soko_sarafu_ya(t->taifa)->msimbo, aina, 0, 0, 0);

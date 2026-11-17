@@ -797,7 +797,6 @@ w0 zamu_inayofuata(Mchezo* g, Hali* h) {
         dh->uhalali = dola_rekebisha(dh->uhalali, 1);
     }
     // katiba: marekebisho yaliyopita barazani huthibitishwa (na kura ya maoni)
-    hati_anzisha(skrini_siasa_dola(g, tm->faharisi_ya_taifa_la_mchezaji), tm->faharisi_ya_taifa_la_mchezaji);
     hati_zamu(skrini_siasa_dola(g, tm->faharisi_ya_taifa_la_mchezaji), skrini_mkutano_watu(g, tm->faharisi_ya_taifa_la_mchezaji), g->zamu_ya_sasa);
     // siasa ya wiki: kazi za msaidizi, kura za hoja, upinzani, kashfa
     nguvu_zamu(skrini_siasa_dola(g, tm->faharisi_ya_taifa_la_mchezaji), skrini_mkutano_watu(g, tm->faharisi_ya_taifa_la_mchezaji), tm->faharisi_ya_taifa_la_mchezaji, g->zamu_ya_sasa);
@@ -1105,7 +1104,14 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     // masoko: sarafu, soko la hisa la kila taifa, matajiri, na pochi ya mchezaji
     soko_anzisha(g, TAREHE_MWAKA_WA_MWANZO);
     soko_pochi_anzisha(h->taifa, 9);
-    hati_anzisha(skrini_siasa_dola(g, h->taifa), h->taifa);
+    // katiba ya taifa la mchezaji: vigezo vyake huendesha siasa za kila wiki
+    hati_mwaka = TAREHE_MWAKA_WA_MWANZO;
+    kt_kusanya_mikoa(h->taifa);
+    hati_mikoa_idadi = kt_mikoa_idadi;
+    hati_mikoa_majina = kt_mkoa_jina;
+    hati_jina_la_sarafu = soko_sarafu_ya(h->taifa)->jina;
+    hati_hakikisha(skrini_siasa_dola(g, h->taifa), skrini_mkutano_watu(g, h->taifa), h->taifa);
+    hati_tumia_kwa_injini(skrini_siasa_dola(g, h->taifa));
     // daftari la maamuzi ya nafasi ya hifadhi: maamuzi ya zamani hurudi kazini
     n8* njia_ya_maamuzi = tenga(128);
     uamuzi_njia(njia_ya_maamuzi, 128, mkutano_nafasi);

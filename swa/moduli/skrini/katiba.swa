@@ -1,37 +1,306 @@
 husisha { moduli/skrini/mkutano.swa }
+husisha { moduli/skrini/kituo.swa }
 husisha { moduli/siasa/hati.swa }
 
-// katiba.swa (skrini) -- katiba ya taifa kama hati inayosomeka, mihimili ya
-// dola (utendaji, bunge, mahakama, majeshi, mikoa) na meza ya marekebisho.
-//
-// Hati huchorwa kama ukurasa: kichwa kwa serif, kila ibara na kichwa chake na
-// aya zake; gurudumu husogeza hati. Marekebisho hufuata utaratibu wa katiba:
-// amri, theluthi mbili za bunge (na kura ya maoni kwenye jamhuri), mkutano wa
-// chama, kura ya maoni, au baraza la machifu.
+// katiba.swa (skrini) -- katiba kama kitabu: kurasa zenye namba, sehemu,
+// ibara na vifungu; jedwali la yaliyomo; mihimili ya dola; na mkaguzi wa
+// kifungu ambapo kila kigezo cha kifungu chochote kinaweza kurekebishwa au
+// kifungu kufutwa kwa utaratibu wa katiba yenyewe. Katiba ya taifa lolote
+// inaweza kusomwa; marekebisho ni kwa taifa la mchezaji tu.
 
 n64 KB_PUNGUZA = 100;
 n64 KB_ONGEZA = 101;
 n64 KB_PENDEKEZA = 102;
+n64 KB_KIFUNGU = 103;
+n64 KB_FUTA = 104;
+n64 KB_UKURASA = 105;
+n64 KB_SEHEMU = 106;
 
-n64 skrini_katiba_tembea = 0;   // pikseli zilizosogezwa juu
-n64* skrini_katiba_pendekezo = 0;
+n64 skrini_katiba_ukurasa = 0;
+n64 skrini_katiba_kifungu = 0;
+n64* skrini_katiba_pendekezo = 0;       // vigezo vinne vinavyopendekezwa
 n8 skrini_katiba_ujumbe[240];
 
-// Aya inayofungwa kwa maneno, ikichorwa tu ndani ya [juu, chini).
+// Mpangilio wa mistari (huhifadhiwa hadi katiba, upana au marekebisho yabadilike).
+n64 KB_MISTARI_JUU = 20000;
+n64 kb_ufunguo = -1;
+n64 kb_mistari = 0;
+n64* kb_maandishi = 0;          // n8* kwa kila mstari
+n64* kb_aina = 0;               // 0 aya, 1 kichwa cha ibara, 2 kichwa cha sehemu, 3 nafasi
+n64* kb_kifungu = 0;            // kifungu cha mstari, au -1
+n64 kb_kwa_ukurasa = 40;
+n64 kb_kurasa = 1;
+n64* kb_ukurasa_wa_sehemu = 0;  // [SEHEMU_IDADI]
+
+w0 kb_mstari(n8* s, n64 aina, n64 kifungu) {
+    kama (kb_mistari >= KB_MISTARI_JUU) { rudisha; }
+    n8* nakala = tenga(urefu_wa_mfuatano(s) + 1);
+    nakili_mfuatano(nakala, s);
+    kb_maandishi[kb_mistari] = nakala;
+    kb_aina[kb_mistari] = aina;
+    kb_kifungu[kb_mistari] = kifungu;
+    kb_mistari = kb_mistari + 1;
+}
+
+// Gawa maandishi kuwa mistari ya upana w.
+w0 kb_funga(n8* s, Fonti* f, n64 px, n64 w, n64 aina, n64 kifungu) {
+    n8 mstari[512];
+    n64 n = 0;
+    n64 i = 0;
+    n64 mwisho_wa_neno = 0;
+    n64 chanzo_cha_neno = 0;
+    wakati (s[i] != 0) {
+        mstari[n] = s[i];
+        n = n + 1;
+        mstari[n] = 0;
+        kama (s[i] == 32) { mwisho_wa_neno = n; chanzo_cha_neno = i + 1; }
+        i = i + 1;
+        kama (n >= 500 || maandishi_upana(f, mstari, px) > w) {
+            kama (mwisho_wa_neno > 0) { n = mwisho_wa_neno; i = chanzo_cha_neno; }
+            mstari[n] = 0;
+            kb_mstari(mstari, aina, kifungu);
+            n = 0;
+            mstari[0] = 0;
+            mwisho_wa_neno = 0;
+        }
+    }
+    kama (n > 0) { kb_mstari(mstari, aina, kifungu); }
+}
+
+// Panga hati yote kuwa mistari na kurasa.
+w0 kb_panga(Dola* d, Wahusika* w, n8* taifa, n64 upana, n64 kimo_cha_ukurasa) {
+    n64 ufunguo = hati_taifa * 1000000 + hati_toleo * 10000 + hati_historia_idadi * 10 + upana;
+    kama (ufunguo == kb_ufunguo && kb_maandishi != 0) { rudisha; }
+    kb_ufunguo = ufunguo;
+    kama (kb_maandishi == 0) {
+        kb_maandishi = tenga(8 * KB_MISTARI_JUU);
+        kb_aina = tenga(8 * KB_MISTARI_JUU);
+        kb_kifungu = tenga(8 * KB_MISTARI_JUU);
+        kb_ukurasa_wa_sehemu = tenga(8 * SEHEMU_IDADI);
+    }
+    n64 i = 0;
+    wakati (i < kb_mistari) { achilia kb_maandishi[i]; i = i + 1; }
+    kb_mistari = 0;
+    kb_kwa_ukurasa = kimo_cha_ukurasa / 21;
+    n8* m = tenga(2048);
+    n8 kichwa[200];
+    n64 sehemu = 0 - 1;
+    n64 ibara = 0 - 1;
+    i = 0;
+    wakati (i < SEHEMU_IDADI) { kb_ukurasa_wa_sehemu[i] = 0; i = i + 1; }
+    i = 0;
+    wakati (i < hati_idadi) {
+        Kifungu* k = hati_pata(i);
+        n64 s = hati_sehemu_ya_aina(k->aina);
+        kama (s != sehemu) {
+            // sehemu mpya huanza ukurasa mpya
+            wakati (kb_mistari % kb_kwa_ukurasa != 0) { kb_mstari("", 3, 0 - 1); }
+            sehemu = s;
+            kb_ukurasa_wa_sehemu[s] = kb_mistari / kb_kwa_ukurasa;
+            mfuatano_umbiza(kichwa, 200, ui("PART %d"), s + 1, 0, 0, 0, 0, 0);
+            kb_mstari(kichwa, 2, 0 - 1);
+            skrini_herufi_kubwa(kichwa, 200, sehemu_jina(s));
+            kb_mstari(kichwa, 2, 0 - 1);
+            kb_mstari("", 3, 0 - 1);
+        }
+        kama (k->ibara != ibara) {
+            ibara = k->ibara;
+            // kichwa cha ibara kisiwe mstari wa mwisho wa ukurasa
+            kama (kb_mistari % kb_kwa_ukurasa >= kb_kwa_ukurasa - 2) { wakati (kb_mistari % kb_kwa_ukurasa != 0) { kb_mstari("", 3, 0 - 1); } }
+            hati_kichwa_cha_ibara(i, d, w, kichwa, 200);
+            kb_mstari(kichwa, 1, i);
+        }
+        hati_andika(i, d, w, taifa, m, 2048);
+        n8* aya = tenga(2200);
+        mfuatano_umbiza(aya, 2200, "(%d) %s", k->namba, m, 0, 0, 0, 0);
+        kb_funga(aya, sura_serif, 14, upana, 0, i);
+        achilia aya;
+        i = i + 1;
+    }
+    achilia m;
+    kb_kurasa = (kb_mistari + kb_kwa_ukurasa - 1) / kb_kwa_ukurasa;
+    kama (kb_kurasa < 1) { kb_kurasa = 1; }
+}
+
+// Ukurasa mmoja wa hati kama karatasi.
+w0 skrini_katiba_karatasi(Dola* d, n8* taifa, n64 x, n64 y, n64 w, n64 h) {
+    turubai_brashi(sura_t, SURA_PANELI_JUU, 255);
+    turubai_mviringo(sura_t, x, y, w, h, 8);
+    turubai_brashi(sura_t, 16777215, 30);
+    turubai_mpaka(sura_t, x, y, w, h, 8);
+    n64 kando = 48;
+    n64 xs = x + kando;
+    n8 m[200];
+    // kichwa cha ukurasa
+    mfuatano_umbiza(m, 200, ui("The Constitution of %s"), taifa, 0, 0, 0, 0, 0);
+    turubai_brashi(sura_t, SURA_HAFIFU, 255);
+    maandishi_chora(sura_t, sura_serif, m, xs, y + 16, 12);
+    mfuatano_umbiza(m, 200, ui("Page %d of %d"), skrini_katiba_ukurasa + 1, kb_kurasa, 0, 0, 0, 0);
+    maandishi_chora(sura_t, sura_serif, m, x + w - kando - maandishi_upana(sura_serif, m, 12), y + 16, 12);
+    turubai_brashi(sura_t, 16777215, 30);
+    turubai_jaza(sura_t, xs, y + 38, w - 2 * kando, 1);
+    n64 yy = y + 52;
+    n64 mwanzo = skrini_katiba_ukurasa * kb_kwa_ukurasa;
+    n64 r = 0;
+    wakati (r < kb_kwa_ukurasa && mwanzo + r < kb_mistari) {
+        n64 l = mwanzo + r;
+        n8* s = kb_maandishi[l];
+        n64 aina = kb_aina[l];
+        n64 kf = kb_kifungu[l];
+        kama (kf >= 0 && kf == skrini_katiba_kifungu && aina == 0) {
+            turubai_brashi(sura_t, SURA_LAFUDHI, 30);
+            turubai_jaza(sura_t, xs - 8, yy - 2, w - 2 * kando + 16, 21);
+        }
+        kama (aina == 2) {
+            turubai_brashi(sura_t, SURA_LAFUDHI, 255);
+            maandishi_chora(sura_t, sura_nene, s, x + (w - maandishi_upana(sura_nene, s, 14)) / 2, yy, 14);
+        } sivyo kama (aina == 1) {
+            turubai_brashi(sura_t, SURA_MAANDISHI, 255);
+            maandishi_chora(sura_t, sura_nene, s, xs, yy + 2, 13);
+        } sivyo kama (aina == 0) {
+            Kifungu* k = hati_pata(kf);
+            kama (k != 0 && k->hai == 0) { turubai_brashi(sura_t, SURA_HAFIFU, 255); }
+            sivyo kama (k != 0 && k->marekebisho > 0) { turubai_brashi(sura_t, SURA_LAFUDHI, 255); }
+            sivyo { turubai_brashi(sura_t, SURA_MAANDISHI, 255); }
+            maandishi_chora(sura_t, sura_serif, s, xs, yy, 14);
+        }
+        kama (kf >= 0) { bofya_ongeza(xs - 8, yy - 2, w - 2 * kando + 16, 21, KB_KIFUNGU, kf); }
+        yy = yy + 21;
+        r = r + 1;
+    }
+    // kurasa
+    n64 by = y + h - 34;
+    serikali_kitufe("<", x + w / 2 - 70, by, 0, skrini_katiba_ukurasa > 0, KB_UKURASA, 0 - 1);
+    serikali_kitufe(">", x + w / 2 + 40, by, 0, skrini_katiba_ukurasa + 1 < kb_kurasa, KB_UKURASA, 1);
+    mfuatano_umbiza(m, 200, "%d", skrini_katiba_ukurasa + 1, 0, 0, 0, 0, 0);
+    turubai_brashi(sura_t, SURA_HAFIFU, 255);
+    maandishi_chora(sura_t, sura_serif, m, x + w / 2 - maandishi_upana(sura_serif, m, 13) / 2, by + 4, 13);
+}
+
+// Jedwali la yaliyomo: kila sehemu na ukurasa wake; takwimu za katiba.
+w0 skrini_katiba_yaliyomo(Dola* d, n64 x, n64 y, n64 wk, n64 h) {
+    sura_paneli(x, y, wk, h, ui("CONTENTS"));
+    n8 m[160];
+    mfuatano_umbiza(m, 160, ui("%d articles  ·  %d clauses in force  ·  %d pages  ·  version %d"), hati_ibara_idadi, hati_hai(), kb_kurasa, hati_toleo + 1, 0, 0);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(m, x + 16, y + 32, 11);
+    n64 yy = y + 54;
+    n64 s = 0;
+    wakati (s < SEHEMU_IDADI && yy + 20 < y + h) {
+        n64 vifungu = 0;
+        n64 i = 0;
+        wakati (i < hati_idadi) {
+            Kifungu* k = hati_pata(i);
+            kama (hati_sehemu_ya_aina(k->aina) == s) { vifungu = vifungu + 1; }
+            i = i + 1;
+        }
+        kama (vifungu > 0) {
+            n32 hapa = skrini_katiba_ukurasa >= kb_ukurasa_wa_sehemu[s] && (s + 1 >= SEHEMU_IDADI || skrini_katiba_ukurasa < kb_ukurasa_wa_sehemu[s + 1] || kb_ukurasa_wa_sehemu[s + 1] == 0);
+            kama (hapa) { sura_rangi(SURA_LAFUDHI); } sivyo { sura_rangi(SURA_MAANDISHI); }
+            mfuatano_umbiza(m, 160, "%d  %s", s + 1, sehemu_jina(s), 0, 0, 0, 0);
+            turubai_kata(sura_t, x, yy - 2, wk - 90, 20);
+            sura_lebo(m, x + 16, yy, 12);
+            turubai_kata_yote(sura_t);
+            mfuatano_umbiza(m, 160, "%d  ·  p.%d", vifungu, kb_ukurasa_wa_sehemu[s] + 1, 0, 0, 0, 0);
+            sura_rangi(SURA_HAFIFU);
+            sura_lebo_kulia(m, x + wk - 16, yy, 11);
+            bofya_ongeza(x + 8, yy - 3, wk - 16, 21, KB_SEHEMU, s);
+            yy = yy + 21;
+        }
+        s = s + 1;
+    }
+}
+
+// Mkaguzi wa kifungu: maandishi, vigezo na marekebisho.
+w0 skrini_katiba_mkaguzi(Dola* d, Wahusika* w, n8* taifa, n32 ni_lako, n64 x, n64 y, n64 wk, n64 h) {
+    Kifungu* k = hati_pata(skrini_katiba_kifungu);
+    n8 m[200];
+    hati_kichwa_cha_kifungu(skrini_katiba_kifungu, m, 200);
+    sura_paneli(x, y, wk, h, ui("CLAUSE"));
+    kama (k == 0) { rudisha; }
+    sura_rangi(SURA_LAFUDHI);
+    sura_lebo_nene(m, x + 16, y + 32, 14);
+    n8 kichwa[200];
+    n64 kwanza = skrini_katiba_kifungu;
+    wakati (kwanza > 0 && hati_pata(kwanza - 1)->ibara == k->ibara) { kwanza = kwanza - 1; }
+    hati_kichwa_cha_ibara(kwanza, d, w, kichwa, 200);
+    sura_rangi(SURA_HAFIFU);
+    turubai_kata(sura_t, x, y, wk - 8, h);
+    sura_lebo(kichwa, x + 16, y + 52, 11);
+    turubai_kata_yote(sura_t);
+    n8* maandishi = tenga(2048);
+    hati_andika(skrini_katiba_kifungu, d, w, taifa, maandishi, 2048);
+    sura_rangi(SURA_MAANDISHI);
+    n64 yy = skrini_katiba_aya(maandishi, sura_serif, 13, x + 16, y + 74, wk - 32, y + 70, y + h - 20);
+    achilia maandishi;
+    yy = yy + 8;
+    kama (k->marekebisho > 0) {
+        mfuatano_umbiza(m, 200, ui("Amended %d times"), k->marekebisho, 0, 0, 0, 0, 0);
+        sura_rangi(SURA_LAFUDHI);
+        sura_lebo(m, x + 16, yy, 11);
+        yy = yy + 20;
+    }
+    kama (ni_lako == 0) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(ui("You can amend only your own nation's constitution."), x + 16, yy, 12);
+        rudisha;
+    }
+    n64 p = 0;
+    wakati (p < 4) {
+        n8* jina = hati_jina_la_kigezo(k->aina, p);
+        kama (jina != 0 && k->hai) {
+            n64 sasa = k->p0;
+            kama (p == 1) { sasa = k->p1; }
+            kama (p == 2) { sasa = k->p2; }
+            kama (p == 3) { sasa = k->p3; }
+            n64 pendekezo = skrini_katiba_pendekezo[p];
+            sura_rangi(SURA_HAFIFU);
+            turubai_kata(sura_t, x, yy, (wk * 52) / 100, 26);
+            sura_lebo(jina, x + 16, yy + 4, 11);
+            turubai_kata_yote(sura_t);
+            n64 xp = x + (wk * 54) / 100;
+            n64 hatua = 1;
+            kama (hati_kigezo_juu(k->aina, p) >= 50) { hatua = 5; }
+            serikali_kitufe("<", xp, yy, 0, pendekezo - hatua >= hati_kigezo_chini(k->aina, p), KB_PUNGUZA, p);
+            mfuatano_umbiza(m, 200, "%d", pendekezo, 0, 0, 0, 0, 0);
+            kama (pendekezo != sasa) { sura_rangi(SURA_LAFUDHI); } sivyo { sura_rangi(SURA_MAANDISHI); }
+            sura_lebo_nene(m, xp + 36, yy + 3, 13);
+            serikali_kitufe(">", xp + 76, yy, 0, pendekezo + hatua <= hati_kigezo_juu(k->aina, p), KB_ONGEZA, p);
+            kama (pendekezo != sasa) { serikali_kitufe(ui("Propose"), x + wk - 86, yy, 1, nguvu_mtaji >= GHARAMA_MAREKEBISHO, KB_PENDEKEZA, p); }
+            yy = yy + 30;
+        }
+        p = p + 1;
+    }
+    kama (k->hai && k->aina != K_DOLA && k->aina != K_MAREKEBISHO) {
+        mfuatano_umbiza(m, 200, ui("Propose repeal (%d)"), GHARAMA_MAREKEBISHO, 0, 0, 0, 0, 0);
+        serikali_kitufe(m, x + 16, yy + 4, 0, nguvu_mtaji >= GHARAMA_MAREKEBISHO, KB_FUTA, 0);
+        yy = yy + 32;
+    }
+    mfuatano_umbiza(m, 200, ui("Procedure: %s"), utaratibu_jina(hati_utaratibu(d)), 0, 0, 0, 0, 0);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(m, x + 16, yy + 6, 11);
+    kama (skrini_katiba_ujumbe[0] != 0) {
+        sura_rangi(SURA_LAFUDHI);
+        turubai_kata(sura_t, x, yy + 22, wk - 8, 22);
+        sura_lebo(skrini_katiba_ujumbe, x + 16, yy + 26, 12);
+        turubai_kata_yote(sura_t);
+    }
+}
+
+// Aya inayofungwa, ikichorwa tu ndani ya [juu, chini).
 n64 skrini_katiba_aya(n8* s, Fonti* f, n64 px, n64 x, n64 y, n64 w, n64 juu, n64 chini) {
     n8 mstari[512];
     n64 n = 0;
     n64 i = 0;
     n64 mwisho_wa_neno = 0;
     n64 chanzo_cha_neno = 0;
-    n64 kimo = px + 9;
+    n64 kimo = px + 8;
     wakati (s[i] != 0) {
-        n64 c = s[i];
-        mstari[n] = c;
+        mstari[n] = s[i];
         n = n + 1;
         mstari[n] = 0;
+        kama (s[i] == 32) { mwisho_wa_neno = n; chanzo_cha_neno = i + 1; }
         i = i + 1;
-        kama (c == 32) { mwisho_wa_neno = n; chanzo_cha_neno = i; }
         kama (n >= 500 || maandishi_upana(f, mstari, px) > w) {
             kama (mwisho_wa_neno > 0) { n = mwisho_wa_neno; i = chanzo_cha_neno; }
             mstari[n] = 0;
@@ -49,215 +318,98 @@ n64 skrini_katiba_aya(n8* s, Fonti* f, n64 px, n64 x, n64 y, n64 w, n64 juu, n64
     rudisha y;
 }
 
-w0 skrini_katiba_hati(Dola* d, n8* taifa, n64 x, n64 y, n64 w, n64 h) {
-    // karatasi: paneli angavu kidogo yenye ukingo
-    turubai_brashi(sura_t, SURA_PANELI_JUU, 255);
-    turubai_mviringo(sura_t, x, y, w, h, 8);
-    turubai_brashi(sura_t, 16777215, 30);
-    turubai_mpaka(sura_t, x, y, w, h, 8);
-    n64 kando = 56;
-    n64 xs = x + kando;
-    n64 ws = w - 2 * kando;
-    n64 juu = y + 12;
-    n64 chini = y + h - 12;
-    n64 yy = y + 40 - skrini_katiba_tembea;
-    n8 kichwa[160];
-    n8 kubwa[160];
-    mfuatano_umbiza(kichwa, 160, ui("The Constitution of %s"), taifa, 0, 0, 0, 0, 0);
-    skrini_herufi_kubwa(kubwa, 160, kichwa);
-    n64 wk = maandishi_upana(sura_nene, kubwa, 22);
-    kama (yy >= juu && yy + 30 <= chini) {
-        turubai_brashi(sura_t, SURA_MAANDISHI, 255);
-        maandishi_chora(sura_t, sura_nene, kubwa, x + (w - wk) / 2, yy, 22);
-    }
-    yy = yy + 36;
-    n8 m[160];
-    mfuatano_umbiza(m, 160, "%s  ·  %s", ui(dola_aina_jina(d->aina)), utaratibu_jina(hati_utaratibu(d)), 0, 0, 0, 0);
-    n64 wm = maandishi_upana(sura_serif, m, 14);
-    kama (yy >= juu && yy + 20 <= chini) {
-        turubai_brashi(sura_t, SURA_HAFIFU, 255);
-        maandishi_chora(sura_t, sura_serif, m, x + (w - wm) / 2, yy, 14);
-    }
-    yy = yy + 30;
-    kama (yy >= juu && yy <= chini) {
-        turubai_brashi(sura_t, SURA_LAFUDHI, 255);
-        turubai_jaza(sura_t, x + w / 2 - 40, yy, 80, 2);
-    }
-    yy = yy + 24;
-    n64 i = 0;
-    wakati (i < hati_ibara_idadi) {
-        Ibara* b = hati_ibara_pata(i);
-        turubai_brashi(sura_t, SURA_LAFUDHI, 255);
-        kama (yy >= juu && yy + 24 <= chini) { maandishi_chora(sura_t, sura_nene, b->kichwa, xs, yy, 15); }
-        yy = yy + 26;
-        turubai_brashi(sura_t, SURA_MAANDISHI, 255);
-        kama (i == 0) { yy = skrini_katiba_aya(b->maandishi, sura_serif, 15, xs, yy, ws, juu, chini); }
-        sivyo { yy = skrini_katiba_aya(b->maandishi, sura_kawaida, 14, xs, yy, ws, juu, chini); }
-        yy = yy + 18;
-        i = i + 1;
-    }
-    // urefu wa hati: zuia kusogeza kupita mwisho
-    n64 urefu = yy + skrini_katiba_tembea - y;
-    kama (skrini_katiba_tembea > urefu - h + 40) { skrini_katiba_tembea = urefu - h + 40; }
-    kama (skrini_katiba_tembea < 0) { skrini_katiba_tembea = 0; }
-    kama (urefu > h) {
-        // kiashiria cha kusogeza
-        n64 kh = (h * h) / urefu;
-        n64 ky = y + (skrini_katiba_tembea * h) / urefu;
-        turubai_brashi(sura_t, 16777215, 40);
-        turubai_mviringo(sura_t, x + w - 8, ky + 4, 4, kh - 8, 2);
-    }
-}
-
-// Mhimili mmoja wa dola: kisanduku chenye jina, idadi ya vyeo na mkuu wake.
-w0 skrini_katiba_mhimili(n8* jina, n8* mkuu, n64 idadi, n64 rangi, n64 x, n64 y, n64 w) {
-    turubai_brashi(sura_t, SURA_PANELI_JUU, 255);
-    turubai_mviringo(sura_t, x, y, w, 64, 8);
-    turubai_brashi(sura_t, rangi, 255);
-    turubai_mviringo(sura_t, x, y + 8, 3, 48, 1);
-    sura_rangi(SURA_MAANDISHI);
-    turubai_kata(sura_t, x, y, w - 6, 64);
-    sura_lebo_kati(jina, x + 12, y + 8, 12);
-    sura_rangi(SURA_HAFIFU);
-    sura_lebo(mkuu, x + 12, y + 26, 11);
-    n8 m[32];
-    sura_namba(m, idadi);
-    sura_rangi(rangi);
-    sura_lebo_nene(m, x + 12, y + 42, 13);
-    turubai_kata_yote(sura_t);
-}
-
-n64 skrini_katiba_idadi_ya_tawi(Wahusika* w, n64 tawi) {
-    n64 n = 0;
-    n64 i = 0;
-    wakati (i < w->idadi) {
-        MhusikaWaDola* m = wahusika_pata(w, i);
-        kama (m->tawi == tawi) { n = n + 1; }
-        i = i + 1;
-    }
-    rudisha n;
-}
-
-// Mihimili ya dola na nani anamdhibiti nani.
-w0 skrini_katiba_mihimili(Dola* d, Wahusika* w, n64 x, n64 y, n64 wk, n64 h) {
-    sura_paneli(x, y, wk, h, ui("ARMS OF GOVERNMENT"));
-    n64 bw = (wk - 32 - 2 * 12) / 3;
-    n64 y1 = y + 40;
-    n8 m[96];
-    MhusikaWaDola* mkuu = wahusika_pata(w, 0);
-    skrini_katiba_mhimili(ui("Executive"), mkuu->cheo, skrini_katiba_idadi_ya_tawi(w, TAWI_UTENDAJI), SURA_LAFUDHI, x + 16, y1, bw);
-    n64 viti = 0;
-    n64 b = 0;
-    wakati (b < d->mabaraza) { viti = viti + d->baraza_viti[b]; b = b + 1; }
-    mfuatano_umbiza(m, 96, ui("%d chamber(s)"), d->mabaraza, 0, 0, 0, 0, 0);
-    skrini_katiba_mhimili(ui("Legislature"), m, viti, SURA_BAHARI, x + 16 + bw + 12, y1, bw);
-    mfuatano_umbiza(m, 96, ui("High Court, %d justices"), NGUVU_BENCHI, 0, 0, 0, 0, 0);
-    skrini_katiba_mhimili(ui("Judiciary"), m, skrini_katiba_idadi_ya_tawi(w, TAWI_MAHAKAMA) + NGUVU_BENCHI, 11032472, x + 16 + 2 * (bw + 12), y1, bw);
-    n64 y2 = y1 + 64 + 36;
-    skrini_katiba_mhimili(ui("Armed forces"), ui("Commander-in-Chief: head of state"), skrini_katiba_idadi_ya_tawi(w, TAWI_JESHI), SURA_HASI, x + 16 + bw / 2, y2, bw);
-    skrini_katiba_mhimili(ui("Provinces"), ui("Governors and chiefs"), skrini_katiba_idadi_ya_tawi(w, TAWI_MIKOA), SURA_CHANYA, x + 16 + bw / 2 + bw + 12, y2, bw);
-    // mistari ya udhibiti kati ya mihimili
-    turubai_brashi(sura_t, 16777215, 50);
-    turubai_jaza(sura_t, x + 16 + bw, y1 + 32, 12, 2);
-    turubai_jaza(sura_t, x + 16 + 2 * bw + 12, y1 + 32, 12, 2);
-    turubai_jaza(sura_t, x + 16 + bw, y1 + 64, 2, 36);
-    turubai_jaza(sura_t, x + 16 + bw + 12 + bw / 2, y1 + 64, 2, 36);
-    // maandishi ya udhibiti
-    n64 yy = y2 + 80;
-    n8* kwanza = ui("The executive answers to the head of state alone.");
-    kama (d->aina == DOLA_JAMHURI_YA_BUNGE || d->aina == DOLA_UFALME_WA_KATIBA || d->aina == DOLA_JAMHURI_NUSU_RAIS) { kwanza = ui("The government must keep the confidence of the legislature."); }
-    n8* pili = ui("The head of state cannot block the laws.");
-    kama (hati_vifungu[KIFUNGU_TURUFU]) { pili = ui("The head of state may veto; two thirds override."); }
-    n8* tatu = ui("The judiciary is appointed by the head of state.");
-    kama (d->mabaraza > 0 && hati_ni_jamhuri(d)) { tatu = ui("Judges are confirmed by the upper chamber."); }
-    sura_rangi(SURA_HAFIFU);
-    sura_lebo(kwanza, x + 16, yy, 12);
-    sura_lebo(pili, x + 16, yy + 20, 12);
-    sura_lebo(tatu, x + 16, yy + 40, 12);
-}
-
-// Meza ya marekebisho: kila kifungu, thamani ya sasa, pendekezo na kitufe.
-w0 skrini_katiba_marekebisho(Dola* d, Wahusika* w, n64 x, n64 y, n64 wk, n64 h) {
-    sura_paneli(x, y, wk, h, ui("AMEND THE CONSTITUTION"));
-    n8 m[160];
-    mfuatano_umbiza(m, 160, "%s  ·  %s %d", utaratibu_jina(hati_utaratibu(d)), ui("capital"), GHARAMA_MAREKEBISHO, 0, 0, 0);
-    sura_rangi(SURA_LAFUDHI);
-    sura_lebo_kati(m, x + 16, y + 34, 12);
-    n64 yy = y + 60;
-    n8 a[48];
-    n8 b[48];
-    n64 k = 0;
-    wakati (k < KIFUNGU_IDADI && yy + 30 < y + h) {
-        n64 sasa = hati_vifungu[k];
-        n64 pendekezo = skrini_katiba_pendekezo[k];
-        sura_safu(x + 8, yy - 4, wk - 16, 30, k, pendekezo != sasa);
-        sura_rangi(SURA_MAANDISHI);
-        sura_lebo(kifungu_jina(k), x + 16, yy + 2, 12);
-        sura_rangi(SURA_HAFIFU);
-        turubai_kata(sura_t, x + (wk * 38) / 100, yy - 4, (wk * 22) / 100, 30);
-        sura_lebo(kifungu_thamani_jina(k, sasa, a), x + (wk * 38) / 100, yy + 2, 12);
-        turubai_kata_yote(sura_t);
-        n64 xp = x + (wk * 61) / 100;
-        serikali_kitufe("<", xp, yy - 1, 0, pendekezo > kifungu_chini(k), KB_PUNGUZA, k);
-        sura_rangi(SURA_MAANDISHI);
-        kama (pendekezo != sasa) { sura_rangi(SURA_LAFUDHI); }
-        turubai_kata(sura_t, xp + 28, yy - 4, (wk * 20) / 100, 30);
-        sura_lebo(kifungu_thamani_jina(k, pendekezo, b), xp + 32, yy + 2, 12);
-        turubai_kata_yote(sura_t);
-        serikali_kitufe(">", xp + 32 + (wk * 20) / 100, yy - 1, 0, pendekezo < kifungu_juu(k), KB_ONGEZA, k);
-        kama (pendekezo != sasa) { serikali_kitufe(ui("Propose"), x + wk - 86, yy - 1, 1, nguvu_mtaji >= GHARAMA_MAREKEBISHO, KB_PENDEKEZA, k); }
-        yy = yy + 32;
-        k = k + 1;
-    }
-    kama (skrini_katiba_ujumbe[0] != 0) {
-        sura_rangi(SURA_LAFUDHI);
-        turubai_kata(sura_t, x, yy, wk - 8, 24);
-        sura_lebo(skrini_katiba_ujumbe, x + 16, yy + 4, 12);
-        turubai_kata_yote(sura_t);
-    }
-}
-
-// Marekebisho yanayosubiri kura na yaliyopitishwa.
-w0 skrini_katiba_historia(Dola* d, n64 zamu, n64 x, n64 y, n64 wk, n64 h) {
+// Marekebisho: yanayosubiri kura na yaliyopitishwa.
+w0 skrini_katiba_historia(Dola* d, n64 x, n64 y, n64 wk, n64 h) {
     sura_paneli(x, y, wk, h, ui("AMENDMENTS"));
-    n64 yy = y + 38;
-    n8 m[160];
-    n8 a[48];
+    n64 yy = y + 36;
+    n8 m[200];
+    n8 a[64];
     n64 i = nguvu_hoja_idadi - 1;
-    wakati (i >= 0 && yy + 22 < y + h) {
+    wakati (i >= 0 && yy + 20 < y + h) {
         Hoja* hj = nguvu_hoja_pata(i);
         kama (hj->aina == HOJA_MAREKEBISHO) {
+            hati_kichwa_cha_kifungu(hj->kifungu, a, 64);
             n8* hali_yake = ui("vote pending");
             kama (hj->hatua == HOJA_IMEPITA) { hali_yake = ui("carried"); }
             kama (hj->hatua == HOJA_IMESHINDWA) { hali_yake = ui("defeated"); }
-            mfuatano_umbiza(m, 160, "%s: %s  ·  %s", kifungu_jina(hj->kifungu), kifungu_thamani_jina(hj->kifungu, hj->thamani, a), hali_yake, 0, 0, 0);
+            mfuatano_umbiza(m, 200, "%s  ·  %s", a, hali_yake, 0, 0, 0, 0);
             sura_rangi(SURA_MAANDISHI);
             sura_lebo(m, x + 16, yy, 12);
             kama (hj->hatua == HOJA_INASUBIRI) {
-                mfuatano_umbiza(m, 160, "%d%%", nguvu_uwezekano(hj, d), 0, 0, 0, 0, 0);
+                mfuatano_umbiza(m, 200, "%d%%", nguvu_uwezekano(hj, d), 0, 0, 0, 0, 0);
                 sura_rangi(SURA_LAFUDHI);
                 sura_lebo_kulia(m, x + wk - 16, yy, 12);
             }
-            yy = yy + 22;
+            yy = yy + 20;
         }
         i = i - 1;
     }
     i = hati_historia_idadi - 1;
-    wakati (i >= 0 && yy + 22 < y + h) {
-        n8 tarehe[64];
-        tarehe_maandishi(tarehe_siku_ya_zamu(hati_historia[i * 3 + 2]), tarehe, 64);
-        mfuatano_umbiza(m, 160, "%s: %s", kifungu_jina(hati_historia[i * 3]), kifungu_thamani_jina(hati_historia[i * 3], hati_historia[i * 3 + 1], a), 0, 0, 0, 0);
+    wakati (i >= 0 && yy + 20 < y + h) {
+        n64 b = i * 4;
+        hati_kichwa_cha_kifungu(hati_historia[b], a, 64);
+        kama (hati_historia[b + 1] < 0) { mfuatano_umbiza(m, 200, ui("%s repealed"), a, 0, 0, 0, 0, 0); }
+        sivyo { mfuatano_umbiza(m, 200, ui("%s set to %d"), a, hati_historia[b + 2], 0, 0, 0, 0); }
         sura_rangi(SURA_CHANYA);
         sura_lebo(m, x + 16, yy, 12);
+        n8 tarehe[64];
+        tarehe_maandishi(tarehe_siku_ya_zamu(hati_historia[b + 3]), tarehe, 64);
         sura_rangi(SURA_HAFIFU);
         sura_lebo_kulia(tarehe, x + wk - 16, yy, 11);
-        yy = yy + 22;
+        yy = yy + 20;
         i = i - 1;
     }
-    kama (yy == y + 38) {
+    kama (yy == y + 36) {
         sura_rangi(SURA_HAFIFU);
-        sura_lebo(ui("The constitution has not been amended."), x + 16, yy, 12);
+        sura_lebo(ui("No amendments yet."), x + 16, yy, 12);
     }
+}
+
+// Mihimili ya dola kama mstari mmoja wa visanduku.
+w0 skrini_katiba_mihimili(Dola* d, Wahusika* w, n64 x, n64 y, n64 wk) {
+    n64 bw = (wk - 4 * 10) / 5;
+    n64 viti = 0;
+    n64 b = 0;
+    wakati (b < d->mabaraza) { viti = viti + d->baraza_viti[b]; b = b + 1; }
+    n8 m[96];
+    MhusikaWaDola* mkuu = wahusika_pata(w, 0);
+    skrini_katiba_mhimili(ui("Executive"), mkuu->cheo, serikali_idadi_ya_tawi(w, TAWI_UTENDAJI), SURA_LAFUDHI, x, y, bw);
+    mfuatano_umbiza(m, 96, ui("%d chamber(s)"), d->mabaraza, 0, 0, 0, 0, 0);
+    skrini_katiba_mhimili(ui("Legislature"), m, viti, SURA_BAHARI, x + (bw + 10), y, bw);
+    mfuatano_umbiza(m, 96, ui("High Court, %d justices"), NGUVU_BENCHI, 0, 0, 0, 0, 0);
+    skrini_katiba_mhimili(ui("Judiciary"), m, serikali_idadi_ya_tawi(w, TAWI_MAHAKAMA) + NGUVU_BENCHI, 11032472, x + 2 * (bw + 10), y, bw);
+    skrini_katiba_mhimili(ui("Armed forces"), ui("Commander-in-Chief"), serikali_idadi_ya_tawi(w, TAWI_JESHI), SURA_HASI, x + 3 * (bw + 10), y, bw);
+    skrini_katiba_mhimili(ui("Provinces"), ui("Governors and chiefs"), serikali_idadi_ya_tawi(w, TAWI_MIKOA), SURA_CHANYA, x + 4 * (bw + 10), y, wk - 4 * (bw + 10));
+}
+
+w0 skrini_katiba_mhimili(n8* jina, n8* mkuu, n64 idadi, n64 rangi, n64 x, n64 y, n64 w) {
+    turubai_brashi(sura_t, SURA_PANELI, 255);
+    turubai_mviringo(sura_t, x, y, w, 58, 8);
+    turubai_brashi(sura_t, 16777215, 20);
+    turubai_mpaka(sura_t, x, y, w, 58, 8);
+    turubai_brashi(sura_t, rangi, 255);
+    turubai_mviringo(sura_t, x, y + 8, 3, 42, 1);
+    turubai_kata(sura_t, x, y, w - 6, 58);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kati(jina, x + 14, y + 8, 12);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(mkuu, x + 14, y + 26, 11);
+    turubai_kata_yote(sura_t);
+    n8 m[32];
+    sura_namba(m, idadi);
+    sura_rangi(rangi);
+    sura_lebo_kulia(m, x + w - 12, y + 8, 14);
+}
+
+w0 skrini_katiba_chagua(n64 i) {
+    Kifungu* k = hati_pata(i);
+    kama (k == 0) { rudisha; }
+    skrini_katiba_kifungu = i;
+    skrini_katiba_pendekezo[0] = k->p0;
+    skrini_katiba_pendekezo[1] = k->p1;
+    skrini_katiba_pendekezo[2] = k->p2;
+    skrini_katiba_pendekezo[3] = k->p3;
+    skrini_katiba_ujumbe[0] = 0;
 }
 
 w0 skrini_katiba_chora(Mchezo* g, Turubai* t, n64 taifa) {
@@ -267,60 +419,90 @@ w0 skrini_katiba_chora(Mchezo* g, Turubai* t, n64 taifa) {
     turubai_jaza(t, 0, 0, t->upana, t->kimo);
     skrini_upau_wa_juu(g, t);
     skrini_urambazaji(t, 14);
-    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), taifa);
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
     Dola* d = skrini_siasa_dola(g, taifa);
     Wahusika* w = skrini_mkutano_watu(g, taifa);
     kama (tn == 0 || d == 0 || w == 0) { rudisha; }
     nguvu_hakikisha(d, taifa);
+    kama (skrini_katiba_pendekezo == 0) { skrini_katiba_pendekezo = tenga(8 * 4); }
+    // mikoa ya ramani na sarafu huingia katika katiba
     n64 kabla = hati_taifa;
-    hati_anzisha(d, taifa);
-    kama (skrini_katiba_pendekezo == 0) { skrini_katiba_pendekezo = tenga(8 * KIFUNGU_IDADI); kabla = 0 - 9; }
-    kama (kabla != taifa) {
-        n64 k = 0;
-        wakati (k < KIFUNGU_IDADI) { skrini_katiba_pendekezo[k] = hati_vifungu[k]; k = k + 1; }
-        skrini_katiba_ujumbe[0] = 0;
-        skrini_katiba_tembea = 0;
+    kama (hati_taifa != taifa) {
+        kt_mikoa_taifa = 0 - 1;
+        kt_kusanya_mikoa(taifa);
+        hati_mikoa_idadi = kt_mikoa_idadi;
+        hati_mikoa_majina = kt_mkoa_jina;
+        Sarafu2* s = soko_sarafu_ya(taifa);
+        kama (s != 0) { hati_jina_la_sarafu = s->jina; }
     }
-    hati_jenga(d, tn->jina, w);
+    hati_hakikisha(d, w, taifa);
+    kama (kabla != taifa) { skrini_katiba_ukurasa = 0; skrini_katiba_chagua(0); }
+    n32 ni_lako = taifa == tm->faharisi_ya_taifa_la_mchezaji;
+    kama (ni_lako) { hati_tumia_kwa_injini(d); }
     n64 x = SKRINI_UPANA_WA_PEMBENI + 25;
     n64 y = SKRINI_UPAU_WA_JUU + 10;
     n64 wote = t->upana - x - 24;
-    skrini_kichwa_fm(g, t, ui("Constitution"), ui("The supreme law of the state, how power is divided, and how it may be changed."), x, y);
-    y = y + 70;
+    n8 maelezo[200];
+    mfuatano_umbiza(maelezo, 200, ui("The supreme law of %s, generated from its institutions and amended %s."), tn->jina, utaratibu_jina(hati_utaratibu(d)), 0, 0, 0, 0);
+    skrini_kichwa_fm(g, t, ui("Constitution"), maelezo, x, y);
+    y = y + 68;
     n64 pengo = 12;
-    n64 h = t->kimo - y - 16;
-    n64 wl = (wote * 56) / 100;
+    n64 wl = (wote * 58) / 100;
     n64 xr = x + wl + pengo;
     n64 wr = wote - wl - pengo;
-    skrini_katiba_hati(d, tn->jina, x, y, wl, h);
-    n64 h1 = 300;
-    n64 h2 = 60 + KIFUNGU_IDADI * 32 + 34;
-    skrini_katiba_mihimili(d, w, xr, y, wr, h1);
-    skrini_katiba_marekebisho(d, w, xr, y + h1 + pengo, wr, h2);
-    skrini_katiba_historia(d, g->zamu_ya_sasa, xr, y + h1 + h2 + 2 * pengo, wr, h - h1 - h2 - 2 * pengo);
+    skrini_katiba_mihimili(d, w, x, y, wl);
+    n64 yk = y + 58 + pengo;
+    n64 hk = t->kimo - yk - 16;
+    kb_panga(d, w, tn->jina, wl - 96, hk - 100);
+    kama (skrini_katiba_ukurasa >= kb_kurasa) { skrini_katiba_ukurasa = kb_kurasa - 1; }
+    skrini_katiba_karatasi(d, tn->jina, x, yk, wl, hk);
+    n64 h = t->kimo - y - 16;
+    n64 h1 = 54 + 13 * 21 + 10;
+    n64 h2 = (h - h1 - 2 * pengo) * 62 / 100;
+    skrini_katiba_yaliyomo(d, xr, y, wr, h1);
+    skrini_katiba_mkaguzi(d, w, tn->jina, ni_lako, xr, y + h1 + pengo, wr, h2);
+    skrini_katiba_historia(d, xr, y + h1 + h2 + 2 * pengo, wr, h - h1 - h2 - 2 * pengo);
 }
 
 n32 skrini_katiba_bofya(Mchezo* g, n64 taifa, n64 px, n64 py) {
     n64 hoja = 0;
     n64 k = bofya_tafuta(px, py, &hoja);
     kama (k == 0) { rudisha 0; }
-    kama (k == KB_PUNGUZA && skrini_katiba_pendekezo[hoja] > kifungu_chini(hoja)) { skrini_katiba_pendekezo[hoja] = skrini_katiba_pendekezo[hoja] - 1; }
-    kama (k == KB_ONGEZA && skrini_katiba_pendekezo[hoja] < kifungu_juu(hoja)) { skrini_katiba_pendekezo[hoja] = skrini_katiba_pendekezo[hoja] + 1; }
-    kama (k == KB_PENDEKEZA) {
+    Kifungu* kf = hati_pata(skrini_katiba_kifungu);
+    kama (k == KB_KIFUNGU) { skrini_katiba_chagua(hoja); }
+    kama (k == KB_UKURASA) {
+        skrini_katiba_ukurasa = skrini_katiba_ukurasa + hoja;
+        kama (skrini_katiba_ukurasa < 0) { skrini_katiba_ukurasa = 0; }
+        kama (skrini_katiba_ukurasa >= kb_kurasa) { skrini_katiba_ukurasa = kb_kurasa - 1; }
+    }
+    kama (k == KB_SEHEMU) { skrini_katiba_ukurasa = kb_ukurasa_wa_sehemu[hoja]; }
+    kama ((k == KB_PUNGUZA || k == KB_ONGEZA) && kf != 0) {
+        n64 hatua = 1;
+        kama (hati_kigezo_juu(kf->aina, hoja) >= 50) { hatua = 5; }
+        kama (k == KB_PUNGUZA) { skrini_katiba_pendekezo[hoja] = skrini_katiba_pendekezo[hoja] - hatua; }
+        sivyo { skrini_katiba_pendekezo[hoja] = skrini_katiba_pendekezo[hoja] + hatua; }
+        kama (skrini_katiba_pendekezo[hoja] < hati_kigezo_chini(kf->aina, hoja)) { skrini_katiba_pendekezo[hoja] = hati_kigezo_chini(kf->aina, hoja); }
+        kama (skrini_katiba_pendekezo[hoja] > hati_kigezo_juu(kf->aina, hoja)) { skrini_katiba_pendekezo[hoja] = hati_kigezo_juu(kf->aina, hoja); }
+    }
+    kama ((k == KB_PENDEKEZA || k == KB_FUTA) && kf != 0) {
         Dola* d = skrini_siasa_dola(g, taifa);
         Wahusika* w = skrini_mkutano_watu(g, taifa);
-        n64 r = hati_pendekeza(d, w, mkutano_ofisi, hoja, skrini_katiba_pendekezo[hoja], g->zamu_ya_sasa);
+        n64 kigezo = hoja;
+        n64 thamani = skrini_katiba_pendekezo[hoja];
+        kama (k == KB_FUTA) { kigezo = 0 - 1; thamani = 0; }
+        n64 r = hati_pendekeza(d, w, mkutano_ofisi, skrini_katiba_kifungu, kigezo, thamani, g->zamu_ya_sasa);
         kama (r == HATI_IMEPITISHWA) { nakili_mfuatano(skrini_katiba_ujumbe, ui("The amendment is in force.")); }
-        kama (r == HATI_KWA_BUNGE) { nakili_mfuatano(skrini_katiba_ujumbe, ui("The amendment is tabled; the chamber votes in two weeks and needs two thirds.")); }
+        kama (r == HATI_KWA_BUNGE) { nakili_mfuatano(skrini_katiba_ujumbe, ui("The amendment is tabled in the legislature.")); }
         kama (r == HATI_IMEKATALIWA) { nakili_mfuatano(skrini_katiba_ujumbe, ui("The amendment was rejected.")); }
         kama (r == HATI_HAKUNA_MAMLAKA) { nakili_mfuatano(skrini_katiba_ujumbe, ui("Only the head of state can amend by decree.")); }
         kama (r == HATI_HAKUNA_MTAJI) { nakili_mfuatano(skrini_katiba_ujumbe, ui("Not enough political capital.")); }
-        kama (r == HATI_IMEPITISHWA || r == HATI_IMEKATALIWA) { skrini_katiba_pendekezo[hoja] = hati_vifungu[hoja]; }
+        kama (r == HATI_IMELINDWA) { nakili_mfuatano(skrini_katiba_ujumbe, ui("Entrenched: rights may be extended but not curtailed.")); }
     }
     rudisha 1;
 }
 
-w0 skrini_katiba_tembeza(n64 pikseli) {
-    skrini_katiba_tembea = skrini_katiba_tembea + pikseli;
-    kama (skrini_katiba_tembea < 0) { skrini_katiba_tembea = 0; }
+w0 skrini_katiba_tembeza(n64 hatua) {
+    kama (hatua > 0 && skrini_katiba_ukurasa + 1 < kb_kurasa) { skrini_katiba_ukurasa = skrini_katiba_ukurasa + 1; }
+    kama (hatua < 0 && skrini_katiba_ukurasa > 0) { skrini_katiba_ukurasa = skrini_katiba_ukurasa - 1; }
 }

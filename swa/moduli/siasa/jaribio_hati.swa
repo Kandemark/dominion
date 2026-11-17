@@ -1,8 +1,9 @@
 husisha { moduli/siasa/hati.swa }
 
-// jaribio_hati.swa -- hati ya katiba na marekebisho kwa kila utaratibu:
-// amri ya mfalme kamili, theluthi mbili za bunge pamoja na kura ya maoni ya
-// jamhuri, na athari za vifungu (turufu, uhuru wa habari).
+// jaribio_hati.swa -- injini ya katiba: vifungu huzalishwa kutoka taasisi
+// (kila cheo, baraza, mkoa, haki), vigezo huendesha injini ya siasa,
+// marekebisho kwa amri na kwa bunge pamoja na kura ya maoni, ulinzi wa haki,
+// na mageuko ya matoleo.
 
 n64 makosa = 0;
 
@@ -10,68 +11,118 @@ w0 thibitisha(n8* jina, n32 sawa) {
     kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
 }
 
-Dola* tafuta_dola(n64 aina, n64 mabaraza) {
+Dola* tafuta_dola(n8* cheo, n64 aina, n64 mabaraza) {
     n64 mbegu = 0;
-    wakati (mbegu < 2000) {
-        Dola* d = dola_unda(mbegu, "Republic of Test", 30000000);
+    wakati (mbegu < 3000) {
+        Dola* d = dola_unda(mbegu, cheo, 30000000);
         kama (d->aina == aina && (mabaraza < 0 || d->mabaraza == mabaraza)) { rudisha d; }
         mbegu = mbegu + 1;
     }
     rudisha 0;
 }
 
-n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
-    // ufalme kamili: amri ya mkuu wa dola
-    Dola* f = 0;
-    n64 mbegu = 0;
-    wakati (f == 0 && mbegu < 3000) {
-        Dola* d = dola_unda(mbegu, "Kingdom of Test", 30000000);
-        kama (d->aina == DOLA_UFALME_KAMILI) { f = d; }
-        mbegu = mbegu + 1;
-    }
-    thibitisha("ufalme kamili", f != 0);
-    Wahusika* wf = wahusika_unda(f, 3, 30000000);
-    hati_taifa = 0 - 1;
-    hati_anzisha(f, 1);
-    thibitisha("utaratibu wa amri", hati_utaratibu(f) == UTARATIBU_AMRI);
-    hati_jenga(f, "Test", wf);
-    thibitisha("ibara", hati_ibara_idadi >= 12);
-    thibitisha("utangulizi wa kifalme", tafuta_mfuatano(hati_ibara_pata(0)->maandishi, "Crown") >= 0);
-    nguvu_mtaji = 50;
-    n64 uhalali = f->uhalali;
-    thibitisha("amri", hati_pendekeza(f, wf, 0, KIFUNGU_HABARI, 1, 3) == HATI_IMEPITISHWA);
-    thibitisha("kifungu kimebadilika", hati_vifungu[KIFUNGU_HABARI] == 1);
-    thibitisha("historia", hati_historia_idadi == 1);
-    thibitisha("mtaji wa marekebisho", nguvu_mtaji == 30);
-    thibitisha("asiye mkuu hawezi kuamuru", hati_pendekeza(f, wf, wf->msaidizi, KIFUNGU_HABARI, 0, 3) == HATI_HAKUNA_MAMLAKA);
-    hati_jenga(f, "Test", wf);
-    thibitisha("marekebisho kwenye hati", tafuta_mfuatano(hati_ibara_pata(hati_ibara_idadi - 1)->maandishi, "Amendment 1") >= 0);
+n64 hesabu_aina(n64 aina) {
+    n64 n = 0;
+    n64 i = 0;
+    wakati (i < hati_idadi) { kama (hati_pata(i)->aina == aina) { n = n + 1; } i = i + 1; }
+    rudisha n;
+}
 
-    // jamhuri ya rais: theluthi mbili za bunge, kisha kura ya maoni
-    Dola* r = tafuta_dola(DOLA_JAMHURI_YA_RAIS, 1);
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    // jamhuri ya rais yenye mabaraza mawili na mikoa minne
+    Dola* r = tafuta_dola("Republic of Test", DOLA_JAMHURI_YA_RAIS, 2);
     thibitisha("jamhuri", r != 0);
     Wahusika* wr = wahusika_unda(r, 5, 30000000);
     nguvu_jenga(r, 2, 9);
-    hati_anzisha(r, 2);
-    thibitisha("utaratibu wa bunge", hati_utaratibu(r) == UTARATIBU_BUNGE);
-    thibitisha("turufu ya rais", nguvu_ina_turufu(wr, r, wahusika_tafuta(wr, "President")));
-    nguvu_mtaji = 50;
-    thibitisha("kwa bunge", hati_pendekeza(r, wr, 0, KIFUNGU_TURUFU, 0, 4) == HATI_KWA_BUNGE);
-    // wajumbe wote wanaunga mkono; uhalali juu kwa kura ya maoni
+    n64* mikoa = tenga(8 * 4);
+    mikoa[0] = "Alpha";
+    mikoa[1] = "Beta";
+    mikoa[2] = "Gamma";
+    mikoa[3] = "Delta";
+    hati_mikoa_idadi = 4;
+    hati_mikoa_majina = mikoa;
+    hati_mwaka = 1900;
+    hati_hakikisha(r, wr, 2);
+    andika("katiba: vifungu %d, ibara %d\n", hati_idadi, hati_ibara_idadi, 0, 0, 0, 0);
+    thibitisha("vifungu vingi", hati_idadi > 120);
+    thibitisha("kila mkoa ni kifungu", hesabu_aina(K_MKOA) == 4);
+    thibitisha("kila baraza", hesabu_aina(K_BARAZA) == 2 && hesabu_aina(K_SPIKA) == 2);
+    thibitisha("haki za 1900", hesabu_aina(K_HAKI) >= 30);
+    thibitisha("uteuzi wa vyeo", hesabu_aina(K_UTEUZI) > 10);
+    n8* m = tenga(2048);
+    n64 i = 0;
+    n32 jina_la_mkoa = 0;
+    n32 yote_yana_maandishi = 1;
+    wakati (i < hati_idadi) {
+        hati_andika(i, r, wr, "Test", m, 2048);
+        kama (m[0] == 0) { yote_yana_maandishi = 0; andika("SHINDWA: kifungu %d (aina %d) hakina maandishi\n", i, hati_pata(i)->aina, 0, 0, 0, 0); }
+        kama (tafuta_mfuatano(m, "Province of Gamma") >= 0) { jina_la_mkoa = 1; }
+        i = i + 1;
+    }
+    thibitisha("kila kifungu kina maandishi", yote_yana_maandishi);
+    thibitisha("jina la mkoa kutoka ramani", jina_la_mkoa);
+    // vigezo huendesha injini
+    hati_tumia_kwa_injini(r);
+    Kifungu* sp = hati_tafuta(K_SPIKA, 0);
+    thibitisha("kiwango cha spika kutoka katiba", hoja_kiwango(HOJA_KUMSHTAKI_SPIKA) == sp->p0);
+    Kifungu* tf = hati_tafuta(K_MKUU_TURUFU, 0 - 1);
+    thibitisha("kupindua turufu kutoka katiba", nguvu_kiwango_cha_kupindua == tf->p1);
+    // marekebisho kwa bunge: kiwango cha kumwondoa spika kinashushwa hadi 51
+    n64 kifungu = 0;
+    i = 0;
+    wakati (i < hati_idadi) { kama (hati_pata(i) == sp) { kifungu = i; } i = i + 1; }
+    nguvu_mtaji = 60;
+    thibitisha("kwa bunge", hati_pendekeza(r, wr, 0, kifungu, 0, 51, 4) == HATI_KWA_BUNGE);
     n64 k = 0;
-    wakati (k < nguvu_hesabu[0]) { Mbunge* m = nguvu_pata(nguvu_mwanzo[0] + k); m->msimamo = 100; m->uaminifu = 0; k = k + 1; }
-    r->uhalali = 90;
-    nguvu_zamu(r, wr, 2, 6);
-    hati_zamu(r, wr, 6);
-    thibitisha("marekebisho yamethibitishwa", hati_vifungu[KIFUNGU_TURUFU] == 0);
-    thibitisha("turufu imeondolewa", nguvu_ina_turufu(wr, r, wahusika_tafuta(wr, "President")) == 0);
-    hati_jenga(r, "Test", wr);
-    thibitisha("hati ya jamhuri", tafuta_mfuatano(hati_ibara_pata(0)->maandishi, "We, the people") >= 0);
+    wakati (k < nguvu_hesabu[0]) { Mbunge* mb = nguvu_pata(nguvu_mwanzo[0] + k); mb->msimamo = 100; mb->uaminifu = 0; k = k + 1; }
+    r->uhalali = 95;
+    n64 z = 5;
+    wakati (z < 40 && sp->p0 != 51) { nguvu_zamu(r, wr, 2, z); hati_zamu(r, wr, z); z = z + 1; }
+    thibitisha("kifungu kimerekebishwa", sp->p0 == 51 && sp->marekebisho == 1);
+    thibitisha("injini imefuata", hoja_kiwango(HOJA_KUMSHTAKI_SPIKA) == 51);
+    thibitisha("historia", hati_historia_idadi == 1);
+    // ulinzi: haki haziwezi kubanwa
+    i = 0;
+    n64 haki = 0 - 1;
+    wakati (i < hati_idadi) { kama (hati_pata(i)->aina == K_HAKI) { haki = i; } i = i + 1; }
+    thibitisha("haki zimelindwa", hati_pendekeza(r, wr, 0, haki, 0 - 1, 0, 20) == HATI_IMELINDWA);
+
+    // ufalme kamili: amri, na haki za kisiasa hazipo
+    Dola* f = tafuta_dola("Kingdom of Test", DOLA_UFALME_KAMILI, 0 - 1);
+    thibitisha("ufalme kamili", f != 0);
+    Wahusika* wf = wahusika_unda(f, 3, 30000000);
+    hati_mikoa_idadi = 0;
+    hati_hakikisha(f, wf, 1);
+    thibitisha("utaratibu wa amri", hati_utaratibu(f) == UTARATIBU_AMRI);
+    n32 hakuna_uhuru_wa_habari = 1;
+    i = 0;
+    wakati (i < hati_idadi) { Kifungu* kk = hati_pata(i); kama (kk->aina == K_HAKI && kk->mada == 12) { hakuna_uhuru_wa_habari = 0; } i = i + 1; }
+    thibitisha("hakuna uhuru wa habari", hakuna_uhuru_wa_habari);
+    Kifungu* ur = hati_tafuta(K_URAIA, 0 - 1);
+    n64 kifungu_ur = 0;
+    i = 0;
+    wakati (i < hati_idadi) { kama (hati_pata(i) == ur) { kifungu_ur = i; } i = i + 1; }
+    nguvu_mtaji = 60;
+    thibitisha("amri", hati_pendekeza(f, wf, 0, kifungu_ur, 0, 12, 3) == HATI_IMEPITISHWA && ur->p0 == 12);
+    thibitisha("asiye mkuu hawezi", hati_pendekeza(f, wf, wf->msaidizi, kifungu_ur, 0, 2, 3) == HATI_HAKUNA_MAMLAKA);
+
+    // mageuko: toleo jipya hubadilisha vigezo vya katiba ya taifa
+    hati_hakikisha(r, wr, 2);
+    n64 kabla = 0;
+    i = 0;
+    wakati (i < hati_idadi) { Kifungu* kk = hati_pata(i); kabla = kabla + kk->p0 + kk->p1 * 3 + kk->p2 * 7; i = i + 1; }
+    n64 t = 0;
+    wakati (t < 6) { hati_ongeza_toleo(2); t = t + 1; }
+    hati_hakikisha(r, wr, 2);
+    n64 baada = 0;
+    i = 0;
+    wakati (i < hati_idadi) { Kifungu* kk = hati_pata(i); baada = baada + kk->p0 + kk->p1 * 3 + kk->p2 * 7; i = i + 1; }
+    thibitisha("toleo jipya limebadilika", hati_toleo == 6 && baada != kabla);
 
     kama (makosa > 0) {
         andika("hati: makosa %d\n", makosa, 0, 0, 0, 0, 0);
         rudisha 1;
     }
-    andika("hati: sawa, ibara %d\n", hati_ibara_idadi, 0, 0, 0, 0, 0);
+    andika("hati: sawa\n", 0, 0, 0, 0, 0, 0);
     rudisha 0;
 }

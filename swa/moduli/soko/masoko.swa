@@ -1,5 +1,6 @@
 husisha { moduli/skrini/dola_ya_taifa.swa }
 husisha { moduli/siasa/wahusika.swa }
+husisha { moduli/siasa/hati.swa }
 
 // masoko.swa -- sarafu za mataifa, masoko ya hisa, makampuni, matajiri,
 // pochi ya mchezaji na maisha ya kila taifa kila wiki.
@@ -293,6 +294,7 @@ n64 TUKIO_SARAFU = 4;
 n64 TUKIO_SOKO = 5;
 n64 TUKIO_UKUAJI = 6;
 n64 TUKIO_MAANDAMANO = 7;
+n64 TUKIO_KATIBA = 8;            // taifa limerekebisha katiba yake
 
 muundo TukioLaTaifa {
     n64 taifa;
@@ -663,6 +665,7 @@ w0 soko_mataifa_hai(Mchezo* g, n64 zamu) {
             kama (mchezaji == 0 && hatari > 0 && dola_nasibu(m, 612) % 100 < hatari) {
                 kama (dola_nasibu(m, 613) % 2 == 0) {
                     soko_tukio(t, TUKIO_MAPINDUZI, zamu, 0);
+                    hati_ongeza_toleo(t);
                     d->aina = DOLA_UTAWALA_WA_KIJESHI;
                     d->mkuu_wa_dola = ui("Chairman of the Military Council");
                     d->mkuu_wa_serikali = 0;
@@ -673,6 +676,12 @@ w0 soko_mataifa_hai(Mchezo* g, n64 zamu) {
                     soko_tukio(t, TUKIO_JARIBIO_LA_MAPINDUZI, zamu, 0);
                     d->utulivu = dola_rekebisha(d->utulivu, 0 - 5);
                 }
+            }
+            // marekebisho ya katiba: mataifa hubadilisha katiba zao wenyewe,
+            // mara nyingi zaidi uhalali ukiwa chini (mageuzi au kujiimarisha)
+            kama (mchezaji == 0 && dola_nasibu(m, 615) % 1000 < 4 + (100 - d->uhalali) / 10) {
+                hati_ongeza_toleo(t);
+                soko_tukio(t, TUKIO_KATIBA, zamu, hati_toleo_la(t));
             }
             // chaguzi kwa muhula: vyama vya serikali hubaki uhalali ukiwa juu
             kama (mchezaji == 0 && d->muhula > 0 && d->vyama > 1 && d->mabaraza > 0 && (zamu + t * 3) % (d->muhula * 52) == 0) {
