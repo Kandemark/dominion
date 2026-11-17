@@ -190,9 +190,9 @@ w0 sura_kadi(n64 x, n64 y, n64 w, n8* lebo, n8* thamani, n64 mabadiliko) {
 // hupata ukanda wa lafudhi kushoto.
 w0 sura_safu(n64 x, n64 y, n64 w, n64 h, n64 faharasa, n64 imechaguliwa) {
     kama (imechaguliwa) {
-        turubai_brashi(sura_t, SURA_LAFUDHI, 28);
+        turubai_brashi(sura_t, SURA_BAHARI, 34);
         turubai_mviringo(sura_t, x, y, w, h, 2);
-        turubai_brashi(sura_t, SURA_LAFUDHI, 255);
+        turubai_brashi(sura_t, SURA_BAHARI, 255);
         turubai_mviringo(sura_t, x, y + 4, 3, h - 8, 1);
         rudisha;
     }
@@ -287,11 +287,11 @@ w0 sura_chati_mstari(n64 x0_wa_paneli, n64 y, n64 w_wa_paneli, n64 h, n64* thama
         kama (b >= idadi) { b = idadi - 1; }
         n64 v = (thamani[a] * (256 - sehemu) + thamani[b] * sehemu) / 256;
         n64 py = y + h - ((v - chini) * (h - 8)) / wigo - 4;
-        turubai_brashi(sura_t, SURA_LAFUDHI, 22);
+        turubai_brashi(sura_t, SURA_BAHARI, 22);
         turubai_jaza(sura_t, x + px, py, 1, y + h - py);
         px = px + 1;
     }
-    turubai_brashi(sura_t, SURA_LAFUDHI, 255);
+    turubai_brashi(sura_t, SURA_BAHARI, 255);
     n64 x0 = x;
     n64 y0 = y + h - ((thamani[0] - chini) * (h - 8)) / wigo - 4;
     i = 1;

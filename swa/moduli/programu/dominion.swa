@@ -577,7 +577,7 @@ w0 bofya_skrini(Mchezo* g, Hali* h, n64 skrini, n64 upana, n64 kimo, n64 px, n64
         kama (px >= control_x + 138 && px < control_x + 188) { skrini_uchumi_dirisha_la_historia = 240; }
     }
     kama (skrini == SKRINI_DUNIA_YOTE) {
-        n64 juu = SKRINI_UPAU_WA_JUU + 140;
+        n64 juu = SKRINI_UPAU_WA_JUU + 140 + SKRINI_DUNIA_KICHWA;
         skrini_muhtasari_tafuta_fokasi = 0;
         kama (px >= x0 + 300 && px < x0 + 520 && py >= juu && py < juu + 30) { skrini_muhtasari_tafuta_fokasi = 1; }
         kama (py >= juu && py < juu + 32) {
