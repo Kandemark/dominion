@@ -17,26 +17,26 @@ husisha { moduli/onyesho/wayland/dirisha.swa }
 // dominion.swa -- programu ya mchezo: dirisha la Wayland, mchezo halisi,
 // na skrini zinazojibu ingizo la kweli.
 //
-// Ramani ndiyo dirisha kuu na huwa pale daima. Kila skrini ya data
-// (Muhtasari, Uchumi, Siasa, Jeshi, Diplomasia, Utamaduni, Teknolojia,
-// Mipangilio) hufunguka kama dirisha linaloelea juu yake: linaburutika kwa
-// kichwa, hubadilishwa ukubwa kwa kona ya chini-kulia, na hufungwa kwa X.
-// Ramani huchorwa mara moja kwa kila mwonekano na kuhifadhiwa; maudhui ya
-// kila dirisha vilevile -- fremu ni kunakili tu, hivyo kuburuta ni laini.
+// Kurasa: Ramani ndiyo ukurasa mkuu. Kila kipengele cha urambazaji wa
+// pembeni (Overview, Inbox, Calendar, World, Politics, Government, Military,
+// Diplomacy, Economy, Culture, Technology, Settings) hufungua ukurasa wake
+// kamili kwenye eneo la maudhui; Ramani hurudisha ramani. Ramani huchorwa
+// mara moja kwa kila mwonekano na kuhifadhiwa, hivyo kadi za juu yake na
+// kadi ya taifa chini ya kielekezi ni kunakili na kuchora juu tu.
 //
-//   pembeni     bofya kufungua dirisha (au kuliinua); Ramani hufunga yote
+//   pembeni     bofya kufungua ukurasa; Ramani hurudi kwenye ramani
 //   Continue    (njano, juu kulia) au Space: zamu inayofuata
 //   F11         skrini nzima / dirisha
 //   ramani      buruta kusogeza; gurudumu kukuza karibu na kielekezi;
-//               kielekezi juu ya taifa huonyesha kadi ndogo; kubofya
+//               kielekezi juu ya taifa huonyesha kadi yake; kubofya
 //               huibandika na kufungua droo ya taifa upande wa kulia
 //   + / -       kukuza; mishale kusogeza ramani
-//   Esc         funga dirisha la juu; bila dirisha, toka
+//   Esc         ukurasa -> ramani; droo -> imefungwa; vinginevyo toka
 //
 //   dominion [--fremu N] [--dampo njia] [--dirisha S]...
 //     --fremu N     toka baada ya fremu N (majaribio)
 //     --dampo njia  andika fremu ya mwisho (BGRA) kwenye njia
-//     --dirisha S   fungua dirisha la skrini S mwanzoni (hadi mawili)
+//     --skrini S    anza kwenye ukurasa S (SKRINI_*)
 //     --bandika     bandika kadi ya taifa la mchezaji na ufungue droo yake
 //     --dirishani   anza kwenye dirisha badala ya skrini nzima (F11 hubadili)
 //     --bila-dirisha W H   chora kwenye kumbukumbu kwa ukubwa W x H bila kufungua
@@ -85,26 +85,8 @@ w0 chora_skrini_ya_taifa(Mchezo* g, Turubai* t, n64 skrini, n64 taifa) {
 
 // ---------- hali ya programu ----------
 
-n64 MD_IDADI = 13;              // dirisha moja kwa kila skrini (faharisi = SKRINI_*)
-n64 MD_KICHWA = 38;             // kimo cha kichwa cha dirisha
-n64 MD_MPITO = 14;              // fremu za animesheni ya kufunguka
-n64 MD_KONA = 18;               // eneo la kona ya kubadili ukubwa
-
-// Dirisha linaloelea juu ya ramani. Maudhui yake huchorwa kwenye turubai
-// yake na kunakiliwa kila fremu; huchorwa upya tu yanapochafuka.
-muundo DirishaElea {
-    n64 wazi;
-    n64 x;
-    n64 y;
-    n64 w;
-    n64 h;
-    Turubai* maudhui;
-    n64 chafu;
-    n64 fremu;              // fremu tangu kufunguliwa (animesheni)
-}
-
 muundo Hali {
-    n64 skrini;             // dirisha lenye fokasi, au SKRINI_RAMANI
+    n64 skrini;             // ukurasa unaoonyeshwa (SKRINI_*); SKRINI_RAMANI = ramani
     n64 kitovu_x;
     n64 kitovu_y;
     n64 kipimo;
@@ -116,13 +98,6 @@ muundo Hali {
     n64 vuta_y;
     n64 haja;               // fremu mpya inahitajika
     n64 haja_msingi;        // ramani (msingi) lazima ichorwe upya
-    DirishaElea* md;
-    n64* z;                 // madirisha yaliyo wazi, la nyuma kwanza
-    n64 n_z;
-    n64 buruta;             // dirisha linaloburutwa, au -1
-    n64 buruta_aina;        // 1 kusogeza, 2 kubadili ukubwa
-    n64 bx;
-    n64 by;
     n64 elea_taifa;         // taifa chini ya kielekezi, au -1
     n64 elea_x;
     n64 elea_y;
@@ -132,7 +107,6 @@ muundo Hali {
     Turubai* msingi;        // ramani na fremu ya mchezo, tayari kunakiliwa
     n64 shift;              // Shift imebonyezwa
     n64 skrini_nzima;       // 1 = skrini nzima (F11 hubadili)
-    n64 fungua_baadaye;     // dirisha la kufungua baada ya bofya (au -1)
 }
 
 w0 chafua_msingi(Hali* h) {
@@ -140,11 +114,17 @@ w0 chafua_msingi(Hali* h) {
     h->haja_msingi = 1;
 }
 
-// Data imebadilika (zamu, taifa, lugha): kila dirisha lichorwe upya.
-w0 chafua_madirisha(Hali* h) {
-    n64 i = 0;
-    wakati (i < MD_IDADI) { h->md[i].chafu = 1; i = i + 1; }
+// Data imebadilika (zamu, taifa, lugha): ukurasa uchorwe upya.
+w0 chafua_ukurasa(Hali* h) {
     h->haja = 1;
+}
+
+// Fungua ukurasa `skrini` (au rudi kwenye ramani).
+w0 fungua_ukurasa(Hali* h, n64 skrini) {
+    kama (skrini < 0) { rudisha; }
+    h->skrini = skrini;
+    h->elea_taifa = 0 - 1;
+    chafua_msingi(h);
 }
 
 // Eneo la ramani ndani ya dirisha (lazima lilingane na skrini_ramani_chora).
@@ -211,311 +191,162 @@ w0 chagua_taifa(Hali* h, Dirisha* d, n64 px, n64 py) {
     h->bandika_y = py;
     SKRINI_RAMANI_PANELI = DROO_UPANA;
     chafua_msingi(h);
-    chafua_madirisha(h);
+    chafua_ukurasa(h);
 }
 
 n32 ndani_ya_ramani(Dirisha* d, n64 px, n64 py) {
     rudisha px >= ramani_x() && py >= ramani_y() && px < d->upana - SKRINI_RAMANI_PANELI;
 }
 
-// ---------- madirisha yanayoelea ----------
+// Kadi ya taifa (dirisha dogo linaloelea) kwenye (px, py):
+//   kichwa      rangi ya taifa, jina, aina ya utawala, kidonge cha nafasi
+//   takwimu     watu, pato ghafi, pato kwa kila mtu
+//   mwenendo    pato la zamu 12 za mwisho kama mstari, na mabadiliko
+//   serikali    mgawanyo wa viti wa baraza la kwanza na sehemu ya serikali
+//   vielezo     teknolojia, uchumi, jeshi, utamaduni kama pau ndogo
+// `imebandikwa` huipa mstari wa njano juu; isiyobandikwa ina maelekezo chini.
+n64 KADI_YA_TAIFA_UPANA = 330;
 
-// Jina la dirisha kwa herufi kubwa (kichwa cha dirisha).
-n8* md_jina_kubwa(n64 id) {
-    kama (id == SKRINI_UCHUMI) { rudisha ui("ECONOMY"); }
-    kama (id == SKRINI_SIASA) { rudisha ui("POLITICS"); }
-    kama (id == SKRINI_JESHI) { rudisha ui("MILITARY"); }
-    kama (id == SKRINI_DIPLOMASIA) { rudisha ui("DIPLOMACY"); }
-    kama (id == SKRINI_UTAMADUNI) { rudisha ui("CULTURE"); }
-    kama (id == SKRINI_TEKNOLOJIA) { rudisha ui("TECHNOLOGY"); }
-    kama (id == SKRINI_MIPANGILIO) { rudisha ui("SETTINGS"); }
-    kama (id == SKRINI_MKUTANO) { rudisha ui("GOVERNMENT"); }
-    kama (id == SKRINI_DUNIA_YOTE) { rudisha ui("WORLD"); }
-    kama (id == SKRINI_KIKASHA) { rudisha ui("INBOX"); }
-    kama (id == SKRINI_KALENDA) { rudisha ui("CALENDAR"); }
-    rudisha ui("OVERVIEW");
-}
-
-n8* md_jina(n64 id) {
-    kama (id == SKRINI_UCHUMI) { rudisha ui("Economy"); }
-    kama (id == SKRINI_SIASA) { rudisha ui("Politics"); }
-    kama (id == SKRINI_JESHI) { rudisha ui("Military"); }
-    kama (id == SKRINI_DIPLOMASIA) { rudisha ui("Diplomacy"); }
-    kama (id == SKRINI_UTAMADUNI) { rudisha ui("Culture"); }
-    kama (id == SKRINI_TEKNOLOJIA) { rudisha ui("Technology"); }
-    kama (id == SKRINI_MIPANGILIO) { rudisha ui("Settings"); }
-    kama (id == SKRINI_MKUTANO) { rudisha ui("Meetings"); }
-    kama (id == SKRINI_DUNIA_YOTE) { rudisha ui("World"); }
-    kama (id == SKRINI_KIKASHA) { rudisha ui("Inbox"); }
-    kama (id == SKRINI_KALENDA) { rudisha ui("Calendar"); }
-    rudisha ui("Overview");
-}
-
-w0 md_ondoa_z(Hali* h, n64 id) {
-    n64 i = 0;
-    n64 n = 0;
-    wakati (i < h->n_z) {
-        kama (h->z[i] != id) { h->z[n] = h->z[i]; n = n + 1; }
-        i = i + 1;
-    }
-    h->n_z = n;
-}
-
-// Dirisha la juu kabisa, au -1.
-n64 md_la_juu(Hali* h) {
-    kama (h->n_z == 0) { rudisha 0 - 1; }
-    rudisha h->z[h->n_z - 1];
-}
-
-w0 md_inua(Hali* h, n64 id) {
-    md_ondoa_z(h, id);
-    h->z[h->n_z] = id;
-    h->n_z = h->n_z + 1;
-    h->skrini = id;
-    h->haja = 1;
-}
-
-w0 md_funga(Hali* h, n64 id) {
-    h->md[id].wazi = 0;
-    md_ondoa_z(h, id);
-    h->skrini = SKRINI_RAMANI;
-    kama (h->n_z > 0) { h->skrini = md_la_juu(h); }
-    kama (h->buruta == id) { h->buruta = 0 - 1; }
-    h->haja = 1;
-}
-
-// Weka dirisha ndani ya eneo la mchezo: kichwa chake kibaki kinashikika.
-w0 md_bana(Dirisha* d, DirishaElea* m) {
-    // dirisha lisizidi eneo la ramani: ramani hubaki inaonekana pembeni yake
-    kama (m->w > d->upana - ramani_x() - 32) { m->w = d->upana - ramani_x() - 32; }
-    kama (m->h > d->kimo - SKRINI_UPAU_WA_JUU - 40) { m->h = d->kimo - SKRINI_UPAU_WA_JUU - 40; }
-    kama (m->w < 420) { m->w = 420; }
-    kama (m->h < 260) { m->h = 260; }
-    kama (m->x > d->upana - 80) { m->x = d->upana - 80; }
-    kama (m->x < 60 - m->w) { m->x = 60 - m->w; }
-    kama (m->y > d->kimo - MD_KICHWA) { m->y = d->kimo - MD_KICHWA; }
-    kama (m->y < SKRINI_UPAU_WA_JUU + 4) { m->y = SKRINI_UPAU_WA_JUU + 4; }
-}
-
-// Fungua dirisha la skrini `id` (au liinue likiwa wazi tayari).
-w0 md_fungua(Hali* h, Dirisha* d, n64 id) {
-    kama (id < 0 || id >= MD_IDADI || id == SKRINI_RAMANI) { rudisha; }
-    DirishaElea* m = &h->md[id];
-    kama (m->wazi == 0) {
-        kama (m->w == 0) {
-            // mara ya kwanza: ukubwa wa chaguo-msingi, yakipangwa kwa ngazi
-            m->w = 940;
-            m->h = 620;
-            kama (id == SKRINI_MIPANGILIO) { m->w = 660; m->h = 700; }
-            // dashibodi hujaza eneo la ramani
-            kama (id == SKRINI_MUHTASARI || id == SKRINI_KALENDA || id == SKRINI_KIKASHA) { m->w = d->upana; m->h = d->kimo; }
-            m->x = ramani_x() + 20 + h->n_z * 28;
-            m->y = SKRINI_UPAU_WA_JUU + 14 + h->n_z * 28;
-        }
-        md_bana(d, m);
-        m->wazi = 1;
-        m->fremu = 0;
-        m->chafu = 1;
-    }
-    md_inua(h, id);
-}
-
-// Dirisha la juu kabisa lenye (px, py), au -1.
-n64 md_chini_ya(Hali* h, n64 px, n64 py) {
-    n64 i = h->n_z - 1;
-    wakati (i >= 0) {
-        DirishaElea* m = &h->md[h->z[i]];
-        kama (px >= m->x && px < m->x + m->w && py >= m->y && py < m->y + m->h) { rudisha h->z[i]; }
-        i = i - 1;
-    }
-    rudisha 0 - 1;
-}
-
-// Chora maudhui ya dirisha kwenye turubai yake: skrini ileile ya ukurasa,
-// bila fremu ya mchezo, ikipangwa kwa ukubwa wa dirisha.
-w0 md_chora_maudhui(Mchezo* g, Hali* h, n64 id) {
-    DirishaElea* m = &h->md[id];
-    n64 w = m->w;
-    n64 hh = m->h - MD_KICHWA;
-    kama (m->maudhui != 0) {
-        kama (m->maudhui->upana != w || m->maudhui->kimo != hh) {
-            achilia m->maudhui->pikseli;
-            achilia m->maudhui;
-            m->maudhui = 0;
-        }
-    }
-    kama (m->maudhui == 0) { m->maudhui = turubai_unda(w, hh); }
-    n64 pembeni = SKRINI_UPANA_WA_PEMBENI;
-    n64 juu = SKRINI_UPAU_WA_JUU;
-    SKRINI_UPANA_WA_PEMBENI = 0 - 9;        // maudhui huanza x = 16
-    SKRINI_UPAU_WA_JUU = 0 - 13;            // na y = 12
-    skrini_bila_fremu = 1;
-    chora_skrini_ya_taifa(g, m->maudhui, id, h->taifa);
-    skrini_bila_fremu = 0;
-    SKRINI_UPANA_WA_PEMBENI = pembeni;
-    SKRINI_UPAU_WA_JUU = juu;
-    m->chafu = 0;
-}
-
-// Nakili turubai s kwenye t mahali (x, y), ikikatwa kwenye mipaka ya t.
-// uwazi < 255 huchanganya (animesheni ya kufunguka).
-w0 md_nakili(Turubai* t, Turubai* s, n64 x, n64 y, n64 uwazi) {
-    n64 x0 = x;
-    n64 y0 = y;
-    n64 x1 = x + s->upana;
-    n64 y1 = y + s->kimo;
-    kama (x0 < 0) { x0 = 0; }
-    kama (y0 < 0) { y0 = 0; }
-    kama (x1 > t->upana) { x1 = t->upana; }
-    kama (y1 > t->kimo) { y1 = t->kimo; }
-    kama (x1 <= x0 || y1 <= y0) { rudisha; }
-    n64 j = y0;
-    wakati (j < y1) {
-        n8* lengwa = &t->pikseli[j * t->hatua + x0 * 4];
-        n8* chanzo = &s->pikseli[(j - y) * s->hatua + (x0 - x) * 4];
-        kama (uwazi >= 255) {
-            nakili(lengwa, chanzo, (x1 - x0) * 4);
-        } sivyo {
-            n64 n = (x1 - x0) * 4;
-            n64 b = 255 - uwazi;
-            n64 i = 0;
-            wakati (i < n) {
-                lengwa[i] = ((chanzo[i] & 255) * uwazi + (lengwa[i] & 255) * b) / 255;
-                lengwa[i + 1] = ((chanzo[i + 1] & 255) * uwazi + (lengwa[i + 1] & 255) * b) / 255;
-                lengwa[i + 2] = ((chanzo[i + 2] & 255) * uwazi + (lengwa[i + 2] & 255) * b) / 255;
-                i = i + 4;
-            }
-        }
-        j = j + 1;
-    }
-}
-
-// Chora dirisha moja: kivuli, kichwa, maudhui, kitufe cha kufunga, kona ya
-// kubadili ukubwa. Linalofunguka hupanda na kung'aa kwa fremu MD_MPITO.
-w0 md_chora(Turubai* t, Hali* h, n64 id, n32 lina_fokasi) {
-    DirishaElea* m = &h->md[id];
-    n64 uwazi = 255;
-    n64 dy = 0;
-    kama (m->fremu < MD_MPITO) {
-        uwazi = sura_alpha_ya_mpito(m->fremu + 1, MD_MPITO);
-        dy = 18 - (18 * uwazi) / 255;
-    }
-    n64 x = m->x;
-    n64 y = m->y + dy;
-    // kivuli: mistatili michache ya giza chini na kulia, zaidi kwa lenye fokasi
-    n64 kivuli = 2;
-    kama (lina_fokasi) { kivuli = 5; }
-    n64 k = kivuli;
-    wakati (k > 0) {
-        turubai_brashi(t, 0, (uwazi * 16) / 255);
-        turubai_jaza(t, x - k * 2, y - k + 6, m->w + k * 4, m->h + k * 3);
-        k = k - 1;
-    }
-    turubai_brashi(t, SURA_PANELI_JUU, uwazi);
-    turubai_jaza(t, x, y, m->w, m->h);
-    kama (m->maudhui != 0) { md_nakili(t, m->maudhui, x, y + MD_KICHWA, uwazi); }
-    // kichwa: jina kwa herufi ndogo nzito, kitufe cha "Close" kulia
-    turubai_brashi(t, SURA_PANELI, uwazi);
-    turubai_jaza(t, x, y, m->w, MD_KICHWA);
-    kama (lina_fokasi) { turubai_brashi(t, SURA_LAFUDHI, uwazi); }
-    sivyo { turubai_brashi(t, SURA_HAFIFU, uwazi); }
-    maandishi_chora(t, sura_nene, md_jina_kubwa(id), x + 16, y + 12, 11);
-    n64 xc = x + m->w - 76;
-    turubai_brashi(t, SURA_PANELI_JUU, uwazi);
-    turubai_mviringo(t, xc, y + 7, 64, 24, 4);
-    turubai_brashi(t, SURA_MAANDISHI, uwazi);
-    n64 wc = maandishi_upana(sura_nene, ui("Close"), 12);
-    maandishi_chora(t, sura_nene, ui("Close"), xc + (64 - wc) / 2, y + 11, 12);
-    // ukingo mwembamba; lenye fokasi lina mstari wa njano juu
-    turubai_brashi(t, 16777215, (uwazi * 26) / 255);
-    turubai_jaza(t, x, y + m->h - 1, m->w, 1);
-    turubai_jaza(t, x, y, 1, m->h);
-    turubai_jaza(t, x + m->w - 1, y, 1, m->h);
-    kama (lina_fokasi) { turubai_brashi(t, SURA_LAFUDHI, uwazi); turubai_jaza(t, x, y, m->w, 2); }
-    sivyo { turubai_brashi(t, 16777215, (uwazi * 26) / 255); turubai_jaza(t, x, y, m->w, 1); }
-    // kona ya kubadili ukubwa
-    turubai_brashi(t, SURA_HAFIFU, (uwazi * 170) / 255);
-    turubai_mstari(t, x + m->w - 5, y + m->h - 13, x + m->w - 13, y + m->h - 5, 256);
-    turubai_mstari(t, x + m->w - 5, y + m->h - 8, x + m->w - 8, y + m->h - 5, 256);
-}
-
-// Kila dirisha lililo wazi lina nukta upande wa kulia wa kipengele chake
-// kwenye urambazaji; lenye fokasi lina nukta ya njano.
-w0 md_chora_alama(Turubai* t, Hali* h) {
-    n64 i = 0;
-    wakati (i < SKRINI_NAV_IDADI) {
-        n64 id = skrini_nav_skrini(i);
-        kama (id != SKRINI_RAMANI && id < MD_IDADI) {
-            kama (h->md[id].wazi) {
-                n64 y = skrini_nav_y(i, t->kimo) + SKRINI_NAV_SAFU / 2;
-                kama (md_la_juu(h) == id) { turubai_brashi(t, SURA_LAFUDHI, 255); }
-                sivyo { turubai_brashi(t, SURA_HAFIFU, 255); }
-                turubai_duara(t, SKRINI_UPANA_WA_PEMBENI - 20, y, 4);
-            }
-        }
-        i = i + 1;
-    }
-}
-
-// Kadi ya taifa kwenye (px, py): jina, watu, pato, pato kwa kila mtu, na
-// vielezo vya teknolojia, uchumi, jeshi na utamaduni. `imebandikwa` huipa
-// mstari wa lafudhi juu.
 w0 chora_kadi_ya_taifa_kwa(Mchezo* g, Turubai* t, n64 taifa, n64 px, n64 py, n32 imebandikwa) {
     kama (taifa < 0) { rudisha; }
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
-    kama (tn == 0) { rudisha; }
-    n64 w = 248;
-    n64 hh = 152;
-    n64 x = px + 16;
+    Dola* dola = skrini_siasa_dola(g, taifa);
+    kama (tn == 0 || dola == 0) { rudisha; }
+    TakwimuHistoria* hist = mchezo_pata_historia_ya_taifa(g, taifa);
+    n64 w = KADI_YA_TAIFA_UPANA;
+    n64 hh = 318;
+    kama (imebandikwa) { hh = 296; }
+    n64 x = px + 18;
     n64 y = py + 18;
-    kama (x + w > t->upana - SKRINI_RAMANI_PANELI - 8) { x = px - w - 14; }
-    kama (y + hh > t->kimo - 8) { y = py - hh - 12; }
-    kama (x < ramani_x() + 4) { x = ramani_x() + 4; }
-    kama (y < SKRINI_UPAU_WA_JUU + 4) { y = SKRINI_UPAU_WA_JUU + 4; }
-    turubai_brashi(t, 0, 70);
-    turubai_jaza(t, x + 3, y + 4, w, hh);
-    turubai_brashi(t, SURA_PANELI_JUU, 250);
-    turubai_mviringo(t, x, y, w, hh, 3);
-    kama (imebandikwa) { turubai_brashi(t, SURA_LAFUDHI, 255); turubai_jaza(t, x, y, w, 3); }
+    kama (x + w > t->upana - SKRINI_RAMANI_PANELI - 8) { x = px - w - 16; }
+    kama (y + hh > t->kimo - 8) { y = py - hh - 14; }
+    kama (x < ramani_x() + 8) { x = ramani_x() + 8; }
+    kama (y < SKRINI_UPAU_WA_JUU + 8) { y = SKRINI_UPAU_WA_JUU + 8; }
+    // kivuli laini na uso
+    n64 k = 6;
+    wakati (k > 0) {
+        turubai_brashi(t, 0, 18);
+        turubai_mviringo(t, x - k + 2, y - k + 8, w + 2 * k - 4, hh + 2 * k - 4, 14 + k);
+        k = k - 1;
+    }
+    turubai_brashi(t, 1715776, 250);                            // 0x1A2E40
+    turubai_mviringo(t, x, y, w, hh, 12);
+    turubai_brashi(t, 16777215, 26);
+    turubai_mpaka(t, x, y, w, hh, 12);
+    kama (imebandikwa) {
+        turubai_kata(t, x, y, w, 3);
+        turubai_brashi(t, SURA_LAFUDHI, 255);
+        turubai_mviringo(t, x, y, w, 12, 12);
+        turubai_kata_yote(t);
+    }
+    // kichwa
     turubai_brashi(t, tn->rangi, 255);
-    turubai_jaza(t, x + 12, y + 15, 18, 12);
+    turubai_mviringo(t, x + 16, y + 18, 30, 22, 5);
+    turubai_brashi(t, 16777215, 50);
+    turubai_mpaka(t, x + 16, y + 18, 30, 22, 5);
+    n8 cheo[24];
+    n8 nafasi[16];
+    sura_namba(nafasi, skrini_nafasi_ya_pato(tm, tn));
+    mfuatano_umbiza(cheo, 24, "#%s", nafasi, 0, 0, 0, 0, 0);
+    n64 wc = maandishi_upana(sura_nene, cheo, 11) + 16;
+    turubai_kata(t, x, y, w - wc - 24, hh);
     sura_rangi(SURA_MAANDISHI);
-    sura_lebo_nene(tn->jina, x + 38, y + 10, 15);
-    n8 chombo[48];
-    n64 ry = y + 40;
+    sura_lebo_nene(tn->jina, x + 58, y + 14, 16);
     sura_rangi(SURA_HAFIFU);
-    sura_lebo(ui("Population"), x + 12, ry, 11);
-    sura_lebo(ui("row|GDP"), x + 12, ry + 18, 11);
-    sura_lebo(ui("GDP per capita"), x + 12, ry + 36, 11);
-    sura_rangi(SURA_MAANDISHI);
-    sura_namba_fupi(chombo, tn->idadi_ya_watu);
-    sura_lebo_kulia(chombo, x + w - 12, ry, 12);
-    sura_namba_fupi(chombo, skrini_pato_la_taifa(tn));
-    sura_lebo_kulia(chombo, x + w - 12, ry + 18, 12);
+    sura_lebo(dola_aina_jina(dola->aina), x + 58, y + 35, 11);
+    turubai_kata_yote(t);
+    turubai_brashi(t, SURA_LAFUDHI, 40);
+    turubai_mviringo(t, x + w - 16 - wc, y + 18, wc, 22, 11);
+    turubai_brashi(t, SURA_LAFUDHI, 255);
+    maandishi_chora(t, sura_nene, cheo, x + w - 16 - wc + 8, y + 21, 11);
+    turubai_brashi(t, 16777215, 20);
+    turubai_jaza(t, x + 16, y + 58, w - 32, 1);
+    // takwimu tatu
+    n64 wk = (w - 32) / 3;
+    n8 m[32];
     n64 kila_mtu = 0;
     kama (tn->idadi_ya_watu > 0) { kila_mtu = skrini_pato_la_taifa(tn) / tn->idadi_ya_watu; }
-    sura_namba(chombo, kila_mtu);
-    sura_lebo_kulia(chombo, x + w - 12, ry + 36, 12);
-    // vielezo vinne kama pau ndogo
-    n64 wb = (w - 24 - 18) / 4;
-    n64 k = 0;
-    wakati (k < 4) {
+    n64 c = 0;
+    wakati (c < 3) {
+        n8* lebo = ui("POPULATION");
+        sura_namba_fupi(m, tn->idadi_ya_watu);
+        kama (c == 1) { lebo = ui("tab|GDP"); sura_namba_fupi(m, skrini_pato_la_taifa(tn)); }
+        kama (c == 2) { lebo = ui("PER CAPITA"); sura_namba(m, kila_mtu); }
+        n64 cx = x + 16 + c * wk;
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo_kati(lebo, cx, y + 70, 10);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_nene(m, cx, y + 86, 16);
+        c = c + 1;
+    }
+    // mwenendo wa pato
+    n64 ys = y + 122;
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(ui("GDP, last 12 turns"), x + 16, ys, 11);
+    kama (hist != 0 && hist->idadi > 1) {
+        n64 n = hist->idadi;
+        kama (n > 12) { n = 12; }
+        n64* sampuli = tenga(8 * n);
+        n64 i = 0;
+        wakati (i < n) {
+            d64 sd = hist->sampuli[hist->idadi - n + i];
+            sampuli[i] = sd * 1000000.0;
+            i = i + 1;
+        }
+        n64 badiliko = skrini_mabadiliko(hist, n - 1);
+        kama (badiliko != 0) {
+            sura_asilimia(m, badiliko, 1);
+            n64 wd = maandishi_upana(sura_kati, m, 11) + 14;
+            chati_kidonge_cha_mabadiliko(x + w - 16 - wd, ys - 3, badiliko);
+        }
+        sura_sparkline(sampuli, n, x + 16, ys + 22, w - 32, 34, SURA_LAFUDHI, 40);
+        achilia sampuli;
+    } sivyo {
+        sura_lebo(ui("History appears after two turns."), x + 16, ys + 30, 11);
+    }
+    // serikali
+    n64 yg = y + 196;
+    kama (dola->mabaraza > 0) {
+        n64 viti[8];
+        n64 rangi[8];
+        n64 uwazi[8];
+        n64 nv = skrini_siasa_viti_vya_baraza(dola, 0, viti, rangi, uwazi);
+        sura_asilimia(m, (dola_viti_vya_serikali(dola, 0) * 10000) / dola->baraza_viti[0], 0);
+        n8 mstari[96];
+        mfuatano_umbiza(mstari, 96, ui("Government holds %s"), m, 0, 0, 0, 0, 0);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(mstari, x + 16, yg, 11);
+        kama (nv > 0) { sura_pau_lililopangwa(x + 16, yg + 20, w - 32, 8, viti, rangi, nv, dola->baraza_viti[0], 2); }
+    } sivyo {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(ui("No legislature"), x + 16, yg, 11);
+    }
+    // vielezo vinne
+    n64 yv = y + 240;
+    n64 wb = (w - 32 - 3 * 10) / 4;
+    c = 0;
+    wakati (c < 4) {
         n8* lebo = ui("TECH");
         n64 v = tn->kielezo_cha_teknolojia;
-        n64 rangi = SURA_BAHARI;
-        kama (k == 1) { lebo = ui("ECON"); v = tn->kielezo_cha_uchumi; rangi = SURA_CHANYA; }
-        kama (k == 2) { lebo = ui("MIL"); v = tn->kielezo_cha_kijeshi; rangi = SURA_HASI; }
-        kama (k == 3) { lebo = ui("CULT"); v = tn->kielezo_cha_utamaduni; rangi = SURA_LAFUDHI; }
-        n64 bx = x + 12 + k * (wb + 6);
+        n64 rangi_ya_pau = SURA_BAHARI;
+        kama (c == 1) { lebo = ui("ECON"); v = tn->kielezo_cha_uchumi; rangi_ya_pau = SURA_CHANYA; }
+        kama (c == 2) { lebo = ui("MIL"); v = tn->kielezo_cha_kijeshi; rangi_ya_pau = SURA_HASI; }
+        kama (c == 3) { lebo = ui("CULT"); v = tn->kielezo_cha_utamaduni; rangi_ya_pau = SURA_LAFUDHI; }
+        n64 bx = x + 16 + c * (wb + 10);
         sura_rangi(SURA_HAFIFU);
-        sura_lebo_kati(lebo, bx, y + 104, 9);
-        sura_pau(bx, y + 120, wb, 4, v, rangi);
-        k = k + 1;
+        sura_lebo_kati(lebo, bx, yv, 10);
+        sura_namba(m, v);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kulia(m, bx + wb, yv, 10);
+        sura_pau(bx, yv + 18, wb, 4, v, rangi_ya_pau);
+        c = c + 1;
     }
     kama (imebandikwa == 0) {
+        turubai_brashi(t, 16777215, 20);
+        turubai_jaza(t, x + 16, y + hh - 34, w - 32, 1);
         sura_rangi(SURA_HAFIFU);
-        sura_lebo(ui("Click to pin and open the dossier"), x + 12, y + 132, 10);
+        sura_lebo(ui("Click to pin and open the dossier"), x + 16, y + hh - 24, 11);
     }
 }
 
@@ -633,7 +464,6 @@ w0 chora_kadi_za_muhtasari(Mchezo* g, Turubai* t, Hali* h, Dirisha* d) {
     n64 w = kadi_upana(d);
     n64 y = kadi_y(d);
     n64 juu_ya = kadi_chini_ya(d, h->elea_x, h->elea_y);
-    kama (md_chini_ya(h, h->elea_x, h->elea_y) >= 0) { juu_ya = 0 - 1; }
     n8 chombo[96];
     n8 m[24];
     // 0: uchumi -- pato, pato kwa kila mtu, mwenendo
@@ -734,7 +564,7 @@ w0 bofya_skrini(Mchezo* g, Hali* h, n64 skrini, n64 upana, n64 kimo, n64 px, n64
             mipangilio_tumia_lugha(g, lugha_mpya);
             mipangilio_hifadhi_lugha(lugha_mpya);
             chafua_msingi(h);
-            chafua_madirisha(h);
+            chafua_ukurasa(h);
         }
         mipangilio_akili_tekeleza(skrini_mipangilio_bofya_akili(upana, px, py));
     }
@@ -786,13 +616,13 @@ w0 bofya_kikasha(Mchezo* g, Hali* h, n64 upana, n64 kimo, n64 px, n64 py) {
     kama (u == 0 || watu == 0) { rudisha; }
     kama (kitendo == KIKASHA_KITENDO_ONANA) {
         skrini_mkutano_fungua_na(u->mtumaji, watu);
-        h->fungua_baadaye = SKRINI_MKUTANO;
+        fungua_ukurasa(h, SKRINI_MKUTANO);
     }
     kama (kitendo == KIKASHA_KITENDO_PANGA) {
         skrini_mkutano_panga(u->mtumaji, 2, watu);
-        chafua_madirisha(h);
+        chafua_ukurasa(h);
     }
-    kama (kitendo == KIKASHA_KITENDO_KALENDA) { h->fungua_baadaye = SKRINI_KALENDA; }
+    kama (kitendo == KIKASHA_KITENDO_KALENDA) { fungua_ukurasa(h, SKRINI_KALENDA); }
 }
 
 w0 bofya_diplomasia(Mchezo* g, Hali* h, n64 upana, n64 kimo, n64 px, n64 py) {
@@ -824,45 +654,8 @@ w0 bofya_diplomasia(Mchezo* g, Hali* h, n64 upana, n64 kimo, n64 px, n64 py) {
     kama (row >= 0 && row < row_limit) { skrini_diplomasia_mstari_mteule = row; }
 }
 
-// Bonyezo la kushoto. Madirisha hutangulia; kisha urambazaji; kisha ramani.
+// Bonyezo la kushoto: upau wa juu, urambazaji, ukurasa, au ramani.
 w0 bonyeza(Mchezo* g, Hali* h, Dirisha* d, n64 px, n64 py) {
-    n64 id = md_chini_ya(h, px, py);
-    kama (id >= 0) {
-        DirishaElea* m = &h->md[id];
-        md_inua(h, id);
-        kama (py < m->y + MD_KICHWA) {
-            kama (px >= m->x + m->w - 80) { md_funga(h, id); rudisha; }
-            h->buruta = id;
-            h->buruta_aina = 1;
-            h->bx = px;
-            h->by = py;
-            rudisha;
-        }
-        kama (px >= m->x + m->w - MD_KONA && py >= m->y + m->h - MD_KONA) {
-            h->buruta = id;
-            h->buruta_aina = 2;
-            h->bx = px;
-            h->by = py;
-            rudisha;
-        }
-        // ndani ya maudhui: vipimo vya mpangilio wa dirisha
-        n64 pembeni = SKRINI_UPANA_WA_PEMBENI;
-        n64 juu = SKRINI_UPAU_WA_JUU;
-        SKRINI_UPANA_WA_PEMBENI = 0 - 9;
-        SKRINI_UPAU_WA_JUU = 0 - 13;
-        bofya_skrini(g, h, id, m->w, m->h - MD_KICHWA, px - m->x, py - m->y - MD_KICHWA);
-        SKRINI_UPANA_WA_PEMBENI = pembeni;
-        SKRINI_UPAU_WA_JUU = juu;
-        m->chafu = 1;
-        h->haja = 1;
-        kama (h->fungua_baadaye >= 0) {
-            n64 ijayo = h->fungua_baadaye;
-            h->fungua_baadaye = 0 - 1;
-            md_fungua(h, d, ijayo);
-            h->md[ijayo].chafu = 1;
-        }
-        rudisha;
-    }
     kama (py < SKRINI_UPAU_WA_JUU) {
         // Continue: zamu inayofuata
         n64 xe = skrini_endelea_x(d->upana);
@@ -870,23 +663,19 @@ w0 bonyeza(Mchezo* g, Hali* h, Dirisha* d, n64 px, n64 py) {
         rudisha;
     }
     kama (px < SKRINI_UPANA_WA_PEMBENI) {
-        // urambazaji: kila kipengele hufungua dirisha lake; Ramani hufunga yote
         n64 i = skrini_nav_chini_ya(px, py, d->kimo);
-        kama (i < 0) { rudisha; }
-        n64 kipengele = skrini_nav_skrini(i);
-        kama (kipengele == SKRINI_RAMANI) {
-            wakati (h->n_z > 0) { md_funga(h, md_la_juu(h)); }
-            rudisha;
-        }
-        kama (h->md[kipengele].wazi && md_la_juu(h) == kipengele) { md_funga(h, kipengele); }
-        sivyo { md_fungua(h, d, kipengele); }
+        kama (i >= 0) { fungua_ukurasa(h, skrini_nav_skrini(i)); }
         rudisha;
     }
-    // kadi ya muhtasari: hufungua dirisha kamili la eneo lake
+    kama (h->skrini != SKRINI_RAMANI) {
+        bofya_skrini(g, h, h->skrini, d->upana, d->kimo, px, py);
+        h->haja = 1;
+        rudisha;
+    }
+    // kadi ya muhtasari: hufungua ukurasa kamili wa eneo lake
     n64 kadi = kadi_chini_ya(d, px, py);
-    kama (kadi >= 0) { md_fungua(h, d, kadi_lengwa(kadi)); rudisha; }
+    kama (kadi >= 0) { fungua_ukurasa(h, kadi_lengwa(kadi)); rudisha; }
     kama (ndani_ya_ramani(d, px, py)) {
-        h->skrini = SKRINI_RAMANI;
         n64 zc_x = d->upana - SKRINI_RAMANI_PANELI - 98;
         n64 zc_y = skrini_ramani_vidhibiti_y();
         n32 kwenye_vidhibiti = py >= zc_y + 6 && py < zc_y + 36;
@@ -899,23 +688,9 @@ w0 bonyeza(Mchezo* g, Hali* h, Dirisha* d, n64 px, n64 py) {
     }
 }
 
-// Mwendo wa kielekezi: buruta dirisha, buruta ramani, au kadi ya taifa.
+// Mwendo wa kielekezi: buruta ramani, au kadi ya taifa chini ya kielekezi.
 w0 sogeza(Hali* h, Dirisha* d, n64 px, n64 py) {
-    kama (h->buruta >= 0) {
-        DirishaElea* m = &h->md[h->buruta];
-        kama (h->buruta_aina == 1) {
-            m->x = m->x + px - h->bx;
-            m->y = m->y + py - h->by;
-        } sivyo {
-            m->w = m->w + px - h->bx;
-            m->h = m->h + py - h->by;
-        }
-        md_bana(d, m);
-        h->bx = px;
-        h->by = py;
-        h->haja = 1;
-        rudisha;
-    }
+    kama (h->skrini != SKRINI_RAMANI) { rudisha; }
     kama (h->inavutwa) {
         n64 dx = px - h->vuta_x;
         n64 dy = py - h->vuta_y;
@@ -930,9 +705,8 @@ w0 sogeza(Hali* h, Dirisha* d, n64 px, n64 py) {
         }
         rudisha;
     }
-    // kadi ya taifa: juu ya ramani tu, si juu ya dirisha
     n64 o = 0 - 1;
-    kama (md_chini_ya(h, px, py) < 0 && ndani_ya_ramani(d, px, py) && kadi_chini_ya(d, px, py) < 0) { o = taifa_chini_ya(d, px, py); }
+    kama (ndani_ya_ramani(d, px, py) && kadi_chini_ya(d, px, py) < 0) { o = taifa_chini_ya(d, px, py); }
     // kadi inayoelekezwa hubadilisha ukingo wake
     kama (kadi_chini_ya(d, px, py) != kadi_chini_ya(d, h->elea_x, h->elea_y)) { h->haja = 1; }
     kama (o != h->elea_taifa || o >= 0) { h->haja = 1; }
@@ -942,13 +716,6 @@ w0 sogeza(Hali* h, Dirisha* d, n64 px, n64 py) {
 }
 
 w0 achia(Hali* h, Dirisha* d, n64 px, n64 py) {
-    kama (h->buruta >= 0) {
-        // ukubwa mpya: maudhui hupangwa upya mara moja mwishoni mwa kuburuta
-        kama (h->buruta_aina == 2) { h->md[h->buruta].chafu = 1; }
-        h->buruta = 0 - 1;
-        h->haja = 1;
-        rudisha;
-    }
     kama (h->inavutwa && h->imesogea == 0) { chagua_taifa(h, d, px, py); }
     kama (h->inavutwa && h->imesogea) { chafua_msingi(h); }
     h->inavutwa = 0;
@@ -970,14 +737,13 @@ w0 zamu_inayofuata(Mchezo* g, Hali* h) {
     mchezo_maliza_zamu(g);
     sasisha_kikasha(g);
     chafua_msingi(h);
-    chafua_madirisha(h);
+    chafua_ukurasa(h);
 }
 
 w0 kibodi(Mchezo* g, Hali* h, Dirisha* d, n64 a) {
-    // mkutano wenye fokasi hupokea maandishi yote; Esc pekee hufunga dirisha
+    // ukurasa wa mikutano hupokea maandishi yote; Esc pekee hurudi kwenye ramani
     kama (h->skrini == SKRINI_MKUTANO && a != KEY_ESC) {
         skrini_mkutano_kibodi(a, h->shift);
-        h->md[SKRINI_MKUTANO].chafu = 1;
         h->haja = 1;
         rudisha;
     }
@@ -989,13 +755,12 @@ w0 kibodi(Mchezo* g, Hali* h, Dirisha* d, n64 a) {
         }
         kama (a == 28) { skrini_muhtasari_tafuta_fokasi = 0; }
         kama (a != KEY_ESC && a != 28) { skrini_muhtasari_tafuta_ingizo(a); }
-        h->md[SKRINI_DUNIA_YOTE].chafu = 1;
         h->haja = 1;
         rudisha;
     }
     kama (a == KEY_ESC) {
-        // Esc hufunga dirisha la juu, kisha droo ya taifa; bila chochote, hutoka
-        kama (h->n_z > 0) { md_funga(h, md_la_juu(h)); }
+        // Esc: ukurasa -> ramani, kisha droo ya taifa; bila chochote, hutoka
+        kama (h->skrini != SKRINI_RAMANI) { fungua_ukurasa(h, SKRINI_RAMANI); }
         sivyo { kama (SKRINI_RAMANI_PANELI != 0) { funga_droo(h); }
         sivyo { d->imefungwa = 1; } }
         rudisha;
@@ -1027,16 +792,15 @@ w0 shughulikia(Mchezo* g, Hali* h, Dirisha* d) {
             kama (b == 1) { bonyeza(g, h, d, d->kielekezi_x, d->kielekezi_y); }
             sivyo { achia(h, d, d->kielekezi_x, d->kielekezi_y); }
         }
-        kama (aina == DIRISHA_GURUDUMU && md_chini_ya(h, d->kielekezi_x, d->kielekezi_y) == SKRINI_MKUTANO) {
-            // gurudumu juu ya Mikutano husogeza mti wa dola
+        kama (aina == DIRISHA_GURUDUMU && h->skrini == SKRINI_MKUTANO) {
+            // gurudumu kwenye ukurasa wa serikali husogeza mti wa dola
             kama (a > 0) { skrini_mkutano_tembeza(3); }
             kama (a < 0) { skrini_mkutano_tembeza(0 - 3); }
-            h->md[SKRINI_MKUTANO].chafu = 1;
             h->haja = 1;
         }
-        kama (aina == DIRISHA_GURUDUMU) {
+        kama (aina == DIRISHA_GURUDUMU && h->skrini == SKRINI_RAMANI) {
             // gurudumu hukuza ramani tu kielekezi kikiwa juu yake
-            kama (md_chini_ya(h, d->kielekezi_x, d->kielekezi_y) < 0 && ndani_ya_ramani(d, d->kielekezi_x, d->kielekezi_y)) {
+            kama (ndani_ya_ramani(d, d->kielekezi_x, d->kielekezi_y)) {
                 kama (a > 0) { badili_kipimo(h, d, (h->kipimo * 5) / 4 + 1, d->kielekezi_x, d->kielekezi_y); }
                 kama (a < 0) { badili_kipimo(h, d, (h->kipimo * 4) / 5, d->kielekezi_x, d->kielekezi_y); }
             }
@@ -1079,40 +843,34 @@ w0 chora_msingi(Mchezo* g, Hali* h, Dirisha* d) {
     h->haja_msingi = 0;
 }
 
-// Fremu moja: msingi, kisha madirisha kwa mpangilio, kisha kadi ya taifa.
+// Nakili turubai s kwenye t (ukubwa sawa).
+w0 nakili_turubai(Turubai* t, Turubai* s_) {
+    n64 j = 0;
+    wakati (j < t->kimo && j < s_->kimo) {
+        nakili(&t->pikseli[j * t->hatua], &s_->pikseli[j * s_->hatua], t->upana * 4);
+        j = j + 1;
+    }
+}
+
+// Fremu moja. Ramani: msingi uliohifadhiwa, kadi za muhtasari, na kadi ya
+// taifa. Ukurasa: ukurasa wenyewe (na fremu yake ya mchezo).
 w0 chora_fremu(Mchezo* g, Hali* h, Dirisha* d, Turubai* t) {
     kama (skrini_nav_beji_kikasha != kikasha_visivyosomwa()) {
         skrini_nav_beji_kikasha = kikasha_visivyosomwa();
         h->haja_msingi = 1;
     }
-    kama (h->haja_msingi || h->msingi == 0) { chora_msingi(g, h, d); }
-    n64 i = 0;
-    wakati (i < h->n_z) {
-        kama (h->md[h->z[i]].chafu || h->md[h->z[i]].maudhui == 0) { md_chora_maudhui(g, h, h->z[i]); }
-        i = i + 1;
+    kama (h->skrini != SKRINI_RAMANI) {
+        chora_skrini_ya_taifa(g, t, h->skrini, h->taifa);
+        sura_anzisha(t);
+        chora_sanduku_la_mtu(g, t, h);
+        rudisha;
     }
-    md_nakili(t, h->msingi, 0, 0, 255);
+    kama (h->haja_msingi || h->msingi == 0) { chora_msingi(g, h, d); }
+    nakili_turubai(t, h->msingi);
     sura_anzisha(t);
-    md_chora_alama(t, h);
     chora_sanduku_la_mtu(g, t, h);
     chora_kadi_za_muhtasari(g, t, h, d);
-    i = 0;
-    wakati (i < h->n_z) {
-        md_chora(t, h, h->z[i], i == h->n_z - 1);
-        h->md[h->z[i]].fremu = h->md[h->z[i]].fremu + 1;
-        i = i + 1;
-    }
-    kama (h->buruta < 0 && h->inavutwa == 0) { chora_kadi_za_taifa(g, t, h); }
-}
-
-// Dirisha lolote bado linafunguka?
-n32 kuna_animesheni(Hali* h) {
-    n64 i = 0;
-    wakati (i < h->n_z) {
-        kama (h->md[h->z[i]].fremu < MD_MPITO) { rudisha 1; }
-        i = i + 1;
-    }
-    rudisha 0;
+    kama (h->inavutwa == 0) { chora_kadi_za_taifa(g, t, h); }
 }
 
 // ---------- kuwaka ----------
@@ -1176,8 +934,7 @@ w0 kuwasha_subiri_mchezaji(Dirisha* d, Turubai* t) {
 n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     n64 fremu_upeo = 0;
     n8* dampo = 0;
-    n64 fungua_mwanzoni = 0 - 1;
-    n64 fungua_la_pili = 0 - 1;
+    n64 ukurasa_mwanzoni = 0 - 1;
     n32 bandika_mwanzoni = 0;
     n32 dirishani = 0;
     n64 bila_upana = 0;
@@ -1199,9 +956,8 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
             bila_kimo = mfuatano_hadi_n64(hoja_za_mstari[k + 2]);
             k = k + 2;
         }
-        kama (linganisha_mfuatano(hoja_za_mstari[k], "--dirisha") == 0 && k + 1 < idadi_ya_hoja) {
-            kama (fungua_mwanzoni < 0) { fungua_mwanzoni = mfuatano_hadi_n64(hoja_za_mstari[k + 1]); }
-            sivyo { fungua_la_pili = mfuatano_hadi_n64(hoja_za_mstari[k + 1]); }
+        kama (linganisha_mfuatano(hoja_za_mstari[k], "--skrini") == 0 && k + 1 < idadi_ya_hoja) {
+            ukurasa_mwanzoni = mfuatano_hadi_n64(hoja_za_mstari[k + 1]);
             k = k + 1;
         }
         k = k + 1;
@@ -1238,13 +994,8 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
 
     Hali* h = tenga(ukubwa(Hali));
     weka_sifuri(h, ukubwa(Hali));
-    h->md = tenga(ukubwa(DirishaElea) * MD_IDADI);
-    weka_sifuri(h->md, ukubwa(DirishaElea) * MD_IDADI);
-    h->z = tenga(8 * MD_IDADI);
-    h->buruta = 0 - 1;
     h->elea_taifa = 0 - 1;
     h->bandika_taifa = 0 - 1;
-    h->fungua_baadaye = 0 - 1;
     sasisha_kikasha(g);
     kama (dirishani == 0 && fremu_upeo == 0 && bila_upana == 0) { h->skrini_nzima = 1; }
     TaifaMfumo* tm = mchezo_pata_taifa(g);
@@ -1281,8 +1032,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
         SKRINI_RAMANI_PANELI = DROO_UPANA;
         chafua_msingi(h);
     }
-    kama (fungua_mwanzoni >= 0) { md_fungua(h, d, fungua_mwanzoni); }
-    kama (fungua_la_pili >= 0) { md_fungua(h, d, fungua_la_pili); }
+    kama (ukurasa_mwanzoni >= 0) { fungua_ukurasa(h, ukurasa_mwanzoni); }
 
     n64 fremu = 0;
     wakati (d->imefungwa == 0) {
@@ -1295,7 +1045,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
         } sivyo {
             shughulikia(g, h, d);
         }
-        n32 inahitajika = h->haja != 0 || h->haja_msingi != 0 || kuna_animesheni(h) != 0;
+        n32 inahitajika = h->haja != 0 || h->haja_msingi != 0;
         kama (fremu_upeo > 0) { inahitajika = 1; }      // majaribio huchora kila fremu hadi N
         kama (inahitajika && d->fremu_tayari && d->imefungwa == 0) {
             turubai_funga(t, dirisha_bafa(d), d->hatua, d->upana, d->kimo);
@@ -1311,7 +1061,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
             // kauli inayosubiri: fremu ya "anafikiri" imeshaonyeshwa; sasa uliza AI
             kama (mkutano_hali == 1) {
                 skrini_mkutano_tuma(g, h->taifa);
-                chafua_madirisha(h);
+                chafua_ukurasa(h);
             }
             kama (fremu_upeo > 0 && fremu >= fremu_upeo) { d->imefungwa = 1; }
         }

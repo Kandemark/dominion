@@ -230,15 +230,19 @@ w0 chati_geji(n64 cx, n64 cy, n64 r, n64 urefu, n64 kwa_elfu, n64 rangi, n8* mae
         turubai_mstari256(sura_t, x1, y1, x2, y2, 6 * 256);
         i = i + 1;
     }
+    // ukubwa wa namba hufuata nusu kipenyo ili isigusane na vipande
+    n64 px = ((r - urefu) * 2) / 5;
+    kama (px > 34) { px = 34; }
+    kama (px < 14) { px = 14; }
     n8 m[16];
     sura_asilimia(m, kiasi * 10, 0);
-    n64 wm = maandishi_upana(sura_nene, m, 34);
+    n64 wm = maandishi_upana(sura_nene, m, px);
     sura_rangi(SURA_MAANDISHI);
-    sura_lebo_nene(m, cx - wm / 2, cy - 30, 34);
+    sura_lebo_nene(m, cx - wm / 2, cy - (px * 9) / 10, px);
     kama (maelezo != 0) {
         n64 wl = maandishi_upana(sura_kawaida, maelezo, 12);
         sura_rangi(SURA_HAFIFU);
-        sura_lebo(maelezo, cx - wl / 2, cy + 14, 12);
+        sura_lebo(maelezo, cx - wl / 2, cy + px / 2, 12);
     }
 }
 
@@ -357,23 +361,23 @@ w0 chati_safu_ya_umakini(n64 x, n64 y, n64 w, n64 ikoni, n8* kichwa, n8* maelezo
     turubai_brashi(sura_t, 16777215, 14);
     turubai_jaza(sura_t, x, y, w, 1);
     turubai_brashi(sura_t, SURA_PANELI_JUU, 255);
-    turubai_duara(sura_t, x + 16, y + 26, 14);
-    sura_ikoni(x + 16, y + 26, 11, ikoni, SURA_HAFIFU, 255);
+    turubai_duara(sura_t, x + 16, y + 24, 14);
+    sura_ikoni(x + 16, y + 24, 11, ikoni, SURA_HAFIFU, 255);
     sura_rangi(SURA_MAANDISHI);
     turubai_kata(sura_t, x, y, w - 74, 52);
-    sura_lebo_kati(kichwa, x + 42, y + 10, 13);
+    sura_lebo_kati(kichwa, x + 42, y + 7, 13);
     sura_rangi(SURA_HAFIFU);
-    sura_lebo(maelezo, x + 42, y + 29, 11);
+    sura_lebo(maelezo, x + 42, y + 26, 11);
     turubai_kata_yote(sura_t);
     n64 wb = maandishi_upana(sura_nene, idadi, 11) + 16;
     kama (wb < 26) { wb = 26; }
     n64 bx = x + w - 30 - wb;
     kama (hatari) { turubai_brashi(sura_t, SURA_HASI, 60); }
     sivyo { turubai_brashi(sura_t, SURA_PANELI_JUU, 255); }
-    turubai_mviringo(sura_t, bx, y + 16, wb, 22, 11);
+    turubai_mviringo(sura_t, bx, y + 13, wb, 22, 11);
     turubai_brashi(sura_t, SURA_MAANDISHI, 255);
-    maandishi_chora(sura_t, sura_nene, idadi, bx + (wb - maandishi_upana(sura_nene, idadi, 11)) / 2, y + 19, 11);
-    sura_ikoni(x + w - 10, y + 27, 9, SURA_ICON_CHEVRON, SURA_HAFIFU, 255);
+    maandishi_chora(sura_t, sura_nene, idadi, bx + (wb - maandishi_upana(sura_nene, idadi, 11)) / 2, y + 16, 11);
+    sura_ikoni(x + w - 10, y + 24, 9, SURA_ICON_CHEVRON, SURA_HAFIFU, 255);
 }
 
 // Donati yenye nafasi kati ya sehemu, jumla katikati, na hadithi kama

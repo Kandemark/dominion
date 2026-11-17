@@ -191,6 +191,10 @@ w0 dashibodi_umakini(Mchezo* g, Dola* d, Wahusika* w_, n64 x, n64 y, n64 w, n64 
     chati_kadi(x, y, w, h, ui("Needs attention"), kulia);
     n8 m1[16];
     n64 ry = y + 50;
+    // safu nne hujigawa kimo kilichopo (kila moja angalau 46)
+    n64 hs = (h - 56) / 4;
+    kama (hs > 54) { hs = 54; }
+    kama (hs < 46) { hs = 46; }
     sura_namba(m1, nq);
     chati_safu_ya_umakini(x + 14, ry, w - 28, SURA_ICON_INFO, ui("Officials asking to see you"), ui("Waiting in your diary"), m1, nq > 0);
     n8 m2[16];
@@ -199,13 +203,13 @@ w0 dashibodi_umakini(Mchezo* g, Dola* d, Wahusika* w_, n64 x, n64 y, n64 w, n64 
     n8 w2[16];
     sura_namba(w2, wasiwasi);
     mfuatano_umbiza(m2b, 64, ui("%s more are wary of you"), w2, 0, 0, 0, 0, 0);
-    chati_safu_ya_umakini(x + 14, ry + 54, w - 28, SURA_ICON_CLOSE, ui("Hostile officials"), m2b, m2, maadui > 0);
+    chati_safu_ya_umakini(x + 14, ry + hs, w - 28, SURA_ICON_CLOSE, ui("Hostile officials"), m2b, m2, maadui > 0);
     n8 m3[16];
     sura_namba(m3, d->utulivu);
-    chati_safu_ya_umakini(x + 14, ry + 108, w - 28, SURA_ICON_ARROW_DOWN, ui("Political stability"), ui("Below 40 the streets grow restless"), m3, d->utulivu < 40);
+    chati_safu_ya_umakini(x + 14, ry + 2 * hs, w - 28, SURA_ICON_ARROW_DOWN, ui("Political stability"), ui("Below 40 the streets grow restless"), m3, d->utulivu < 40);
     n8 m4[16];
     sura_namba(m4, d->hazina);
-    chati_safu_ya_umakini(x + 14, ry + 162, w - 28, SURA_ICON_MINUS, ui("Treasury health"), ui("Below 40 wages and debts fall due"), m4, d->hazina < 40);
+    chati_safu_ya_umakini(x + 14, ry + 3 * hs, w - 28, SURA_ICON_MINUS, ui("Treasury health"), ui("Below 40 wages and debts fall due"), m4, d->hazina < 40);
 }
 
 // Safu 3: watu wa serikali kwa tawi (donati).
@@ -290,7 +294,7 @@ w0 dashibodi_wapinzani(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
 // (yanayosubiri) na mikutano ambayo mchezaji ameomba (imekubaliwa au
 // imekataliwa).
 w0 dashibodi_mikutano(Mchezo* g, Wahusika* w_, n64 x, n64 y, n64 w, n64 h) {
-    chati_kadi(x, y, w, h, ui("Meetings in progress"), ui("from the Government window"));
+    chati_kadi(x, y, w, h, ui("Meetings in progress"), ui("from the Government page"));
     n64 wk = 268;
     n64 kadi = (w - 28 + DASHIBODI_PENGO) / (wk + DASHIBODI_PENGO);
     kama (kadi < 1) { rudisha; }
