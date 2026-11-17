@@ -9,7 +9,7 @@ husisha { moduli/onyesho/dunia_halisi.swa }
 // pili iliyofungwa juu ya sehemu yake (turubai_funga yenye hatua ile ile),
 // hivyo hakuna nakala ya pikseli.
 
-n64 SKRINI_RAMANI_PANELI = 340;
+n64 SKRINI_RAMANI_PANELI = 0;        // upana wa droo ya taifa: 0 imefungwa, 360 wazi
 n64 SKRINI_RAMANI_KM_KWA_KIZIO = 625;    // kizio 1 = 360/64 shahada ~ km 625
 
 n64 skrini_ramani_vidhibiti_x(Turubai* t) {
@@ -96,6 +96,7 @@ w0 skrini_ramani_paneli(Mchezo* g, Turubai* t, n64 taifa) {
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     Miji* mj = mchezo_pata_miji(g);
     TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
+    kama (SKRINI_RAMANI_PANELI == 0) { rudisha; }       // droo imefungwa
     n64 x = t->upana - SKRINI_RAMANI_PANELI;
     n64 y = SKRINI_UPAU_WA_JUU + 1;
     turubai_brashi(t, SURA_PANELI, 255);
@@ -217,6 +218,7 @@ DuniaHalisi* skrini_dunia_pata() {
 }
 
 w0 skrini_dunia_paneli(Turubai* t, DuniaHalisi* d, n64 taifa) {
+    kama (SKRINI_RAMANI_PANELI == 0) { rudisha; }       // droo imefungwa
     n64 x = t->upana - SKRINI_RAMANI_PANELI;
     n64 y = SKRINI_UPAU_WA_JUU + 1;
     turubai_brashi(t, SURA_PANELI, 255);

@@ -11,16 +11,16 @@ husisha { moduli/onyesho/maneno.swa }
 // kidogo, maandishi meupe-hafifu, na lafudhi moja ya dhahabu. Kijani na
 // nyekundu zimehifadhiwa kwa "imepanda"/"imeshuka" pekee.
 
-n64 SURA_USULI = 659488;          // 0x0A1020 -- usiku wa ramani
-n64 SURA_PANELI = 1120812;        // 0x111A2C
-n64 SURA_PANELI_JUU = 1647930;    // 0x19253A
-n64 SURA_MPAKA = 2766928;         // 0x2A3850
-n64 SURA_MAANDISHI = 15265528;    // 0xE8EEF8
-n64 SURA_HAFIFU = 10333892;       // 0x9DAEC4
-n64 SURA_LAFUDHI = 6477509;       // 0x62D6C5 -- turquoise ya mwingiliano
-n64 SURA_CHANYA = 4379538;        // 0x42D392
-n64 SURA_HASI = 16743818;         // 0xFF7D8A
-n64 SURA_BAHARI = 7972863;        // 0x79A7FF
+n64 SURA_USULI = 657932;          // 0x0A0A0C -- grafiti, bila toni ya buluu
+n64 SURA_PANELI = 1315863;        // 0x141417
+n64 SURA_PANELI_JUU = 1973795;    // 0x1E1E23
+n64 SURA_MPAKA = 2894899;         // 0x2C2C33
+n64 SURA_MAANDISHI = 16119287;    // 0xF5F5F7
+n64 SURA_HAFIFU = 9342614;        // 0x8E8E96
+n64 SURA_LAFUDHI = 16766474;      // 0xFFD60A -- njano ya matangazo ya michezo
+n64 SURA_CHANYA = 3199320;        // 0x30D158
+n64 SURA_HASI = 16729402;         // 0xFF453A
+n64 SURA_BAHARI = 689407;         // 0x0A84FF
 
 Turubai* sura_t = 0;
 Fonti* sura_kawaida = 0;
@@ -135,15 +135,18 @@ w0 sura_rangi(n64 rangi) {
 
 // ---------- vyombo ----------
 
-// Paneli: uso ulioinuka kwa toni pekee, bila mpaka -- nafasi na toni
-// hutenganisha sehemu, si mistari. Kichwa (kama kipo) ni herufi ndogo
-// juu-kushoto.
+// Kadi: uso ulioinuka wenye pembe za mviringo na ukingo mwembamba hafifu.
+// Kichwa (kama kipo) ni herufi nzito ndogo zenye alama ya lafudhi kushoto.
 w0 sura_paneli(n64 x, n64 y, n64 w, n64 h, n8* kichwa) {
     turubai_brashi(sura_t, SURA_PANELI, 255);
     turubai_mviringo(sura_t, x, y, w, h, 8);
+    turubai_brashi(sura_t, 16777215, 20);
+    turubai_mpaka(sura_t, x, y, w, h, 8);
     kama (kichwa != 0) {
-        turubai_brashi(sura_t, SURA_HAFIFU, 255);
-        maandishi_chora(sura_t, sura_kati, kichwa, x + 16, y + 12, 12);
+        turubai_brashi(sura_t, SURA_LAFUDHI, 255);
+        turubai_jaza(sura_t, x + 12, y + 13, 3, 11);
+        turubai_brashi(sura_t, SURA_MAANDISHI, 255);
+        maandishi_chora(sura_t, sura_nene, kichwa, x + 22, y + 11, 11);
     }
 }
 
@@ -162,14 +165,17 @@ w0 sura_pau(n64 x, n64 y, n64 w, n64 h, n64 kwa_elfu, n64 rangi) {
     }
 }
 
-// Kadi ya takwimu: lebo ndogo, thamani kubwa, na mabadiliko (kwa elfu
-// kumi) yenye rangi ya kupanda/kushuka. mabadiliko = 0 huachwa.
+// Kigae cha takwimu: lebo ndogo, namba kubwa nzito, mstari wa lafudhi chini,
+// na mabadiliko (kwa elfu kumi) yenye rangi ya kupanda/kushuka.
 w0 sura_kadi(n64 x, n64 y, n64 w, n8* lebo, n8* thamani, n64 mabadiliko) {
-    sura_paneli(x, y, w, 92, 0);
+    turubai_brashi(sura_t, SURA_PANELI, 255);
+    turubai_mviringo(sura_t, x, y, w, 92, 8);
+    turubai_brashi(sura_t, 16777215, 20);
+    turubai_mpaka(sura_t, x, y, w, 92, 8);
     turubai_brashi(sura_t, SURA_HAFIFU, 255);
-    maandishi_chora(sura_t, sura_kati, lebo, x + 16, y + 12, 12);
+    maandishi_chora(sura_t, sura_nene, lebo, x + 16, y + 12, 10);
     turubai_brashi(sura_t, SURA_MAANDISHI, 255);
-    maandishi_chora(sura_t, sura_nene, thamani, x + 16, y + 34, 26);
+    maandishi_chora(sura_t, sura_nene, thamani, x + 16, y + 32, 30);
     kama (mabadiliko != 0) {
         n8 m[24];
         sura_asilimia(m, mabadiliko, 1);
@@ -185,14 +191,14 @@ w0 sura_kadi(n64 x, n64 y, n64 w, n8* lebo, n8* thamani, n64 mabadiliko) {
 w0 sura_safu(n64 x, n64 y, n64 w, n64 h, n64 faharasa, n64 imechaguliwa) {
     kama (imechaguliwa) {
         turubai_brashi(sura_t, SURA_LAFUDHI, 28);
-        turubai_mviringo(sura_t, x, y, w, h, 6);
+        turubai_mviringo(sura_t, x, y, w, h, 2);
         turubai_brashi(sura_t, SURA_LAFUDHI, 255);
         turubai_mviringo(sura_t, x, y + 4, 3, h - 8, 1);
         rudisha;
     }
     kama (faharasa % 2 == 1) {
         turubai_brashi(sura_t, 16777215, 8);
-        turubai_mviringo(sura_t, x, y, w, h, 6);
+        turubai_mviringo(sura_t, x, y, w, h, 2);
     }
 }
 
