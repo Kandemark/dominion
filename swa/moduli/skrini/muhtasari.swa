@@ -30,42 +30,44 @@ n64 skrini_bila_fremu = 0;
 // pembeni kushoto, urambazaji kwa vikundi (PORTAL, STATE, NATION) wenye
 // ikoni na lebo, kipengele hai kikiwa na mstari wa njano.
 
-n64 SKRINI_NAV_IDADI = 10;
+n64 SKRINI_NAV_IDADI = 11;
 n64 SKRINI_NAV_SAFU = 36;
 n64 SKRINI_NAV_KICHWA = 30;
 
 // Skrini ya kipengele i cha urambazaji (kwa mpangilio wa kuonyeshwa).
 n64 skrini_nav_skrini(n64 i) {
     kama (i == 0) { rudisha 7; }        // Ramani
-    kama (i == 1) { rudisha 0; }        // Muhtasari
-    kama (i == 2) { rudisha 2; }        // Siasa
-    kama (i == 3) { rudisha 9; }        // Serikali
-    kama (i == 4) { rudisha 3; }        // Jeshi
-    kama (i == 5) { rudisha 4; }        // Diplomasia
-    kama (i == 6) { rudisha 1; }        // Uchumi
-    kama (i == 7) { rudisha 5; }        // Utamaduni
-    kama (i == 8) { rudisha 6; }        // Teknolojia
+    kama (i == 1) { rudisha 0; }        // Muhtasari wa taifa (dashibodi)
+    kama (i == 2) { rudisha 10; }       // Dunia: mataifa yote
+    kama (i == 3) { rudisha 2; }        // Siasa
+    kama (i == 4) { rudisha 9; }        // Serikali
+    kama (i == 5) { rudisha 3; }        // Jeshi
+    kama (i == 6) { rudisha 4; }        // Diplomasia
+    kama (i == 7) { rudisha 1; }        // Uchumi
+    kama (i == 8) { rudisha 5; }        // Utamaduni
+    kama (i == 9) { rudisha 6; }        // Teknolojia
     rudisha 8;                          // Mipangilio
 }
 
 n8* skrini_nav_jina(n64 i) {
     kama (i == 0) { rudisha ui("Map"); }
     kama (i == 1) { rudisha ui("Overview"); }
-    kama (i == 2) { rudisha ui("Politics"); }
-    kama (i == 3) { rudisha ui("Government"); }
-    kama (i == 4) { rudisha ui("Military"); }
-    kama (i == 5) { rudisha ui("Diplomacy"); }
-    kama (i == 6) { rudisha ui("Economy"); }
-    kama (i == 7) { rudisha ui("Culture"); }
-    kama (i == 8) { rudisha ui("Technology"); }
+    kama (i == 2) { rudisha ui("World"); }
+    kama (i == 3) { rudisha ui("Politics"); }
+    kama (i == 4) { rudisha ui("Government"); }
+    kama (i == 5) { rudisha ui("Military"); }
+    kama (i == 6) { rudisha ui("Diplomacy"); }
+    kama (i == 7) { rudisha ui("Economy"); }
+    kama (i == 8) { rudisha ui("Culture"); }
+    kama (i == 9) { rudisha ui("Technology"); }
     rudisha ui("Settings");
 }
 
 // Kichwa cha kikundi kinachoanzia kabla ya kipengele i, au 0.
 n8* skrini_nav_kikundi(n64 i) {
     kama (i == 0) { rudisha ui("Portal"); }
-    kama (i == 2) { rudisha ui("State"); }
-    kama (i == 6) { rudisha ui("Nation"); }
+    kama (i == 3) { rudisha ui("State"); }
+    kama (i == 7) { rudisha ui("Nation"); }
     rudisha 0;
 }
 
@@ -147,6 +149,15 @@ w0 skrini_nav_ikoni(Turubai* t, n64 skrini, n64 cx, n64 cy, n64 rangi, n64 chini
         turubai_brashi(t, rangi, 255);
         turubai_mstari(t, cx - 8, cy, cx + 8, cy, m);
         turubai_mstari(t, cx, cy - 8, cx, cy + 8, m);
+        rudisha;
+    }
+    kama (skrini == 10) {                               // orodha ya nafasi
+        turubai_jaza(t, cx - 9, cy - 7, 3, 3);
+        turubai_jaza(t, cx - 4, cy - 7, 13, 3);
+        turubai_jaza(t, cx - 9, cy - 1, 3, 3);
+        turubai_jaza(t, cx - 4, cy - 1, 10, 3);
+        turubai_jaza(t, cx - 9, cy + 5, 3, 3);
+        turubai_jaza(t, cx - 4, cy + 5, 7, 3);
         rudisha;
     }
     kama (skrini == 1) {                                // pau za chati
@@ -561,7 +572,7 @@ w0 skrini_muhtasari_chora(Mchezo* g, Turubai* t) {
     turubai_brashi(t, SURA_USULI, 255);
     turubai_jaza(t, 0, 0, t->upana, t->kimo);
     skrini_upau_wa_juu(g, t);
-    skrini_urambazaji(t, 0);
+    skrini_urambazaji(t, 10);
 
     n64 x = SKRINI_UPANA_WA_PEMBENI + 25;
     n64 y = SKRINI_UPAU_WA_JUU + 25;

@@ -1,0 +1,532 @@
+husisha { moduli/onyesho/vipengele.swa }
+
+// chati_kadi.swa -- vipengele vya data vya dashibodi: vigae vya takwimu
+// (KPI), chati ya pau yenye mstari wa lengo, geji ya vipande, faneli,
+// ramani ya joto, orodha ya "inahitaji umakini", donati yenye maelezo, na
+// kadi ya kazi (mikutano inayoendelea).
+//
+// Kila kipengele hupokea data halisi na huchora ndani ya sanduku lake tu;
+// hakuna kinachojua kuhusu mchezo. Rangi hutoka kwenye paleti ya sura.
+
+n64 CHATI_GIZA = 1253430;           // 0x132036 -- maandishi juu ya njano
+n64 CHATI_NJIA = 2765904;           // 0x2A3450 -- sehemu tupu za pau na geji
+
+// Kadi ya dashibodi: uso, ukingo hafifu, na kichwa (kama kipo).
+w0 chati_kadi(n64 x, n64 y, n64 w, n64 h, n8* kichwa, n8* kulia) {
+    turubai_brashi(sura_t, SURA_PANELI, 255);
+    turubai_mviringo(sura_t, x, y, w, h, 10);
+    turubai_brashi(sura_t, 16777215, 18);
+    turubai_mpaka(sura_t, x, y, w, h, 10);
+    kama (kichwa != 0) {
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kati(kichwa, x + 18, y + 16, 15);
+    }
+    kama (kulia != 0) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo_kulia(kulia, x + w - 18, y + 18, 12);
+    }
+}
+
+// Kidonge cha mabadiliko: "+29.4%" kwa kijani au "-8.1%" kwa nyekundu, kwenye
+// usuli hafifu wa rangi hiyo. `mabadiliko` ni kwa elfu kumi. Hurudisha upana.
+n64 chati_kidonge_cha_mabadiliko(n64 x, n64 y, n64 mabadiliko) {
+    n8 m[24];
+    sura_asilimia(m, mabadiliko, 1);
+    n64 rangi = SURA_CHANYA;
+    kama (mabadiliko < 0) { rangi = SURA_HASI; }
+    n64 w = maandishi_upana(sura_kati, m, 11) + 14;
+    turubai_brashi(sura_t, rangi, 40);
+    turubai_mviringo(sura_t, x, y, w, 20, 6);
+    turubai_brashi(sura_t, rangi, 255);
+    maandishi_chora(sura_t, sura_kati, m, x + 7, y + 3, 11);
+    rudisha w;
+}
+
+// Kigae cha takwimu: lebo, namba kubwa, kidonge cha mabadiliko (0 = hakuna),
+// mstari, na maelezo chini. `imeangaziwa` = 1 hukipa uso wa njano.
+w0 chati_kpi(n64 x, n64 y, n64 w, n64 h, n8* lebo, n8* thamani, n64 mabadiliko, n8* maelezo, n32 imeangaziwa) {
+    n64 maandishi = SURA_MAANDISHI;
+    n64 hafifu = SURA_HAFIFU;
+    kama (imeangaziwa) {
+        // mteremko wa njano kutoka juu hadi chini
+        turubai_brashi(sura_t, SURA_LAFUDHI, 255);
+        turubai_mviringo(sura_t, x, y, w, h, 10);
+        turubai_brashi(sura_t, 14723072, 120);                  // 0xE0A800
+        n64 j = h / 2;
+        wakati (j < h - 6) {
+            turubai_brashi(sura_t, 14723072, ((j - h / 2) * 140) / h);
+            turubai_jaza(sura_t, x + 1, y + j, w - 2, 1);
+            j = j + 1;
+        }
+        maandishi = CHATI_GIZA;
+        hafifu = 4864576;                                       // 0x4A3A40
+    } sivyo {
+        chati_kadi(x, y, w, h, 0, 0);
+    }
+    turubai_brashi(sura_t, hafifu, 255);
+    maandishi_chora(sura_t, sura_kati, lebo, x + 18, y + 16, 13);
+    turubai_brashi(sura_t, maandishi, 255);
+    maandishi_chora(sura_t, sura_nene, thamani, x + 18, y + 38, 30);
+    kama (mabadiliko != 0) {
+        n64 xd = x + 18 + maandishi_upana(sura_nene, thamani, 30) + 10;
+        kama (imeangaziwa) {
+            n8 m[24];
+            sura_asilimia(m, mabadiliko, 1);
+            n64 wd = maandishi_upana(sura_kati, m, 11) + 14;
+            turubai_brashi(sura_t, CHATI_GIZA, 40);
+            turubai_mviringo(sura_t, xd, y + 49, wd, 20, 6);
+            turubai_brashi(sura_t, CHATI_GIZA, 255);
+            maandishi_chora(sura_t, sura_kati, m, xd + 7, y + 52, 11);
+        } sivyo { chati_kidonge_cha_mabadiliko(xd, y + 49, mabadiliko); }
+    }
+    turubai_brashi(sura_t, maandishi, 30);
+    turubai_jaza(sura_t, x + 18, y + h - 36, w - 36, 1);
+    kama (maelezo != 0) {
+        turubai_brashi(sura_t, hafifu, 255);
+        maandishi_chora(sura_t, sura_kawaida, maelezo, x + 18, y + h - 27, 11);
+    }
+}
+
+// Mistari ya mshazari ndani ya mstatili (kwa pau za kipindi kilichopita).
+w0 chati_mistari_ya_mshazari(n64 x, n64 y, n64 w, n64 h, n64 rangi, n64 uwazi) {
+    kama (w <= 0 || h <= 0) { rudisha; }
+    turubai_kata(sura_t, x, y, w, h);
+    turubai_brashi(sura_t, rangi, uwazi);
+    n64 k = 0 - h;
+    wakati (k < w) {
+        turubai_mstari(sura_t, x + k, y + h, x + k + h, y, 256);
+        k = k + 7;
+    }
+    turubai_kata_yote(sura_t);
+}
+
+// Mstari wa vistari kati ya x0 na x1 kwenye y.
+w0 chati_mstari_wa_vistari(n64 x0, n64 x1, n64 y, n64 rangi, n64 uwazi) {
+    turubai_brashi(sura_t, rangi, uwazi);
+    n64 x = x0;
+    wakati (x < x1) {
+        n64 mwisho = x + 4;
+        kama (mwisho > x1) { mwisho = x1; }
+        turubai_jaza(sura_t, x, y, mwisho - x, 1);
+        x = x + 7;
+    }
+}
+
+// Chati ya pau yenye mstari wa lengo. Pau za zamani zina mistari ya
+// mshazari, ya mwisho ni njano kamili, na ya kabla yake ni njano hafifu.
+// Mhimili wa thamani kulia; lebo za chini ni "T<zamu>" kuanzia `zamu_ya_kwanza`.
+w0 chati_pau_lengo(n64 x, n64 y, n64 w, n64 h, n64* thamani, n64 idadi, n64 lengo, n8* lebo_ya_lengo, n64 zamu_ya_kwanza) {
+    kama (idadi <= 0) { rudisha; }
+    // kipimo: kutoka sifuri, au -- thamani zikiwa karibu sana -- kutoka chini
+    // ya ndogo kabisa, ili mabadiliko yaonekane. Lebo za mhimili husema kipimo.
+    n64 juu = lengo;
+    n64 chini = lengo;
+    kama (lengo <= 0) { chini = thamani[0]; }
+    n64 i = 0;
+    wakati (i < idadi) {
+        kama (thamani[i] > juu) { juu = thamani[i]; }
+        kama (thamani[i] < chini) { chini = thamani[i]; }
+        i = i + 1;
+    }
+    kama (juu <= 0) { juu = 1; }
+    n64 upana_wa_thamani = juu - chini;
+    kama (chini > upana_wa_thamani * 3) { chini = chini - upana_wa_thamani; }
+    sivyo { chini = 0; }
+    kama (chini < 0) { chini = 0; }
+    juu = juu + (juu - chini) / 8;
+    kama (juu <= chini) { juu = chini + 1; }
+    n64 w_mhimili = 64;
+    n64 h_chini = 22;
+    n64 wc = w - w_mhimili;
+    n64 hc = h - h_chini;
+    // mistari ya gridi na lebo za thamani
+    n8 m[24];
+    n64 g = 0;
+    wakati (g <= 4) {
+        n64 gy = y + hc - (hc * g) / 4;
+        turubai_brashi(sura_t, 16777215, 14);
+        turubai_jaza(sura_t, x, gy, wc, 1);
+        sura_namba_fupi(m, chini + ((juu - chini) * g) / 4);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(m, x + wc + 10, gy - 8, 11);
+        g = g + 1;
+    }
+    // pau
+    n64 hatua = wc / idadi;
+    n64 wp = (hatua * 70) / 100;
+    kama (wp < 2) { wp = 2; }
+    n64 kila = 1 + (idadi * 34) / wc;           // lebo moja kila pau ngapi
+    i = 0;
+    wakati (i < idadi) {
+        n64 bh = (hc * (thamani[i] - chini)) / (juu - chini);
+        kama (bh < 2) { bh = 2; }
+        n64 bx = x + i * hatua + (hatua - wp) / 2;
+        n64 by = y + hc - bh;
+        kama (i == idadi - 1) {
+            turubai_brashi(sura_t, SURA_LAFUDHI, 255);
+            turubai_mviringo(sura_t, bx, by, wp, bh, 4);
+        } sivyo {
+            kama (i == idadi - 2) {
+                turubai_brashi(sura_t, SURA_LAFUDHI, 60);
+                turubai_mviringo(sura_t, bx, by, wp, bh, 4);
+                chati_mistari_ya_mshazari(bx, by, wp, bh, SURA_LAFUDHI, 150);
+            } sivyo {
+                turubai_brashi(sura_t, 16777215, 16);
+                turubai_mviringo(sura_t, bx, by, wp, bh, 4);
+                chati_mistari_ya_mshazari(bx, by, wp, bh, 16777215, 40);
+            }
+        }
+        kama ((idadi - 1 - i) % kila == 0) {
+            n8 lebo[16];
+            n8 namba[16];
+            sura_namba(namba, zamu_ya_kwanza + i);
+            mfuatano_umbiza(lebo, 16, "T%s", namba, 0, 0, 0, 0, 0);
+            n64 wl = maandishi_upana(sura_kawaida, lebo, 11);
+            kama (i == idadi - 1) { sura_rangi(SURA_MAANDISHI); }
+            sivyo { sura_rangi(SURA_HAFIFU); }
+            sura_lebo(lebo, bx + wp / 2 - wl / 2, y + hc + 6, 11);
+        }
+        i = i + 1;
+    }
+    // mstari wa lengo na kidonge chake
+    kama (lengo > 0) {
+        n64 ly = y + hc - (hc * (lengo - chini)) / (juu - chini);
+        chati_mstari_wa_vistari(x, x + wc, ly, SURA_MAANDISHI, 120);
+        kama (lebo_ya_lengo != 0) {
+            n64 wl = maandishi_upana(sura_kati, lebo_ya_lengo, 11) + 16;
+            n64 lx = x + wc - wl - 4;
+            turubai_brashi(sura_t, SURA_MAANDISHI, 255);
+            turubai_mviringo(sura_t, lx, ly - 10, wl, 20, 10);
+            turubai_brashi(sura_t, CHATI_GIZA, 255);
+            maandishi_chora(sura_t, sura_kati, lebo_ya_lengo, lx + 8, ly - 7, 11);
+        }
+    }
+}
+
+// Geji ya vipande: tao la digrii 220 la vipande `idadi`; sehemu iliyojazwa
+// (kwa elfu) ina rangi, iliyobaki ni ya njia. Asilimia katikati.
+w0 chati_geji(n64 cx, n64 cy, n64 r, n64 urefu, n64 kwa_elfu, n64 rangi, n8* maelezo) {
+    d64 pi = pi_hesabu();
+    n64 idadi = 32;
+    n64 kiasi = kwa_elfu;
+    kama (kiasi < 0) { kiasi = 0; }
+    kama (kiasi > 1000) { kiasi = 1000; }
+    n64 vilivyojazwa = (idadi * kiasi + 500) / 1000;
+    n64 i = 0;
+    wakati (i < idadi) {
+        d64 sehemu = i;
+        d64 jumla = idadi - 1;
+        d64 a = pi * (1.0 + 20.0 / 180.0) - (pi * 220.0 / 180.0) * (sehemu / jumla);
+        d64 r1 = r - urefu;
+        d64 r2 = r;
+        n64 x1 = cx * 256 + r1 * 256.0 * cos_hesabu(a);
+        n64 y1 = cy * 256 - r1 * 256.0 * sin_hesabu(a);
+        n64 x2 = cx * 256 + r2 * 256.0 * cos_hesabu(a);
+        n64 y2 = cy * 256 - r2 * 256.0 * sin_hesabu(a);
+        kama (i < vilivyojazwa) {
+            // vipande vya mwanzo vimefifia kidogo: mwanga hukua kuelekea mwisho
+            turubai_brashi(sura_t, rangi, 150 + (105 * i) / (vilivyojazwa + 1));
+        } sivyo { turubai_brashi(sura_t, CHATI_NJIA, 255); }
+        turubai_mstari256(sura_t, x1, y1, x2, y2, 6 * 256);
+        i = i + 1;
+    }
+    n8 m[16];
+    sura_asilimia(m, kiasi * 10, 0);
+    n64 wm = maandishi_upana(sura_nene, m, 34);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(m, cx - wm / 2, cy - 30, 34);
+    kama (maelezo != 0) {
+        n64 wl = maandishi_upana(sura_kawaida, maelezo, 12);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(maelezo, cx - wl / 2, cy + 14, 12);
+    }
+}
+
+// Safu ya hadithi ya thamani: nukta ya rangi, lebo, thamani kulia, mstari chini.
+w0 chati_safu_ya_thamani(n64 x, n64 y, n64 w, n64 rangi, n8* lebo, n8* thamani) {
+    turubai_brashi(sura_t, 16777215, 16);
+    turubai_jaza(sura_t, x, y, w, 1);
+    turubai_brashi(sura_t, rangi, 255);
+    turubai_mviringo(sura_t, x, y + 13, 7, 7, 2);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo(lebo, x + 16, y + 9, 12);
+    sura_lebo_kulia(thamani, x + w, y + 9, 12);
+}
+
+// Faneli: hatua `idadi` kama safu sawa; kila moja ina jina, thamani na
+// maelezo juu, na ukanda unaopungua kufuatana na thamani. Vidonge vya
+// asilimia ya kuendelea huwekwa kwenye mipaka ya hatua.
+w0 chati_faneli(n64 x, n64 y, n64 w, n64 h, n8** majina, n64* thamani, n64 idadi, n64 rangi) {
+    kama (idadi <= 0 || thamani[0] <= 0) { rudisha; }
+    n64 ws = w / idadi;
+    n64 y_ukanda = y + 70;
+    n64 h_ukanda = h - 70;
+    n64 kati = y_ukanda + h_ukanda / 2;
+    n8 m[24];
+    n64 i = 0;
+    wakati (i < idadi) {
+        n64 sx = x + i * ws;
+        kama (i > 0) {
+            turubai_brashi(sura_t, 16777215, 16);
+            turubai_jaza(sura_t, sx, y, 1, h);
+        }
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(majina[i], sx + 8, y, 11);
+        sura_namba_fupi(m, thamani[i]);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_nene(m, sx + 8, y + 18, 17);
+        // ukanda: kimo hupungua kwa mstari kutoka thamani hii hadi inayofuata
+        n64 ijayo = thamani[i];
+        kama (i + 1 < idadi) { ijayo = thamani[i + 1]; }
+        n64 c = 0;
+        wakati (c < ws) {
+            n64 v = thamani[i] + ((ijayo - thamani[i]) * c) / ws;
+            n64 bh = (h_ukanda * v) / thamani[0];
+            kama (bh < 2) { bh = 2; }
+            turubai_brashi(sura_t, rangi, 70 + (185 * (i + 1)) / idadi);
+            turubai_jaza(sura_t, sx + c, kati - bh / 2, 1, bh);
+            c = c + 1;
+        }
+        i = i + 1;
+    }
+    // vidonge vya asilimia kwenye mipaka
+    i = 1;
+    wakati (i < idadi) {
+        kama (thamani[i - 1] > 0) {
+            sura_asilimia(m, (thamani[i] * 10000) / thamani[i - 1], 0);
+            n64 wm = maandishi_upana(sura_nene, m, 11) + 14;
+            n64 px = x + i * ws - wm / 2;
+            turubai_brashi(sura_t, 657946, 235);                // 0x0A0A1A
+            turubai_mviringo(sura_t, px, kati - 10, wm, 20, 10);
+            turubai_brashi(sura_t, SURA_MAANDISHI, 255);
+            maandishi_chora(sura_t, sura_nene, m, px + 7, kati - 7, 11);
+        }
+        i = i + 1;
+    }
+}
+
+// Ramani ya joto: gridi ya safu x safuwima; kila kisanduku ni mraba wa
+// mviringo ambao uwazi wake hufuata thamani ndani ya safuwima yake (kila
+// safuwima ina kipimo chake). Lebo za safu kushoto, za safuwima juu.
+w0 chati_ramani_ya_joto(n64 x, n64 y, n64 w, n64 h, n64* thamani, n64 safu, n64 safuwima, n8** lebo_za_safu, n8** lebo_za_safuwima, n64 rangi) {
+    n64 w_lebo = 96;
+    n64 h_lebo = 20;
+    n64 cw = (w - w_lebo) / safuwima;
+    n64 ch = (h - h_lebo) / safu;
+    n64 k = 0;
+    wakati (k < safuwima) {
+        n64 wl = maandishi_upana(sura_kawaida, lebo_za_safuwima[k], 10);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(lebo_za_safuwima[k], x + w_lebo + k * cw + (cw - wl) / 2, y, 10);
+        k = k + 1;
+    }
+    n64 r = 0;
+    wakati (r < safu) {
+        n64 ry = y + h_lebo + r * ch;
+        sura_rangi(SURA_HAFIFU);
+        turubai_kata(sura_t, x, ry, w_lebo - 6, ch);
+        sura_lebo(lebo_za_safu[r], x, ry + (ch - 14) / 2, 11);
+        turubai_kata_yote(sura_t);
+        k = 0;
+        wakati (k < safuwima) {
+            // kiwango cha juu cha safuwima
+            n64 juu = 1;
+            n64 q = 0;
+            wakati (q < safu) { kama (thamani[q * safuwima + k] > juu) { juu = thamani[q * safuwima + k]; } q = q + 1; }
+            n64 v = thamani[r * safuwima + k];
+            n64 uwazi = 40 + (215 * v) / juu;
+            turubai_brashi(sura_t, rangi, uwazi);
+            turubai_mviringo(sura_t, x + w_lebo + k * cw + 3, ry + 3, cw - 6, ch - 6, 4);
+            kama (cw >= 46 && ch >= 22) {
+                n8 m[16];
+                sura_namba(m, v);
+                n64 wm = maandishi_upana(sura_kati, m, 11);
+                kama (uwazi > 160) { turubai_brashi(sura_t, CHATI_GIZA, 255); }
+                sivyo { turubai_brashi(sura_t, SURA_MAANDISHI, 220); }
+                maandishi_chora(sura_t, sura_kati, m, x + w_lebo + k * cw + (cw - wm) / 2, ry + (ch - 14) / 2, 11);
+            }
+            k = k + 1;
+        }
+        r = r + 1;
+    }
+}
+
+// Safu ya "inahitaji umakini": ikoni ndani ya duara, kichwa, maelezo, beji
+// ya idadi na mshale. `hatari` = 1 hupaka beji rangi ya hatari.
+w0 chati_safu_ya_umakini(n64 x, n64 y, n64 w, n64 ikoni, n8* kichwa, n8* maelezo, n8* idadi, n32 hatari) {
+    turubai_brashi(sura_t, 16777215, 14);
+    turubai_jaza(sura_t, x, y, w, 1);
+    turubai_brashi(sura_t, SURA_PANELI_JUU, 255);
+    turubai_duara(sura_t, x + 16, y + 26, 14);
+    sura_ikoni(x + 16, y + 26, 11, ikoni, SURA_HAFIFU, 255);
+    sura_rangi(SURA_MAANDISHI);
+    turubai_kata(sura_t, x, y, w - 74, 52);
+    sura_lebo_kati(kichwa, x + 42, y + 10, 13);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(maelezo, x + 42, y + 29, 11);
+    turubai_kata_yote(sura_t);
+    n64 wb = maandishi_upana(sura_nene, idadi, 11) + 16;
+    kama (wb < 26) { wb = 26; }
+    n64 bx = x + w - 30 - wb;
+    kama (hatari) { turubai_brashi(sura_t, SURA_HASI, 60); }
+    sivyo { turubai_brashi(sura_t, SURA_PANELI_JUU, 255); }
+    turubai_mviringo(sura_t, bx, y + 16, wb, 22, 11);
+    turubai_brashi(sura_t, SURA_MAANDISHI, 255);
+    maandishi_chora(sura_t, sura_nene, idadi, bx + (wb - maandishi_upana(sura_nene, idadi, 11)) / 2, y + 19, 11);
+    sura_ikoni(x + w - 10, y + 27, 9, SURA_ICON_CHEVRON, SURA_HAFIFU, 255);
+}
+
+// Donati yenye nafasi kati ya sehemu, jumla katikati, na hadithi kama
+// vidonge: "Executive: 41% · 24".
+w0 chati_donati(n64 x, n64 y, n64 w, n64 h, n64* thamani, n64* rangi, n8** majina, n64 idadi, n8* lebo_ya_jumla) {
+    n64 jumla = 0;
+    n64 i = 0;
+    wakati (i < idadi) { jumla = jumla + thamani[i]; i = i + 1; }
+    kama (jumla <= 0) { rudisha; }
+    n64 r = h / 2 - 6;
+    kama (r > w / 4) { r = w / 4; }
+    n64 cx = x + r + 6;
+    n64 cy = y + h / 2;
+    d64 pi = pi_hesabu();
+    n64 unene = (r * 30) / 100;
+    // kila sehemu: mistari ya mionzi midogo kwenye pembe zake, ikiacha pengo
+    n64 hatua = 360 * 4;
+    n64 mwanzo = 0;
+    i = 0;
+    wakati (i < idadi) {
+        n64 urefu = (thamani[i] * hatua) / jumla;
+        n64 pengo = 8;
+        kama (urefu <= pengo * 2) { pengo = 0; }
+        turubai_brashi(sura_t, rangi[i], 255);
+        n64 s = mwanzo + pengo;
+        wakati (s < mwanzo + urefu - pengo) {
+            d64 sd = s;
+            d64 a = pi / 2.0 - (2.0 * pi * sd) / 1440.0;
+            d64 r1 = r - unene;
+            d64 r2 = r;
+            n64 x1 = cx * 256 + r1 * 256.0 * cos_hesabu(a);
+            n64 y1 = cy * 256 - r1 * 256.0 * sin_hesabu(a);
+            n64 x2 = cx * 256 + r2 * 256.0 * cos_hesabu(a);
+            n64 y2 = cy * 256 - r2 * 256.0 * sin_hesabu(a);
+            turubai_mstari256(sura_t, x1, y1, x2, y2, 3 * 256);
+            s = s + 2;
+        }
+        mwanzo = mwanzo + urefu;
+        i = i + 1;
+    }
+    n8 m[24];
+    sura_namba(m, jumla);
+    n64 wm = maandishi_upana(sura_nene, m, 26);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(m, cx - wm / 2, cy - 22, 26);
+    kama (lebo_ya_jumla != 0) {
+        n64 wl = maandishi_upana(sura_kawaida, lebo_ya_jumla, 11);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(lebo_ya_jumla, cx - wl / 2, cy + 10, 11);
+    }
+    // hadithi
+    n64 lx = cx + r + 22;
+    n64 lw = x + w - lx;
+    n64 lh = 30;
+    n64 ly = cy - (idadi * (lh + 6)) / 2;
+    i = 0;
+    wakati (i < idadi) {
+        n64 ry = ly + i * (lh + 6);
+        turubai_brashi(sura_t, SURA_PANELI_JUU, 255);
+        turubai_mviringo(sura_t, lx, ry, lw, lh, 8);
+        turubai_brashi(sura_t, rangi[i], 255);
+        turubai_mviringo(sura_t, lx + 10, ry + 8, 4, lh - 16, 2);
+        n8 asilimia[16];
+        n8 idadi_m[16];
+        sura_asilimia(asilimia, (thamani[i] * 10000) / jumla, 0);
+        sura_namba(idadi_m, thamani[i]);
+        // jina kushoto; idadi na asilimia kulia
+        n8 mstari[96];
+        mfuatano_umbiza(mstari, 96, "%s  ·  %s", idadi_m, asilimia, 0, 0, 0, 0);
+        n64 wr = maandishi_upana(sura_kawaida, mstari, 12);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo_kulia(mstari, lx + lw - 10, ry + 7, 12);
+        sura_rangi(SURA_MAANDISHI);
+        turubai_kata(sura_t, lx, ry, lw - 18 - wr, lh);
+        sura_lebo(majina[i], lx + 22, ry + 7, 12);
+        turubai_kata_yote(sura_t);
+        i = i + 1;
+    }
+}
+
+// Kipaumbele cha kadi ya kazi.
+n64 KAZI_CHINI = 0;
+n64 KAZI_KATI = 1;
+n64 KAZI_JUU = 2;
+
+// Lebo ndogo ya rangi (kidonge): hurudisha upana wake.
+n64 chati_lebo(n64 x, n64 y, n8* maandishi, n64 rangi) {
+    n64 w = maandishi_upana(sura_kati, maandishi, 10) + 14;
+    turubai_brashi(sura_t, rangi, 40);
+    turubai_mviringo(sura_t, x, y, w, 18, 5);
+    turubai_brashi(sura_t, rangi, 255);
+    maandishi_chora(sura_t, sura_kati, maandishi, x + 7, y + 2, 10);
+    rudisha w;
+}
+
+// Kadi ya kazi (kama ya bodi ya kazi): kipaumbele, kichwa, maelezo, pau ya
+// maendeleo, tarehe, hali, na herufi za watu wanaohusika. Kimo = CHATI_KAZI_KIMO.
+n64 CHATI_KAZI_KIMO = 152;
+
+w0 chati_kadi_ya_kazi(n64 x, n64 y, n64 w, n64 kipaumbele, n8* kichwa, n8* maelezo, n64 maendeleo, n8* tarehe, n8* hali_ya_kazi, n64 rangi_ya_hali, n8** watu, n64 idadi_ya_watu) {
+    n64 h = CHATI_KAZI_KIMO;
+    turubai_brashi(sura_t, SURA_PANELI_JUU, 255);
+    turubai_mviringo(sura_t, x, y, w, h, 10);
+    turubai_brashi(sura_t, 16777215, 16);
+    turubai_mpaka(sura_t, x, y, w, h, 10);
+    // kipaumbele kushoto, tarehe kulia
+    n8* kp = ui("Low");
+    n64 rangi = SURA_CHANYA;
+    kama (kipaumbele == KAZI_KATI) { kp = ui("Medium"); rangi = SURA_LAFUDHI; }
+    kama (kipaumbele == KAZI_JUU) { kp = ui("High"); rangi = SURA_HASI; }
+    chati_lebo(x + 14, y + 12, kp, rangi);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo_kulia(tarehe, x + w - 14, y + 13, 11);
+    turubai_kata(sura_t, x, y, w - 12, h);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kati(kichwa, x + 14, y + 38, 14);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(maelezo, x + 14, y + 59, 11);
+    turubai_kata_yote(sura_t);
+    // maendeleo
+    n8 m[16];
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(ui("Progress"), x + 14, y + 82, 11);
+    sura_asilimia(m, maendeleo * 10, 0);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kulia(m, x + w - 14, y + 82, 11);
+    turubai_brashi(sura_t, CHATI_NJIA, 255);
+    turubai_mviringo(sura_t, x + 14, y + 100, w - 28, 6, 3);
+    n64 jazo = ((w - 28) * maendeleo) / 1000;
+    kama (jazo > 0) {
+        turubai_brashi(sura_t, SURA_BAHARI, 255);
+        turubai_mviringo(sura_t, x + 14, y + 100, jazo, 6, 3);
+    }
+    // chini: watu (duara zinazopishana zenye herufi) kushoto, hali kulia
+    n64 i = 0;
+    wakati (i < idadi_ya_watu && i < 4) {
+        n64 cx = x + 26 + i * 18;
+        n64 cy = y + 128;
+        turubai_brashi(sura_t, SURA_PANELI_JUU, 255);
+        turubai_duara(sura_t, cx, cy, 12);
+        turubai_brashi(sura_t, 3754873 + i * 1118481, 255);   // 0x394B79 na kuongezeka
+        turubai_duara(sura_t, cx, cy, 10);
+        n8 herufi[3];
+        herufi[0] = watu[i][0];
+        herufi[1] = 0;
+        n64 wh2 = maandishi_upana(sura_nene, herufi, 10);
+        turubai_brashi(sura_t, SURA_MAANDISHI, 255);
+        maandishi_chora(sura_t, sura_nene, herufi, cx - wh2 / 2, cy - 7, 10);
+        i = i + 1;
+    }
+    n64 wh = maandishi_upana(sura_nene, hali_ya_kazi, 10) + 16;
+    turubai_brashi(sura_t, rangi_ya_hali, 255);
+    turubai_mviringo(sura_t, x + w - 14 - wh, y + 118, wh, 20, 10);
+    turubai_brashi(sura_t, CHATI_GIZA, 255);
+    maandishi_chora(sura_t, sura_nene, hali_ya_kazi, x + w - 14 - wh + 8, y + 121, 10);
+}

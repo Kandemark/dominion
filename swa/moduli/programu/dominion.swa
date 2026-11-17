@@ -9,6 +9,7 @@ husisha { moduli/skrini/teknolojia.swa }
 husisha { moduli/skrini/mipangilio.swa }
 husisha { moduli/skrini/kuwasha.swa }
 husisha { moduli/skrini/mkutano.swa }
+husisha { moduli/skrini/dashibodi.swa }
 husisha { moduli/onyesho/wayland/dirisha.swa }
 
 // dominion.swa -- programu ya mchezo: dirisha la Wayland, mchezo halisi,
@@ -60,6 +61,7 @@ n64 SKRINI_TEKNOLOJIA = 6;
 n64 SKRINI_RAMANI = 7;
 n64 SKRINI_MIPANGILIO = 8;
 n64 SKRINI_MKUTANO = 9;
+n64 SKRINI_DUNIA_YOTE = 10;
 
 // Skrini zote zisizo ramani: kila moja huchora taifa lililochaguliwa.
 w0 chora_skrini_ya_taifa(Mchezo* g, Turubai* t, n64 skrini, n64 taifa) {
@@ -71,12 +73,13 @@ w0 chora_skrini_ya_taifa(Mchezo* g, Turubai* t, n64 skrini, n64 taifa) {
     kama (skrini == SKRINI_TEKNOLOJIA) { skrini_teknolojia_chora(g, t, taifa); rudisha; }
     kama (skrini == SKRINI_MIPANGILIO) { skrini_mipangilio_chora(g, t); rudisha; }
     kama (skrini == SKRINI_MKUTANO) { skrini_mkutano_chora(g, t, taifa); rudisha; }
-    skrini_muhtasari_chora(g, t);
+    kama (skrini == SKRINI_DUNIA_YOTE) { skrini_muhtasari_chora(g, t); rudisha; }
+    skrini_dashibodi_chora(g, t, taifa);
 }
 
 // ---------- hali ya programu ----------
 
-n64 MD_IDADI = 10;              // dirisha moja kwa kila skrini (faharisi = SKRINI_*)
+n64 MD_IDADI = 11;              // dirisha moja kwa kila skrini (faharisi = SKRINI_*)
 n64 MD_KICHWA = 38;             // kimo cha kichwa cha dirisha
 n64 MD_MPITO = 14;              // fremu za animesheni ya kufunguka
 n64 MD_KONA = 18;               // eneo la kona ya kubadili ukubwa
@@ -220,6 +223,7 @@ n8* md_jina_kubwa(n64 id) {
     kama (id == SKRINI_TEKNOLOJIA) { rudisha ui("TECHNOLOGY"); }
     kama (id == SKRINI_MIPANGILIO) { rudisha ui("SETTINGS"); }
     kama (id == SKRINI_MKUTANO) { rudisha ui("GOVERNMENT"); }
+    kama (id == SKRINI_DUNIA_YOTE) { rudisha ui("WORLD"); }
     rudisha ui("OVERVIEW");
 }
 
@@ -232,6 +236,7 @@ n8* md_jina(n64 id) {
     kama (id == SKRINI_TEKNOLOJIA) { rudisha ui("Technology"); }
     kama (id == SKRINI_MIPANGILIO) { rudisha ui("Settings"); }
     kama (id == SKRINI_MKUTANO) { rudisha ui("Meetings"); }
+    kama (id == SKRINI_DUNIA_YOTE) { rudisha ui("World"); }
     rudisha ui("Overview");
 }
 
@@ -291,6 +296,8 @@ w0 md_fungua(Hali* h, Dirisha* d, n64 id) {
             m->w = 940;
             m->h = 620;
             kama (id == SKRINI_MIPANGILIO) { m->w = 660; m->h = 700; }
+            // dashibodi hujaza eneo la ramani
+            kama (id == SKRINI_MUHTASARI) { m->w = d->upana; m->h = d->kimo; }
             m->x = ramani_x() + 20 + h->n_z * 28;
             m->y = SKRINI_UPAU_WA_JUU + 14 + h->n_z * 28;
         }
@@ -728,7 +735,7 @@ w0 bofya_skrini(Mchezo* g, Hali* h, n64 skrini, n64 upana, n64 kimo, n64 px, n64
         kama (px >= control_x + 92 && px < control_x + 136) { skrini_uchumi_dirisha_la_historia = 60; }
         kama (px >= control_x + 138 && px < control_x + 188) { skrini_uchumi_dirisha_la_historia = 240; }
     }
-    kama (skrini == SKRINI_MUHTASARI) {
+    kama (skrini == SKRINI_DUNIA_YOTE) {
         n64 juu = SKRINI_UPAU_WA_JUU + 140;
         skrini_muhtasari_tafuta_fokasi = 0;
         kama (px >= x0 + 300 && px < x0 + 520 && py >= juu && py < juu + 30) { skrini_muhtasari_tafuta_fokasi = 1; }
@@ -924,7 +931,7 @@ w0 kibodi(Mchezo* g, Hali* h, Dirisha* d, n64 a) {
         h->haja = 1;
         rudisha;
     }
-    n32 anaandika = h->skrini == SKRINI_MUHTASARI && skrini_muhtasari_tafuta_fokasi != 0;
+    n32 anaandika = h->skrini == SKRINI_DUNIA_YOTE && skrini_muhtasari_tafuta_fokasi != 0;
     kama (anaandika) {
         kama (a == KEY_ESC) {
             kama (skrini_muhtasari_tafuta[0] != 0) { skrini_muhtasari_tafuta[0] = 0; skrini_muhtasari_ukurasa = 0; }
@@ -932,7 +939,7 @@ w0 kibodi(Mchezo* g, Hali* h, Dirisha* d, n64 a) {
         }
         kama (a == 28) { skrini_muhtasari_tafuta_fokasi = 0; }
         kama (a != KEY_ESC && a != 28) { skrini_muhtasari_tafuta_ingizo(a); }
-        h->md[SKRINI_MUHTASARI].chafu = 1;
+        h->md[SKRINI_DUNIA_YOTE].chafu = 1;
         h->haja = 1;
         rudisha;
     }
