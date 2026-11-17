@@ -1,5 +1,6 @@
 husisha { moduli/akili/mshauri.swa }
 husisha { moduli/siasa/katiba.swa }
+husisha { moduli/akili/uamuzi.swa }
 
 // mazungumzo.swa -- mazungumzo ya mchezaji na watu wa mchezo kupitia AI.
 //
@@ -12,8 +13,11 @@ husisha { moduli/siasa/katiba.swa }
 // Kila jibu huishia kwa mstari mmoja wa matokeo ambao mchezo huusoma:
 //   EFFECT: attitude=N stability=N legitimacy=N treasury=N
 // Mchezo huuondoa kwenye maandishi yanayoonyeshwa na kutumia namba hizo kwa
-// msimamo wa mhusika na viashiria vya dola. Hivyo AI ndiyo inayopima
-// matokeo ya kila kauli na uamuzi.
+// msimamo wa mhusika na viashiria vya dola.
+//
+// Jambo likikubaliwa, AI huongeza pia mstari wa DECISION (uamuzi.swa):
+// ishara fupi ambazo injini huchanganua, hubana, huhifadhi kwenye daftari
+// na kuzitumia kila zamu. AI hupima kauli; injini ndiyo inayobeba matokeo.
 //
 // Kumbukumbu: kila mabadilishano huongezwa kwenye faili la kumbukumbu la
 // nafasi ya hifadhi (saves/nafasi_N/kumbukumbu), na mistari ya mwisho
@@ -100,7 +104,7 @@ n64 mazungumzo_maelekezo(n8* nje, n64 uwezo, Dola* d, n8* taifa, n8* tarehe, Mhu
     n8* kumbuka = "";
     kama (kumbukumbu != 0 && kumbukumbu[0] != 0) { kumbuka = "\nWhat has been said and decided so far (oldest first):\n"; }
     sivyo { kumbukumbu = ""; }
-    n64 n = mfuatano_umbiza(nje, uwezo, "%s\n%s%s%s\nAfter your reply, add one final line in exactly this form, with whole numbers for how this exchange changes things (attitude -10..10, the others -5..5; use 0 when nothing changes):\nEFFECT: attitude=0 stability=0 legitimacy=0 treasury=0", hali_ya_dola, nani, kumbuka, kumbukumbu, 0, 0);
+    n64 n = mfuatano_umbiza(nje, uwezo, "%s\n%s%s%s\n%s\nAfter your reply, add one final line in exactly this form, with whole numbers for how this exchange changes things (attitude -10..10, the others -5..5; use 0 when nothing changes):\nEFFECT: attitude=0 stability=0 legitimacy=0 treasury=0", hali_ya_dola, nani, kumbuka, kumbukumbu, uamuzi_maelekezo(), 0);
     achilia hali_ya_dola;
     achilia nani;
     rudisha n;
@@ -178,9 +182,27 @@ n64 kumbukumbu_soma_mwisho(n8* njia, n8* nje, n64 uwezo) {
     rudisha n;
 }
 
+// Muktadha wa maamuzi kwa mazungumzo yanayofuata: dunia, taifa la
+// mchezaji, zamu, na faili la daftari. Matokeo ya uamuzi wa mwisho huwekwa
+// kwenye mazungumzo_uamuzi na mazungumzo_uamuzi_hali.
+TaifaMfumo* mazungumzo_mataifa = 0;
+n64 mazungumzo_mchezaji = 0;
+n64 mazungumzo_zamu = 0;
+n8* mazungumzo_njia_ya_maamuzi = 0;
+Uamuzi* mazungumzo_uamuzi = 0;
+n64 mazungumzo_uamuzi_hali = 1;         // UAMUZI_SAWA au sababu ya kukataa
+
+w0 mazungumzo_weka_muktadha(TaifaMfumo* tm, n64 mchezaji, n64 zamu, n8* njia_ya_maamuzi) {
+    mazungumzo_mataifa = tm;
+    mazungumzo_mchezaji = mchezaji;
+    mazungumzo_zamu = zamu;
+    mazungumzo_njia_ya_maamuzi = njia_ya_maamuzi;
+}
+
 // Mazungumzo kamili: jenga maelekezo (pamoja na kumbukumbu), muulize AI,
-// tenganisha na tumia athari, na uandike kwenye kumbukumbu. Hurudisha urefu
-// wa jibu linaloonyeshwa, au hasi kwa hitilafu ya mshauri.
+// tenganisha uamuzi na athari, tumia na uhifadhi, na uandike kwenye
+// kumbukumbu. Hurudisha urefu wa jibu linaloonyeshwa, au hasi kwa hitilafu
+// ya mshauri.
 n64 mazungumzo_sema(AkiliUsanidi* u, Dola* d, n8* taifa, n8* tarehe, MhusikaWaDola* m, n8* cheo_cha_mchezaji, n8* lugha, n8* njia_ya_kumbukumbu, n8* kauli, n8* nje, n64 uwezo, n64* athari) {
     n8* kumbukumbu = tenga(3072);
     kumbukumbu_soma_mwisho(njia_ya_kumbukumbu, kumbukumbu, 3072);
@@ -190,6 +212,12 @@ n64 mazungumzo_sema(AkiliUsanidi* u, Dola* d, n8* taifa, n8* tarehe, MhusikaWaDo
     achilia kumbukumbu;
     achilia maelekezo;
     kama (r < 0) { rudisha r; }
+    kama (mazungumzo_uamuzi == 0) { mazungumzo_uamuzi = tenga(ukubwa(Uamuzi)); }
+    mazungumzo_uamuzi_hali = uamuzi_changanua(nje, mazungumzo_mataifa, mazungumzo_mchezaji, mazungumzo_zamu, mazungumzo_uamuzi);
+    kama (mazungumzo_uamuzi_hali == UAMUZI_SAWA) {
+        uamuzi_ongeza(mazungumzo_uamuzi, d);
+        kama (mazungumzo_njia_ya_maamuzi != 0) { uamuzi_hifadhi_mmoja(mazungumzo_njia_ya_maamuzi, mazungumzo_uamuzi); }
+    }
     mazungumzo_changanua_athari(nje, athari);
     mazungumzo_tumia_athari(athari, m, d);
     n8* nani = "Adviser";

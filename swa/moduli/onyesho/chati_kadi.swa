@@ -9,7 +9,7 @@ husisha { moduli/injini/tarehe.swa }
 // Kila kipengele hupokea data halisi na huchora ndani ya sanduku lake tu;
 // hakuna kinachojua kuhusu mchezo. Rangi hutoka kwenye paleti ya sura.
 
-n64 CHATI_GIZA = 1253430;           // 0x132036 -- maandishi juu ya njano
+n64 CHATI_GIZA = 659488;            // 0x0A1020 -- maandishi juu ya rangi angavu
 n64 CHATI_NJIA = 2765904;           // 0x2A3450 -- sehemu tupu za pau na geji
 
 // Kadi ya dashibodi: uso, ukingo hafifu, na kichwa (kama kipo).
@@ -54,7 +54,7 @@ w0 chati_kpi(n64 x, n64 y, n64 w, n64 h, n8* lebo, n8* thamani, n64 mabadiliko, 
         turubai_mviringo(sura_t, x, y, w, h, 10);
         n64 j = h / 3;
         wakati (j < h - 6) {
-            turubai_brashi(sura_t, 1450042, ((j - h / 3) * 180) / h);
+            turubai_brashi(sura_t, SURA_PANELI, ((j - h / 3) * 180) / h);
             turubai_jaza(sura_t, x + 1, y + j, w - 2, 1);
             j = j + 1;
         }

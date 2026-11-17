@@ -1,0 +1,474 @@
+husisha { moduli/siasa/dola.swa }
+husisha { moduli/dunia/taifa.swa }
+
+// uamuzi.swa -- kichanganuzi cha maamuzi na daftari lake.
+//
+// AI haiandiki msimbo wala hali ya mchezo. Mazungumzo yanaweza kuwa ya aina
+// yoyote, lakini jambo likikubaliwa AI huongeza mstari mmoja mfupi wa
+// ishara, na injini pekee ndiyo inayoamua matokeo yake:
+//
+//   DECISION: kind=trade with=Baical volume=120 friendliness=5 corruption=0 fund=-20 tax=0 support=0 weeks=52
+//
+// Kila ufunguo ni hiari; usiotajwa ni 0. Kila namba hubanwa kwenye wigo
+// wake, jina la taifa hutafutwa kwenye dunia, na aina isiyojulikana
+// hukataliwa. Hivyo hata modeli ndogo ya ndani inatosha: inatoa ishara
+// kumi, si aya wala msimbo.
+//
+// Uamuzi uliokubaliwa huingia kwenye daftari (saves/nafasi_N/maamuzi, mstari
+// mmoja wa namba kwa kila uamuzi). Kila zamu injini hutumia maamuzi yaliyo
+// hai: biashara huleta mapato, vikwazo hupunguza urafiki, na kadhalika,
+// mpaka wiki zake ziishe.
+
+n64 UAMUZI_HAKUNA = 0;
+n64 UAMUZI_BIASHARA = 1;        // trade: mkataba wa biashara
+n64 UAMUZI_MSAADA = 2;          // aid: msaada kwa taifa jingine
+n64 UAMUZI_MKOPO = 3;           // loan: mkopo kutoka taifa jingine
+n64 UAMUZI_VIKWAZO = 4;         // sanction
+n64 UAMUZI_MKATABA = 5;         // treaty: makubaliano ya amani au mipaka
+n64 UAMUZI_MUUNGANO = 6;        // alliance
+n64 UAMUZI_VITA = 7;            // war
+n64 UAMUZI_AMANI = 8;           // peace
+n64 UAMUZI_KODI = 9;            // tax
+n64 UAMUZI_BAJETI = 10;         // budget: matumizi ya serikali
+n64 UAMUZI_SHERIA = 11;         // law
+n64 UAMUZI_UCHAGUZI = 12;       // election: kuitisha uchaguzi
+n64 UAMUZI_MRADI = 13;          // project: mradi wa ujenzi
+n64 UAMUZI_MAGEUZI = 14;        // reform
+n64 UAMUZI_UKANDAMIZAJI = 15;   // crackdown
+n64 UAMUZI_MSAMAHA = 16;        // amnesty
+n64 UAMUZI_AINA_IDADI = 17;
+
+n8* uamuzi_aina_ishara(n64 a) {
+    kama (a == UAMUZI_BIASHARA) { rudisha "trade"; }
+    kama (a == UAMUZI_MSAADA) { rudisha "aid"; }
+    kama (a == UAMUZI_MKOPO) { rudisha "loan"; }
+    kama (a == UAMUZI_VIKWAZO) { rudisha "sanction"; }
+    kama (a == UAMUZI_MKATABA) { rudisha "treaty"; }
+    kama (a == UAMUZI_MUUNGANO) { rudisha "alliance"; }
+    kama (a == UAMUZI_VITA) { rudisha "war"; }
+    kama (a == UAMUZI_AMANI) { rudisha "peace"; }
+    kama (a == UAMUZI_KODI) { rudisha "tax"; }
+    kama (a == UAMUZI_BAJETI) { rudisha "budget"; }
+    kama (a == UAMUZI_SHERIA) { rudisha "law"; }
+    kama (a == UAMUZI_UCHAGUZI) { rudisha "election"; }
+    kama (a == UAMUZI_MRADI) { rudisha "project"; }
+    kama (a == UAMUZI_MAGEUZI) { rudisha "reform"; }
+    kama (a == UAMUZI_UKANDAMIZAJI) { rudisha "crackdown"; }
+    kama (a == UAMUZI_MSAMAHA) { rudisha "amnesty"; }
+    rudisha "none";
+}
+
+// Jina la uamuzi kwa mchezaji (habari, daftari).
+n8* uamuzi_aina_jina(n64 a) {
+    kama (a == UAMUZI_BIASHARA) { rudisha "Trade agreement"; }
+    kama (a == UAMUZI_MSAADA) { rudisha "Aid package"; }
+    kama (a == UAMUZI_MKOPO) { rudisha "Foreign loan"; }
+    kama (a == UAMUZI_VIKWAZO) { rudisha "Sanctions"; }
+    kama (a == UAMUZI_MKATABA) { rudisha "Treaty"; }
+    kama (a == UAMUZI_MUUNGANO) { rudisha "Alliance"; }
+    kama (a == UAMUZI_VITA) { rudisha "Declaration of war"; }
+    kama (a == UAMUZI_AMANI) { rudisha "Peace settlement"; }
+    kama (a == UAMUZI_KODI) { rudisha "Tax change"; }
+    kama (a == UAMUZI_BAJETI) { rudisha "Budget"; }
+    kama (a == UAMUZI_SHERIA) { rudisha "New law"; }
+    kama (a == UAMUZI_UCHAGUZI) { rudisha "Election called"; }
+    kama (a == UAMUZI_MRADI) { rudisha "Public works"; }
+    kama (a == UAMUZI_MAGEUZI) { rudisha "Reform"; }
+    kama (a == UAMUZI_UKANDAMIZAJI) { rudisha "Crackdown"; }
+    kama (a == UAMUZI_MSAMAHA) { rudisha "Amnesty"; }
+    rudisha "No decision";
+}
+
+// Aina ambazo lazima zitaje taifa jingine.
+n32 uamuzi_ni_wa_nje(n64 a) {
+    rudisha a >= UAMUZI_BIASHARA && a <= UAMUZI_AMANI;
+}
+
+muundo Uamuzi {
+    n64 aina;
+    n64 zamu;           // zamu ulipofanywa
+    n64 lengwa;         // faharisi ya taifa jingine, au -1
+    n64 kiasi;          // volume: mamilioni kwa wiki, 0..1000
+    n64 urafiki;        // friendliness: -20..20
+    n64 rushwa;         // corruption: -10..10
+    n64 mfuko;          // fund: -100..100, mara moja, kwa hazina (mamilioni)
+    n64 kodi;           // tax: -10..10 alama za asilimia
+    n64 uungwaji;       // support: -10..10, uhalali machoni mwa watu
+    n64 wiki;           // weeks: 0..520, muda wa uamuzi (0 = mara moja)
+}
+
+// ---------- kichanganuzi ----------
+
+n64 uamuzi_bana(n64 v, n64 chini, n64 juu) {
+    kama (v < chini) { rudisha chini; }
+    kama (v > juu) { rudisha juu; }
+    rudisha v;
+}
+
+n32 uamuzi_herufi_ndogo(n64 c) {
+    kama (c >= 65 && c <= 90) { rudisha c + 32; }
+    rudisha c;
+}
+
+// Mwisho wa ishara: nafasi, mstari mpya, mwisho wa maandishi.
+n32 uamuzi_ni_mwisho(n64 c) {
+    rudisha c == 0 || c == 32 || c == 10 || c == 13 || c == 9 || c == 44 || c == 59;
+}
+
+// Tafuta "ufunguo=" ndani ya mstari (si sehemu ya neno jingine). Hurudisha
+// faharisi ya thamani, au -1.
+n64 uamuzi_tafuta_ufunguo(n8* mstari, n8* ufunguo) {
+    n64 n = urefu_wa_mfuatano(ufunguo);
+    n64 i = 0;
+    wakati (mstari[i] != 0 && mstari[i] != 10) {
+        n32 mwanzo = i == 0 || uamuzi_ni_mwisho(mstari[i - 1]) || mstari[i - 1] == 58;
+        kama (mwanzo) {
+            n64 j = 0;
+            wakati (j < n && uamuzi_herufi_ndogo(mstari[i + j]) == ufunguo[j]) { j = j + 1; }
+            kama (j == n && mstari[i + n] == 61) { rudisha i + n + 1; }
+        }
+        i = i + 1;
+    }
+    rudisha 0 - 1;
+}
+
+// Namba kamili ya ufunguo (inakubali + na -), au 0 isipokuwepo.
+n64 uamuzi_namba(n8* mstari, n8* ufunguo) {
+    n64 p = uamuzi_tafuta_ufunguo(mstari, ufunguo);
+    kama (p < 0) { rudisha 0; }
+    n64 ishara = 1;
+    kama (mstari[p] == 43) { p = p + 1; }
+    sivyo kama (mstari[p] == 45) { ishara = 0 - 1; p = p + 1; }
+    n64 v = 0;
+    wakati (mstari[p] >= 48 && mstari[p] <= 57) {
+        kama (v < 100000000) { v = v * 10 + (mstari[p] - 48); }
+        p = p + 1;
+    }
+    rudisha v * ishara;
+}
+
+// Nakili thamani ya maandishi ya ufunguo (hadi mwisho wa ishara) kwenda nje.
+// Jina la taifa lenye nafasi linaweza kuandikwa kwa _ ("New_Hjoriry").
+n64 uamuzi_neno(n8* mstari, n8* ufunguo, n8* nje, n64 uwezo) {
+    nje[0] = 0;
+    n64 p = uamuzi_tafuta_ufunguo(mstari, ufunguo);
+    kama (p < 0) { rudisha 0; }
+    n64 n = 0;
+    kama (mstari[p] == 34) { p = p + 1; }
+    wakati (uamuzi_ni_mwisho(mstari[p]) == 0 && mstari[p] != 34 && n < uwezo - 1) {
+        n64 c = mstari[p];
+        kama (c == 95) { c = 32; }
+        nje[n] = c;
+        n = n + 1;
+        p = p + 1;
+    }
+    nje[n] = 0;
+    rudisha n;
+}
+
+n64 uamuzi_aina_kutoka_ishara(n8* s) {
+    n8 ndogo[32];
+    n64 i = 0;
+    wakati (s[i] != 0 && i < 31) { ndogo[i] = uamuzi_herufi_ndogo(s[i]); i = i + 1; }
+    ndogo[i] = 0;
+    n64 a = 1;
+    wakati (a < UAMUZI_AINA_IDADI) {
+        kama (linganisha_mfuatano(ndogo, uamuzi_aina_ishara(a)) == 0) { rudisha a; }
+        a = a + 1;
+    }
+    rudisha UAMUZI_HAKUNA;
+}
+
+// Linganisha majina bila kujali herufi kubwa.
+n32 uamuzi_majina_sawa(n8* a, n8* b) {
+    n64 i = 0;
+    wakati (a[i] != 0 && b[i] != 0) {
+        kama (uamuzi_herufi_ndogo(a[i]) != uamuzi_herufi_ndogo(b[i])) { rudisha 0; }
+        i = i + 1;
+    }
+    rudisha a[i] == 0 && b[i] == 0;
+}
+
+// Faharisi ya taifa kwa jina, au -1.
+n64 uamuzi_taifa_kwa_jina(TaifaMfumo* tm, n8* jina) {
+    kama (tm == 0 || jina[0] == 0) { rudisha 0 - 1; }
+    n64 i = 0;
+    wakati (i < tm->idadi) {
+        TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, i);
+        kama (uamuzi_majina_sawa(tn->jina, jina)) { rudisha i; }
+        i = i + 1;
+    }
+    rudisha 0 - 1;
+}
+
+// Sababu za kukataa uamuzi.
+n64 UAMUZI_SAWA = 0;
+n64 UAMUZI_HAKUNA_MSTARI = 1;
+n64 UAMUZI_AINA_HAIJULIKANI = 2;
+n64 UAMUZI_TAIFA_HALIJULIKANI = 3;
+n64 UAMUZI_TAIFA_LAKO = 4;
+
+// Changanua mstari wa "DECISION:" ndani ya jibu. Hurudisha UAMUZI_SAWA na
+// kujaza u, au sababu ya kukataa. Mstari wenyewe huondolewa kwenye jibu.
+n64 uamuzi_changanua(n8* jibu, TaifaMfumo* tm, n64 taifa_la_mchezaji, n64 zamu, Uamuzi* u) {
+    u->aina = UAMUZI_HAKUNA;
+    u->zamu = zamu;
+    u->lengwa = 0 - 1;
+    u->kiasi = 0;
+    u->urafiki = 0;
+    u->rushwa = 0;
+    u->mfuko = 0;
+    u->kodi = 0;
+    u->uungwaji = 0;
+    u->wiki = 0;
+    n32 p = tafuta_mfuatano(jibu, "DECISION:");
+    kama (p < 0) { rudisha UAMUZI_HAKUNA_MSTARI; }
+    n8* mstari = &jibu[p + 9];
+    n8 neno[96];
+    uamuzi_neno(mstari, "kind", neno, 96);
+    u->aina = uamuzi_aina_kutoka_ishara(neno);
+    u->kiasi = uamuzi_bana(uamuzi_namba(mstari, "volume"), 0, 1000);
+    u->urafiki = uamuzi_bana(uamuzi_namba(mstari, "friendliness"), 0 - 20, 20);
+    u->rushwa = uamuzi_bana(uamuzi_namba(mstari, "corruption"), 0 - 10, 10);
+    u->mfuko = uamuzi_bana(uamuzi_namba(mstari, "fund"), 0 - 100, 100);
+    u->kodi = uamuzi_bana(uamuzi_namba(mstari, "tax"), 0 - 10, 10);
+    u->uungwaji = uamuzi_bana(uamuzi_namba(mstari, "support"), 0 - 10, 10);
+    u->wiki = uamuzi_bana(uamuzi_namba(mstari, "weeks"), 0, 520);
+    uamuzi_neno(mstari, "with", neno, 96);
+    // ondoa mstari wote kwenye maandishi yanayoonyeshwa, kisha nafasi za mwisho
+    n64 mwisho = p;
+    wakati (jibu[mwisho] != 0 && jibu[mwisho] != 10) { mwisho = mwisho + 1; }
+    kama (jibu[mwisho] == 10) { mwisho = mwisho + 1; }
+    nakili(&jibu[p], &jibu[mwisho], urefu_wa_mfuatano(&jibu[mwisho]) + 1);
+    n64 i = urefu_wa_mfuatano(jibu);
+    wakati (i > 0 && (jibu[i - 1] == 10 || jibu[i - 1] == 32 || jibu[i - 1] == 13)) { i = i - 1; }
+    jibu[i] = 0;
+    kama (u->aina == UAMUZI_HAKUNA) { rudisha UAMUZI_AINA_HAIJULIKANI; }
+    kama (uamuzi_ni_wa_nje(u->aina)) {
+        u->lengwa = uamuzi_taifa_kwa_jina(tm, neno);
+        kama (u->lengwa < 0) { rudisha UAMUZI_TAIFA_HALIJULIKANI; }
+        kama (u->lengwa == taifa_la_mchezaji) { rudisha UAMUZI_TAIFA_LAKO; }
+    }
+    rudisha UAMUZI_SAWA;
+}
+
+// ---------- daftari ----------
+
+n64 UAMUZI_UWEZO = 1024;
+n64 MATAIFA_UWEZO = 512;
+
+n64 uamuzi_idadi = 0;
+n64* uamuzi_daftari = 0;        // Uamuzi* kwa kila mmoja, wa zamani kwanza
+n64* uamuzi_urafiki = 0;        // urafiki wa taifa la mchezaji kwa kila taifa, -100..100
+n64* uamuzi_biashara = 0;       // biashara ya kila wiki na kila taifa (mamilioni)
+n64 uamuzi_rushwa_jumla = 20;   // kiwango cha rushwa nchini, 0..100
+n64 uamuzi_kodi_jumla = 0;      // mabadiliko ya kodi ya jumla, alama za asilimia
+
+w0 uamuzi_anzisha() {
+    kama (uamuzi_daftari != 0) { rudisha; }
+    uamuzi_daftari = tenga(8 * UAMUZI_UWEZO);
+    uamuzi_urafiki = tenga(8 * MATAIFA_UWEZO);
+    uamuzi_biashara = tenga(8 * MATAIFA_UWEZO);
+    n64 i = 0;
+    wakati (i < MATAIFA_UWEZO) { uamuzi_urafiki[i] = 0; uamuzi_biashara[i] = 0; i = i + 1; }
+    uamuzi_idadi = 0;
+    uamuzi_rushwa_jumla = 20;
+    uamuzi_kodi_jumla = 0;
+}
+
+Uamuzi* uamuzi_pata(n64 i) { rudisha uamuzi_daftari[i]; }
+
+// Uamuzi bado una nguvu katika zamu hii?
+n32 uamuzi_uko_hai(Uamuzi* u, n64 zamu) {
+    rudisha u->wiki > 0 && zamu < u->zamu + u->wiki;
+}
+
+// Athari za mara moja za uamuzi uliokubaliwa.
+w0 uamuzi_tumia_mara_moja(Uamuzi* u, Dola* d) {
+    kama (u->lengwa >= 0 && u->lengwa < MATAIFA_UWEZO) {
+        uamuzi_urafiki[u->lengwa] = uamuzi_bana(uamuzi_urafiki[u->lengwa] + u->urafiki, 0 - 100, 100);
+    }
+    uamuzi_rushwa_jumla = uamuzi_bana(uamuzi_rushwa_jumla + u->rushwa, 0, 100);
+    uamuzi_kodi_jumla = uamuzi_bana(uamuzi_kodi_jumla + u->kodi, 0 - 30, 30);
+    kama (d != 0) {
+        // mfuko ni mamilioni; hazina ni 0..100, kila milioni 20 ni alama moja
+        d->hazina = dola_rekebisha(d->hazina, u->mfuko / 20);
+        // kodi ya juu hujaza hazina lakini hupunguza uhalali, na kinyume chake
+        d->hazina = dola_rekebisha(d->hazina, u->kodi);
+        d->uhalali = dola_rekebisha(d->uhalali, u->uungwaji - u->kodi / 2 - u->rushwa / 2);
+        kama (u->aina == UAMUZI_VITA) { d->utulivu = dola_rekebisha(d->utulivu, 0 - 5); }
+        kama (u->aina == UAMUZI_AMANI || u->aina == UAMUZI_MSAMAHA) { d->utulivu = dola_rekebisha(d->utulivu, 3); }
+        kama (u->aina == UAMUZI_UKANDAMIZAJI) {
+            d->utulivu = dola_rekebisha(d->utulivu, 4);
+            d->uhalali = dola_rekebisha(d->uhalali, 0 - 4);
+        }
+        kama (u->aina == UAMUZI_UCHAGUZI || u->aina == UAMUZI_MAGEUZI) { d->uhalali = dola_rekebisha(d->uhalali, 3); }
+    }
+}
+
+// Ongeza uamuzi uliokubaliwa kwenye daftari na tumia athari zake za mara moja.
+w0 uamuzi_ongeza(Uamuzi* u, Dola* d) {
+    uamuzi_anzisha();
+    kama (uamuzi_idadi >= UAMUZI_UWEZO) {
+        achilia uamuzi_daftari[0];
+        n64 i = 1;
+        wakati (i < uamuzi_idadi) { uamuzi_daftari[i - 1] = uamuzi_daftari[i]; i = i + 1; }
+        uamuzi_idadi = uamuzi_idadi - 1;
+    }
+    Uamuzi* n = tenga(ukubwa(Uamuzi));
+    nakili(n, u, ukubwa(Uamuzi));
+    uamuzi_daftari[uamuzi_idadi] = n;
+    uamuzi_idadi = uamuzi_idadi + 1;
+    uamuzi_tumia_mara_moja(n, d);
+}
+
+// Kila zamu: maamuzi yaliyo hai huendelea kufanya kazi.
+//   biashara   kiasi chake huhesabiwa kwenye biashara ya wiki; kila milioni
+//              50 kwa wiki huongeza hazina alama 1 kila wiki 4
+//   msaada     hazina hupungua, urafiki huongezeka polepole
+//   mkopo      hazina huongezeka sasa; kila wiki 8 riba hupunguza alama 1
+//   vikwazo    urafiki hupungua kila wiki 4, biashara nao hukoma
+//   vita       utulivu na hazina hupungua kila wiki 4
+//   mradi      hazina hupungua sasa, utulivu huongezeka kila wiki 8
+w0 uamuzi_zamu(n64 zamu, Dola* d) {
+    uamuzi_anzisha();
+    n64 i = 0;
+    wakati (i < MATAIFA_UWEZO) { uamuzi_biashara[i] = 0; i = i + 1; }
+    i = 0;
+    wakati (i < uamuzi_idadi) {
+        Uamuzi* u = uamuzi_daftari[i];
+        kama (uamuzi_uko_hai(u, zamu)) {
+            n64 umri = zamu - u->zamu;
+            n64 l = u->lengwa;
+            kama (u->aina == UAMUZI_BIASHARA && l >= 0) {
+                uamuzi_biashara[l] = uamuzi_biashara[l] + u->kiasi;
+                kama (d != 0 && umri % 4 == 3) { d->hazina = dola_rekebisha(d->hazina, u->kiasi / 50); }
+            }
+            kama (u->aina == UAMUZI_MSAADA && l >= 0 && umri % 4 == 3) {
+                uamuzi_urafiki[l] = uamuzi_bana(uamuzi_urafiki[l] + 1, 0 - 100, 100);
+                kama (d != 0) { d->hazina = dola_rekebisha(d->hazina, 0 - 1); }
+            }
+            kama (u->aina == UAMUZI_MKOPO && d != 0 && umri % 8 == 7) { d->hazina = dola_rekebisha(d->hazina, 0 - 1); }
+            kama (u->aina == UAMUZI_VIKWAZO && l >= 0) {
+                uamuzi_biashara[l] = 0;
+                kama (umri % 4 == 3) { uamuzi_urafiki[l] = uamuzi_bana(uamuzi_urafiki[l] - 1, 0 - 100, 100); }
+            }
+            kama (u->aina == UAMUZI_VITA && d != 0 && umri % 4 == 3) {
+                d->utulivu = dola_rekebisha(d->utulivu, 0 - 1);
+                d->hazina = dola_rekebisha(d->hazina, 0 - 1);
+            }
+            kama (u->aina == UAMUZI_MRADI && d != 0 && umri % 8 == 7) { d->utulivu = dola_rekebisha(d->utulivu, 1); }
+        }
+        i = i + 1;
+    }
+}
+
+// Jumla ya biashara ya wiki hii na mataifa yote (mamilioni).
+n64 uamuzi_biashara_jumla() {
+    kama (uamuzi_biashara == 0) { rudisha 0; }
+    n64 s = 0;
+    n64 i = 0;
+    wakati (i < MATAIFA_UWEZO) { s = s + uamuzi_biashara[i]; i = i + 1; }
+    rudisha s;
+}
+
+n64 uamuzi_hai_idadi(n64 zamu) {
+    n64 s = 0;
+    n64 i = 0;
+    wakati (i < uamuzi_idadi) {
+        kama (uamuzi_uko_hai(uamuzi_daftari[i], zamu)) { s = s + 1; }
+        i = i + 1;
+    }
+    rudisha s;
+}
+
+// ---------- hifadhi ----------
+//
+// Mstari mmoja kwa uamuzi, namba kumi zilizotenganishwa kwa nafasi:
+//   aina zamu lengwa kiasi urafiki rushwa mfuko kodi uungwaji wiki
+// Urafiki, rushwa na kodi hujengwa upya kwa kurudia maamuzi wakati wa kupakia.
+
+w0 uamuzi_njia(n8* nje, n64 uwezo, n64 nafasi) {
+    n8 saraka[64];
+    mfuatano_umbiza(saraka, 64, "saves/nafasi_%d", nafasi, 0, 0, 0, 0, 0);
+    mfumo_unda_saraka("saves", 493);
+    mfumo_unda_saraka(saraka, 493);
+    mfuatano_umbiza(nje, uwezo, "%s/maamuzi", saraka, 0, 0, 0, 0, 0);
+}
+
+w0 uamuzi_hifadhi_mmoja(n8* njia, Uamuzi* u) {
+    n8 mstari[256];
+    n64 n = mfuatano_umbiza(mstari, 256, "%d %d %d %d %d %d ", u->aina, u->zamu, u->lengwa, u->kiasi, u->urafiki, u->rushwa);
+    n = n + mfuatano_umbiza(&mstari[n], 256 - n, "%d %d %d %d\n", u->mfuko, u->kodi, u->uungwaji, u->wiki, 0, 0);
+    n64 fd = mfumo_fungua(njia, 1089, 420);
+    kama (fd >= 0) {
+        mfumo_andika(fd, mstari, n);
+        mfumo_funga(fd);
+    }
+}
+
+// Kisomaji cha namba: nafasi ya sasa ndani ya maandishi ya faili.
+n64 uamuzi_kisomaji = 0;
+
+// Soma namba inayofuata (inaruka nafasi na mistari mipya).
+n64 uamuzi_soma_namba(n8* s) {
+    n64 i = uamuzi_kisomaji;
+    wakati (s[i] == 32 || s[i] == 10 || s[i] == 13) { i = i + 1; }
+    n64 ishara = 1;
+    kama (s[i] == 45) { ishara = 0 - 1; i = i + 1; }
+    n64 v = 0;
+    wakati (s[i] >= 48 && s[i] <= 57) { v = v * 10 + (s[i] - 48); i = i + 1; }
+    uamuzi_kisomaji = i;
+    rudisha v * ishara;
+}
+
+// Pakia daftari kutoka faili; urafiki, rushwa na kodi hujengwa upya.
+// Hurudisha idadi ya maamuzi yaliyopakiwa.
+n64 uamuzi_pakia(n8* njia, Dola* d) {
+    uamuzi_daftari = 0;
+    uamuzi_anzisha();
+    n64 fd = mfumo_fungua(njia, 0, 0);
+    kama (fd < 0) { rudisha 0; }
+    n64 ukubwa_wa_faili = mfumo_tafuta_nafasi(fd, 0, 2);
+    mfumo_tafuta_nafasi(fd, 0, 0);
+    n8* s = tenga(ukubwa_wa_faili + 1);
+    n64 n = mfumo_soma(fd, s, ukubwa_wa_faili);
+    mfumo_funga(fd);
+    kama (n < 0) { n = 0; }
+    s[n] = 0;
+    Uamuzi* u = tenga(ukubwa(Uamuzi));
+    uamuzi_kisomaji = 0;
+    n32 bado = 1;
+    wakati (bado) {
+        wakati (s[uamuzi_kisomaji] == 32 || s[uamuzi_kisomaji] == 10 || s[uamuzi_kisomaji] == 13) { uamuzi_kisomaji = uamuzi_kisomaji + 1; }
+        kama (uamuzi_kisomaji >= n || s[uamuzi_kisomaji] == 0) { bado = 0; }
+        sivyo {
+            n64 kabla = uamuzi_kisomaji;
+            u->aina = uamuzi_soma_namba(s);
+            u->zamu = uamuzi_soma_namba(s);
+            u->lengwa = uamuzi_soma_namba(s);
+            u->kiasi = uamuzi_soma_namba(s);
+            u->urafiki = uamuzi_soma_namba(s);
+            u->rushwa = uamuzi_soma_namba(s);
+            u->mfuko = uamuzi_soma_namba(s);
+            u->kodi = uamuzi_soma_namba(s);
+            u->uungwaji = uamuzi_soma_namba(s);
+            u->wiki = uamuzi_soma_namba(s);
+            kama (u->aina > UAMUZI_HAKUNA && u->aina < UAMUZI_AINA_IDADI) { uamuzi_ongeza(u, d); }
+            // herufi isiyo namba: ruka mstari wote ili usikwame
+            kama (uamuzi_kisomaji == kabla) {
+                wakati (s[uamuzi_kisomaji] != 0 && s[uamuzi_kisomaji] != 10) { uamuzi_kisomaji = uamuzi_kisomaji + 1; }
+            }
+        }
+    }
+    achilia u;
+    achilia s;
+    rudisha uamuzi_idadi;
+}
+
+// ---------- maelekezo kwa AI ----------
+
+// Sehemu ya maelekezo inayoeleza mstari wa DECISION kwa AI.
+n8* uamuzi_maelekezo() {
+    rudisha "If, and only if, this exchange concludes a concrete decision or agreement, add one more final line in exactly this form, using only the keys you need (whole numbers; nation names with _ for spaces):\nDECISION: kind=K with=Nation volume=0 friendliness=0 corruption=0 fund=0 tax=0 support=0 weeks=0\nK is one of: trade aid loan sanction treaty alliance war peace tax budget law election project reform crackdown amnesty. volume is millions per week (0..1000), friendliness -20..20, corruption -10..10, fund is a one-off amount in millions (-100..100, negative is spending), tax is percentage points -10..10, support is public approval -10..10, weeks is how long it lasts (0..520). Never write a DECISION line for talk that settles nothing.";
+}

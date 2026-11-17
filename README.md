@@ -4,7 +4,7 @@ A grand strategy game written entirely in [Swa](https://github.com/lugha-swa/swa
 
 ![The map, with a nation's card pinned and its dossier open](docs/picha/ramani.png)
 
-You govern one of 232 nations on a hand-built world in the year 1954. Every nation has its own constitution and its own people, and you can serve in any office: head of state, a minister, a member of the legislature, a provincial governor, or a village chief.
+You govern one of 232 nations on a hand-built world, starting in any year from 1700 to 2000. Every nation has its own constitution and its own people, and you can serve in any office: head of state, a minister, a member of the legislature, a provincial governor, or a village chief.
 
 ## What is in the game
 
@@ -12,7 +12,9 @@ You govern one of 232 nations on a hand-built world in the year 1954. Every nati
 - **A constitution for every nation:** twenty forms of government, from parliamentary republics and absolute monarchies to theocracies, juntas, tribal confederations and stateless communes. Zero to four legislative chambers, each with its own seating, size and way of choosing members. Parties across 22 ideologies.
 - **A government you can work inside:** a tree of 17 to 108 offices built from the constitution. Appoint and dismiss where the constitution gives you the power; appointments that need confirmation go to a vote in the right chamber. Your personal assistant arranges meetings, superiors can accept, delay or refuse, and officials ask to see you.
 - **People who talk back:** with an AI provider switched on, every official answers in character (name, party, temperament, attitude to you) and the Adviser weighs what you intend. Each exchange carries measured consequences for the person's attitude and the nation's stability, legitimacy and treasury, and is remembered.
-- **Time:** one turn is one week, starting on Monday 4 January 1954. A calendar of cabinet meetings, sittings, press briefings and your own appointments, and an inbox of requests and warnings every week.
+- **Decisions the engine owns:** when a conversation concludes something (a trade deal, a loan, sanctions, a tax change, a crackdown), the AI only emits one short line of parameters. The engine reads it, clamps every number, records it in the save's decision ledger and applies it week by week until it expires. A small local model is enough.
+- **Time:** one turn is one week from 1 January of the start year. Continue advances one week, one month, three months, or until the next event that needs you. A calendar of cabinet meetings, sittings, press briefings and your own appointments, and an inbox of requests and warnings every week.
+- **The World page:** a press feed generated from the simulation (economies growing or shrinking, a new largest economy, unrest, your own agreements) where every report can be answered through the Adviser, plus rankings with sparklines, movers, forms of government, ruling blocs, an instability watch, your relations, the decision ledger and a heatmap of the great powers.
 - **47 simulation systems:** economy, population, politics, military, diplomacy, culture, technology and more. Every number on screen comes from them, and each nation starts with a year of economic history.
 
 | | |
@@ -44,6 +46,7 @@ Run it from the `swa/` directory: the game reads `rasilimali/` (world and fonts)
 | Option | Effect |
 |---|---|
 | `--dirishani` | start in a window instead of full screen |
+| `--mwaka Y` | start year, 1700 to 2000 (default 1900) |
 | `--skrini S` | start on page S |
 | `--bila-dirisha W H` | render off-screen at W×H without opening a window (with `--fremu N --dampo file` for captures) |
 
@@ -51,7 +54,8 @@ Run it from the `swa/` directory: the game reads `rasilimali/` (world and fonts)
 
 - **Side navigation** opens each page: Map, Overview, Inbox, Calendar, World, Politics, Government, Military, Diplomacy, Economy, Culture, Technology, Settings. Esc returns to the map.
 - **Map:** drag to pan, wheel to zoom. Hover over a nation for its card; click to pin the card and open the nation's dossier. The cards along the bottom open their pages.
-- **Continue** (top right) or **Space** advances one week.
+- **Continue** (top right) or **Space** advances time. The arrow on the button chooses how far: one week, one month, three months, or until the next event (a request, a warning, or a meeting in your diary; at most six months).
+- **World page:** *Respond* on any report puts a question to the Adviser on the Government page; *Open nation* shows that nation. Rankings sort by GDP, growth, stability or population.
 - **Government page:** choose anyone in the tree. *Request meeting* goes through your assistant; *Dismiss and replace* works where your office has the power; *Take this office* lets you play from any position. Type to speak, Enter to send.
 - **Settings:** interface language (English, Kiswahili, Français) and the AI adviser.
 
