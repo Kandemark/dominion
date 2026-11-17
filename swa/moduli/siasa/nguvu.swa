@@ -263,7 +263,8 @@ n64 HOJA_KUSHUSHA_KODI = 3;
 n64 HOJA_UCHUNGUZI = 4;
 n64 HOJA_MSAMAHA = 5;
 n64 HOJA_LAWAMA = 6;
-n64 HOJA_AINA_IDADI = 7;
+n64 HOJA_MAREKEBISHO = 7;      // marekebisho ya katiba (siasa/hati.swa)
+n64 HOJA_AINA_IDADI = 8;
 
 n8* hoja_jina(n64 a) {
     kama (a == HOJA_KUMSHTAKI_SPIKA) { rudisha ui("Impeach the Speaker"); }
@@ -272,12 +273,13 @@ n8* hoja_jina(n64 a) {
     kama (a == HOJA_KUSHUSHA_KODI) { rudisha ui("Finance bill: cut taxes"); }
     kama (a == HOJA_UCHUNGUZI) { rudisha ui("Inquiry into the opposition"); }
     kama (a == HOJA_MSAMAHA) { rudisha ui("Amnesty bill"); }
+    kama (a == HOJA_MAREKEBISHO) { rudisha ui("Constitutional amendment"); }
     rudisha ui("Censure of the government");
 }
 
 // Hoja inahitaji asilimia gani ya kura za ndiyo.
 n64 hoja_kiwango(n64 a) {
-    kama (a == HOJA_KUMSHTAKI_SPIKA) { rudisha 67; }
+    kama (a == HOJA_KUMSHTAKI_SPIKA || a == HOJA_MAREKEBISHO) { rudisha 67; }
     rudisha 51;
 }
 
@@ -305,6 +307,9 @@ muundo Hoja {
     n64 hapana;
     n64 mbegu;
     n64 imeripotiwa;    // habari imeshatolewa
+    n64 kifungu;        // marekebisho: kifungu cha katiba
+    n64 thamani;        // marekebisho: thamani mpya
+    n64 imetumika;      // marekebisho yaliyopita yameshatumika
 }
 
 n64 NGUVU_HOJA_JUU = 128;
@@ -335,6 +340,9 @@ n64 nguvu_ongeza_hoja(n64 aina, n64 baraza, n64 mdhamini, n64 upande, n64 zamu) 
     h->hapana = 0;
     h->mbegu = zamu * 131 + aina * 17 + mdhamini;
     h->imeripotiwa = 0;
+    h->kifungu = 0;
+    h->thamani = 0;
+    h->imetumika = 0;
     nguvu_hoja[nguvu_hoja_idadi] = h;
     nguvu_hoja_idadi = nguvu_hoja_idadi + 1;
     rudisha nguvu_hoja_idadi - 1;
@@ -603,9 +611,14 @@ w0 nguvu_tumia_hoja(Hoja* h, Dola* d) {
 
 // Je, ofisi ya mchezaji ina kura ya turufu? Mkuu wa dola katika jamhuri za
 // rais, nusu-rais, shirikisho, na falme (idhini ya kifalme).
+// Kifungu cha turufu cha katiba (siasa/hati.swa huweka): -1 hufuata aina
+// ya utawala, 0 hakuna turufu, 1 mkuu wa dola ana turufu.
+n64 nguvu_turufu_ya_katiba = -1;
+
 n32 nguvu_ina_turufu(Wahusika* w, Dola* d, n64 ofisi) {
     MhusikaWaDola* m = wahusika_pata(w, ofisi);
     kama (m == 0 || m->ngazi < 9) { rudisha 0; }
+    kama (nguvu_turufu_ya_katiba >= 0) { rudisha nguvu_turufu_ya_katiba; }
     n64 a = d->aina;
     rudisha a == DOLA_JAMHURI_YA_RAIS || a == DOLA_JAMHURI_NUSU_RAIS || a == DOLA_JAMHURI_YA_SHIRIKISHO || a == DOLA_UFALME_KAMILI || a == DOLA_UFALME_WA_KATIBA || a == DOLA_MILKI;
 }

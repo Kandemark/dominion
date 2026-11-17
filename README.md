@@ -17,6 +17,11 @@ You govern one of 232 nations on a hand-built world, starting in any year from 1
 - **Decisions the engine owns:** when a conversation concludes something (a trade deal, a loan, sanctions, a tax change, a crackdown), the AI only emits one short line of parameters. The engine reads it, clamps every number, records it in the save's decision ledger and applies it week by week until it expires. A small local model is enough.
 - **Time:** one turn is one week from 1 January of the start year. Continue advances one week, one month, three months, or until the next event that needs you. A calendar of cabinet meetings, sittings, press briefings and your own appointments, and an inbox of requests and warnings every week.
 - **The World page:** a press feed generated from the simulation (economies growing or shrinking, a new largest economy, unrest, your own agreements) where every report can be answered through the Adviser, plus rankings with sparklines, movers, forms of government, ruling blocs, an instability watch, your relations, the decision ledger and a heatmap of the great powers.
+- **A currency for every nation:** eight great powers on the gold standard, other currencies pegged to a power (with reserves that can run out and break the peg) or floating. Every page shows a nation's figures in its own currency, so a billion in one nation is not a billion in another.
+- **Markets and money:** every nation has a stock exchange of 4 to 40 listed companies from the industries of the start year, an index, and the industrialists and oligarchs who own them. The Economy page is a market terminal: command line, ticker tape, equity monitor, order ticket, sectors, movers, rich list, every world currency, cross rates, a gold desk, and a region / nation / world scope. Meet any tycoon in person.
+- **Your own person:** a Profile with a wallet (cash, gold, shares and dividends, the salary of your office), profit and loss, personal advisers you hire (financial, political, security, press), and the people you have paid.
+- **A written constitution:** each nation's constitution is a readable document with a preamble and twelve articles generated from its form of government, beside a chart of the arms of government. Amend it the way that constitution allows: by decree, by two thirds of the legislature and a referendum, by the party congress, by referendum, or by the council of chiefs.
+- **Nations that live:** every nation moves every week on its own: stability, legitimacy and treasury follow its economy, and strikes, protests, coups, elections, devaluations and market sell-offs happen and reach the news.
 - **47 simulation systems:** economy, population, politics, military, diplomacy, culture, technology and more. Every number on screen comes from them, and each nation starts with a year of economic history.
 
 | | |
@@ -28,7 +33,9 @@ You govern one of 232 nations on a hand-built world, starting in any year from 1
 | ![Calendar](docs/picha/kalenda.png) | ![Inbox](docs/picha/kikasha.png) |
 | **Calendar:** the state's diary | **Inbox:** requests, diary, warnings |
 | ![Economy](docs/picha/uchumi.png) | ![Military](docs/picha/jeshi.png) |
-| **Economy:** history, production, every nation | **Military:** rankings, commanders, neighbours |
+| **Economy:** the market terminal | **Military:** rankings, commanders, neighbours |
+| ![Constitution](docs/picha/katiba.png) | ![Profile](docs/picha/wasifu.png) |
+| **Constitution:** the document, arms of government, amendments | **Profile:** wallet, portfolio, advisers |
 
 ## Requirements
 
@@ -56,7 +63,9 @@ Run it from the `swa/` directory: the game reads `rasilimali/` (world and fonts)
 
 ## Playing
 
-- **Side navigation** opens each page: Map, Overview, Inbox, Calendar, World, Politics, Government, Military, Diplomacy, Economy, Culture, Technology, Settings. Esc returns to the map.
+- **Side navigation** opens each page: Map, Profile, Overview, Inbox, Calendar, World, Politics, Government, Constitution, Military, Diplomacy, Economy, Culture, Technology, Settings. Esc returns to the map.
+- **Economy terminal:** the function keys switch between MARKETS, EQUITIES, FX, PEOPLE and MACRO; SCOPE switches between REGION, NATION and WORLD. Click a security to open it and trade from the order ticket; click a name in the rich list for their profile and *MEET* them.
+- **Constitution:** scroll the document with the wheel; in *Amend the constitution* step a clause to a new value and *Propose*.
 - **Map:** drag to pan, wheel to zoom. Hover over a nation for its card; click to pin the card and open the nation's dossier. The cards along the bottom open their pages.
 - **Continue** (top right) or **Space** advances time. The arrow on the button chooses how far: one week, one month, three months, or until the next event (a request, a warning, or a meeting in your diary; at most six months).
 - **World page:** *Respond* on any report puts a question to the Adviser on the Government page; *Open nation* shows that nation. Rankings sort by GDP, growth, stability or population.

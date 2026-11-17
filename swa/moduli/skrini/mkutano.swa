@@ -929,7 +929,7 @@ n64 serikali_jalada_mbunge(Dola* d, n64 i, n64 x, n64 y, n64 wk) {
         bx = x + 16;
         n64 a = 0;
         wakati (a < HOJA_AINA_IDADI) {
-            kama (a != HOJA_LAWAMA) {
+            kama (a != HOJA_LAWAMA && a != HOJA_MAREKEBISHO) {
                 n64 wb = maandishi_upana(sura_kati, hoja_jina(a), 11) + 22;
                 kama (bx + wb > x + wk - 16) { bx = x + 16; by = by + 28; }
                 bx = bx + serikali_kitufe(hoja_jina(a), bx, by, 0, 1, SB_HOJA, a) + 6;

@@ -34,7 +34,7 @@ n64 skrini_bila_fremu = 0;
 // Maandishi meusi juu ya rangi angavu (kitufe cha Continue, beji).
 n64 CHATI_GIZA_YA_JUU = 659488;          // 0x0A1020
 
-n64 SKRINI_NAV_IDADI = 14;
+n64 SKRINI_NAV_IDADI = 15;
 n64 skrini_nav_beji_kikasha = 0;        // ujumbe usiosomwa (huwekwa na programu)
 n64 SKRINI_NAV_SAFU = 36;
 n64 SKRINI_NAV_KICHWA = 30;
@@ -49,11 +49,12 @@ n64 skrini_nav_skrini(n64 i) {
     kama (i == 5) { rudisha 10; }       // Dunia: mataifa yote
     kama (i == 6) { rudisha 2; }        // Siasa
     kama (i == 7) { rudisha 9; }        // Serikali
-    kama (i == 8) { rudisha 3; }        // Jeshi
-    kama (i == 9) { rudisha 4; }        // Diplomasia
-    kama (i == 10) { rudisha 1; }       // Uchumi
-    kama (i == 11) { rudisha 5; }       // Utamaduni
-    kama (i == 12) { rudisha 6; }       // Teknolojia
+    kama (i == 8) { rudisha 14; }       // Katiba
+    kama (i == 9) { rudisha 3; }        // Jeshi
+    kama (i == 10) { rudisha 4; }       // Diplomasia
+    kama (i == 11) { rudisha 1; }       // Uchumi
+    kama (i == 12) { rudisha 5; }       // Utamaduni
+    kama (i == 13) { rudisha 6; }       // Teknolojia
     rudisha 8;                          // Mipangilio
 }
 
@@ -66,11 +67,12 @@ n8* skrini_nav_jina(n64 i) {
     kama (i == 5) { rudisha ui("World"); }
     kama (i == 6) { rudisha ui("Politics"); }
     kama (i == 7) { rudisha ui("Government"); }
-    kama (i == 8) { rudisha ui("Military"); }
-    kama (i == 9) { rudisha ui("Diplomacy"); }
-    kama (i == 10) { rudisha ui("Economy"); }
-    kama (i == 11) { rudisha ui("Culture"); }
-    kama (i == 12) { rudisha ui("Technology"); }
+    kama (i == 8) { rudisha ui("Constitution"); }
+    kama (i == 9) { rudisha ui("Military"); }
+    kama (i == 10) { rudisha ui("Diplomacy"); }
+    kama (i == 11) { rudisha ui("Economy"); }
+    kama (i == 12) { rudisha ui("Culture"); }
+    kama (i == 13) { rudisha ui("Technology"); }
     rudisha ui("Settings");
 }
 
@@ -78,7 +80,7 @@ n8* skrini_nav_jina(n64 i) {
 n8* skrini_nav_kikundi(n64 i) {
     kama (i == 0) { rudisha ui("Portal"); }
     kama (i == 6) { rudisha ui("State"); }
-    kama (i == 10) { rudisha ui("Nation"); }
+    kama (i == 11) { rudisha ui("Nation"); }
     rudisha 0;
 }
 
@@ -116,6 +118,13 @@ w0 skrini_nav_ikoni(Turubai* t, n64 skrini, n64 cx, n64 cy, n64 rangi, n64 chini
         turubai_mpaka(t, cx - 9, cy - 7, 18, 14, 2);
         turubai_mstari(t, cx - 3, cy - 7, cx - 3, cy + 7, m);
         turubai_mstari(t, cx + 3, cy - 7, cx + 3, cy + 7, m);
+        rudisha;
+    }
+    kama (skrini == 14) {                               // hati: ukurasa wenye mistari
+        turubai_mpaka(t, cx - 7, cy - 9, 14, 18, 2);
+        turubai_jaza(t, cx - 4, cy - 5, 8, 2);
+        turubai_jaza(t, cx - 4, cy - 1, 8, 2);
+        turubai_jaza(t, cx - 4, cy + 3, 5, 2);
         rudisha;
     }
     kama (skrini == 13) {                               // mtu: kichwa na mabega
