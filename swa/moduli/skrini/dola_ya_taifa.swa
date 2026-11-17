@@ -1,0 +1,27 @@
+husisha { moduli/skrini/muhtasari.swa }
+husisha { moduli/skrini/ramani.swa }
+husisha { moduli/siasa/dola.swa }
+
+// dola_ya_taifa.swa -- dola (katiba na hali yake) ya kila taifa kwa kurasa
+// zote, kutoka cheo chake kwenye dunia iliyokubaliwa.
+
+// Jina kamili la Kiingereza la dola ("Kingdom of X"), kutoka dunia iliyokubaliwa.
+n8* skrini_siasa_cheo(n64 taifa, TaifaNchi* tn) {
+    DuniaHalisi* d = skrini_dunia_pata();
+    kama (d != 0 && taifa >= 0 && taifa < d->mataifa) {
+        n8* p = d->data;
+        n64 o = d->jina[taifa];
+        n64 o_asili = o + 1 + dh_u8(p, o);
+        n64 o_eng = o_asili + 1 + dh_u8(p, o_asili);
+        rudisha dh_jina(p, o_eng);
+    }
+    rudisha "Republic of";
+}
+
+Dola* skrini_siasa_dola(Mchezo* g, n64 taifa) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
+    kama (tn == 0) { rudisha 0; }
+    rudisha dola_ya_taifa(taifa, skrini_siasa_cheo(taifa, tn), tn->idadi_ya_watu);
+}
+

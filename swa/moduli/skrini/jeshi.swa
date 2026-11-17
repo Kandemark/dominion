@@ -1,8 +1,9 @@
-husisha { moduli/skrini/muhtasari.swa }
+husisha { moduli/skrini/jopo.swa }
 
 // Skrini ya jeshi: muhtasari na orodha ya vikosi vilivyo kwenye mfumo.
 w0 skrini_jeshi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_anzisha(t);
+    bofya_anza();
     turubai_brashi(t, SURA_USULI, 255);
     turubai_jaza(t, 0, 0, t->upana, t->kimo);
     skrini_upau_wa_juu(g, t);
@@ -14,7 +15,7 @@ w0 skrini_jeshi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 x = SKRINI_UPANA_WA_PEMBENI + 25;
     n64 y = SKRINI_UPAU_WA_JUU + 25;
     n64 w = t->upana - x - 24;
-    skrini_kichwa_fm(g, t, ui("Military"), ui("World forces. Units are not yet assigned to nations."), x, y - 15);
+    skrini_kichwa_fm(g, t, ui("Military"), ui("Strength among the nations, commanders, neighbours and forces."), x, y - 15);
     y = y + 66;
     n64 total_units = 0;
     n64 total_strength = 0;
@@ -43,7 +44,18 @@ w0 skrini_jeshi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_namba(value, tn->kielezo_cha_kijeshi);
     sura_kadi(x + 3 * (cw + gap), y, cw, ui("MILITARY INDEX"), value, 0);
     y = y + 108;
-    n64 panel_h = t->kimo - y - 24;
+    // nguvu kati ya mataifa: nafasi, mgawanyo, jeshi dhidi ya pato
+    n64 pengo = 12;
+    jopo_safu_ya_dunia(g, taifa, KIPIMO_JESHI, KIPIMO_PATO, x, y, w, 300);
+    y = y + 300 + pengo;
+    n64 h_chini = t->kimo - y - 24;
+    n64 w4 = (w - 3 * pengo) / 4;
+    jopo_vyeo(g, taifa, TAWI_JESHI, ui("HIGH COMMAND"), x, y, w4, h_chini);
+    jopo_majirani(g, taifa, KIPIMO_JESHI, ui("NEIGHBOURS  ·  MILITARY"), x + (w4 + pengo), y, w4, h_chini);
+    jopo_kwa_utawala(g, taifa, KIPIMO_JESHI, ui("MILITARY BY FORM OF GOVERNMENT"), x + 2 * (w4 + pengo), y, w4, h_chini);
+    x = x + 3 * (w4 + pengo);
+    w = w - 3 * (w4 + pengo);
+    n64 panel_h = h_chini;
     sura_paneli(x, y, w, panel_h, ui("ORDER OF BATTLE"));
     kama (army == 0 || army->idadi == 0) {
         sura_hali_tupu(ui("No military units"), ui("Forces appear here once the simulation raises them."), 0,

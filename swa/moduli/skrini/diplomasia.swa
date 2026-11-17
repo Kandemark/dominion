@@ -1,4 +1,4 @@
-husisha { moduli/skrini/muhtasari.swa }
+husisha { moduli/skrini/jopo.swa }
 
 n64 skrini_diplomasia_mstari_mteule = -1;
 
@@ -24,6 +24,7 @@ n64 skrini_rangi_ya_kiwango(n32 k) {
 
 w0 skrini_diplomasia_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_anzisha(t);
+    bofya_anza();
     turubai_brashi(t, SURA_USULI, 255);
     turubai_jaza(t, 0, 0, t->upana, t->kimo);
     skrini_upau_wa_juu(g, t);
@@ -96,9 +97,20 @@ w0 skrini_diplomasia_chora(Mchezo* g, Turubai* t, n64 taifa) {
     y = y + 158;
 
     n64 kimo_cha_safu = SKRINI_KIMO_CHA_SAFU;
+    // jedwali huchukua hadi safu nane; chini yake dashibodi ya majirani
     n64 visible_n = (t->kimo - y - 90) / kimo_cha_safu;
     kama (visible_n < 0) { visible_n = 0; }
+    kama (visible_n > 8) { visible_n = 8; }
     kama (visible_n > n) { visible_n = n; }
+    n64 y_chini = y + 76 + visible_n * kimo_cha_safu + 12;
+    n64 h_chini = t->kimo - y_chini - 24;
+    kama (h_chini > 180) {
+        n64 w4 = (w - 3 * 12) / 4;
+        jopo_majirani(g, taifa, KIPIMO_PATO, ui("NEIGHBOURS  ·  GDP"), x, y_chini, w4, h_chini);
+        jopo_majirani(g, taifa, KIPIMO_JESHI, ui("NEIGHBOURS  ·  MILITARY"), x + w4 + 12, y_chini, w4, h_chini);
+        jopo_mtawanyiko(g, taifa, KIPIMO_PATO, KIPIMO_JESHI, ui("EVERY NATION  ·  GDP / MILITARY"), x + 2 * (w4 + 12), y_chini, w4, h_chini);
+        jopo_majirani(g, taifa, KIPIMO_UTULIVU, ui("NEIGHBOURS  ·  STABILITY"), x + 3 * (w4 + 12), y_chini, w - 3 * (w4 + 12), h_chini);
+    }
     n8 kichwa[64];
     mfuatano_umbiza(kichwa, 64, ui("NEIGHBOURS -- %d"), n, 0, 0, 0, 0, 0);
     sura_paneli(x, y, w, 76 + visible_n * kimo_cha_safu, kichwa);

@@ -1,0 +1,147 @@
+husisha { moduli/siasa/nguvu.swa }
+
+// jaribio_nguvu.swa -- kila kiti ni mtu, majukumu ya baraza, hongo, kazi za
+// msaidizi, hoja na kura, kumshtaki spika, turufu, na upinzani.
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    // jamhuri ya rais yenye mabaraza mawili na upinzani
+    n64 mbegu = 0;
+    Dola* d = 0;
+    wakati (d == 0 && mbegu < 600) {
+        Dola* x = dola_unda(mbegu, "Republic of Test", 40000000);
+        kama (x->aina == DOLA_JAMHURI_YA_RAIS && x->mabaraza == 2 && x->vyama >= 3) { d = x; }
+        sivyo { mbegu = mbegu + 1; }
+    }
+    thibitisha("dola imepatikana", d != 0);
+    Wahusika* w = wahusika_unda(d, mbegu, 40000000);
+    nguvu_jenga(d, 5, 99);
+    n64 viti = d->baraza_viti[0] + d->baraza_viti[1];
+    thibitisha("kila kiti ni mtu", nguvu_idadi == viti + NGUVU_BENCHI);
+    thibitisha("hesabu ya baraza", nguvu_hesabu[0] == d->baraza_viti[0]);
+    thibitisha("benchi", nguvu_hesabu[2] == NGUVU_BENCHI);
+    n64 spika = nguvu_mwenye_jukumu(0, JUKUMU_SPIKA);
+    thibitisha("spika yupo", spika >= 0);
+    thibitisha("kiongozi wa upinzani", nguvu_mwenye_jukumu(0, JUKUMU_KIONGOZI_WA_UPINZANI) >= 0);
+    thibitisha("jaji mkuu", nguvu_mwenye_jukumu(2, JUKUMU_JAJI_MKUU) >= 0);
+    // viti vya chama vinaendana na dola
+    n64 c0 = 0;
+    n64 k = 0;
+    wakati (k < nguvu_hesabu[0]) {
+        Mbunge* m = nguvu_pata(nguvu_mwanzo[0] + k);
+        kama (m->chama == 0) { c0 = c0 + 1; }
+        k = k + 1;
+    }
+    thibitisha("viti vya chama 0", c0 == d->viti[0]);
+    // uzalishaji ni thabiti
+    Mbunge* a = nguvu_pata(10);
+    n8 jina[40];
+    nakili_mfuatano(jina, a->jina);
+    nguvu_jenga(d, 5, 99);
+    thibitisha("thabiti", linganisha_mfuatano(jina, nguvu_pata(10)->jina) == 0);
+
+    // hongo: mwenye tamaa hupanda, mtaji na hazina hupungua
+    n64 mlafi = 0 - 1;
+    n64 msafi = 0 - 1;
+    k = 0;
+    wakati (k < nguvu_hesabu[0]) {
+        Mbunge* m = nguvu_pata(nguvu_mwanzo[0] + k);
+        kama (mlafi < 0 && m->tamaa > 80 && m->jukumu == JUKUMU_MJUMBE) { mlafi = nguvu_mwanzo[0] + k; }
+        kama (msafi < 0 && m->tamaa < 10) { msafi = nguvu_mwanzo[0] + k; }
+        k = k + 1;
+    }
+    thibitisha("mlafi na msafi", mlafi >= 0 && msafi >= 0);
+    d->hazina = 60;
+    nguvu_mtaji = 50;
+    n64 kabla = nguvu_pata(mlafi)->msimamo;
+    thibitisha("hongo imepokewa", nguvu_hongo(mlafi, 50, d) == NGUVU_SAWA);
+    thibitisha("msimamo umepanda", nguvu_pata(mlafi)->msimamo > kabla);
+    thibitisha("hazina imepungua", d->hazina == 55);
+    thibitisha("mtaji umepungua", nguvu_mtaji == 47);
+    thibitisha("hatari imepanda", nguvu_hatari > 0);
+    kabla = nguvu_pata(msafi)->msimamo;
+    thibitisha("msafi amekataa", nguvu_hongo(msafi, 20, d) == NGUVU_AMEKATAA);
+    thibitisha("msafi amechukizwa", nguvu_pata(msafi)->msimamo < kabla || kabla == 0 - 100);
+    nguvu_mtaji = 1;
+    thibitisha("bila mtaji", nguvu_hongo(mlafi, 5, d) == NGUVU_HAKUNA_MTAJI);
+
+    // kumshtaki spika: wajumbe wote wakiwa washirika, hoja hupita na mdhamini huwa spika
+    nguvu_mtaji = 100;
+    n64 mdhamini = nguvu_wa_chama(0, 0, 3);
+    k = 0;
+    wakati (k < nguvu_hesabu[0]) {
+        Mbunge* m = nguvu_pata(nguvu_mwanzo[0] + k);
+        m->msimamo = 100;
+        m->uaminifu = 0;
+        k = k + 1;
+    }
+    nguvu_pata(mdhamini)->msimamo = 100;
+    thibitisha("kazi ya hoja", nguvu_kazi_mpya(KAZI_HOJA, mdhamini, HOJA_KUMSHTAKI_SPIKA, 1) == NGUVU_SAWA);
+    thibitisha("mtaji wa hoja", nguvu_mtaji == 90);
+    nguvu_zamu(d, w, 5, 2);
+    thibitisha("hoja imewasilishwa", nguvu_hoja_idadi >= 1 && nguvu_hoja_pata(0)->aina == HOJA_KUMSHTAKI_SPIKA);
+    thibitisha("uwezekano mkubwa", nguvu_uwezekano(nguvu_hoja_pata(0), d) > 90);
+    nguvu_zamu(d, w, 5, 4);
+    thibitisha("hoja imepita", nguvu_hoja_pata(0)->hatua == HOJA_IMEPITA);
+    thibitisha("spika mpya", nguvu_mwenye_jukumu(0, JUKUMU_SPIKA) == mdhamini);
+    thibitisha("spika wa zamani ameondolewa", nguvu_pata(spika)->jukumu == JUKUMU_MJUMBE);
+
+    // mswada wa kodi hupita, unasubiri idhini; turufu bila wingi wa 2/3 husimama
+    n64 h = nguvu_ongeza_hoja(HOJA_KUSHUSHA_KODI, 0, mdhamini, 1, 5);
+    nguvu_zamu(d, w, 5, 7);
+    thibitisha("mswada unasubiri idhini", nguvu_hoja_pata(h)->hatua == HOJA_INASUBIRI_IDHINI);
+    // sasa baraza linaupinga mswada: turufu haipinduliwi
+    k = 0;
+    wakati (k < nguvu_hesabu[0]) {
+        Mbunge* m = nguvu_pata(nguvu_mwanzo[0] + k);
+        m->msimamo = 0 - 100;
+        k = k + 1;
+    }
+    n64 rais = wahusika_tafuta(w, "President");
+    thibitisha("rais ana turufu", nguvu_ina_turufu(w, d, rais));
+    nguvu_mtaji = 50;
+    thibitisha("turufu", nguvu_turufu(h, w, d, rais, 7) == NGUVU_SAWA);
+    thibitisha("mswada umezuiwa", nguvu_hoja_pata(h)->hatua == HOJA_IMEZUIWA);
+    thibitisha("mtaji wa turufu", nguvu_mtaji == 35);
+    thibitisha("bila mamlaka ya turufu", nguvu_turufu(h, w, d, w->msaidizi, 7) != NGUVU_SAWA);
+
+    // mswada usiozuiwa huwa sheria baada ya wiki mbili
+    k = 0;
+    wakati (k < nguvu_hesabu[0]) {
+        Mbunge* m = nguvu_pata(nguvu_mwanzo[0] + k);
+        m->msimamo = 100;
+        k = k + 1;
+    }
+    d->hazina = 50;
+    n64 h2 = nguvu_ongeza_hoja(HOJA_KUPANDISHA_KODI, 0, mdhamini, 1, 8);
+    nguvu_zamu(d, w, 5, 10);
+    nguvu_zamu(d, w, 5, 12);
+    thibitisha("sheria", nguvu_hoja_pata(h2)->hatua == HOJA_SHERIA);
+    thibitisha("kodi imejaza hazina", d->hazina >= 58);
+
+    // upinzani: uhalali ukiwa chini, huleta hoja yenyewe ndani ya wiki chache
+    d->uhalali = 5;
+    n64 kabla_ya_upinzani = nguvu_hoja_idadi;
+    n64 z = 20;
+    wakati (z < 80 && nguvu_hoja_idadi == kabla_ya_upinzani) { nguvu_zamu(d, w, 5, z); z = z + 1; }
+    thibitisha("upinzani umetenda", nguvu_hoja_idadi > kabla_ya_upinzani);
+    Hoja* hu = nguvu_hoja_pata(nguvu_hoja_idadi - 1);
+    thibitisha("hoja ya upinzani", hu->upande == 0);
+
+    // mjumbe kama mhusika wa mazungumzo
+    MhusikaWaDola* mm = tenga(ukubwa(MhusikaWaDola));
+    nguvu_kama_mhusika(mdhamini, d, mm);
+    thibitisha("mhusika", mm->jina != 0 && tafuta_mfuatano(mm->cheo, "Speaker") >= 0);
+
+    kama (makosa > 0) {
+        andika("nguvu: makosa %d\n", makosa, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("nguvu: sawa, watu %d, hoja %d\n", nguvu_idadi, nguvu_hoja_idadi, 0, 0, 0, 0);
+    rudisha 0;
+}

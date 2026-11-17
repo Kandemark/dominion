@@ -1,7 +1,8 @@
 husisha { moduli/skrini/muhtasari.swa }
 husisha { moduli/skrini/ramani.swa }
 husisha { moduli/onyesho/bunge.swa }
-husisha { moduli/siasa/dola.swa }
+husisha { moduli/skrini/dola_ya_taifa.swa }
+husisha { moduli/skrini/jopo.swa }
 
 // siasa.swa -- skrini ya siasa ya taifa: aina ya utawala, vyeo vya dola,
 // mabaraza yake (hakuna hadi manne) kila moja kwa namna yake ya kukaa, na
@@ -13,26 +14,6 @@ husisha { moduli/siasa/dola.swa }
 // Skrini ni ya vipengele: hakuna kimoja kinachojaza skrini. Mabaraza yote
 // huonyeshwa pamoja kama michoro midogo, kando ya jedwali la vyama lenye
 // viti vya kila baraza, mgawanyo wa viti, mizani ya itikadi na katiba.
-
-// Jina kamili la Kiingereza la dola ("Kingdom of X"), kutoka dunia iliyokubaliwa.
-n8* skrini_siasa_cheo(n64 taifa, TaifaNchi* tn) {
-    DuniaHalisi* d = skrini_dunia_pata();
-    kama (d != 0 && taifa >= 0 && taifa < d->mataifa) {
-        n8* p = d->data;
-        n64 o = d->jina[taifa];
-        n64 o_asili = o + 1 + dh_u8(p, o);
-        n64 o_eng = o_asili + 1 + dh_u8(p, o_asili);
-        rudisha dh_jina(p, o_eng);
-    }
-    rudisha "Republic of";
-}
-
-Dola* skrini_siasa_dola(Mchezo* g, n64 taifa) {
-    TaifaMfumo* tm = mchezo_pata_taifa(g);
-    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
-    kama (tn == 0) { rudisha 0; }
-    rudisha dola_ya_taifa(taifa, skrini_siasa_cheo(taifa, tn), tn->idadi_ya_watu);
-}
 
 n8* skrini_siasa_namba_ya_kirumi(n64 i) {
     kama (i == 1) { rudisha "II"; }
@@ -298,6 +279,7 @@ w0 skrini_siasa_katiba_chora(Dola* d, n64 x, n64 y, n64 w, n64 h) {
 
 w0 skrini_siasa_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_anzisha(t);
+    bofya_anza();
     turubai_brashi(t, SURA_USULI, 255);
     turubai_jaza(t, 0, 0, t->upana, t->kimo);
     skrini_upau_wa_juu(g, t);
@@ -340,9 +322,25 @@ w0 skrini_siasa_chora(Mchezo* g, Turubai* t, n64 taifa) {
         skrini_siasa_mgawanyo_chora(d, x, yl, wl, h_mgawanyo);
         yl = yl + h_mgawanyo + pengo;
         skrini_siasa_mizani_chora(d, x, yl, wl, 98);
+        yl = yl + 98 + pengo;
+    }
+    // chini kushoto: utulivu na uhalali wa mataifa yote
+    n64 h_kushoto = t->kimo - 24 - yl;
+    kama (h_kushoto > 160) {
+        n64 nusu = (wl - pengo) / 2;
+        jopo_nafasi(g, taifa, KIPIMO_UTULIVU, ui("WORLD RANKING  ·  STABILITY"), x, yl, nusu, h_kushoto);
+        jopo_mtawanyiko(g, taifa, KIPIMO_UTULIVU, KIPIMO_UHALALI, ui("EVERY NATION  ·  STABILITY / LEGITIMACY"), x + nusu + pengo, yl, wl - nusu - pengo, h_kushoto);
     }
     n64 h_vyama = 60 + d->vyama * 34;
     kama (d->vyama == 0) { h_vyama = 70; }
     skrini_siasa_vyama_chora(d, xr, y, wr, h_vyama);
     skrini_siasa_katiba_chora(d, xr, y + h_vyama + pengo, wr, 214);
+    // chini kulia: uhalali kwa aina ya utawala na majirani
+    n64 yr = y + h_vyama + pengo + 214 + pengo;
+    n64 h_kulia = t->kimo - 24 - yr;
+    kama (h_kulia > 160) {
+        n64 nusu = (wr - pengo) / 2;
+        jopo_kwa_utawala(g, taifa, KIPIMO_UHALALI, ui("LEGITIMACY BY FORM OF GOVERNMENT"), xr, yr, nusu, h_kulia);
+        jopo_majirani(g, taifa, KIPIMO_UTULIVU, ui("NEIGHBOURS  ·  STABILITY"), xr + nusu + pengo, yr, wr - nusu - pengo, h_kulia);
+    }
 }

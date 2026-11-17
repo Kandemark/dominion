@@ -1,0 +1,585 @@
+husisha { moduli/skrini/dola_ya_taifa.swa }
+husisha { moduli/siasa/wahusika.swa }
+husisha { moduli/onyesho/chati_kadi.swa }
+husisha { moduli/onyesho/bofya.swa }
+
+// jopo.swa -- vipengele vya dashibodi vinavyoshirikiwa na kurasa zote.
+//
+// Kila kipengele kinasoma kipimo kimoja (au viwili) kwa mataifa yote 232 na
+// kukionyesha kwa namna yake: nafasi ya dunia, mgawanyo (histogramu),
+// mchoro wa mtawanyiko wa vipimo viwili, majirani, wastani kwa aina ya
+// utawala, asilimia ya nafasi, na vyeo vya tawi la dola. Taifa
+// linaloonyeshwa huangaziwa kila mahali. Hakuna thamani ya mfano: kila namba
+// inatoka kwenye uigaji au katiba.
+
+n64 KIPIMO_PATO = 0;
+n64 KIPIMO_KWA_MTU = 1;
+n64 KIPIMO_WATU = 2;
+n64 KIPIMO_TEKNOLOJIA = 3;
+n64 KIPIMO_UCHUMI = 4;
+n64 KIPIMO_JESHI = 5;
+n64 KIPIMO_UTAMADUNI = 6;
+n64 KIPIMO_UTULIVU = 7;
+n64 KIPIMO_UHALALI = 8;
+n64 KIPIMO_UKUAJI = 9;
+n64 KIPIMO_HAZINA = 10;
+
+n8* kipimo_jina(n64 k) {
+    kama (k == KIPIMO_PATO) { rudisha ui("GDP"); }
+    kama (k == KIPIMO_KWA_MTU) { rudisha ui("GDP per capita"); }
+    kama (k == KIPIMO_WATU) { rudisha ui("Population"); }
+    kama (k == KIPIMO_TEKNOLOJIA) { rudisha ui("Technology"); }
+    kama (k == KIPIMO_UCHUMI) { rudisha ui("Economy"); }
+    kama (k == KIPIMO_JESHI) { rudisha ui("Military"); }
+    kama (k == KIPIMO_UTAMADUNI) { rudisha ui("Culture"); }
+    kama (k == KIPIMO_UTULIVU) { rudisha ui("Stability"); }
+    kama (k == KIPIMO_UHALALI) { rudisha ui("Legitimacy"); }
+    kama (k == KIPIMO_UKUAJI) { rudisha ui("Growth, 1 year"); }
+    rudisha ui("Treasury");
+}
+
+n64 kipimo_rangi(n64 k) {
+    kama (k == KIPIMO_JESHI) { rudisha SURA_HASI; }
+    kama (k == KIPIMO_UTAMADUNI) { rudisha 11032472; }
+    kama (k == KIPIMO_UTULIVU || k == KIPIMO_UCHUMI || k == KIPIMO_HAZINA) { rudisha SURA_CHANYA; }
+    rudisha SURA_BAHARI;
+}
+
+// Mabadiliko ya pato kwa wiki `wiki`, kwa elfu kumi.
+n64 jopo_ukuaji(Mchezo* g, n64 taifa, n64 wiki) {
+    TakwimuHistoria* h = mchezo_pata_historia_ya_taifa(g, taifa);
+    kama (h == 0 || h->idadi < 2) { rudisha 0; }
+    n64 mwanzo = h->idadi - 1 - wiki;
+    kama (mwanzo < 0) { mwanzo = 0; }
+    d64 a = h->sampuli[mwanzo];
+    kama (a <= 0.0) { rudisha 0; }
+    d64 r = ((h->sampuli[h->idadi - 1] - a) * 10000.0) / a;
+    n64 v = r;
+    rudisha v;
+}
+
+n64 kipimo_thamani(Mchezo* g, n64 taifa, n64 k) {
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), taifa);
+    kama (tn == 0) { rudisha 0; }
+    kama (k == KIPIMO_PATO) { rudisha skrini_pato_la_taifa(tn); }
+    kama (k == KIPIMO_KWA_MTU) {
+        kama (tn->idadi_ya_watu <= 0) { rudisha 0; }
+        rudisha skrini_pato_la_taifa(tn) / tn->idadi_ya_watu;
+    }
+    kama (k == KIPIMO_WATU) { rudisha tn->idadi_ya_watu; }
+    kama (k == KIPIMO_TEKNOLOJIA) { rudisha tn->kielezo_cha_teknolojia; }
+    kama (k == KIPIMO_UCHUMI) { rudisha tn->kielezo_cha_uchumi; }
+    kama (k == KIPIMO_JESHI) { rudisha tn->kielezo_cha_kijeshi; }
+    kama (k == KIPIMO_UTAMADUNI) { rudisha tn->kielezo_cha_utamaduni; }
+    kama (k == KIPIMO_UKUAJI) { rudisha jopo_ukuaji(g, taifa, 52); }
+    Dola* d = skrini_siasa_dola(g, taifa);
+    kama (d == 0) { rudisha 0; }
+    kama (k == KIPIMO_UTULIVU) { rudisha d->utulivu; }
+    kama (k == KIPIMO_UHALALI) { rudisha d->uhalali; }
+    rudisha d->hazina;
+}
+
+// Thamani kama maandishi mafupi.
+w0 kipimo_maandishi(n64 k, n64 v, n8* nje) {
+    kama (k == KIPIMO_PATO || k == KIPIMO_WATU) { sura_namba_fupi(nje, v); rudisha; }
+    kama (k == KIPIMO_UKUAJI) { sura_asilimia(nje, v, 1); rudisha; }
+    sura_namba(nje, v);
+}
+
+// Nafasi ya taifa (1 = juu) na idadi ya mataifa.
+n64 kipimo_nafasi(Mchezo* g, n64 taifa, n64 k) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 v = kipimo_thamani(g, taifa, k);
+    n64 nafasi = 1;
+    n64 i = 0;
+    wakati (i < tm->idadi) {
+        kama (kipimo_thamani(g, i, k) > v) { nafasi = nafasi + 1; }
+        i = i + 1;
+    }
+    rudisha nafasi;
+}
+
+n64 kipimo_wastani(Mchezo* g, n64 k) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    kama (tm->idadi == 0) { rudisha 0; }
+    n64 s = 0;
+    n64 i = 0;
+    wakati (i < tm->idadi) { s = s + kipimo_thamani(g, i, k); i = i + 1; }
+    rudisha s / tm->idadi;
+}
+
+// Panga mataifa yote kwa kipimo (kubwa kwanza).
+w0 kipimo_panga(Mchezo* g, n64 k, n64* nje, n64* thamani) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 n = tm->idadi;
+    n64 i = 0;
+    wakati (i < n) { nje[i] = i; thamani[i] = kipimo_thamani(g, i, k); i = i + 1; }
+    i = 1;
+    wakati (i < n) {
+        n64 kk = nje[i];
+        n64 j = i - 1;
+        n32 bado = 1;
+        wakati (bado) {
+            kama (j < 0) { bado = 0; }
+            sivyo kama (thamani[nje[j]] >= thamani[kk]) { bado = 0; }
+            sivyo { nje[j + 1] = nje[j]; j = j - 1; }
+        }
+        nje[j + 1] = kk;
+        i = i + 1;
+    }
+}
+
+// Kitendo cha kubofya: fungua taifa (hoja = taifa).
+n64 JOPO_FUNGUA = 40;
+
+// ---------- vigae ----------
+
+// Kigae kidogo: lebo, thamani kubwa, maelezo.
+w0 jopo_kigae(n8* lebo, n8* thamani, n8* maelezo, n64 x, n64 y, n64 w) {
+    chati_kadi(x, y, w, 82, 0, 0);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo_kati(lebo, x + 14, y + 10, 10);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(thamani, x + 14, y + 26, 22);
+    sura_rangi(SURA_HAFIFU);
+    turubai_kata(sura_t, x, y, w - 8, 82);
+    sura_lebo(maelezo, x + 14, y + 58, 11);
+    turubai_kata_yote(sura_t);
+}
+
+// Vigae vinane vya kipimo kikuu cha ukurasa: thamani, nafasi, asilimia ya
+// nafasi, wastani wa dunia, kiwango cha juu, majirani walio juu yako,
+// pengo na kiongozi, na thamani ya kipimo cha pili.
+w0 jopo_vigae(Mchezo* g, n64 taifa, n64 k, n64 k2, n64 x, n64 y, n64 w) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 pengo = 10;
+    n64 wk = (w - 7 * pengo) / 8;
+    n8 m[48];
+    n8 e[96];
+    n64 v = kipimo_thamani(g, taifa, k);
+    kipimo_maandishi(k, v, m);
+    jopo_kigae(kipimo_jina(k), m, ui("this nation"), x, y, wk);
+    n64 nafasi = kipimo_nafasi(g, taifa, k);
+    mfuatano_umbiza(m, 48, "%d / %d", nafasi, tm->idadi, 0, 0, 0, 0);
+    jopo_kigae(ui("WORLD RANK"), m, kipimo_jina(k), x + (wk + pengo), y, wk);
+    n64 asilimia = ((tm->idadi - nafasi) * 100) / tm->idadi;
+    mfuatano_umbiza(m, 48, "%d", asilimia, 0, 0, 0, 0, 0);
+    jopo_kigae(ui("PERCENTILE"), m, ui("nations below you"), x + 2 * (wk + pengo), y, wk);
+    kipimo_maandishi(k, kipimo_wastani(g, k), m);
+    jopo_kigae(ui("WORLD AVERAGE"), m, kipimo_jina(k), x + 3 * (wk + pengo), y, wk);
+    // kiongozi
+    n64 juu = 0;
+    n64 i = 1;
+    wakati (i < tm->idadi) {
+        kama (kipimo_thamani(g, i, k) > kipimo_thamani(g, juu, k)) { juu = i; }
+        i = i + 1;
+    }
+    TaifaNchi* tj = dunia_taifa_mfumo_pata_kwa_faharisi(tm, juu);
+    kipimo_maandishi(k, kipimo_thamani(g, juu, k), m);
+    jopo_kigae(ui("WORLD LEADER"), m, tj->jina, x + 4 * (wk + pengo), y, wk);
+    // majirani
+    n64 majirani = 0;
+    n64 juu_yako = 0;
+    i = 0;
+    wakati (i < tm->idadi) {
+        kama (i != taifa && dunia_atlasi_mpaka(taifa, i) > 0) {
+            majirani = majirani + 1;
+            kama (kipimo_thamani(g, i, k) > v) { juu_yako = juu_yako + 1; }
+        }
+        i = i + 1;
+    }
+    mfuatano_umbiza(m, 48, "%d / %d", juu_yako, majirani, 0, 0, 0, 0);
+    jopo_kigae(ui("NEIGHBOURS AHEAD"), m, ui("land neighbours"), x + 5 * (wk + pengo), y, wk);
+    n64 pengo_la_kiongozi = 0;
+    kama (kipimo_thamani(g, juu, k) > 0) { pengo_la_kiongozi = (v * 100) / kipimo_thamani(g, juu, k); }
+    mfuatano_umbiza(m, 48, "%d%%", pengo_la_kiongozi, 0, 0, 0, 0, 0);
+    jopo_kigae(ui("OF THE LEADER"), m, ui("your value vs the top"), x + 6 * (wk + pengo), y, wk);
+    kipimo_maandishi(k2, kipimo_thamani(g, taifa, k2), m);
+    mfuatano_umbiza(e, 96, "%s %d / %d", ui("rank"), kipimo_nafasi(g, taifa, k2), tm->idadi, 0, 0, 0);
+    jopo_kigae(kipimo_jina(k2), m, e, x + 7 * (wk + pengo), y, wk);
+}
+
+// ---------- nafasi ya dunia ----------
+
+w0 jopo_nafasi(Mchezo* g, n64 taifa, n64 k, n8* kichwa, n64 x, n64 y, n64 w, n64 h) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    sura_paneli(x, y, w, h, kichwa);
+    n64 n = tm->idadi;
+    n64* mp = tenga(8 * n);
+    n64* th = tenga(8 * n);
+    kipimo_panga(g, k, mp, th);
+    n64 safu = (h - 46) / 24;
+    n64 juu = th[mp[0]];
+    kama (juu <= 0) { juu = 1; }
+    n8 m[48];
+    n64 r = 0;
+    n32 mimi_nimeonekana = 0;
+    wakati (r < safu && r < n) {
+        n64 t = mp[r];
+        // safu ya mwisho huonyesha taifa hili kama halikuonekana juu
+        kama (r == safu - 1 && mimi_nimeonekana == 0) {
+            n64 q = 0;
+            wakati (q < n) { kama (mp[q] == taifa) { t = taifa; } q = q + 1; }
+        }
+        kama (t == taifa) { mimi_nimeonekana = 1; }
+        TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, t);
+        n64 ry = y + 38 + r * 24;
+        kama (t == taifa) {
+            turubai_brashi(sura_t, SURA_LAFUDHI, 30);
+            turubai_mviringo(sura_t, x + 8, ry - 2, w - 16, 22, 4);
+        }
+        bofya_ongeza(x + 8, ry - 2, w - 16, 22, JOPO_FUNGUA, t);
+        mfuatano_umbiza(m, 48, "%d", kipimo_nafasi(g, t, k), 0, 0, 0, 0, 0);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo_kulia(m, x + 40, ry + 1, 11);
+        turubai_brashi(sura_t, tn->rangi, 255);
+        turubai_duara(sura_t, x + 52, ry + 9, 4);
+        sura_rangi(SURA_MAANDISHI);
+        turubai_kata(sura_t, x + 60, ry - 2, (w * 40) / 100 - 60, 22);
+        sura_lebo(tn->jina, x + 62, ry, 12);
+        turubai_kata_yote(sura_t);
+        n64 xb = x + (w * 42) / 100;
+        n64 bw = w - (xb - x) - 90;
+        n64 v = th[t];
+        n64 kwa_elfu = 0;
+        kama (v > 0) { kwa_elfu = (v * 1000) / juu; }
+        sura_pau(xb, ry + 6, bw, 6, kwa_elfu, kipimo_rangi(k));
+        kipimo_maandishi(k, v, m);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kulia(m, x + w - 16, ry + 1, 11);
+        r = r + 1;
+    }
+    achilia mp;
+    achilia th;
+}
+
+// ---------- mgawanyo ----------
+
+// Histogramu ya mataifa yote kwa kipimo; nguzo ya taifa hili huangaziwa.
+w0 jopo_mgawanyo(Mchezo* g, n64 taifa, n64 k, n8* kichwa, n64 x, n64 y, n64 w, n64 h) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    sura_paneli(x, y, w, h, kichwa);
+    n64 nguzo = 24;
+    n64* idadi = tenga(8 * nguzo);
+    n64 i = 0;
+    wakati (i < nguzo) { idadi[i] = 0; i = i + 1; }
+    n64 chini = kipimo_thamani(g, 0, k);
+    n64 juu = chini;
+    i = 0;
+    wakati (i < tm->idadi) {
+        n64 v = kipimo_thamani(g, i, k);
+        kama (v < chini) { chini = v; }
+        kama (v > juu) { juu = v; }
+        i = i + 1;
+    }
+    n64 wigo = juu - chini;
+    kama (wigo <= 0) { wigo = 1; }
+    n64 yangu = 0;
+    i = 0;
+    wakati (i < tm->idadi) {
+        n64 b = ((kipimo_thamani(g, i, k) - chini) * (nguzo - 1)) / wigo;
+        idadi[b] = idadi[b] + 1;
+        kama (i == taifa) { yangu = b; }
+        i = i + 1;
+    }
+    n64 kubwa = 1;
+    i = 0;
+    wakati (i < nguzo) { kama (idadi[i] > kubwa) { kubwa = idadi[i]; } i = i + 1; }
+    n64 gx = x + 16;
+    n64 gy = y + 40;
+    n64 gw = w - 32;
+    n64 gh = h - 80;
+    n64 cw = gw / nguzo;
+    i = 0;
+    wakati (i < nguzo) {
+        n64 bh = (idadi[i] * gh) / kubwa;
+        kama (idadi[i] > 0 && bh < 2) { bh = 2; }
+        kama (i == yangu) { turubai_brashi(sura_t, SURA_LAFUDHI, 255); }
+        sivyo { turubai_brashi(sura_t, kipimo_rangi(k), 150); }
+        turubai_mviringo(sura_t, gx + i * cw + 1, gy + gh - bh, cw - 3, bh, 2);
+        i = i + 1;
+    }
+    turubai_brashi(sura_t, 16777215, 30);
+    turubai_jaza(sura_t, gx, gy + gh, gw, 1);
+    n8 m[48];
+    kipimo_maandishi(k, chini, m);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(m, gx, gy + gh + 8, 10);
+    kipimo_maandishi(k, juu, m);
+    sura_lebo_kulia(m, gx + gw, gy + gh + 8, 10);
+    n8 e[96];
+    mfuatano_umbiza(e, 96, ui("%d nations  ·  you are highlighted"), tm->idadi, 0, 0, 0, 0, 0);
+    sura_lebo(e, gx + gw / 2 - maandishi_upana(sura_kawaida, e, 10) / 2, gy + gh + 8, 10);
+    achilia idadi;
+}
+
+// ---------- mtawanyiko ----------
+
+// Kipimo kinachochorwa kwenye mhimili: pato na watu hutofautiana kwa mara
+// elfu kati ya mataifa, hivyo huchorwa kwa mizani ya logariti (log2 x 64)
+// ili mataifa madogo yasibanwe kwenye kona moja.
+n64 jopo_mhimili(n64 k, n64 v) {
+    kama (k != KIPIMO_PATO && k != KIPIMO_WATU) { rudisha v; }
+    kama (v <= 1) { rudisha 0 - 1; }         // haina thamani: haichorwi
+    n64 l = 0;
+    n64 nguvu = 1;
+    wakati (nguvu * 2 <= v && l < 62) { nguvu = nguvu * 2; l = l + 1; }
+    rudisha l * 64 + ((v - nguvu) * 64) / nguvu;
+}
+
+// Kila taifa ni nukta kwenye vipimo viwili; taifa hili ni nukta kubwa angavu.
+w0 jopo_mtawanyiko(Mchezo* g, n64 taifa, n64 kx, n64 ky, n8* kichwa, n64 x, n64 y, n64 w, n64 h) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    sura_paneli(x, y, w, h, kichwa);
+    n64 xa = 0 - 1;
+    n64 xb = 0;
+    n64 ya = 0 - 1;
+    n64 yb = 0;
+    n64 i = 0;
+    wakati (i < tm->idadi) {
+        n64 vx = jopo_mhimili(kx, kipimo_thamani(g, i, kx));
+        n64 vy = jopo_mhimili(ky, kipimo_thamani(g, i, ky));
+        kama (vx >= 0 && vy >= 0) {
+            kama (xa < 0 || vx < xa) { xa = vx; }
+            kama (vx > xb) { xb = vx; }
+            kama (ya < 0 || vy < ya) { ya = vy; }
+            kama (vy > yb) { yb = vy; }
+        }
+        i = i + 1;
+    }
+    kama (xa < 0) { xa = 0; }
+    kama (ya < 0) { ya = 0; }
+    kama (xb <= xa) { xb = xa + 1; }
+    kama (yb <= ya) { yb = ya + 1; }
+    n64 gx = x + 44;
+    n64 gy = y + 40;
+    n64 gw = w - 60;
+    n64 gh = h - 72;
+    turubai_brashi(sura_t, 16777215, 16);
+    n64 q = 0;
+    wakati (q <= 4) {
+        turubai_jaza(sura_t, gx, gy + (q * gh) / 4, gw, 1);
+        turubai_jaza(sura_t, gx + (q * gw) / 4, gy, 1, gh);
+        q = q + 1;
+    }
+    i = 0;
+    wakati (i < tm->idadi) {
+        n32 inachorwa = jopo_mhimili(kx, kipimo_thamani(g, i, kx)) >= 0 && jopo_mhimili(ky, kipimo_thamani(g, i, ky)) >= 0;
+        kama (i != taifa && inachorwa) {
+            TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, i);
+            n64 px = gx + ((jopo_mhimili(kx, kipimo_thamani(g, i, kx)) - xa) * gw) / (xb - xa);
+            n64 py = gy + gh - ((jopo_mhimili(ky, kipimo_thamani(g, i, ky)) - ya) * gh) / (yb - ya);
+            turubai_brashi(sura_t, tn->rangi, 190);
+            turubai_duara(sura_t, px, py, 3);
+        }
+        i = i + 1;
+    }
+    n64 mx = gx + ((jopo_mhimili(kx, kipimo_thamani(g, taifa, kx)) - xa) * gw) / (xb - xa);
+    n64 my = gy + gh - ((jopo_mhimili(ky, kipimo_thamani(g, taifa, ky)) - ya) * gh) / (yb - ya);
+    turubai_brashi(sura_t, SURA_LAFUDHI, 60);
+    turubai_duara(sura_t, mx, my, 11);
+    turubai_brashi(sura_t, SURA_LAFUDHI, 255);
+    turubai_duara(sura_t, mx, my, 5);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(kipimo_jina(kx), gx, gy + gh + 8, 10);
+    sura_lebo_kulia(kipimo_jina(ky), gx - 6, gy - 2, 10);
+    n8 m[32];
+    n64 halisi_x = 0;
+    n64 halisi_y = 0;
+    i = 0;
+    wakati (i < tm->idadi) {
+        kama (kipimo_thamani(g, i, kx) > halisi_x) { halisi_x = kipimo_thamani(g, i, kx); }
+        kama (kipimo_thamani(g, i, ky) > halisi_y) { halisi_y = kipimo_thamani(g, i, ky); }
+        i = i + 1;
+    }
+    kipimo_maandishi(kx, halisi_x, m);
+    sura_lebo_kulia(m, gx + gw, gy + gh + 8, 10);
+    kipimo_maandishi(ky, halisi_y, m);
+    sura_lebo_kulia(m, gx - 6, gy + 12, 10);
+}
+
+// ---------- majirani ----------
+
+// Majirani wa nchi kavu kwa kipimo, pamoja na taifa hili, kwa pau.
+w0 jopo_majirani(Mchezo* g, n64 taifa, n64 k, n8* kichwa, n64 x, n64 y, n64 w, n64 h) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    sura_paneli(x, y, w, h, kichwa);
+    n64* orodha = tenga(8 * 64);
+    n64 n = 0;
+    orodha[n] = taifa;
+    n = n + 1;
+    n64 i = 0;
+    wakati (i < tm->idadi && n < 64) {
+        kama (i != taifa && dunia_atlasi_mpaka(taifa, i) > 0) { orodha[n] = i; n = n + 1; }
+        i = i + 1;
+    }
+    // panga kwa kipimo
+    i = 1;
+    wakati (i < n) {
+        n64 kk = orodha[i];
+        n64 j = i - 1;
+        n32 bado = 1;
+        wakati (bado) {
+            kama (j < 0) { bado = 0; }
+            sivyo kama (kipimo_thamani(g, orodha[j], k) >= kipimo_thamani(g, kk, k)) { bado = 0; }
+            sivyo { orodha[j + 1] = orodha[j]; j = j - 1; }
+        }
+        orodha[j + 1] = kk;
+        i = i + 1;
+    }
+    n64 juu = kipimo_thamani(g, orodha[0], k);
+    kama (juu <= 0) { juu = 1; }
+    n64 safu = (h - 46) / 26;
+    n8 m[48];
+    i = 0;
+    wakati (i < n && i < safu) {
+        n64 t = orodha[i];
+        TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, t);
+        n64 ry = y + 38 + i * 26;
+        kama (t == taifa) {
+            turubai_brashi(sura_t, SURA_LAFUDHI, 30);
+            turubai_mviringo(sura_t, x + 8, ry - 3, w - 16, 24, 4);
+        }
+        bofya_ongeza(x + 8, ry - 3, w - 16, 24, JOPO_FUNGUA, t);
+        turubai_brashi(sura_t, tn->rangi, 255);
+        turubai_duara(sura_t, x + 22, ry + 9, 4);
+        sura_rangi(SURA_MAANDISHI);
+        turubai_kata(sura_t, x + 30, ry - 3, (w * 36) / 100 - 30, 24);
+        sura_lebo(tn->jina, x + 32, ry, 12);
+        turubai_kata_yote(sura_t);
+        n64 xb = x + (w * 38) / 100;
+        n64 v = kipimo_thamani(g, t, k);
+        n64 kwa_elfu = 0;
+        kama (v > 0) { kwa_elfu = (v * 1000) / juu; }
+        n64 rangi = kipimo_rangi(k);
+        kama (t == taifa) { rangi = SURA_LAFUDHI; }
+        sura_pau(xb, ry + 6, w - (xb - x) - 90, 6, kwa_elfu, rangi);
+        kipimo_maandishi(k, v, m);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kulia(m, x + w - 16, ry + 1, 11);
+        i = i + 1;
+    }
+    kama (n == 1) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(ui("No land neighbours: an island nation."), x + 16, y + 70, 12);
+    }
+    achilia orodha;
+}
+
+// ---------- aina za utawala ----------
+
+// Wastani wa kipimo kwa kundi la aina ya utawala; kundi la taifa hili huangaziwa.
+w0 jopo_kwa_utawala(Mchezo* g, n64 taifa, n64 k, n8* kichwa, n64 x, n64 y, n64 w, n64 h) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    sura_paneli(x, y, w, h, kichwa);
+    n64* jumla = tenga(8 * 6);
+    n64* idadi = tenga(8 * 6);
+    n64 q = 0;
+    wakati (q < 6) { jumla[q] = 0; idadi[q] = 0; q = q + 1; }
+    n64 kundi_langu = 5;
+    n64 i = 0;
+    wakati (i < tm->idadi) {
+        Dola* d = skrini_siasa_dola(g, i);
+        kama (d != 0) {
+            n64 kk = jopo_kundi_la_utawala(d->aina);
+            jumla[kk] = jumla[kk] + kipimo_thamani(g, i, k);
+            idadi[kk] = idadi[kk] + 1;
+            kama (i == taifa) { kundi_langu = kk; }
+        }
+        i = i + 1;
+    }
+    n64 juu = 1;
+    q = 0;
+    wakati (q < 6) {
+        kama (idadi[q] > 0 && jumla[q] / idadi[q] > juu) { juu = jumla[q] / idadi[q]; }
+        q = q + 1;
+    }
+    n64 safu_h = (h - 44) / 6;
+    n8 m[64];
+    q = 0;
+    wakati (q < 6) {
+        n64 ry = y + 38 + q * safu_h;
+        n64 wastani = 0;
+        kama (idadi[q] > 0) { wastani = jumla[q] / idadi[q]; }
+        kama (q == kundi_langu) { sura_rangi(SURA_LAFUDHI); } sivyo { sura_rangi(SURA_MAANDISHI); }
+        mfuatano_umbiza(m, 64, "%s  (%d)", jopo_kundi_jina(q), idadi[q], 0, 0, 0, 0);
+        sura_lebo(m, x + 16, ry, 11);
+        n64 rangi = kipimo_rangi(k);
+        kama (q == kundi_langu) { rangi = SURA_LAFUDHI; }
+        sura_pau(x + 16, ry + 17, w - 100, 6, (wastani * 1000) / juu, rangi);
+        kipimo_maandishi(k, wastani, m);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo_kulia(m, x + w - 16, ry + 11, 11);
+        q = q + 1;
+    }
+    achilia jumla;
+    achilia idadi;
+}
+
+n64 jopo_kundi_la_utawala(n64 a) {
+    kama (a == DOLA_JAMHURI_YA_BUNGE || a == DOLA_JAMHURI_YA_RAIS || a == DOLA_JAMHURI_NUSU_RAIS) { rudisha 0; }
+    kama (a == DOLA_JAMHURI_YA_SHIRIKISHO || a == DOLA_DEMOKRASIA_YA_MOJA_KWA_MOJA || a == DOLA_JAMHURI_YA_WAFANYABIASHARA) { rudisha 0; }
+    kama (a == DOLA_UFALME_WA_KATIBA || a == DOLA_UFALME_KAMILI || a == DOLA_UFALME_WA_KUCHAGULIWA || a == DOLA_MILKI) { rudisha 1; }
+    kama (a == DOLA_CHAMA_KIMOJA || a == DOLA_UTAWALA_WA_KIJESHI || a == DOLA_UDIKTETA) { rudisha 2; }
+    kama (a == DOLA_UTAWALA_WA_KIDINI) { rudisha 3; }
+    kama (a == DOLA_MUUNGANO_WA_DOLA || a == DOLA_MUUNGANO_WA_KABILA || a == DOLA_JUMUIYA_YA_WAUNGWANA) { rudisha 4; }
+    rudisha 5;
+}
+
+n8* jopo_kundi_jina(n64 k) {
+    kama (k == 0) { rudisha ui("Republics"); }
+    kama (k == 1) { rudisha ui("Monarchies"); }
+    kama (k == 2) { rudisha ui("One-party and military"); }
+    kama (k == 3) { rudisha ui("Theocracies"); }
+    kama (k == 4) { rudisha ui("Confederations"); }
+    rudisha ui("Other");
+}
+
+// ---------- vyeo vya tawi ----------
+
+// Vyeo vya tawi `tawi` vya taifa hili: cheo, mwenye cheo, msimamo kwa mchezaji.
+w0 jopo_vyeo(Mchezo* g, n64 taifa, n64 tawi, n8* kichwa, n64 x, n64 y, n64 w, n64 h) {
+    sura_paneli(x, y, w, h, kichwa);
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), taifa);
+    Dola* d = skrini_siasa_dola(g, taifa);
+    kama (tn == 0 || d == 0) { rudisha; }
+    Wahusika* wh = wahusika_wa_taifa(taifa, d, tn->idadi_ya_watu);
+    n64 yy = y + 38;
+    n8 m[16];
+    n64 r = 0;
+    n64 i = 0;
+    wakati (i < wh->idadi && yy + 26 < y + h) {
+        MhusikaWaDola* mh = wahusika_pata(wh, i);
+        kama (mh->tawi == tawi) {
+            sura_safu(x + 8, yy - 3, w - 16, 26, r, 0);
+            sura_rangi(SURA_MAANDISHI);
+            turubai_kata(sura_t, x + 8, yy - 3, (w * 55) / 100, 26);
+            sura_lebo(mh->cheo, x + 18, yy + 1, 12);
+            turubai_kata_yote(sura_t);
+            sura_rangi(SURA_HAFIFU);
+            turubai_kata(sura_t, x + (w * 57) / 100, yy - 3, (w * 30) / 100, 26);
+            sura_lebo(mh->jina, x + (w * 57) / 100, yy + 1, 11);
+            turubai_kata_yote(sura_t);
+            sura_namba(m, mh->msimamo);
+            kama (mh->msimamo >= 15) { sura_rangi(SURA_CHANYA); }
+            kama (mh->msimamo <= 0 - 15) { sura_rangi(SURA_HASI); }
+            sura_lebo_kulia(m, x + w - 16, yy + 1, 11);
+            yy = yy + 28;
+            r = r + 1;
+        }
+        i = i + 1;
+    }
+}
+
+// Safu ya kawaida ya dashibodi: nafasi | mgawanyo | mtawanyiko.
+w0 jopo_safu_ya_dunia(Mchezo* g, n64 taifa, n64 k, n64 k2, n64 x, n64 y, n64 w, n64 h) {
+    n64 pengo = 12;
+    n64 w1 = (w - 2 * pengo) / 3;
+    n8 kichwa[96];
+    mfuatano_umbiza(kichwa, 96, "%s  ·  %s", ui("WORLD RANKING"), kipimo_jina(k), 0, 0, 0, 0);
+    jopo_nafasi(g, taifa, k, kichwa, x, y, w1, h);
+    mfuatano_umbiza(kichwa, 96, "%s  ·  %s", ui("DISTRIBUTION"), kipimo_jina(k), 0, 0, 0, 0);
+    jopo_mgawanyo(g, taifa, k, kichwa, x + w1 + pengo, y, w1, h);
+    mfuatano_umbiza(kichwa, 96, "%s  ·  %s / %s", ui("EVERY NATION"), kipimo_jina(k2), kipimo_jina(k), 0, 0, 0);
+    jopo_mtawanyiko(g, taifa, k2, k, kichwa, x + 2 * (w1 + pengo), y, w - 2 * (w1 + pengo), h);
+}

@@ -1,4 +1,4 @@
-husisha { moduli/skrini/muhtasari.swa }
+husisha { moduli/skrini/jopo.swa }
 
 n64 skrini_uchumi_dirisha_la_historia = 24;
 
@@ -109,6 +109,7 @@ w0 skrini_uchumi_bajeti(Mchezo* g, Turubai* t, n64 x, n64 y, n64 w) {
 
 w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_anzisha(t);
+    bofya_anza();
     turubai_brashi(t, SURA_USULI, 255);
     turubai_jaza(t, 0, 0, t->upana, t->kimo);
     skrini_upau_wa_juu(g, t);
@@ -289,4 +290,15 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     }
 
     skrini_uchumi_bajeti(g, t, x, y, w);
+    // chini: uchumi kati ya mataifa yote
+    n64 y_chini = y + 132;
+    kama (t->kimo >= 840) { y_chini = y_chini + 108 + pengo; }
+    n64 h_chini = t->kimo - y_chini - 24;
+    kama (h_chini > 180) {
+        n64 w4 = (w - 3 * pengo) / 4;
+        jopo_nafasi(g, taifa, KIPIMO_KWA_MTU, ui("WORLD RANKING  ·  GDP PER CAPITA"), x, y_chini, w4, h_chini);
+        jopo_mgawanyo(g, taifa, KIPIMO_UKUAJI, ui("DISTRIBUTION  ·  GROWTH, 1 YEAR"), x + w4 + pengo, y_chini, w4, h_chini);
+        jopo_mtawanyiko(g, taifa, KIPIMO_WATU, KIPIMO_PATO, ui("EVERY NATION  ·  POPULATION / GDP"), x + 2 * (w4 + pengo), y_chini, w4, h_chini);
+        jopo_majirani(g, taifa, KIPIMO_PATO, ui("NEIGHBOURS  ·  GDP"), x + 3 * (w4 + pengo), y_chini, w - 3 * (w4 + pengo), h_chini);
+    }
 }

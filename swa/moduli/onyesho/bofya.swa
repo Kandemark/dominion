@@ -1,0 +1,49 @@
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+// bofya.swa -- maeneo ya kubofya yanayoandikishwa wakati wa kuchora.
+//
+// Ukurasa huanza kila fremu kwa bofya_anza(), na kila kipengele
+// kinachobofyeka hujiandikisha kwa bofya_ongeza(x, y, w, h, kitendo, hoja).
+// Bofya hulinganishwa na orodha hii (wa mwisho kuchorwa hushinda), hivyo
+// mpangilio wa kuchora na wa kubofya haviachani kamwe.
+
+n64 BOFYA_JUU = 512;
+n64* bofya_maeneo = 0;          // [x, y, w, h, kitendo, hoja] kwa kila eneo
+n64 bofya_idadi = 0;
+
+w0 bofya_anza() {
+    kama (bofya_maeneo == 0) { bofya_maeneo = tenga(8 * 6 * BOFYA_JUU); }
+    bofya_idadi = 0;
+}
+
+w0 bofya_ongeza(n64 x, n64 y, n64 w, n64 h, n64 kitendo, n64 hoja) {
+    kama (bofya_maeneo == 0) { bofya_anza(); }
+    kama (bofya_idadi >= BOFYA_JUU) { rudisha; }
+    n64 b = bofya_idadi * 6;
+    bofya_maeneo[b] = x;
+    bofya_maeneo[b + 1] = y;
+    bofya_maeneo[b + 2] = w;
+    bofya_maeneo[b + 3] = h;
+    bofya_maeneo[b + 4] = kitendo;
+    bofya_maeneo[b + 5] = hoja;
+    bofya_idadi = bofya_idadi + 1;
+}
+
+// Kitendo kilicho chini ya (px, py), na hoja yake kwenye *hoja; 0 ikiwa hakuna.
+n64 bofya_tafuta(n64 px, n64 py, n64* hoja) {
+    n64 i = bofya_idadi - 1;
+    wakati (i >= 0) {
+        n64 b = i * 6;
+        kama (px >= bofya_maeneo[b] && px < bofya_maeneo[b] + bofya_maeneo[b + 2] && py >= bofya_maeneo[b + 1] && py < bofya_maeneo[b + 1] + bofya_maeneo[b + 3]) {
+            *hoja = bofya_maeneo[b + 5];
+            rudisha bofya_maeneo[b + 4];
+        }
+        i = i - 1;
+    }
+    rudisha 0;
+}
+
+// Kitendo cha eneo la i (kwa majaribio).
+n64 bofya_kitendo(n64 i) { rudisha bofya_maeneo[i * 6 + 4]; }
+n64 bofya_x(n64 i) { rudisha bofya_maeneo[i * 6]; }
+n64 bofya_y(n64 i) { rudisha bofya_maeneo[i * 6 + 1]; }

@@ -11,6 +11,8 @@ You govern one of 232 nations on a hand-built world, starting in any year from 1
 - **A world of 232 nations:** six continents, 1,261 provinces and about 64,000 settlements, with rivers, roads, railways, ports and disputed territories.
 - **A constitution for every nation:** twenty forms of government, from parliamentary republics and absolute monarchies to theocracies, juntas, tribal confederations and stateless communes. Zero to four legislative chambers, each with its own seating, size and way of choosing members. Parties across 22 ideologies.
 - **A government you can work inside:** a tree of 17 to 108 offices built from the constitution. Appoint and dismiss where the constitution gives you the power; appointments that need confirmation go to a vote in the right chamber. Your personal assistant arranges meetings, superiors can accept, delay or refuse, and officials ask to see you.
+- **Every seat is a person:** each chamber's members and the high court's justices are generated with a name, party, two traits, age, attitude to you, party loyalty, venality and influence. The Government page lists every house of power; open the Senate and talk to any senator.
+- **Politics on hard mode:** you spend political capital (and treasury) to lobby members, pay them, have your assistant summon officials, whip your party, or ask a member to table a motion: impeach the Speaker (two thirds), no confidence, finance bills, inquiries, amnesty. Every member votes by party line, loyalty, attitude and payments, and each motion shows its forecast and odds. Bills that pass can be vetoed where your office has the power, and overridden by two thirds. The opposition tables its own motions when the government is weak, and payments can surface as scandals.
 - **People who talk back:** with an AI provider switched on, every official answers in character (name, party, temperament, attitude to you) and the Adviser weighs what you intend. Each exchange carries measured consequences for the person's attitude and the nation's stability, legitimacy and treasury, and is remembered.
 - **Decisions the engine owns:** when a conversation concludes something (a trade deal, a loan, sanctions, a tax change, a crackdown), the AI only emits one short line of parameters. The engine reads it, clamps every number, records it in the save's decision ledger and applies it week by week until it expires. A small local model is enough.
 - **Time:** one turn is one week from 1 January of the start year. Continue advances one week, one month, three months, or until the next event that needs you. A calendar of cabinet meetings, sittings, press briefings and your own appointments, and an inbox of requests and warnings every week.
@@ -22,15 +24,17 @@ You govern one of 232 nations on a hand-built world, starting in any year from 1
 | ![Overview dashboard](docs/picha/muhtasari.png) | ![World ranking](docs/picha/dunia.png) |
 | **Overview:** the nation at a glance | **World:** every nation, ranked |
 | ![Politics](docs/picha/siasa.png) | ![Government](docs/picha/serikali.png) |
-| **Politics:** chambers, parties, constitution | **Government:** offices, meetings, conversation |
+| **Politics:** chambers, parties, constitution | **Government:** houses of power, every member, motions and odds |
 | ![Calendar](docs/picha/kalenda.png) | ![Inbox](docs/picha/kikasha.png) |
 | **Calendar:** the state's diary | **Inbox:** requests, diary, warnings |
+| ![Economy](docs/picha/uchumi.png) | ![Military](docs/picha/jeshi.png) |
+| **Economy:** history, production, every nation | **Military:** rankings, commanders, neighbours |
 
 ## Requirements
 
 - Linux on x86-64
 - A Wayland compositor (developed on Hyprland)
-- The Swa compiler from [lugha-swa/swa](https://github.com/lugha-swa/swa), main branch
+- The Swa compiler from [lugha-swa/swa](https://github.com/lugha-swa/swa), main branch with [lugha-swa/swa#407](https://github.com/lugha-swa/swa/pull/407) (the game needs more than 1,024 top-level variables)
 
 ## Build and run
 
@@ -56,7 +60,7 @@ Run it from the `swa/` directory: the game reads `rasilimali/` (world and fonts)
 - **Map:** drag to pan, wheel to zoom. Hover over a nation for its card; click to pin the card and open the nation's dossier. The cards along the bottom open their pages.
 - **Continue** (top right) or **Space** advances time. The arrow on the button chooses how far: one week, one month, three months, or until the next event (a request, a warning, or a meeting in your diary; at most six months).
 - **World page:** *Respond* on any report puts a question to the Adviser on the Government page; *Open nation* shows that nation. Rankings sort by GDP, growth, stability or population.
-- **Government page:** choose anyone in the tree. *Request meeting* goes through your assistant; *Dismiss and replace* works where your office has the power; *Take this office* lets you play from any position. Type to speak, Enter to send.
+- **Government page:** choose a house of power on the left (Executive, each chamber, Judiciary, Armed forces, Regions, Parties, Your office), then a person in the middle. Their dossier on the right holds every action: *Talk*, *Request meeting*, *Assistant: summon*, *Lobby*, *Table a motion*, payments of 5M, 20M or 50M, *Dismiss and replace*, *Take this office*. Motions and bills show the forecast vote and odds; *Veto* appears when a bill awaits your assent. Type to speak, Enter to send.
 - **Settings:** interface language (English, Kiswahili, Français) and the AI adviser.
 
 ### AI adviser

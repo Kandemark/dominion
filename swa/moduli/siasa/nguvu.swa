@@ -1,0 +1,777 @@
+husisha { moduli/siasa/katiba.swa }
+husisha { moduli/siasa/kikasha.swa }
+husisha { moduli/akili/uamuzi.swa }
+
+// nguvu.swa -- nyumba za mamlaka na siasa ya kila wiki.
+//
+// Kila kiti cha kila baraza ni mtu: jina, chama, tabia mbili, umri, msimamo
+// kwa mchezaji, uaminifu kwa chama chake, tamaa (anavyoshawishika kwa
+// fedha), ushawishi, na hongo alizopokea. Mahakama ina benchi la majaji.
+// Watu huzaliwa kutoka mbegu ya taifa, hivyo baraza la viti 700 lina watu
+// 700 wenye sifa zao.
+//
+// Mchezaji hutumia mtaji wa kisiasa (na hazina) kwa vitendo:
+//   hongo           msimamo hupanda kwa kadiri ya tamaa; hatari ya kashfa hupanda
+//   kazi za msaidizi kumwita afisa mkutanoni, kumshawishi mtu, kumwomba
+//                   mbunge kuwasilisha hoja, kumtaka mnadhimu kubana chama
+//   kura ya turufu  ofisi yenye mamlaka hayo huzuia mswada uliopita
+// Hoja hupigiwa kura na kila mjumbe: msimamo wa chama (kwa uaminifu wake),
+// msimamo wake kwa mchezaji, na hongo. Upinzani hufanya kazi wenyewe: huleta
+// hoja za kutokuwa na imani, uchunguzi na lawama uhalali ukishuka. Kashfa
+// za hongo hufichuliwa kwa uwezekano unaokua na hatari na nguvu ya upinzani.
+
+n64 JUKUMU_MJUMBE = 0;
+n64 JUKUMU_SPIKA = 1;
+n64 JUKUMU_NAIBU_SPIKA = 2;
+n64 JUKUMU_KIONGOZI_WA_WENGI = 3;
+n64 JUKUMU_KIONGOZI_WA_UPINZANI = 4;
+n64 JUKUMU_MNADHIMU = 5;
+n64 JUKUMU_JAJI = 6;
+n64 JUKUMU_JAJI_MKUU = 7;
+
+n8* jukumu_jina(n64 j) {
+    kama (j == JUKUMU_SPIKA) { rudisha ui("Speaker"); }
+    kama (j == JUKUMU_NAIBU_SPIKA) { rudisha ui("Deputy Speaker"); }
+    kama (j == JUKUMU_KIONGOZI_WA_WENGI) { rudisha ui("Majority Leader"); }
+    kama (j == JUKUMU_KIONGOZI_WA_UPINZANI) { rudisha ui("Leader of the Opposition"); }
+    kama (j == JUKUMU_MNADHIMU) { rudisha ui("Chief Whip"); }
+    kama (j == JUKUMU_JAJI) { rudisha ui("Justice"); }
+    kama (j == JUKUMU_JAJI_MKUU) { rudisha ui("Presiding Justice"); }
+    rudisha ui("Member");
+}
+
+muundo Mbunge {
+    n8* jina;
+    n64 baraza;         // 0..mabaraza-1; mabaraza = benchi la mahakama
+    n64 chama;          // faharisi ya chama, au -1
+    n64 tabia_1;
+    n64 tabia_2;
+    n64 umri;
+    n64 msimamo;        // -100..100 kwa mchezaji
+    n64 uaminifu;       // 0..100: kufuata msimamo wa chama (kwa majaji: uhuru)
+    n64 tamaa;          // 0..100: anavyoshawishika kwa fedha
+    n64 ushawishi;      // 1..10
+    n64 hongo;          // jumla ya hongo (mamilioni)
+    n64 jukumu;         // JUKUMU_*
+    n64 jimbo;          // namba ya jimbo / kiti
+}
+
+n64 NGUVU_WATU_JUU = 4096;
+n64 NGUVU_BENCHI = 9;
+
+n64 nguvu_taifa = -1;           // taifa ambalo watu wake wamezalishwa
+n64 nguvu_idadi = 0;
+n64* nguvu_watu = 0;            // Mbunge*
+n64* nguvu_mwanzo = 0;          // [nyumba]: faharisi ya kwanza ya baraza/benchi
+n64* nguvu_hesabu = 0;          // [nyumba]: idadi ya watu wake
+n64 nguvu_mabaraza = 0;         // mabaraza ya dola (benchi ni nyumba ya mwisho)
+n64 nguvu_mtaji = 40;           // mtaji wa kisiasa, 0..100
+n64 nguvu_hatari = 0;           // hatari ya kashfa, 0..100
+n64 nguvu_kashfa = 0;           // kashfa zilizofichuliwa
+n64 nguvu_mbunge_wa_mwisho = -1;    // aliyepokea hongo ya mwisho (kwa kashfa)
+
+Mbunge* nguvu_pata(n64 i) {
+    kama (i < 0 || i >= nguvu_idadi) { rudisha 0; }
+    rudisha nguvu_watu[i];
+}
+
+// Mjumbe wa nyumba `nyumba` mwenye nafasi `k` ndani yake.
+n64 nguvu_wa_nyumba(n64 nyumba, n64 k) {
+    kama (nyumba < 0 || nyumba > nguvu_mabaraza) { rudisha 0 - 1; }
+    kama (k < 0 || k >= nguvu_hesabu[nyumba]) { rudisha 0 - 1; }
+    rudisha nguvu_mwanzo[nyumba] + k;
+}
+
+n64 nguvu_bana(n64 v, n64 chini, n64 juu) {
+    kama (v < chini) { rudisha chini; }
+    kama (v > juu) { rudisha juu; }
+    rudisha v;
+}
+
+n64 nguvu_ongeza_mtu(n64 baraza, n64 chama, n64 jimbo, n64 mbegu) {
+    kama (nguvu_idadi >= NGUVU_WATU_JUU) { rudisha 0 - 1; }
+    Mbunge* m = tenga(ukubwa(Mbunge));
+    n64 k = mbegu * 7919 + baraza * 104729 + jimbo * 31;
+    m->jina = tenga(40);
+    wahusika_jina(m->jina, k);
+    m->baraza = baraza;
+    m->chama = chama;
+    m->tabia_1 = dola_nasibu(k, 400) % TABIA_IDADI;
+    m->tabia_2 = (m->tabia_1 + 1 + dola_nasibu(k, 401) % (TABIA_IDADI - 1)) % TABIA_IDADI;
+    m->umri = 28 + dola_nasibu(k, 402) % 50;
+    m->msimamo = dola_nasibu(k, 403) % 101 - 50;
+    m->uaminifu = 40 + dola_nasibu(k, 404) % 61;
+    m->tamaa = dola_nasibu(k, 405) % 101;
+    m->ushawishi = 1 + dola_nasibu(k, 406) % 10;
+    m->hongo = 0;
+    m->jukumu = JUKUMU_MJUMBE;
+    m->jimbo = jimbo + 1;
+    // tabia hubadili sifa: mwaminifu hufuata chama, fisadi hushawishika,
+    // mwenye maadili hakubali fedha
+    kama (m->tabia_1 == 2 || m->tabia_2 == 2) { m->uaminifu = nguvu_bana(m->uaminifu + 25, 0, 100); }
+    kama (m->tabia_1 == 3 || m->tabia_2 == 3) { m->tamaa = nguvu_bana(m->tamaa + 40, 0, 100); }
+    kama (m->tabia_1 == 4 || m->tabia_2 == 4) { m->tamaa = m->tamaa / 5; }
+    kama (m->tabia_1 == 1 || m->tabia_2 == 1) { m->ushawishi = nguvu_bana(m->ushawishi + 3, 1, 10); }
+    n64 i = nguvu_idadi;
+    nguvu_watu[i] = m;
+    nguvu_idadi = i + 1;
+    rudisha i;
+}
+
+// Mjumbe wa kwanza wa chama `c` ndani ya baraza `b` asiye na jukumu, au -1.
+n64 nguvu_wa_chama(n64 b, n64 c, n64 ruka) {
+    n64 k = 0;
+    n64 kupita = 0;
+    wakati (k < nguvu_hesabu[b]) {
+        Mbunge* m = nguvu_watu[nguvu_mwanzo[b] + k];
+        kama (m->chama == c && m->jukumu == JUKUMU_MJUMBE) {
+            kama (kupita == ruka) { rudisha nguvu_mwanzo[b] + k; }
+            kupita = kupita + 1;
+        }
+        k = k + 1;
+    }
+    rudisha 0 - 1;
+}
+
+w0 nguvu_weka_jukumu(n64 i, n64 j) {
+    Mbunge* m = nguvu_pata(i);
+    kama (m != 0) {
+        m->jukumu = j;
+        m->ushawishi = nguvu_bana(m->ushawishi + 4, 1, 10);
+    }
+}
+
+// Chama chenye viti vingi zaidi kati ya vya serikali (au vya upinzani).
+n64 nguvu_chama_kikuu(Dola* d, n64 b, n32 serikalini) {
+    n64 bora = 0 - 1;
+    n64 c = 0;
+    wakati (c < d->vyama) {
+        n32 ndani = d->chama_serikalini[c] != 0;
+        kama (ndani == serikalini && d->viti[b * DOLA_VYAMA_JUU + c] > 0) {
+            kama (bora < 0 || d->viti[b * DOLA_VYAMA_JUU + c] > d->viti[b * DOLA_VYAMA_JUU + bora]) { bora = c; }
+        }
+        c = c + 1;
+    }
+    rudisha bora;
+}
+
+// Zalisha watu wa mabaraza yote na benchi la mahakama kwa taifa.
+w0 nguvu_jenga(Dola* d, n64 taifa, n64 mbegu) {
+    kama (nguvu_watu == 0) {
+        nguvu_watu = tenga(8 * NGUVU_WATU_JUU);
+        nguvu_mwanzo = tenga(8 * 8);
+        nguvu_hesabu = tenga(8 * 8);
+    }
+    n64 i = 0;
+    wakati (i < nguvu_idadi) {
+        Mbunge* z = nguvu_watu[i];
+        achilia z->jina;
+        achilia z;
+        i = i + 1;
+    }
+    nguvu_idadi = 0;
+    nguvu_taifa = taifa;
+    nguvu_mabaraza = d->mabaraza;
+    n64 b = 0;
+    wakati (b < d->mabaraza) {
+        nguvu_mwanzo[b] = nguvu_idadi;
+        n64 jimbo = 0;
+        n64 c = 0;
+        wakati (c < d->vyama) {
+            n64 viti = d->viti[b * DOLA_VYAMA_JUU + c];
+            n64 s = 0;
+            wakati (s < viti) {
+                nguvu_ongeza_mtu(b, c, jimbo, mbegu);
+                jimbo = jimbo + 1;
+                s = s + 1;
+            }
+            c = c + 1;
+        }
+        // viti visivyo vya chama chochote (mabaraza bila vyama)
+        wakati (jimbo < d->baraza_viti[b]) {
+            nguvu_ongeza_mtu(b, 0 - 1, jimbo, mbegu);
+            jimbo = jimbo + 1;
+        }
+        nguvu_hesabu[b] = nguvu_idadi - nguvu_mwanzo[b];
+        // majukumu ya baraza
+        n64 gs = nguvu_chama_kikuu(d, b, 1);
+        n64 up = nguvu_chama_kikuu(d, b, 0);
+        kama (gs < 0 && nguvu_hesabu[b] > 0) {
+            nguvu_weka_jukumu(nguvu_mwanzo[b], JUKUMU_SPIKA);
+        } sivyo kama (gs >= 0) {
+            nguvu_weka_jukumu(nguvu_wa_chama(b, gs, 0), JUKUMU_SPIKA);
+            nguvu_weka_jukumu(nguvu_wa_chama(b, gs, 0), JUKUMU_NAIBU_SPIKA);
+            nguvu_weka_jukumu(nguvu_wa_chama(b, gs, 0), JUKUMU_KIONGOZI_WA_WENGI);
+            nguvu_weka_jukumu(nguvu_wa_chama(b, gs, 0), JUKUMU_MNADHIMU);
+        }
+        kama (up >= 0) { nguvu_weka_jukumu(nguvu_wa_chama(b, up, 0), JUKUMU_KIONGOZI_WA_UPINZANI); }
+        b = b + 1;
+    }
+    // benchi la mahakama
+    nguvu_mwanzo[d->mabaraza] = nguvu_idadi;
+    n64 j = 0;
+    wakati (j < NGUVU_BENCHI) {
+        n64 jaji = nguvu_ongeza_mtu(d->mabaraza, 0 - 1, j, mbegu + 77);
+        Mbunge* mj = nguvu_pata(jaji);
+        kama (mj != 0) {
+            mj->umri = 48 + dola_nasibu(mbegu + j, 410) % 30;
+            mj->jukumu = JUKUMU_JAJI;
+            kama (j == 0) { mj->jukumu = JUKUMU_JAJI_MKUU; mj->ushawishi = 10; }
+        }
+        j = j + 1;
+    }
+    nguvu_hesabu[d->mabaraza] = nguvu_idadi - nguvu_mwanzo[d->mabaraza];
+}
+
+// Hakikisha watu wa taifa hili wamezalishwa.
+w0 nguvu_hakikisha(Dola* d, n64 taifa) {
+    kama (nguvu_taifa != taifa) { nguvu_jenga(d, taifa, taifa * 7 + 3); }
+}
+
+// Mwenye jukumu `j` ndani ya baraza `b`, au -1.
+n64 nguvu_mwenye_jukumu(n64 b, n64 j) {
+    kama (b < 0 || b > nguvu_mabaraza) { rudisha 0 - 1; }
+    n64 k = 0;
+    wakati (k < nguvu_hesabu[b]) {
+        n64 i = nguvu_mwanzo[b] + k;
+        Mbunge* m = nguvu_watu[i];
+        kama (m->jukumu == j) { rudisha i; }
+        k = k + 1;
+    }
+    rudisha 0 - 1;
+}
+
+// Wastani wa msimamo kwa mchezaji wa watu wa nyumba.
+n64 nguvu_msimamo_wa_nyumba(n64 b) {
+    kama (b < 0 || b > nguvu_mabaraza || nguvu_hesabu[b] == 0) { rudisha 0; }
+    n64 s = 0;
+    n64 k = 0;
+    wakati (k < nguvu_hesabu[b]) {
+        Mbunge* m = nguvu_watu[nguvu_mwanzo[b] + k];
+        s = s + m->msimamo;
+        k = k + 1;
+    }
+    rudisha s / nguvu_hesabu[b];
+}
+
+// ---------- hoja na kura ----------
+
+n64 HOJA_KUMSHTAKI_SPIKA = 0;
+n64 HOJA_KUTOKUWA_NA_IMANI = 1;
+n64 HOJA_KUPANDISHA_KODI = 2;
+n64 HOJA_KUSHUSHA_KODI = 3;
+n64 HOJA_UCHUNGUZI = 4;
+n64 HOJA_MSAMAHA = 5;
+n64 HOJA_LAWAMA = 6;
+n64 HOJA_AINA_IDADI = 7;
+
+n8* hoja_jina(n64 a) {
+    kama (a == HOJA_KUMSHTAKI_SPIKA) { rudisha ui("Impeach the Speaker"); }
+    kama (a == HOJA_KUTOKUWA_NA_IMANI) { rudisha ui("No confidence in the government"); }
+    kama (a == HOJA_KUPANDISHA_KODI) { rudisha ui("Finance bill: raise taxes"); }
+    kama (a == HOJA_KUSHUSHA_KODI) { rudisha ui("Finance bill: cut taxes"); }
+    kama (a == HOJA_UCHUNGUZI) { rudisha ui("Inquiry into the opposition"); }
+    kama (a == HOJA_MSAMAHA) { rudisha ui("Amnesty bill"); }
+    rudisha ui("Censure of the government");
+}
+
+// Hoja inahitaji asilimia gani ya kura za ndiyo.
+n64 hoja_kiwango(n64 a) {
+    kama (a == HOJA_KUMSHTAKI_SPIKA) { rudisha 67; }
+    rudisha 51;
+}
+
+// Mswada (si azimio): unaweza kuzuiwa kwa kura ya turufu.
+n32 hoja_ni_mswada(n64 a) {
+    rudisha a == HOJA_KUPANDISHA_KODI || a == HOJA_KUSHUSHA_KODI || a == HOJA_MSAMAHA;
+}
+
+n64 HOJA_INASUBIRI = 0;
+n64 HOJA_IMEPITA = 1;
+n64 HOJA_IMESHINDWA = 2;
+n64 HOJA_INASUBIRI_IDHINI = 3;      // mswada uliopita, unasubiri sahihi au turufu
+n64 HOJA_IMEZUIWA = 4;              // kura ya turufu imesimama
+n64 HOJA_TURUFU_IMEPINDULIWA = 5;
+n64 HOJA_SHERIA = 6;                // mswada umekuwa sheria
+
+muundo Hoja {
+    n64 aina;
+    n64 baraza;
+    n64 mdhamini;       // mjumbe aliyeiwasilisha
+    n64 upande;         // 1 upande wa mchezaji, 0 upinzani
+    n64 zamu_ya_kura;
+    n64 hatua;
+    n64 ndiyo;
+    n64 hapana;
+    n64 mbegu;
+    n64 imeripotiwa;    // habari imeshatolewa
+}
+
+n64 NGUVU_HOJA_JUU = 128;
+n64 nguvu_hoja_idadi = 0;
+n64* nguvu_hoja = 0;
+
+Hoja* nguvu_hoja_pata(n64 i) {
+    kama (i < 0 || i >= nguvu_hoja_idadi) { rudisha 0; }
+    rudisha nguvu_hoja[i];
+}
+
+n64 nguvu_ongeza_hoja(n64 aina, n64 baraza, n64 mdhamini, n64 upande, n64 zamu) {
+    kama (nguvu_hoja == 0) { nguvu_hoja = tenga(8 * NGUVU_HOJA_JUU); }
+    kama (nguvu_hoja_idadi >= NGUVU_HOJA_JUU) {
+        achilia nguvu_hoja[0];
+        n64 i = 1;
+        wakati (i < nguvu_hoja_idadi) { nguvu_hoja[i - 1] = nguvu_hoja[i]; i = i + 1; }
+        nguvu_hoja_idadi = nguvu_hoja_idadi - 1;
+    }
+    Hoja* h = tenga(ukubwa(Hoja));
+    h->aina = aina;
+    h->baraza = baraza;
+    h->mdhamini = mdhamini;
+    h->upande = upande;
+    h->zamu_ya_kura = zamu + 2;
+    h->hatua = HOJA_INASUBIRI;
+    h->ndiyo = 0;
+    h->hapana = 0;
+    h->mbegu = zamu * 131 + aina * 17 + mdhamini;
+    h->imeripotiwa = 0;
+    nguvu_hoja[nguvu_hoja_idadi] = h;
+    nguvu_hoja_idadi = nguvu_hoja_idadi + 1;
+    rudisha nguvu_hoja_idadi - 1;
+}
+
+// Kura ya mjumbe mmoja: 1 ndiyo, 0 hapana.
+n32 nguvu_kura_ya_mmoja(Hoja* h, Mbunge* m, Dola* d, n64 i) {
+    n32 serikalini = 0;
+    kama (m->chama >= 0 && m->chama < d->vyama) { serikalini = d->chama_serikalini[m->chama] != 0; }
+    // msimamo wa chama: serikali huunga mkono hoja za upande wa mchezaji
+    n32 chama_kinaunga = serikalini;
+    kama (h->upande == 0) { chama_kinaunga = serikalini == 0; }
+    kama (m->chama < 0) { chama_kinaunga = 0; }
+    n64 alama = 0 - m->uaminifu;
+    kama (chama_kinaunga) { alama = m->uaminifu; }
+    kama (m->chama < 0) { alama = 0; }
+    // msimamo binafsi kwa mchezaji
+    kama (h->upande == 1) { alama = alama + (m->msimamo * 6) / 10; }
+    sivyo { alama = alama - (m->msimamo * 6) / 10; }
+    // spika anayeshtakiwa hujipigia hapana; mdhamini hupiga ndiyo
+    kama (h->aina == HOJA_KUMSHTAKI_SPIKA && m->jukumu == JUKUMU_SPIKA) { rudisha 0; }
+    kama (i == h->mdhamini) { rudisha 1; }
+    alama = alama + (dola_nasibu(h->mbegu, i) % 51) - 25;
+    rudisha alama > 0;
+}
+
+// Hesabu kura za hoja kwa hali ya sasa ya wajumbe (utabiri kabla ya kura).
+w0 nguvu_hesabu_kura(Hoja* h, Dola* d) {
+    h->ndiyo = 0;
+    h->hapana = 0;
+    kama (h->baraza < 0 || h->baraza >= nguvu_mabaraza) { rudisha; }
+    n64 k = 0;
+    wakati (k < nguvu_hesabu[h->baraza]) {
+        n64 i = nguvu_mwanzo[h->baraza] + k;
+        Mbunge* m = nguvu_watu[i];
+        kama (nguvu_kura_ya_mmoja(h, m, d, i)) { h->ndiyo = h->ndiyo + 1; }
+        sivyo { h->hapana = h->hapana + 1; }
+        k = k + 1;
+    }
+}
+
+// Kura za ndiyo zinazohitajika.
+n64 nguvu_zinazohitajika(Hoja* h) {
+    kama (h->baraza < 0 || h->baraza >= nguvu_mabaraza) { rudisha 1; }
+    rudisha (nguvu_hesabu[h->baraza] * hoja_kiwango(h->aina) + 99) / 100;
+}
+
+// Uwezekano wa kupita (asilimia 1..99) kutoka utabiri: kila kura moja juu
+// au chini ya kiwango ina uzito kulingana na ukubwa wa baraza.
+n64 nguvu_uwezekano(Hoja* h, Dola* d) {
+    nguvu_hesabu_kura(h, d);
+    n64 jumla = h->ndiyo + h->hapana;
+    kama (jumla == 0) { rudisha 50; }
+    n64 tofauti = h->ndiyo - nguvu_zinazohitajika(h);
+    rudisha nguvu_bana(50 + (tofauti * 400) / jumla, 1, 99);
+}
+
+// ---------- vitendo vya mchezaji ----------
+
+// Gharama za mtaji wa kisiasa.
+n64 GHARAMA_HONGO = 3;
+n64 GHARAMA_USHAWISHI = 4;
+n64 GHARAMA_MWITO = 2;
+n64 GHARAMA_HOJA = 10;
+n64 GHARAMA_MNADHIMU = 8;
+n64 GHARAMA_TURUFU = 15;
+
+// Matokeo ya kitendo.
+n64 NGUVU_SAWA = 0;
+n64 NGUVU_HAKUNA_MTAJI = 1;
+n64 NGUVU_AMEKATAA = 2;
+n64 NGUVU_HAKUNA_MAMLAKA = 3;
+n64 NGUVU_HAKUNA_HAZINA = 4;
+
+// Hongo ya `kiasi` (mamilioni) kwa mjumbe i. Mwenye maadili hukataa na
+// kuchukizwa; wengine hupanda kwa kadiri ya tamaa yao.
+n64 nguvu_hongo(n64 i, n64 kiasi, Dola* d) {
+    Mbunge* m = nguvu_pata(i);
+    kama (m == 0) { rudisha NGUVU_AMEKATAA; }
+    kama (nguvu_mtaji < GHARAMA_HONGO) { rudisha NGUVU_HAKUNA_MTAJI; }
+    n64 gharama = kiasi / 10;
+    kama (gharama < 1) { gharama = 1; }
+    kama (d->hazina < gharama) { rudisha NGUVU_HAKUNA_HAZINA; }
+    nguvu_mtaji = nguvu_mtaji - GHARAMA_HONGO;
+    d->hazina = dola_rekebisha(d->hazina, 0 - gharama);
+    kama (m->tamaa < 15) {
+        m->msimamo = nguvu_bana(m->msimamo - 20, 0 - 100, 100);
+        nguvu_hatari = nguvu_bana(nguvu_hatari + 12, 0, 100);
+        nguvu_mbunge_wa_mwisho = i;
+        rudisha NGUVU_AMEKATAA;
+    }
+    m->hongo = m->hongo + kiasi;
+    m->msimamo = nguvu_bana(m->msimamo + (kiasi * m->tamaa) / 120 + 3, 0 - 100, 100);
+    // hongo hulegeza uaminifu kwa chama
+    m->uaminifu = nguvu_bana(m->uaminifu - kiasi / 10, 0, 100);
+    nguvu_hatari = nguvu_bana(nguvu_hatari + 2 + kiasi / 10, 0, 100);
+    nguvu_mbunge_wa_mwisho = i;
+    uamuzi_rushwa_jumla = uamuzi_bana(uamuzi_rushwa_jumla + 1, 0, 100);
+    rudisha NGUVU_SAWA;
+}
+
+// ---------- kazi za msaidizi ----------
+
+n64 KAZI_MWITO = 0;         // mwite afisa (wa mti) mkutanoni
+n64 KAZI_USHAWISHI = 1;     // mshawishi mjumbe
+n64 KAZI_HOJA = 2;          // mwombe mjumbe kuwasilisha hoja
+n64 KAZI_MNADHIMU = 3;      // mnadhimu abane chama kwenye baraza
+
+n8* kazi_jina(n64 a) {
+    kama (a == KAZI_MWITO) { rudisha ui("Summon to a meeting"); }
+    kama (a == KAZI_USHAWISHI) { rudisha ui("Lobby"); }
+    kama (a == KAZI_HOJA) { rudisha ui("Ask to table a motion"); }
+    rudisha ui("Whip the party");
+}
+
+muundo KaziYaMsaidizi {
+    n64 aina;
+    n64 lengwa;         // mjumbe (nguvu) au afisa (wahusika) kwa KAZI_MWITO; baraza kwa KAZI_MNADHIMU
+    n64 hoja;           // aina ya hoja kwa KAZI_HOJA
+    n64 zamu_ya_kumaliza;
+    n64 hatua;          // 0 inaendelea, 1 imefanikiwa, 2 imeshindwa
+}
+
+n64 NGUVU_KAZI_JUU = 64;
+n64 nguvu_kazi_idadi = 0;
+n64* nguvu_kazi = 0;
+
+KaziYaMsaidizi* nguvu_kazi_pata(n64 i) {
+    kama (i < 0 || i >= nguvu_kazi_idadi) { rudisha 0; }
+    rudisha nguvu_kazi[i];
+}
+
+n64 nguvu_gharama_ya_kazi(n64 aina) {
+    kama (aina == KAZI_MWITO) { rudisha GHARAMA_MWITO; }
+    kama (aina == KAZI_USHAWISHI) { rudisha GHARAMA_USHAWISHI; }
+    kama (aina == KAZI_HOJA) { rudisha GHARAMA_HOJA; }
+    rudisha GHARAMA_MNADHIMU;
+}
+
+// Mpe msaidizi kazi. Hukamilika wiki ijayo.
+n64 nguvu_kazi_mpya(n64 aina, n64 lengwa, n64 hoja, n64 zamu) {
+    n64 gharama = nguvu_gharama_ya_kazi(aina);
+    kama (nguvu_mtaji < gharama) { rudisha NGUVU_HAKUNA_MTAJI; }
+    kama (nguvu_kazi == 0) { nguvu_kazi = tenga(8 * NGUVU_KAZI_JUU); }
+    kama (nguvu_kazi_idadi >= NGUVU_KAZI_JUU) {
+        achilia nguvu_kazi[0];
+        n64 i = 1;
+        wakati (i < nguvu_kazi_idadi) { nguvu_kazi[i - 1] = nguvu_kazi[i]; i = i + 1; }
+        nguvu_kazi_idadi = nguvu_kazi_idadi - 1;
+    }
+    nguvu_mtaji = nguvu_mtaji - gharama;
+    KaziYaMsaidizi* k = tenga(ukubwa(KaziYaMsaidizi));
+    k->aina = aina;
+    k->lengwa = lengwa;
+    k->hoja = hoja;
+    k->zamu_ya_kumaliza = zamu + 1;
+    k->hatua = 0;
+    nguvu_kazi[nguvu_kazi_idadi] = k;
+    nguvu_kazi_idadi = nguvu_kazi_idadi + 1;
+    rudisha NGUVU_SAWA;
+}
+
+// Malizia kazi moja ya msaidizi na uandike matokeo kwenye kikasha.
+w0 nguvu_kazi_maliza(KaziYaMsaidizi* k, Dola* d, Wahusika* w, n64 zamu) {
+    n64 leo = tarehe_siku_ya_zamu(zamu);
+    n8* mwili = tenga(320);
+    n8* kichwa = ui("Your assistant reports");
+    kama (k->aina == KAZI_MWITO) {
+        MhusikaWaDola* a = wahusika_pata(w, k->lengwa);
+        kama (a != 0) {
+            n32 atakuja = a->msimamo > 0 - 25 || dola_nasibu(zamu, k->lengwa) % 100 < 40;
+            kama (atakuja) {
+                a->mkutano = 3;
+                a->mkutano_siku = leo + 2;
+                kalenda_panga(a->mkutano_siku, k->lengwa);
+                mfuatano_umbiza(mwili, 320, ui("The %s, %s, will attend. The meeting is in your diary."), a->cheo, a->jina, 0, 0, 0, 0);
+                k->hatua = 1;
+            } sivyo {
+                a->msimamo = nguvu_bana(a->msimamo - 3, 0 - 100, 100);
+                mfuatano_umbiza(mwili, 320, ui("The %s, %s, sent word that the diary is full."), a->cheo, a->jina, 0, 0, 0, 0);
+                k->hatua = 2;
+            }
+        }
+    }
+    kama (k->aina == KAZI_USHAWISHI) {
+        Mbunge* m = nguvu_pata(k->lengwa);
+        kama (m != 0) {
+            n64 ongezeko = 4 + dola_nasibu(zamu, k->lengwa) % 9;
+            kama (m->tabia_1 == 11 || m->tabia_2 == 11) { ongezeko = ongezeko / 2; }
+            m->msimamo = nguvu_bana(m->msimamo + ongezeko, 0 - 100, 100);
+            mfuatano_umbiza(mwili, 320, ui("%s listened. Attitude to you is now %d."), m->jina, m->msimamo, 0, 0, 0, 0);
+            k->hatua = 1;
+        }
+    }
+    kama (k->aina == KAZI_HOJA) {
+        Mbunge* m = nguvu_pata(k->lengwa);
+        kama (m != 0) {
+            // mjumbe hukubali akiwa na msimamo mzuri au amepokea hongo
+            n64 utayari = m->msimamo + m->hongo / 2 - (100 - m->uaminifu) / 4;
+            kama (m->chama >= 0 && m->chama < d->vyama && d->chama_serikalini[m->chama]) { utayari = utayari + 15; }
+            kama (k->hoja == HOJA_KUMSHTAKI_SPIKA && m->jukumu == JUKUMU_SPIKA) { utayari = 0 - 100; }
+            kama (utayari > 10) {
+                nguvu_ongeza_hoja(k->hoja, m->baraza, k->lengwa, 1, zamu);
+                mfuatano_umbiza(mwili, 320, ui("%s has tabled the motion: %s. The vote is in two weeks."), m->jina, hoja_jina(k->hoja), 0, 0, 0, 0);
+                k->hatua = 1;
+            } sivyo {
+                m->msimamo = nguvu_bana(m->msimamo - 4, 0 - 100, 100);
+                mfuatano_umbiza(mwili, 320, ui("%s refused to table the motion: %s."), m->jina, hoja_jina(k->hoja), 0, 0, 0, 0);
+                k->hatua = 2;
+            }
+        }
+    }
+    kama (k->aina == KAZI_MNADHIMU) {
+        n64 b = k->lengwa;
+        kama (b >= 0 && b < nguvu_mabaraza) {
+            n64 kk = 0;
+            wakati (kk < nguvu_hesabu[b]) {
+                Mbunge* m = nguvu_watu[nguvu_mwanzo[b] + kk];
+                kama (m->chama >= 0 && m->chama < d->vyama && d->chama_serikalini[m->chama]) { m->uaminifu = nguvu_bana(m->uaminifu + 8, 0, 100); }
+                kk = kk + 1;
+            }
+            mfuatano_umbiza(mwili, 320, ui("The whips have tightened party discipline in the %s."), d->baraza_jina[b], 0, 0, 0, 0, 0);
+            k->hatua = 1;
+        }
+    }
+    kama (mwili[0] != 0) { kikasha_ongeza(w->msaidizi, UJUMBE_SHAJARA, zamu, leo, kichwa, mwili); }
+    achilia mwili;
+}
+
+// ---------- athari za hoja ----------
+
+// Hoja ya kumshtaki spika ikipita: mdhamini (au mjumbe wa chama chake) huwa spika.
+w0 nguvu_badilisha_spika(Hoja* h) {
+    n64 zamani = nguvu_mwenye_jukumu(h->baraza, JUKUMU_SPIKA);
+    Mbunge* z = nguvu_pata(zamani);
+    kama (z != 0) { z->jukumu = JUKUMU_MJUMBE; z->msimamo = nguvu_bana(z->msimamo - 40, 0 - 100, 100); }
+    Mbunge* mpya = nguvu_pata(h->mdhamini);
+    kama (mpya != 0) {
+        mpya->jukumu = JUKUMU_SPIKA;
+        mpya->msimamo = nguvu_bana(mpya->msimamo + 25, 0 - 100, 100);
+    }
+}
+
+// Tumia athari za hoja iliyopita (au mswada uliokuwa sheria).
+w0 nguvu_tumia_hoja(Hoja* h, Dola* d) {
+    n64 a = h->aina;
+    kama (a == HOJA_KUMSHTAKI_SPIKA) { nguvu_badilisha_spika(h); d->utulivu = dola_rekebisha(d->utulivu, 0 - 2); }
+    kama (a == HOJA_KUTOKUWA_NA_IMANI) {
+        // serikali huanguka: vyama vya serikali na vya upinzani hubadilishana
+        n64 c = 0;
+        wakati (c < d->vyama) { d->chama_serikalini[c] = d->chama_serikalini[c] == 0; c = c + 1; }
+        d->uhalali = dola_rekebisha(d->uhalali, 0 - 15);
+        d->utulivu = dola_rekebisha(d->utulivu, 0 - 10);
+    }
+    kama (a == HOJA_KUPANDISHA_KODI) { d->hazina = dola_rekebisha(d->hazina, 8); d->uhalali = dola_rekebisha(d->uhalali, 0 - 4); }
+    kama (a == HOJA_KUSHUSHA_KODI) { d->hazina = dola_rekebisha(d->hazina, 0 - 7); d->uhalali = dola_rekebisha(d->uhalali, 4); }
+    kama (a == HOJA_UCHUNGUZI) {
+        n64 kiongozi = nguvu_mwenye_jukumu(h->baraza, JUKUMU_KIONGOZI_WA_UPINZANI);
+        Mbunge* k = nguvu_pata(kiongozi);
+        kama (k != 0) { k->ushawishi = nguvu_bana(k->ushawishi - 3, 1, 10); k->msimamo = nguvu_bana(k->msimamo - 20, 0 - 100, 100); }
+        d->uhalali = dola_rekebisha(d->uhalali, 2);
+    }
+    kama (a == HOJA_MSAMAHA) { d->utulivu = dola_rekebisha(d->utulivu, 4); }
+    kama (a == HOJA_LAWAMA) { d->uhalali = dola_rekebisha(d->uhalali, 0 - 5); }
+}
+
+// Je, ofisi ya mchezaji ina kura ya turufu? Mkuu wa dola katika jamhuri za
+// rais, nusu-rais, shirikisho, na falme (idhini ya kifalme).
+n32 nguvu_ina_turufu(Wahusika* w, Dola* d, n64 ofisi) {
+    MhusikaWaDola* m = wahusika_pata(w, ofisi);
+    kama (m == 0 || m->ngazi < 9) { rudisha 0; }
+    n64 a = d->aina;
+    rudisha a == DOLA_JAMHURI_YA_RAIS || a == DOLA_JAMHURI_NUSU_RAIS || a == DOLA_JAMHURI_YA_SHIRIKISHO || a == DOLA_UFALME_KAMILI || a == DOLA_UFALME_WA_KATIBA || a == DOLA_MILKI;
+}
+
+// Weka kura ya turufu kwenye mswada unaosubiri idhini.
+n64 nguvu_turufu(n64 i, Wahusika* w, Dola* d, n64 ofisi, n64 zamu) {
+    Hoja* h = nguvu_hoja_pata(i);
+    kama (h == 0 || h->hatua != HOJA_INASUBIRI_IDHINI) { rudisha NGUVU_AMEKATAA; }
+    kama (nguvu_ina_turufu(w, d, ofisi) == 0) { rudisha NGUVU_HAKUNA_MAMLAKA; }
+    kama (nguvu_mtaji < GHARAMA_TURUFU) { rudisha NGUVU_HAKUNA_MTAJI; }
+    nguvu_mtaji = nguvu_mtaji - GHARAMA_TURUFU;
+    // baraza linaweza kupindua kwa theluthi mbili: kura ya kupindua ni hoja
+    // ya upande ule ule wa mswada
+    nguvu_hesabu_kura(h, d);
+    n64 jumla = h->ndiyo + h->hapana;
+    kama (jumla > 0 && h->ndiyo * 3 >= jumla * 2) {
+        h->hatua = HOJA_TURUFU_IMEPINDULIWA;
+        nguvu_tumia_hoja(h, d);
+        d->uhalali = dola_rekebisha(d->uhalali, 0 - 3);
+    } sivyo {
+        h->hatua = HOJA_IMEZUIWA;
+    }
+    h->imeripotiwa = 0;
+    rudisha NGUVU_SAWA;
+}
+
+// ---------- upinzani ----------
+
+// Asilimia ya viti vya upinzani kwenye baraza la kwanza.
+n64 nguvu_nguvu_ya_upinzani(Dola* d) {
+    kama (d->mabaraza == 0 || d->baraza_viti[0] == 0) { rudisha 0; }
+    n64 s = 0;
+    n64 c = 0;
+    wakati (c < d->vyama) {
+        kama (d->chama_serikalini[c] == 0) { s = s + d->viti[c]; }
+        c = c + 1;
+    }
+    rudisha (s * 100) / d->baraza_viti[0];
+}
+
+n32 nguvu_hoja_ya_upinzani_inasubiri() {
+    n64 i = 0;
+    wakati (i < nguvu_hoja_idadi) {
+        Hoja* h = nguvu_hoja[i];
+        kama (h->upande == 0 && h->hatua == HOJA_INASUBIRI) { rudisha 1; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+// Upinzani huamua kila wiki: kuleta hoja, kulingana na udhaifu wa serikali
+// na nguvu yake bungeni. Spika mshirika wa mchezaji huchelewesha hoja hizo.
+w0 nguvu_upinzani_zamu(Dola* d, Wahusika* w, n64 zamu) {
+    kama (d->mabaraza == 0 || nguvu_hoja_ya_upinzani_inasubiri()) { rudisha; }
+    n64 kiongozi = nguvu_mwenye_jukumu(0, JUKUMU_KIONGOZI_WA_UPINZANI);
+    kama (kiongozi < 0) { rudisha; }
+    n64 nguvu_yake = nguvu_nguvu_ya_upinzani(d);
+    n64 nafasi = (100 - d->uhalali) / 4 + nguvu_yake / 5;
+    Mbunge* spika = nguvu_pata(nguvu_mwenye_jukumu(0, JUKUMU_SPIKA));
+    kama (spika != 0 && spika->msimamo > 40) { nafasi = nafasi / 2; }
+    kama (dola_nasibu(zamu * 31 + 7, 900) % 100 >= nafasi) { rudisha; }
+    n64 aina = HOJA_LAWAMA;
+    kama (d->uhalali < 40 && (d->aina == DOLA_JAMHURI_YA_BUNGE || d->aina == DOLA_UFALME_WA_KATIBA || d->aina == DOLA_JAMHURI_NUSU_RAIS)) { aina = HOJA_KUTOKUWA_NA_IMANI; }
+    sivyo kama (d->hazina < 45) { aina = HOJA_KUSHUSHA_KODI; }
+    nguvu_ongeza_hoja(aina, 0, kiongozi, 0, zamu);
+    n8* mwili = tenga(320);
+    Mbunge* k = nguvu_pata(kiongozi);
+    mfuatano_umbiza(mwili, 320, ui("%s, Leader of the Opposition, has tabled: %s. The vote is in two weeks."), k->jina, hoja_jina(aina), 0, 0, 0, 0);
+    kikasha_ongeza(w->msaidizi, UJUMBE_TAHADHARI, zamu, tarehe_siku_ya_zamu(zamu), ui("The opposition moves against you"), mwili);
+    achilia mwili;
+}
+
+// ---------- zamu ----------
+
+// Kila wiki: mtaji hurudi, kazi za msaidizi hukamilika, hoja hupigiwa kura,
+// miswada hupata idhini, upinzani hutenda, na kashfa zinaweza kufichuka.
+w0 nguvu_zamu(Dola* d, Wahusika* w, n64 taifa, n64 zamu) {
+    nguvu_hakikisha(d, taifa);
+    nguvu_mtaji = nguvu_bana(nguvu_mtaji + 2 + d->uhalali / 30, 0, 100);
+    n64 leo = tarehe_siku_ya_zamu(zamu);
+    n64 i = 0;
+    wakati (i < nguvu_kazi_idadi) {
+        KaziYaMsaidizi* k = nguvu_kazi[i];
+        kama (k->hatua == 0 && zamu >= k->zamu_ya_kumaliza) { nguvu_kazi_maliza(k, d, w, zamu); }
+        i = i + 1;
+    }
+    n8* mwili = tenga(320);
+    i = 0;
+    wakati (i < nguvu_hoja_idadi) {
+        Hoja* h = nguvu_hoja[i];
+        kama (h->hatua == HOJA_INASUBIRI && zamu >= h->zamu_ya_kura) {
+            nguvu_hesabu_kura(h, d);
+            n64 inahitajika = nguvu_zinazohitajika(h);
+            kama (h->ndiyo >= inahitajika) {
+                kama (hoja_ni_mswada(h->aina)) { h->hatua = HOJA_INASUBIRI_IDHINI; h->zamu_ya_kura = zamu + 2; }
+                sivyo { h->hatua = HOJA_IMEPITA; nguvu_tumia_hoja(h, d); }
+            } sivyo { h->hatua = HOJA_IMESHINDWA; }
+            mfuatano_umbiza(mwili, 320, ui("%s: %d in favour, %d against (%d needed)."), hoja_jina(h->aina), h->ndiyo, h->hapana, inahitajika, 0, 0);
+            n64 aina_ya_ujumbe = UJUMBE_SHAJARA;
+            kama (h->upande == 0 && h->hatua != HOJA_IMESHINDWA) { aina_ya_ujumbe = UJUMBE_TAHADHARI; }
+            kama (h->hatua == HOJA_IMESHINDWA) { kikasha_ongeza(w->msaidizi, aina_ya_ujumbe, zamu, leo, ui("The motion fails"), mwili); }
+            sivyo { kikasha_ongeza(w->msaidizi, aina_ya_ujumbe, zamu, leo, ui("The motion carries"), mwili); }
+        } sivyo kama (h->hatua == HOJA_INASUBIRI_IDHINI && zamu >= h->zamu_ya_kura) {
+            // hakuna turufu ndani ya wiki mbili: mswada huwa sheria
+            h->hatua = HOJA_SHERIA;
+            h->imeripotiwa = 0;
+            nguvu_tumia_hoja(h, d);
+        }
+        i = i + 1;
+    }
+    nguvu_upinzani_zamu(d, w, zamu);
+    // kashfa: hatari kubwa na upinzani wenye nguvu hufichua hongo
+    kama (nguvu_hatari > 0) {
+        n64 nafasi = (nguvu_hatari * (nguvu_nguvu_ya_upinzani(d) + 20)) / 300;
+        kama (dola_nasibu(zamu * 17 + 5, 901) % 100 < nafasi) {
+            nguvu_kashfa = nguvu_kashfa + 1;
+            d->uhalali = dola_rekebisha(d->uhalali, 0 - 4 - nguvu_hatari / 10);
+            d->utulivu = dola_rekebisha(d->utulivu, 0 - 2);
+            Mbunge* m = nguvu_pata(nguvu_mbunge_wa_mwisho);
+            kama (m != 0) {
+                mfuatano_umbiza(mwili, 320, ui("The press has exposed payments to %s. Legitimacy falls; the opposition smells blood."), m->jina, 0, 0, 0, 0, 0);
+            } sivyo { mfuatano_umbiza(mwili, 320, "%s", ui("The press has exposed secret payments from your office."), 0, 0, 0, 0, 0); }
+            kikasha_ongeza(w->msaidizi, UJUMBE_TAHADHARI, zamu, leo, ui("Scandal"), mwili);
+            nguvu_hatari = nguvu_hatari / 2;
+        }
+        nguvu_hatari = nguvu_bana(nguvu_hatari - 1, 0, 100);
+    }
+    // wajumbe huelekea msimamo wa vyama vyao polepole
+    i = 0;
+    wakati (i < nguvu_idadi) {
+        Mbunge* m = nguvu_watu[i];
+        kama (m->chama >= 0 && m->chama < d->vyama && (zamu + i) % 8 == 0) {
+            kama (d->chama_serikalini[m->chama]) { m->msimamo = nguvu_bana(m->msimamo + 1, 0 - 100, 100); }
+            sivyo { m->msimamo = nguvu_bana(m->msimamo - 1, 0 - 100, 100); }
+        }
+        i = i + 1;
+    }
+    achilia mwili;
+}
+
+// Mjumbe kama mhusika wa mazungumzo ya AI (cheo, chama, tabia, msimamo).
+MhusikaWaDola* nguvu_kama_mhusika(n64 i, Dola* d, MhusikaWaDola* nje) {
+    Mbunge* m = nguvu_pata(i);
+    kama (m == 0) { rudisha 0; }
+    weka_sifuri(nje, ukubwa(MhusikaWaDola));
+    nje->jina = m->jina;
+    n8* cheo = tenga(160);
+    kama (m->baraza < d->mabaraza) {
+        mfuatano_umbiza(cheo, 160, "%s, %s (seat %d)", jukumu_jina(m->jukumu), d->baraza_jina[m->baraza], m->jimbo, 0, 0, 0);
+    } sivyo { mfuatano_umbiza(cheo, 160, "%s, %s", jukumu_jina(m->jukumu), ui("High Court"), 0, 0, 0, 0); }
+    nje->cheo = cheo;
+    nje->tawi = TAWI_BUNGE;
+    kama (m->baraza >= d->mabaraza) { nje->tawi = TAWI_MAHAKAMA; }
+    nje->ngazi = 4;
+    nje->bosi = 0 - 1;
+    nje->mteuzi = 0 - 1;
+    nje->uhakiki = 0 - 1;
+    nje->faharisi_ya_chama = m->chama;
+    nje->itikadi = ITIKADI_HURU;
+    kama (m->chama >= 0 && m->chama < d->vyama) {
+        nje->itikadi = d->chama_itikadi[m->chama];
+        nje->chama = d->chama_jina[m->chama];
+    }
+    nje->tabia_1 = m->tabia_1;
+    nje->tabia_2 = m->tabia_2;
+    nje->umri = m->umri;
+    nje->msimamo = m->msimamo;
+    rudisha nje;
+}

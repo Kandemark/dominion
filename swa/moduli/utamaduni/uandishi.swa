@@ -44,12 +44,12 @@ husisha { msingi/msingi_civ.swa }
 husisha { msingi/maktaba/mfuatano.swa }
 
 // ---------- Aina za andiko (badala ya civ_script_type_t) ----------
-//   UANDISHI_AINA_ALFABETI = 0   ALPHABETIC (Roman, Greek, Cyrillic)
+n32 UANDISHI_AINA_ALFABETI = 0;      // ALPHABETIC (Roman, Greek, Cyrillic)
 n32 UANDISHI_AINA_ABJADI = 1;        // ABJAD (Arabic, Hebrew)
-//   UANDISHI_AINA_ABUGIDA = 2   ABUGIDA (Devanagari, Thai)
-//   UANDISHI_AINA_LOGOSILABI = 3   LOGOSYLLABIC (Chinese, Kanji)
-//   UANDISHI_AINA_SILABI = 4   SYLLABIC (Hiragana/Katakana)
-//   UANDISHI_AINA_PICHA = 5   PICTOGRAPHIC
+n32 UANDISHI_AINA_ABUGIDA = 2;       // ABUGIDA (Devanagari, Thai)
+n32 UANDISHI_AINA_LOGOSILABI = 3;    // LOGOSYLLABIC (Chinese, Kanji)
+n32 UANDISHI_AINA_SILABI = 4;        // SYLLABIC (Hiragana/Katakana)
+n32 UANDISHI_AINA_PICHA = 5;         // PICTOGRAPHIC
 n32 UANDISHI_AINA_NYINGINE = 6;      // OTHER
 
 muundo UtamaduniAndiko {

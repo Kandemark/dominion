@@ -77,6 +77,27 @@ Everything the player reads goes through `ui("English text")` in `moduli/onyesho
 
 `wahusika_unda` turns that constitution into the office tree. Every office records its branch, rank, superior, how it is filled, who appoints it, and which chamber must confirm the appointment. `katiba.swa` applies the rules: only the appointing office can dismiss, confirmation votes count the parties' real seats, and meeting requests depend on rank, attitude and party.
 
+## Houses of power
+
+`moduli/siasa/nguvu.swa` turns every seat of every chamber, and a bench of nine justices, into a person (`Mbunge`): name, party (seats are allocated by the constitution's seat counts), two traits, age, attitude to the player, party loyalty, venality and influence, with the Speaker, Deputy Speaker, Majority Leader, Chief Whip and Leader of the Opposition picked from the right parties. Traits change the numbers: loyal members follow the whip, corrupt ones are cheap, idealists refuse money.
+
+The player spends **political capital** (regenerates each week with legitimacy):
+
+| Action | Capital | Effect |
+|---|---|---|
+| Payment of 5M, 20M or 50M | 3 + treasury | attitude up by venality, loyalty down, corruption and scandal risk up; idealists refuse and resent it |
+| Lobby | 4 | the assistant raises a member's attitude next week |
+| Summon | 2 | the assistant books an official into your diary, if they agree |
+| Table a motion | 10 | the member tables it next week if their attitude, party and payments allow |
+| Whip the party | 8 | government members in that chamber gain loyalty |
+| Veto | 15 | stops a passed bill unless the chamber has two thirds |
+
+A motion is voted two weeks after it is tabled. Each member votes yes when party line × loyalty + attitude × 0.6 (sign depending on the side of the motion) plus a fixed per-member noise is positive; the same computation run before the vote gives the forecast and the odds shown on the page. Impeaching the Speaker needs two thirds and makes the sponsor Speaker; no confidence swaps government and opposition; finance bills move treasury and legitimacy; bills wait two weeks for assent or veto. Each week the opposition may table its own motion (more likely when legitimacy is low and its seats many; an allied Speaker halves the chance), and accumulated scandal risk can be exposed by the press, costing legitimacy. Results arrive in the inbox.
+
+## Dashboard panels
+
+`moduli/skrini/jopo.swa` holds the panels shared by the nation pages, each reading one metric (GDP, per capita, population, the four indices, stability, legitimacy, growth, treasury) for all 232 nations: world ranking, distribution histogram, scatter of two metrics (GDP and population on a log scale), land neighbours, averages by form of government, and the offices of a branch. The page's nation is highlighted everywhere, and clicking a nation opens it. Clicks on these panels, the World page and the Government page go through `moduli/onyesho/bofya.swa`, where every clickable element registers its rectangle while it is drawn.
+
 ## AI conversations
 
 `moduli/akili/mshauri.swa` is a plain HTTP/1.1 client written over raw socket system calls. It sends OpenAI-style `/v1/chat/completions` requests with an optional bearer key, a token limit and, for local models, reasoning switched off.

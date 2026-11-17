@@ -59,14 +59,14 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
 
     Turubai* t = turubai_unda(1920, 1080);
     skrini_dunia_kituo_chora(g, t);
-    thibitisha("maeneo ya kubofya", dunia_bofya_idadi > 20);
+    thibitisha("maeneo ya kubofya", bofya_idadi > 20);
     // kitufe cha kwanza cha "Respond" kipo na kinarudisha habari
     n32 jibu_lipo = 0;
     i = 0;
-    wakati (i < dunia_bofya_idadi) {
-        kama (dunia_bofya[i * 6 + 4] == DUNIA_JIBU) {
+    wakati (i < bofya_idadi) {
+        kama (bofya_kitendo(i) == DUNIA_JIBU) {
             n64 hoja = 0;
-            n64 kk = skrini_dunia_bofya(dunia_bofya[i * 6] + 2, dunia_bofya[i * 6 + 1] + 2, &hoja);
+            n64 kk = skrini_dunia_bofya(bofya_x(i) + 2, bofya_y(i) + 2, &hoja);
             kama (kk == DUNIA_JIBU && habari_mpya(hoja) != 0) { jibu_lipo = 1; }
         }
         i = i + 1;
