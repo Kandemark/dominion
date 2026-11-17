@@ -5,7 +5,8 @@
 ## Test plan
 
 <!-- How did you verify this works? -->
-- [ ] `make clean && make release` builds without errors
+- [ ] `swa --programu moduli/programu/dominion.swa` builds without errors (from `swa/`)
+- [ ] every `jaribio_*.swa` passes
 - [ ] Game starts and runs without crashes
 - [ ] New/changed functionality tested in-game
 
