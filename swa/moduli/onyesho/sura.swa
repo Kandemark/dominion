@@ -143,7 +143,7 @@ w0 sura_paneli(n64 x, n64 y, n64 w, n64 h, n8* kichwa) {
     turubai_brashi(sura_t, 16777215, 20);
     turubai_mpaka(sura_t, x, y, w, h, 8);
     kama (kichwa != 0) {
-        turubai_brashi(sura_t, SURA_LAFUDHI, 255);
+        turubai_brashi(sura_t, SURA_BAHARI, 255);
         turubai_jaza(sura_t, x + 12, y + 13, 3, 11);
         turubai_brashi(sura_t, SURA_MAANDISHI, 255);
         maandishi_chora(sura_t, sura_nene, kichwa, x + 22, y + 11, 11);

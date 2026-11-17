@@ -134,16 +134,6 @@ w0 sura_beji(n8* lebo, n64 x, n64 y, n64 state, n64 alpha) {
 }
 
 // Kichwa cha ukurasa: kicker ndogo, kichwa kikuu, na maelezo ya hiari.
-w0 sura_kichwa_ukurasa(n8* kichwa, n8* maelezo, n64 x, n64 y) {
-    kama (sura_t == 0 || kichwa == 0) { rudisha; }
-    sura_rangi(SURA_MAANDISHI);
-    sura_lebo_nene(kichwa, x, y, 26);
-    kama (maelezo != 0) {
-        sura_rangi(SURA_HAFIFU);
-        sura_lebo(maelezo, x, y + 36, 14);
-    }
-}
-
 // Kichwa cha sehemu chenye hiari ya thamani ya kulia (mf. "zaidi").
 w0 sura_kichwa_sehemu(n8* kichwa, n8* kulia, n64 x, n64 y, n64 w) {
     kama (sura_t == 0 || kichwa == 0) { rudisha; }

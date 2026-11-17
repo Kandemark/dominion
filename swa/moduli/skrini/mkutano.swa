@@ -561,9 +561,7 @@ w0 skrini_mkutano_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 wote = t->upana - x - 24;
     n8 kichwa[160];
     mfuatano_umbiza(kichwa, 160, ui("You hold the office of %s  ·  %s"), skrini_mkutano_cheo_cha_mchezaji(w), dola_aina_jina(d->aina), 0, 0, 0, 0);
-    turubai_brashi(t, tn->rangi, 255);
-    turubai_mviringo(t, x, y - 56, 24, 16, 4);
-    sura_kichwa_ukurasa(tn->jina, kichwa, x + 36, y - 67);
+    skrini_kichwa_fm(g, t, ui("Government"), kichwa, x, y - 70);
     n64 h = t->kimo - y - 16;
     skrini_mkutano_orodha_chora(w, x, y, h);
 

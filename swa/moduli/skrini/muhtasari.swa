@@ -241,7 +241,7 @@ w0 skrini_upau_wa_juu(Mchezo* g, Turubai* t) {
     // mishale ya nyuma/mbele na jina la mchezo juu ya urambazaji
     sura_ikoni(48, 32, 12, SURA_ICON_ARROW_LEFT, SURA_HAFIFU, 200);
     sura_ikoni(84, 32, 12, SURA_ICON_ARROW_RIGHT, SURA_MAANDISHI, 230);
-    sura_rangi(SURA_LAFUDHI);
+    sura_rangi(SURA_MAANDISHI);
     sura_lebo_nene("DOMINION", 112, 21, 13);
 
     TaifaMfumo* tm = mchezo_pata_taifa(g);
@@ -293,6 +293,45 @@ w0 skrini_upau_wa_juu(Mchezo* g, Turubai* t) {
     turubai_brashi(t, 1253430, 255);
     maandishi_chora(t, sura_nene, ui("Continue"), xe + 16, 21, 15);
     sura_ikoni(xe + SKRINI_ENDELEA_UPANA - 26, 32, 12, SURA_ICON_ARROW_RIGHT, 1253430, 255);
+}
+
+// Herufi kubwa za ASCII (majina ya ndani ya dunia ni ya Kilatini).
+w0 skrini_herufi_kubwa(n8* nje, n64 uwezo, n8* s) {
+    n64 i = 0;
+    wakati (s[i] != 0 && i < uwezo - 1) {
+        n64 c = s[i] & 255;
+        kama (c >= 97 && c <= 122) { c = c - 32; }
+        nje[i] = c;
+        i = i + 1;
+    }
+    nje[i] = 0;
+}
+
+// Kichwa cha ukurasa kwa mtindo wa FM: muktadha mdogo juu ("CHEQING ·
+// 1954"), jina la ukurasa kwa herufi kubwa nzito, na maelezo chini yake.
+// Hutumia kimo cha takriban 58.
+w0 skrini_kichwa_fm(Mchezo* g, Turubai* t, n8* kichwa, n8* maelezo, n64 x, n64 y) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    TaifaNchi* mchezaji = dunia_taifa_mfumo_pata_kwa_faharisi(tm, tm->faharisi_ya_taifa_la_mchezaji);
+    n64 mwaka = 0;
+    n64 mwezi = 0;
+    n64 siku = 0;
+    tarehe_ya_siku(tarehe_siku_ya_zamu(g->zamu_ya_sasa), &mwaka, &mwezi, &siku);
+    n8 jina[64];
+    jina[0] = 0;
+    kama (mchezaji != 0) { skrini_herufi_kubwa(jina, 64, mchezaji->jina); }
+    n8 muktadha[96];
+    mfuatano_umbiza(muktadha, 96, "%s  ·  %d", jina, mwaka, 0, 0, 0, 0);
+    sura_rangi(SURA_LAFUDHI);
+    sura_lebo_nene(muktadha, x, y, 11);
+    n8 kubwa[64];
+    skrini_herufi_kubwa(kubwa, 64, kichwa);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(kubwa, x, y + 14, 26);
+    kama (maelezo != 0) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(maelezo, x, y + 47, 12);
+    }
 }
 
 // Urambazaji wa pembeni. `hai` ni skrini inayoonyeshwa (SKRINI_*).

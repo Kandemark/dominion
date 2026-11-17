@@ -82,7 +82,7 @@ w0 dashibodi_vigae(Mchezo* g, TaifaNchi* tn, TakwimuHistoria* hist, n64 x, n64 y
 // Safu 2 kushoto: pato ghafi kwa kila zamu (hadi 24) dhidi ya wastani wa dunia.
 w0 dashibodi_pato_kwa_zamu(Mchezo* g, TaifaNchi* tn, TakwimuHistoria* hist, n64 x, n64 y, n64 w, n64 h) {
     TaifaMfumo* tm = mchezo_pata_taifa(g);
-    chati_kadi(x, y, w, h, ui("GDP by turn"), 0);
+    chati_kadi(x, y, w, h, ui("GDP by week"), 0);
     // hadithi
     n64 hx = x + w - 18;
     sura_rangi(SURA_HAFIFU);
@@ -91,9 +91,9 @@ w0 dashibodi_pato_kwa_zamu(Mchezo* g, TaifaNchi* tn, TakwimuHistoria* hist, n64 
     turubai_brashi(sura_t, SURA_HAFIFU, 255);
     turubai_duara(sura_t, hx - wl - 10, y + 26, 3);
     hx = hx - wl - 26;
-    wl = maandishi_upana(sura_kawaida, ui("This turn"), 11);
-    sura_lebo(ui("This turn"), hx - wl, y + 19, 11);
-    turubai_brashi(sura_t, SURA_LAFUDHI, 255);
+    wl = maandishi_upana(sura_kawaida, ui("Last week"), 11);
+    sura_lebo(ui("Last week"), hx - wl, y + 19, 11);
+    turubai_brashi(sura_t, SURA_BAHARI, 255);
     turubai_duara(sura_t, hx - wl - 10, y + 26, 3);
     // thamani kuu
     n8 m[32];
@@ -115,7 +115,7 @@ w0 dashibodi_pato_kwa_zamu(Mchezo* g, TaifaNchi* tn, TakwimuHistoria* hist, n64 
         rudisha;
     }
     n64 n = hist->idadi;
-    kama (n > 24) { n = 24; }
+    kama (n > 26) { n = 26; }
     n64* thamani = tenga(8 * n);
     n64 i = 0;
     wakati (i < n) {
@@ -125,7 +125,9 @@ w0 dashibodi_pato_kwa_zamu(Mchezo* g, TaifaNchi* tn, TakwimuHistoria* hist, n64 
     }
     n8 lebo_ya_lengo[48];
     mfuatano_umbiza(lebo_ya_lengo, 48, ui("World average %s"), a1, 0, 0, 0, 0, 0);
-    chati_pau_lengo(x + 18, y + 96, w - 36, h - 112, thamani, n, wav, lebo_ya_lengo, g->zamu_ya_sasa - n + 1);
+    // sampuli ya mwisho ni wiki iliyopita; ya kwanza ni wiki n kabla yake
+    n64 siku_ya_mwisho = tarehe_siku_ya_zamu(g->zamu_ya_sasa) - 7;
+    chati_pau_lengo(x + 18, y + 96, w - 36, h - 112, thamani, n, wav, lebo_ya_lengo, siku_ya_mwisho - (n - 1) * 7);
     achilia thamani;
 }
 
@@ -138,15 +140,15 @@ w0 dashibodi_uungwaji(Dola* d, n64 x, n64 y, n64 w, n64 h) {
     kama (r > r_kimo) { r = r_kimo; }
     kama (r > 120) { r = 120; }
     kama (r < 40) { r = 40; }
-    chati_geji(x + w / 2, y + 60 + r, r, (r * 30) / 100, d->uhalali * 10, SURA_LAFUDHI, ui("legitimacy"));
+    chati_geji(x + w / 2, y + 60 + r, r, (r * 30) / 100, d->uhalali * 10, SURA_BAHARI, ui("legitimacy"));
     n8 m[16];
     n64 ry = y + h - 3 * 30 - 14;
     sura_namba(m, d->utulivu);
     chati_safu_ya_thamani(x + 18, ry, w - 36, SURA_CHANYA, ui("Stability"), m);
     sura_namba(m, d->uhalali);
-    chati_safu_ya_thamani(x + 18, ry + 30, w - 36, SURA_LAFUDHI, ui("Legitimacy"), m);
+    chati_safu_ya_thamani(x + 18, ry + 30, w - 36, SURA_BAHARI, ui("Legitimacy"), m);
     sura_namba(m, d->hazina);
-    chati_safu_ya_thamani(x + 18, ry + 60, w - 36, SURA_BAHARI, ui("Treasury"), m);
+    chati_safu_ya_thamani(x + 18, ry + 60, w - 36, 11032472, ui("Treasury"), m);
 }
 
 // Safu 3: kutoka watu hadi walio kazini (faneli).
@@ -163,7 +165,7 @@ w0 dashibodi_faneli(TaifaNchi* tn, n64 x, n64 y, n64 w, n64 h) {
     d64 kazini = nk * (1.0 - tn->uchumi.ukosefu_wa_kazi);
     thamani[2] = kazini;
     kama (thamani[1] > thamani[0]) { thamani[1] = thamani[0]; }
-    chati_faneli(x + 18, y + 52, w - 36, h - 68, majina, thamani, 3, SURA_LAFUDHI);
+    chati_faneli(x + 18, y + 52, w - 36, h - 68, majina, thamani, 3, SURA_BAHARI);
 }
 
 // Safu 3: yanayohitaji umakini wa mchezaji.
@@ -226,8 +228,8 @@ w0 dashibodi_matawi(Wahusika* w_, n64 x, n64 y, n64 w, n64 h) {
         kama (m->tawi < 5) { idadi[m->tawi] = idadi[m->tawi] + 1; }
         i = i + 1;
     }
-    rangi[0] = SURA_LAFUDHI;
-    rangi[1] = SURA_BAHARI;
+    rangi[0] = SURA_BAHARI;
+    rangi[1] = 7101695;             // 0x6C5CFF -- urujuani
     rangi[2] = 11032472;            // 0xA857D8 -- zambarau
     rangi[3] = SURA_HASI;
     rangi[4] = SURA_CHANYA;
@@ -287,7 +289,7 @@ w0 dashibodi_wapinzani(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
         thamani[r * 4 + 3] = t->kielezo_cha_utamaduni;
         r = r + 1;
     }
-    chati_ramani_ya_joto(x + 18, y + 52, w - 36, h - 66, thamani, n, 4, safu, safuwima, SURA_LAFUDHI);
+    chati_ramani_ya_joto(x + 18, y + 52, w - 36, h - 66, thamani, n, 4, safu, safuwima, SURA_BAHARI);
 }
 
 // Safu 4: mikutano inayoendelea kama kadi za kazi -- maombi yanayoingia
@@ -367,8 +369,6 @@ w0 skrini_dashibodi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 y = SKRINI_UPAU_WA_JUU + 22;
     n64 w = t->upana - x - 24;
     // kichwa: jina na sentensi moja ya hali
-    sura_rangi(SURA_MAANDISHI);
-    sura_lebo_nene(tn->jina, x, y, 24);
     n8 a1[32];
     n8 a2[16];
     n8 a3[16];
@@ -377,8 +377,7 @@ w0 skrini_dashibodi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_namba(a2, d->utulivu);
     sura_namba(a3, d->uhalali);
     mfuatano_umbiza(sentensi, 200, ui("A %s producing %s this turn. Stability %s, legitimacy %s."), dola_aina_jina(d->aina), a1, a2, a3, 0, 0);
-    sura_rangi(SURA_HAFIFU);
-    sura_lebo(sentensi, x, y + 34, 13);
+    skrini_kichwa_fm(g, t, ui("Overview"), sentensi, x, y - 4);
     y = y + 64;
 
     dashibodi_vigae(g, tn, hist, x, y, w);

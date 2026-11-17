@@ -232,7 +232,7 @@ w0 skrini_siasa_vyama_chora(Dola* d, n64 x, n64 y, n64 w, n64 h) {
         turubai_mviringo(sura_t, x + 16, ry + 1, 4, hatua - 10, 2);
         sura_rangi(SURA_MAANDISHI);
         sura_lebo_kati(d->chama_jina[c], x + 28, ry - 1, 13);
-        kama (d->chama_serikalini[c]) { sura_rangi(SURA_LAFUDHI); sura_lebo(ui("In government"), x + 28, ry + 15, 10); }
+        kama (d->chama_serikalini[c]) { sura_rangi(SURA_CHANYA); sura_lebo(ui("In government"), x + 28, ry + 15, 10); }
         sivyo { sura_rangi(SURA_HAFIFU); sura_lebo(itikadi_jina(d->chama_itikadi[c]), x + 28, ry + 15, 10); }
         b = 0;
         wakati (b < d->mabaraza) {
@@ -312,9 +312,9 @@ w0 skrini_siasa_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 x = SKRINI_UPANA_WA_PEMBENI + 25;
     n64 y = SKRINI_UPAU_WA_JUU + 25;
     n64 w = t->upana - x - 24;
-    turubai_brashi(t, tn->rangi, 255);
-    turubai_mviringo(t, x, y + 6, 24, 16, 4);
-    sura_kichwa_ukurasa(tn->jina, dola_aina_jina(d->aina), x + 36, y - 5);
+    n8 maelezo_ya_siasa[128];
+    mfuatano_umbiza(maelezo_ya_siasa, 128, "%s  ·  %s", tn->jina, dola_aina_jina(d->aina), 0, 0, 0, 0);
+    skrini_kichwa_fm(g, t, ui("Politics"), maelezo_ya_siasa, x, y - 15);
     y = y + 62;
 
     n64 safuwima = w / 4;

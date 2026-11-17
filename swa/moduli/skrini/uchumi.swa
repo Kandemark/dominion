@@ -125,9 +125,7 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 pengo = 16;
 
     // Kichwa cha ukurasa: taifa ndilo linalotawala, skrini inaelezwa chini.
-    turubai_brashi(t, tn->rangi, 255);
-    turubai_mviringo(t, x, y + 6, 24, 16, 4);
-    sura_kichwa_ukurasa(tn->jina, ui("NATIONAL ECONOMY"), x + 36, y - 5);
+    skrini_kichwa_fm(g, t, ui("Economy"), tn->jina, x, y - 15);
     y = y + 58;
 
     // kadi nne

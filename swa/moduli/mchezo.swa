@@ -801,6 +801,62 @@ w0 mchezo_anzisha_mahusiano_ya_majirani(DiplomasiaMfumo* ds, TaifaMfumo* tm, Atl
     }
 }
 
+// Historia kabla ya mchezo: kila taifa huanza na wiki 52 za pato ghafi
+// zilizotangulia 4 Januari 1954, ili chati na mabadiliko yawe na maana
+// tangu zamu ya kwanza. Kila taifa lina mwenendo wake (ukuaji wa mwaka kati
+// ya -1% na +5%) na mabadiliko madogo ya kila wiki, yote kutoka mbegu ya
+// taifa, na wiki ya mwisho huishia kwenye pato lake la sasa. Historia ya
+// dunia ni jumla ya mataifa kwa kila wiki.
+n32 MCHEZO_WIKI_ZA_HISTORIA = 52;
+
+n64 mchezo_nasibu_ya_historia(n64 i, n64 k) {
+    n64 n = (i * 2654435761 + k * 40503 + 977) & 4294967295;
+    n = ((n ^ (n >> 15)) * 2246822519) & 4294967295;
+    n = ((n ^ (n >> 13)) * 3266489917) & 4294967295;
+    rudisha (n ^ (n >> 16)) & 4294967295;
+}
+
+w0 mchezo_jaza_historia_ya_awali(Mchezo* g, n32 wiki) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64* historia = g->historia_ya_mataifa_addr;
+    kama (tm == 0 || historia == 0 || wiki <= 0) { rudisha; }
+    d64* dunia = tenga(8 * wiki);
+    n32 k = 0;
+    wakati (k < wiki) { dunia[k] = 0.0; k = k + 1; }
+    d64* mfululizo = tenga(8 * wiki);
+    n32 i = 0;
+    wakati (i < tm->idadi) {
+        TaifaNchi* t = dunia_taifa_mfumo_pata_kwa_faharisi(tm, i);
+        kama (t != 0 && historia[i] != 0) {
+            d64 ukuaji_wa_mwaka = ((mchezo_nasibu_ya_historia(i, 0) % 600) - 100) / 10000.0;
+            d64 kwa_wiki = ukuaji_wa_mwaka / 52.0;
+            // kurudi nyuma kutoka pato la sasa: kila wiki ya nyuma ni ndogo kwa ukuaji wake
+            d64 thamani = t->uchumi.pato_ghafi;
+            k = wiki - 1;
+            wakati (k >= 0) {
+                d64 mtikisiko = ((mchezo_nasibu_ya_historia(i, k + 1) % 800) - 400) / 100000.0;
+                thamani = thamani / (1.0 + kwa_wiki + mtikisiko);
+                mfululizo[k] = thamani;
+                k = k - 1;
+            }
+            k = 0;
+            wakati (k < wiki) {
+                takwimu_historia_ongeza(historia[i], mfululizo[k]);
+                dunia[k] = dunia[k] + mfululizo[k];
+                k = k + 1;
+            }
+        }
+        i = i + 1;
+    }
+    TakwimuHistoria* gdp = mchezo_pata_gdp_historia(g);
+    kama (gdp != 0) {
+        k = 0;
+        wakati (k < wiki) { takwimu_historia_ongeza(gdp, dunia[k]); k = k + 1; }
+    }
+    achilia mfululizo;
+    achilia dunia;
+}
+
 CivMatokeo mchezo_anzisha(Mchezo* g, MchezoUsanidi* usanidi) {
     CivMatokeo r;
     kama (g == 0 || usanidi == 0) {
@@ -1039,6 +1095,7 @@ CivMatokeo mchezo_anzisha(Mchezo* g, MchezoUsanidi* usanidi) {
     }
     historia_ya_mataifa[ih] = 0;        // mwisho wa safu (mchezo_zima hutembea hadi hapa)
     g->historia_ya_mataifa_addr = historia_ya_mataifa;
+    mchezo_jaza_historia_ya_awali(g, MCHEZO_WIKI_ZA_HISTORIA);
 
     g->hali_ya_mchezo = MCHEZO_HALI_INAENDESHA;
     g->inafanya_kazi = 1;

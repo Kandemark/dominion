@@ -168,14 +168,11 @@ w0 skrini_kalenda_chora(Mchezo* g, Turubai* tt, n64 taifa) {
     // kichwa: mwezi na mwaka, wiki ya leo, mishale
     n8 kichwa[64];
     mfuatano_umbiza(kichwa, 64, "%s %d", tarehe_jina_la_mwezi(kalenda_mwezi_onyesha), kalenda_mwaka_onyesha, 0, 0, 0, 0);
-    sura_rangi(SURA_MAANDISHI);
-    sura_lebo_nene(kichwa, x, y, 24);
     n8 leo_m[48];
     tarehe_maandishi(leo, leo_m, 48);
     n8 chini[96];
-    mfuatano_umbiza(chini, 96, ui("Today is %s  ·  turn %d"), leo_m, g->zamu_ya_sasa, 0, 0, 0, 0);
-    sura_rangi(SURA_HAFIFU);
-    sura_lebo(chini, x, y + 34, 13);
+    mfuatano_umbiza(chini, 96, ui("%s  ·  today is %s"), kichwa, leo_m, 0, 0, 0, 0);
+    skrini_kichwa_fm(g, tt, ui("Calendar"), chini, x, y - 4);
     turubai_brashi(tt, SURA_PANELI_JUU, 255);
     turubai_mviringo(tt, x + w_wote - 84, y, 38, 32, 6);
     turubai_mviringo(tt, x + w_wote - 40, y, 38, 32, 6);

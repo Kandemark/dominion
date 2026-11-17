@@ -87,8 +87,15 @@ n32 anza() {
     TakwimuHistoria* h = mchezo_pata_gdp_historia(g);
     n32 h_sio_tupu = (h != 0);
     gh_thibitisha(h_sio_tupu, "mchezo_pata_gdp_historia si tupu baada ya mchezo_anzisha");
-    gh_thibitisha(h->idadi == 0, "gdp_historia huanza na idadi=0 (hakuna zamu iliyomalizika bado)");
-    gh_thibitisha(h->uwezo == 64, "gdp_historia huanza na uwezo=64 (bafa ya awali, kabla ya kuongezeka)");
+    // historia ya kabla ya mchezo: wiki MCHEZO_WIKI_ZA_HISTORIA, mwisho wake
+    // ukiwa sawa na pato la sasa la dunia (kabla ya zamu ya kwanza)
+    n32 awali = MCHEZO_WIKI_ZA_HISTORIA;
+    gh_thibitisha(h->idadi == awali, "gdp_historia huanza na wiki za historia ya kabla ya mchezo");
+    gh_thibitisha(h->uwezo >= h->idadi, "uwezo wa gdp_historia unatosha historia ya awali");
+    d64 pato_la_mwanzo = gh_gdp_jumla_moja_kwa_moja(g);
+    d64 tofauti_ya_awali = h->sampuli[awali - 1] - pato_la_mwanzo;
+    kama (tofauti_ya_awali < 0.0) { tofauti_ya_awali = 0.0 - tofauti_ya_awali; }
+    gh_thibitisha(tofauti_ya_awali < pato_la_mwanzo * 0.02, "wiki ya mwisho ya historia iko karibu na pato la mwanzo");
 
     DuniaRamani* ramani = mchezo_pata_ramani(g);
     gh_thibitisha(ramani->idadi_ya_vipande_vya_ardhi > 0, "ramani ya mchezo ina nchi kavu (imejazwa kutoka atlasi)");
@@ -117,20 +124,20 @@ n32 anza() {
     }
 
     gh_dbg_d64("gdp_ya_zamu_ya_kwanza (jaribio)", gdp_ya_zamu_ya_kwanza);
-    gh_dbg_d64("sampuli[0] (hifadhiwa)", h->sampuli[0]);
+    gh_dbg_d64("sampuli[awali] (hifadhiwa)", h->sampuli[awali]);
     gh_dbg_d64("gdp_ya_zamu_ya_mwisho (jaribio)", gdp_ya_zamu_ya_mwisho);
     n32 idx_ya_mwisho = h->idadi - 1;
     gh_dbg_d64("sampuli[idadi-1] (hifadhiwa)", h->sampuli[idx_ya_mwisho]);
 
-    gh_thibitisha(h->idadi == idadi_ya_zamu, "idadi ya sampuli == idadi ya zamu zilizomalizika (mchezo_maliza_zamu iliyoitwa mara 5)");
+    gh_thibitisha(h->idadi == awali + idadi_ya_zamu, "idadi ya sampuli == historia ya awali + zamu zilizomalizika (5)");
     gh_thibitisha(h->uwezo >= h->idadi, "uwezo >= idadi daima (hakikisha_nafasi inafanya kazi)");
-    gh_thibitisha(h->sampuli[0] == gdp_ya_zamu_ya_kwanza, "sampuli[0] inalingana HASA na GDP ya jumla iliyopimwa papo hapo (zamu ya 1)");
+    gh_thibitisha(h->sampuli[awali] == gdp_ya_zamu_ya_kwanza, "sampuli ya zamu ya 1 inalingana HASA na GDP ya jumla iliyopimwa papo hapo");
     gh_thibitisha(h->sampuli[idx_ya_mwisho] == gdp_ya_zamu_ya_mwisho, "sampuli ya mwisho inalingana HASA na GDP ya jumla iliyopimwa papo hapo (zamu ya 5)");
     gh_thibitisha(h->sampuli[0] > 0.0, "GDP ya jumla ni chanya (mataifa yanamiliki nchi kavu)");
 
     // Watu hukua kila zamu na viwango vya uchumi husogea, hivyo GDP ya
     // dunia baada ya zamu 5 iko juu ya ile ya zamu ya kwanza.
-    gh_thibitisha(h->sampuli[idx_ya_mwisho] > h->sampuli[0], "GDP ya jumla inapanda zamu hadi zamu (mataifa hukua)");
+    gh_thibitisha(h->sampuli[idx_ya_mwisho] > h->sampuli[awali], "GDP ya jumla inapanda zamu hadi zamu (mataifa hukua)");
 
     // Uthabiti: mchezo wa pili wenye mbegu ile ile hutoa sampuli zile zile.
     Mchezo* g2 = mchezo_unda();

@@ -38,13 +38,8 @@ w0 skrini_diplomasia_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 y = SKRINI_UPAU_WA_JUU + 25;
     n64 w = t->upana - x - 24;
 
-    turubai_brashi(t, tn->rangi, 255);
-    turubai_mviringo(t, x, y + 6, 24, 16, 4);
-    sura_rangi(SURA_MAANDISHI);
-    sura_lebo_nene(tn->jina, x + 36, y, 22);
-    sura_rangi(SURA_HAFIFU);
-    sura_lebo(ui("Diplomacy"), x + 44 + maandishi_upana(sura_nene, tn->jina, 22), y + 6, 15);
-    y = y + 44;
+    skrini_kichwa_fm(g, t, ui("Diplomacy"), tn->jina, x, y - 15);
+    y = y + 62;
 
     // majirani na uhusiano wao, yamepangwa kwa imani (juu kwanza)
     n64* jirani = tenga(8 * tm->idadi + 8);

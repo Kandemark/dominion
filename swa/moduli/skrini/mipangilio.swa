@@ -184,7 +184,7 @@ w0 skrini_mipangilio_chora(Mchezo* g, Turubai* t) {
 
     n64 x = skrini_mipangilio_x();
     n64 w = skrini_mipangilio_w(t->upana);
-    sura_kichwa_ukurasa(ui("Settings"), ui("Language and adviser"), x, SKRINI_UPAU_WA_JUU + 20);
+    skrini_kichwa_fm(g, t, ui("Settings"), ui("Language and adviser"), x, SKRINI_UPAU_WA_JUU + 17);
 
     n64 y = skrini_mipangilio_y();
     sura_rangi(SURA_HAFIFU);

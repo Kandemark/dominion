@@ -236,7 +236,7 @@ w0 chora_kadi_ya_taifa_kwa(Mchezo* g, Turubai* t, n64 taifa, n64 px, n64 py, n32
     turubai_mpaka(t, x, y, w, hh, 12);
     kama (imebandikwa) {
         turubai_kata(t, x, y, w, 3);
-        turubai_brashi(t, SURA_LAFUDHI, 255);
+        turubai_brashi(t, SURA_BAHARI, 255);
         turubai_mviringo(t, x, y, w, 12, 12);
         turubai_kata_yote(t);
     }
@@ -256,9 +256,9 @@ w0 chora_kadi_ya_taifa_kwa(Mchezo* g, Turubai* t, n64 taifa, n64 px, n64 py, n32
     sura_rangi(SURA_HAFIFU);
     sura_lebo(dola_aina_jina(dola->aina), x + 58, y + 35, 11);
     turubai_kata_yote(t);
-    turubai_brashi(t, SURA_LAFUDHI, 40);
+    turubai_brashi(t, SURA_BAHARI, 46);
     turubai_mviringo(t, x + w - 16 - wc, y + 18, wc, 22, 11);
-    turubai_brashi(t, SURA_LAFUDHI, 255);
+    turubai_brashi(t, SURA_BAHARI, 255);
     maandishi_chora(t, sura_nene, cheo, x + w - 16 - wc + 8, y + 21, 11);
     turubai_brashi(t, 16777215, 20);
     turubai_jaza(t, x + 16, y + 58, w - 32, 1);
@@ -300,7 +300,7 @@ w0 chora_kadi_ya_taifa_kwa(Mchezo* g, Turubai* t, n64 taifa, n64 px, n64 py, n32
             n64 wd = maandishi_upana(sura_kati, m, 11) + 14;
             chati_kidonge_cha_mabadiliko(x + w - 16 - wd, ys - 3, badiliko);
         }
-        sura_sparkline(sampuli, n, x + 16, ys + 22, w - 32, 34, SURA_LAFUDHI, 40);
+        sura_sparkline(sampuli, n, x + 16, ys + 22, w - 32, 34, SURA_BAHARI, 40);
         achilia sampuli;
     } sivyo {
         sura_lebo(ui("History appears after two turns."), x + 16, ys + 30, 11);
@@ -446,10 +446,10 @@ w0 kadi_msingi(Turubai* t, n64 x, n64 y, n64 w, n8* kichwa, n32 imeelekezwa) {
     turubai_mviringo(t, x + 2, y + 4, w, KADI_KIMO, 9);
     turubai_brashi(t, SURA_PANELI, 244);
     turubai_mviringo(t, x, y, w, KADI_KIMO, 8);
-    kama (imeelekezwa) { turubai_brashi(t, SURA_LAFUDHI, 200); }
+    kama (imeelekezwa) { turubai_brashi(t, SURA_BAHARI, 200); }
     sivyo { turubai_brashi(t, 16777215, 30); }
     turubai_mpaka(t, x, y, w, KADI_KIMO, 8);
-    turubai_brashi(t, SURA_LAFUDHI, 255);
+    turubai_brashi(t, SURA_BAHARI, 255);
     turubai_jaza(t, x + 12, y + 13, 3, 11);
     turubai_brashi(t, SURA_HAFIFU, 255);
     maandishi_chora(t, sura_nene, kichwa, x + 22, y + 11, 10);
@@ -489,7 +489,7 @@ w0 chora_kadi_za_muhtasari(Mchezo* g, Turubai* t, Hali* h, Dirisha* d) {
             sampuli[i] = sd * 1000000.0;
             i = i + 1;
         }
-        sura_sparkline(sampuli, n, x + w - 96, y + 38, 82, 46, SURA_LAFUDHI, 40);
+        sura_sparkline(sampuli, n, x + w - 96, y + 38, 82, 46, SURA_BAHARI, 40);
         achilia sampuli;
     }
     n64 zinazoonekana = kadi_zinazoonekana(d);

@@ -113,12 +113,9 @@ w0 skrini_kikasha_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 x = kikasha_x();
     n64 y = SKRINI_UPAU_WA_JUU + 22;
     n64 w_wote = t->upana - x - 24;
-    sura_rangi(SURA_MAANDISHI);
-    sura_lebo_nene(ui("Inbox"), x, y, 24);
     n8 chini[96];
     mfuatano_umbiza(chini, 96, ui("%d messages, %d unread"), kikasha_idadi, kikasha_visivyosomwa(), 0, 0, 0, 0);
-    sura_rangi(SURA_HAFIFU);
-    sura_lebo(chini, x, y + 34, 13);
+    skrini_kichwa_fm(g, t, ui("Inbox"), chini, x, y - 4);
     y = kikasha_y();
     n64 h = t->kimo - y - 16;
 
@@ -133,7 +130,7 @@ w0 skrini_kikasha_chora(Mchezo* g, Turubai* t, n64 taifa) {
         kama (i == kikasha_teule) {
             turubai_brashi(t, SURA_PANELI_JUU, 255);
             turubai_mviringo(t, x + 6, ry, KIKASHA_ORODHA - 12, KIKASHA_SAFU - 4, 8);
-            turubai_brashi(t, SURA_LAFUDHI, 255);
+            turubai_brashi(t, SURA_BAHARI, 255);
             turubai_jaza(t, x + 6, ry + 12, 3, KIKASHA_SAFU - 28);
         } sivyo {
             turubai_brashi(t, 16777215, 12);
@@ -158,7 +155,7 @@ w0 skrini_kikasha_chora(Mchezo* g, Turubai* t, n64 taifa) {
         sura_lebo(u->mwili, x + 62, ry + 45, 11);
         turubai_kata_yote(t);
         kama (u->umesomwa == 0) {
-            turubai_brashi(t, SURA_LAFUDHI, 255);
+            turubai_brashi(t, SURA_BAHARI, 255);
             turubai_duara(t, x + KIKASHA_ORODHA - 24, ry + 33, 4);
         }
         safu = safu + 1;
