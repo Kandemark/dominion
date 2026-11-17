@@ -2,6 +2,7 @@ husisha { moduli/skrini/siasa.swa }
 husisha { moduli/skrini/mkutano.swa }
 husisha { moduli/akili/uamuzi.swa }
 husisha { moduli/onyesho/chati_kadi.swa }
+husisha { moduli/onyesho/bofya.swa }
 
 // dunia.swa -- ukurasa wa World: kituo cha dunia nzima.
 //
@@ -360,12 +361,8 @@ w0 habari_zamu(Mchezo* g) {
 
 // ---------- maeneo ya kubofya ----------
 //
-// Kila kipengele kinachobofyeka hujiandikisha wakati wa kuchora; bofya
-// hulinganishwa na orodha hii, hivyo mpangilio na kubofya haviachani.
-
-n64 DUNIA_BOFYA_JUU = 96;
-n64* dunia_bofya = 0;           // [x, y, w, h, kitendo, hoja] kwa kila eneo
-n64 dunia_bofya_idadi = 0;
+// Kila kipengele kinachobofyeka hujiandikisha kwenye onyesho/bofya.swa
+// wakati wa kuchora.
 
 n64 DUNIA_JIBU = 1;             // jibu habari (hoja = faharisi ya habari mpya)
 n64 DUNIA_FUNGUA = 2;           // fungua taifa (hoja = taifa)
@@ -379,32 +376,8 @@ n64 skrini_dunia_mpangilio = 0;
 n64 skrini_dunia_ukurasa = 0;
 n64 skrini_dunia_habari_ukurasa = 0;
 
-w0 dunia_bofya_ongeza(n64 x, n64 y, n64 w, n64 h, n64 kitendo, n64 hoja) {
-    kama (dunia_bofya == 0) { dunia_bofya = tenga(8 * 6 * DUNIA_BOFYA_JUU); }
-    kama (dunia_bofya_idadi >= DUNIA_BOFYA_JUU) { rudisha; }
-    n64 b = dunia_bofya_idadi * 6;
-    dunia_bofya[b] = x;
-    dunia_bofya[b + 1] = y;
-    dunia_bofya[b + 2] = w;
-    dunia_bofya[b + 3] = h;
-    dunia_bofya[b + 4] = kitendo;
-    dunia_bofya[b + 5] = hoja;
-    dunia_bofya_idadi = dunia_bofya_idadi + 1;
-}
-
 // Kitendo kilicho chini ya (px, py), na hoja yake kwenye *hoja; 0 ikiwa hakuna.
-n64 skrini_dunia_bofya(n64 px, n64 py, n64* hoja) {
-    n64 i = dunia_bofya_idadi - 1;
-    wakati (i >= 0) {
-        n64 b = i * 6;
-        kama (px >= dunia_bofya[b] && px < dunia_bofya[b] + dunia_bofya[b + 2] && py >= dunia_bofya[b + 1] && py < dunia_bofya[b + 1] + dunia_bofya[b + 3]) {
-            *hoja = dunia_bofya[b + 5];
-            rudisha dunia_bofya[b + 4];
-        }
-        i = i - 1;
-    }
-    rudisha 0;
-}
+n64 skrini_dunia_bofya(n64 px, n64 py, n64* hoja) { rudisha bofya_tafuta(px, py, hoja); }
 
 // Kitufe kidogo chenye mpaka; hujiandikisha kwa kubofya.
 n64 skrini_dunia_kitufe(n8* lebo, n64 x, n64 y, n32 hai, n64 kitendo, n64 hoja) {
@@ -419,7 +392,7 @@ n64 skrini_dunia_kitufe(n8* lebo, n64 x, n64 y, n32 hai, n64 kitendo, n64 hoja) 
         sura_rangi(SURA_MAANDISHI);
     }
     sura_lebo_kati(lebo, x + 10, y + 4, 11);
-    dunia_bofya_ongeza(x, y, w, 22, kitendo, hoja);
+    bofya_ongeza(x, y, w, 22, kitendo, hoja);
     rudisha w;
 }
 
@@ -671,7 +644,7 @@ w0 skrini_dunia_jedwali(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
         Dola* d = skrini_siasa_dola(g, t);
         n64 ry = yh + 18 + r * safu_h;
         sura_safu(x + 8, ry, w - 16, safu_h - 2, r, t == tm->faharisi_ya_taifa_la_mchezaji);
-        dunia_bofya_ongeza(x + 8, ry, w - 16, safu_h - 2, DUNIA_FUNGUA, t);
+        bofya_ongeza(x + 8, ry, w - 16, safu_h - 2, DUNIA_FUNGUA, t);
         sura_namba(m, nafasi + 1);
         sura_rangi(SURA_HAFIFU);
         sura_lebo(m, x + 16, ry + 7, 12);
@@ -761,7 +734,7 @@ w0 skrini_dunia_wanaosonga(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
         sura_asilimia(m, uk[a], 1);
         sura_rangi(SURA_CHANYA);
         sura_lebo_kulia(m, x + 16 + nusu, ry + 2, 12);
-        dunia_bofya_ongeza(x + 16, ry, nusu, 22, DUNIA_FUNGUA, a);
+        bofya_ongeza(x + 16, ry, nusu, 22, DUNIA_FUNGUA, a);
         n64 xb = x + 32 + nusu;
         sura_ikoni(xb + 6, ry + 9, 6, SURA_ICON_ARROW_DOWN, SURA_HASI, 255);
         sura_rangi(SURA_MAANDISHI);
@@ -771,7 +744,7 @@ w0 skrini_dunia_wanaosonga(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
         sura_asilimia(m, uk[b], 1);
         sura_rangi(SURA_HASI);
         sura_lebo_kulia(m, x + w - 16, ry + 2, 12);
-        dunia_bofya_ongeza(xb, ry, nusu, 22, DUNIA_FUNGUA, b);
+        bofya_ongeza(xb, ry, nusu, 22, DUNIA_FUNGUA, b);
         r = r + 1;
     }
     achilia mp;
@@ -868,7 +841,7 @@ w0 skrini_dunia_machafuko(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
             n8 maelezo[96];
             mfuatano_umbiza(maelezo, 96, ui("%s  ·  legitimacy %d"), ui(dola_aina_jina(db->aina)), db->uhalali, 0, 0, 0, 0);
             chati_safu_ya_umakini(x + 16, y + 36 + r * 48, w - 32, SURA_ICON_INFO, tn->jina, maelezo, idadi, db->utulivu < 30);
-            dunia_bofya_ongeza(x + 16, y + 36 + r * 48, w - 32, 46, DUNIA_FUNGUA, bora);
+            bofya_ongeza(x + 16, y + 36 + r * 48, w - 32, 46, DUNIA_FUNGUA, bora);
         }
         r = r + 1;
     }
@@ -910,7 +883,7 @@ w0 skrini_dunia_uhusiano(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
             mfuatano_umbiza(m, 32, "%s  %d", biashara, uamuzi_urafiki[i], 0, 0, 0, 0);
             sura_rangi(SURA_HAFIFU);
             sura_lebo_kulia(m, x + w - 16, ry, 11);
-            dunia_bofya_ongeza(x + 16, ry - 2, w - 32, 24, DUNIA_FUNGUA, i);
+            bofya_ongeza(x + 16, ry - 2, w - 32, 24, DUNIA_FUNGUA, i);
             r = r + 1;
         }
         i = i + 1;
@@ -1000,7 +973,7 @@ w0 skrini_dunia_joto(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
 
 w0 skrini_dunia_kituo_chora(Mchezo* g, Turubai* t) {
     sura_anzisha(t);
-    dunia_bofya_idadi = 0;
+    bofya_anza();
     habari_zamu(g);
     turubai_brashi(t, SURA_USULI, 255);
     turubai_jaza(t, 0, 0, t->upana, t->kimo);

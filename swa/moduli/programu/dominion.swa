@@ -581,14 +581,18 @@ w0 bofya_skrini(Mchezo* g, Hali* h, n64 skrini, n64 upana, n64 kimo, n64 px, n64
         kama (px >= control_x + 138 && px < control_x + 188) { skrini_uchumi_dirisha_la_historia = 240; }
     }
     kama (skrini == SKRINI_DUNIA_YOTE) { bofya_dunia(g, h, px, py); }
+    // vipengele vya dashibodi (jopo.swa) kwenye kurasa za taifa: kubofya taifa hulifungua
+    kama (skrini == SKRINI_SIASA || skrini == SKRINI_JESHI || skrini == SKRINI_UTAMADUNI || skrini == SKRINI_TEKNOLOJIA || skrini == SKRINI_DIPLOMASIA || skrini == SKRINI_UCHUMI) {
+        n64 hoja = 0;
+        kama (bofya_tafuta(px, py, &hoja) == JOPO_FUNGUA) { h->taifa = hoja; chafua_ukurasa(h); rudisha; }
+    }
     kama (skrini == SKRINI_DIPLOMASIA) { bofya_diplomasia(g, h, upana, kimo, px, py); }
     kama (skrini == SKRINI_KALENDA) { skrini_kalenda_bofya(upana, kimo, tarehe_siku_ya_zamu(g->zamu_ya_sasa), px, py); }
     kama (skrini == SKRINI_KIKASHA) { bofya_kikasha(g, h, upana, kimo, px, py); }
     kama (skrini == SKRINI_MKUTANO) {
         Dola* dola = skrini_siasa_dola(g, h->taifa);
         Wahusika* watu = skrini_mkutano_watu(g, h->taifa);
-        n64 kitendo = skrini_mkutano_bofya(upana, px, py);
-        kama (watu != 0 && dola != 0 && kitendo > 0 - 2) { skrini_mkutano_tekeleza(kitendo, dola, watu); }
+        kama (watu != 0 && dola != 0) { skrini_mkutano_bofya_eneo(px, py, g, dola, watu); }
     }
 }
 
@@ -760,6 +764,8 @@ w0 zamu_inayofuata(Mchezo* g, Hali* h) {
     // maamuzi yaliyo hai (biashara, mikopo, vikwazo, vita...) hufanya kazi kila wiki
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     uamuzi_zamu(g->zamu_ya_sasa, skrini_siasa_dola(g, tm->faharisi_ya_taifa_la_mchezaji));
+    // siasa ya wiki: kazi za msaidizi, kura za hoja, upinzani, kashfa
+    nguvu_zamu(skrini_siasa_dola(g, tm->faharisi_ya_taifa_la_mchezaji), skrini_mkutano_watu(g, tm->faharisi_ya_taifa_la_mchezaji), tm->faharisi_ya_taifa_la_mchezaji, g->zamu_ya_sasa);
     habari_zamu(g);
     sasisha_kikasha(g);
     chafua_msingi(h);

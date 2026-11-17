@@ -1,9 +1,10 @@
 husisha { moduli/skrini/mkutano.swa }
 
-// jaribio_mkutano.swa -- skrini ya mikutano: kuandika, kutuma, kuchagua mtu,
-// na kuchora. Mshauri amezimwa, hivyo kutuma hutoa ujumbe wa hitilafu badala
+// jaribio_mkutano.swa -- ukurasa wa serikali: kuandika, kutuma, nyumba za
+// mamlaka, mjumbe, malipo, hoja, kuchagua afisa, na kuchora. Mshauri amezimwa, hivyo kutuma hutoa ujumbe wa hitilafu badala
 // ya kuunganisha na mtandao.
-//   jaribio_mkutano <njia>     huandika fremu <njia> (Mshauri) na <njia>.mtu
+//   jaribio_mkutano <njia>     huandika fremu <njia> (Mshauri), <njia>.baraza
+//                              (mjumbe, malipo, hoja) na <njia>.mtu
 
 w0 andika_fremu(n8* njia, n8* kiambishi, Turubai* t) {
     n8 jina[256];
@@ -11,6 +12,19 @@ w0 andika_fremu(n8* njia, n8* kiambishi, Turubai* t) {
     n64 fd = mfumo_fungua(jina, 577, 420);
     mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
     mfumo_funga(fd);
+}
+
+// Bofya eneo la kwanza lenye kitendo na hoja hizi. Hurudisha 1 likipatikana.
+n32 bofya_kwa(n64 kitendo, n64 hoja, Mchezo* g, Dola* d, Wahusika* w) {
+    n64 i = 0;
+    wakati (i < bofya_idadi) {
+        kama (bofya_maeneo[i * 6 + 4] == kitendo && bofya_maeneo[i * 6 + 5] == hoja) {
+            skrini_mkutano_bofya_eneo(bofya_x(i) + 2, bofya_y(i) + 2, g, d, w);
+            rudisha 1;
+        }
+        i = i + 1;
+    }
+    rudisha 0;
 }
 
 n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
@@ -39,12 +53,41 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     skrini_mkutano_chora(g, t, taifa);
     kama (idadi_ya_hoja > 1) { andika_fremu(hoja_za_mstari[1], "", t); }
 
-    // mti: bofya safu ya nne (baada ya Mshauri, msaidizi na kichwa cha tawi) = mkuu wa dola
+    // nyumba: bofya kila eneo lililoandikishwa kwa kitendo husika
     Dola* d = skrini_siasa_dola(g, taifa);
     Wahusika* w = skrini_mkutano_watu(g, taifa);
-    n64 mtu = skrini_mkutano_bofya(1600, mkutano_x() + 60, mkutano_y() + 34 + 3 * MKUTANO_SAFU + 5);
-    kama (mtu != 0) { andika("SHINDWA: bofya ya mti %d\n", mtu, 0, 0, 0, 0, 0); rudisha 1; }
-    kama (skrini_mkutano_bofya(1600, mkutano_x() + 60, mkutano_y() + 34 + 2 * MKUTANO_SAFU + 5) != 0 - 2) { andika("SHINDWA: kichwa cha tawi kinabofyeka\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (bofya_kwa(SB_NYUMBA, NYUMBA_BARAZA, g, d, w) == 0) { andika("SHINDWA: nyumba ya baraza haibofyeki\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    skrini_mkutano_chora(g, t, taifa);
+    kama (serikali_nyumba != NYUMBA_BARAZA) { andika("SHINDWA: baraza halikuchaguliwa\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    // mjumbe wa kwanza anayeonekana
+    n64 mjumbe = nguvu_mwanzo[0] + 5;
+    kama (bofya_kwa(SB_MBUNGE, mjumbe, g, d, w) == 0) { andika("SHINDWA: mjumbe habofyeki\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (mkutano_mbunge != mjumbe) { andika("SHINDWA: mjumbe hakuchaguliwa\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    skrini_mkutano_chora(g, t, taifa);
+    // malipo na orodha ya hoja
+    d->hazina = 60;
+    nguvu_mtaji = 60;
+    kama (bofya_kwa(SB_HONGO, 20, g, d, w) == 0 || mkutano_ujumbe[0] == 0) { andika("SHINDWA: malipo\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    andika("malipo: %s\n", mkutano_ujumbe, 0, 0, 0, 0, 0);
+    skrini_mkutano_chora(g, t, taifa);
+    kama (bofya_kwa(SB_KITENDO, 1006, g, d, w) == 0 || serikali_chagua_hoja != 1) { andika("SHINDWA: orodha ya hoja\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    skrini_mkutano_chora(g, t, taifa);
+    kama (bofya_kwa(SB_HOJA, HOJA_KUMSHTAKI_SPIKA, g, d, w) == 0 || nguvu_kazi_idadi != 1) { andika("SHINDWA: kazi ya hoja\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    andika("hoja: %s\n", mkutano_ujumbe, 0, 0, 0, 0, 0);
+    // hoja inasubiri kura ili jalada na utabiri vionekane
+    nguvu_ongeza_hoja(HOJA_KUSHUSHA_KODI, 0, mjumbe, 1, g->zamu_ya_sasa);
+    nguvu_ongeza_hoja(HOJA_LAWAMA, 0, nguvu_mwenye_jukumu(0, JUKUMU_KIONGOZI_WA_UPINZANI), 0, g->zamu_ya_sasa);
+    nakili_mfuatano(mkutano_kauli, "Will you stand with the government on the finance bill?");
+    nakili_mfuatano(mkutano_jibu, "I will hear the bill read before I promise anything. My district has paid enough this year, and the opposition has been generous with its attention.");
+    mkutano_athari[ATHARI_MSIMAMO] = 3;
+    mkutano_hali = 2;
+    skrini_mkutano_chora(g, t, taifa);
+    kama (idadi_ya_hoja > 1) { andika_fremu(hoja_za_mstari[1], ".baraza", t); }
+    mkutano_hali = 0;
+    mkutano_kauli[0] = 0;
+    skrini_mkutano_chagua(0 - 1);
+    serikali_nyumba = NYUMBA_UTENDAJI;
+    skrini_mkutano_chora(g, t, taifa);
     // mchezaji ashike cheo cha chini: mkubwa wake hahitaji mkutano? anahitaji
     n64 chini = wahusika_tafuta(w, "District Commissioner");
     kama (chini < 0) { chini = w->idadi - 2; }
