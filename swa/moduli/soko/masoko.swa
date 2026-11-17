@@ -1,0 +1,1052 @@
+husisha { moduli/skrini/dola_ya_taifa.swa }
+husisha { moduli/siasa/wahusika.swa }
+husisha { moduli/siasa/hati.swa }
+
+// masoko.swa -- sarafu za mataifa, masoko ya hisa, makampuni, matajiri,
+// pochi ya mchezaji na maisha ya kila taifa kila wiki.
+//
+// Sarafu: kila taifa lina sarafu yake (jina, msimbo wa herufi tatu, kiwango
+// kwa kipimo cha dhahabu). Mataifa makuu manane kwa pato hufuata kiwango
+// cha dhahabu; mengine hufunga sarafu zao kwa sarafu ya taifa kuu (jirani
+// au mkubwa zaidi) au huelea. Uchumi wa uigaji hupimwa kwa dhahabu; kila
+// ukurasa huonyesha thamani kwa sarafu ya taifa lenyewe, hivyo bilioni moja
+// ya taifa moja si bilioni moja ya jingine. Sarafu iliyofungwa ina akiba;
+// akiba ikiisha wakati utulivu uko chini, kifungo huvunjika na sarafu
+// hushuka thamani.
+//
+// Soko la hisa: kila taifa lina soko lake lenye makampuni 4 hadi 40 kwa
+// ukubwa wa uchumi, kutoka sekta zinazowezekana katika mwaka wa kuanza
+// (reli baada ya 1830, mafuta baada ya 1870, magari baada ya 1905...).
+// Bei hufuata ukuaji wa taifa, utulivu, mshtuko wa sekta duniani na
+// kelele ya kila kampuni. Kila soko lina kielezo chake.
+//
+// Matajiri: kila taifa lina wafanyabiashara wanaomiliki makampuni; kwenye
+// dola za chama kimoja na za kijeshi ni oligarki wanaoshikamana na dola.
+//
+// Mataifa hai: kila wiki kila taifa husonga lenyewe -- utulivu, uhalali na
+// hazina hufuata uchumi na mshtuko; migomo, majaribio ya mapinduzi,
+// chaguzi, mgogoro wa sarafu na kuporomoka kwa soko huandikwa kwenye
+// kumbukumbu ya matukio ambayo habari za dunia husoma.
+//
+// Bei ni senti (x100) za sarafu ya taifa; viwango vya sarafu ni x10000.
+
+n64 SOKO_WIKI = 52;             // historia ya bei na viwango
+
+// ---------- sarafu ----------
+
+n64 NANGA_DHAHABU = -2;         // kiwango cha dhahabu
+n64 NANGA_HURU = -1;            // sarafu huelea
+
+muundo Sarafu2 {
+    n8* jina;
+    n8* msimbo;
+    n64 kiwango;        // vipimo vya sarafu kwa dhahabu moja, x10000
+    n64 nanga;          // taifa ambalo sarafu imefungwa kwake, au NANGA_*
+    n64 kiwango_cha_nanga;  // vipimo kwa kipimo kimoja cha sarafu ya nanga, x10000
+    n64 akiba;          // 0..100: akiba ya kulinda kifungo
+    n64* historia;      // SOKO_WIKI viwango vya zamani (mduara)
+}
+
+n64 soko_mataifa = 0;
+n64* soko_sarafu = 0;           // Sarafu2* kwa kila taifa
+n64 soko_wiki = 0;              // wiki zilizopita tangu kuanza (kwa historia)
+
+Sarafu2* soko_sarafu_ya(n64 taifa) {
+    kama (soko_sarafu == 0 || taifa < 0 || taifa >= soko_mataifa) { rudisha 0; }
+    rudisha soko_sarafu[taifa];
+}
+
+n8* soko_jina_la_kipimo(n64 k) {
+    kama (k == 0) { rudisha "crown"; }
+    kama (k == 1) { rudisha "mark"; }
+    kama (k == 2) { rudisha "pound"; }
+    kama (k == 3) { rudisha "franc"; }
+    kama (k == 4) { rudisha "shilling"; }
+    kama (k == 5) { rudisha "dinar"; }
+    kama (k == 6) { rudisha "peso"; }
+    kama (k == 7) { rudisha "rand"; }
+    kama (k == 8) { rudisha "rial"; }
+    kama (k == 9) { rudisha "lira"; }
+    kama (k == 10) { rudisha "florin"; }
+    kama (k == 11) { rudisha "real"; }
+    kama (k == 12) { rudisha "ducat"; }
+    kama (k == 13) { rudisha "thaler"; }
+    kama (k == 14) { rudisha "rupee"; }
+    rudisha "dollar";
+}
+
+n32 soko_ni_herufi(n64 c) { rudisha (c >= 65 && c <= 90) || (c >= 97 && c <= 122); }
+
+n64 soko_herufi_kubwa(n64 c) {
+    kama (c >= 97 && c <= 122) { rudisha c - 32; }
+    rudisha c;
+}
+
+// Msimbo wa herufi tatu kutoka jina: herufi ya kwanza na konsonanti mbili
+// zinazofuata; mgongano hutatuliwa kwa kubadili herufi ya mwisho.
+w0 soko_msimbo(n8* jina, n8* nje, n64 taifa) {
+    nje[0] = 88;
+    nje[1] = 88;
+    nje[2] = 88;
+    nje[3] = 0;
+    n64 n = 0;
+    n64 i = 0;
+    wakati (jina[i] != 0 && n < 3) {
+        n64 c = soko_herufi_kubwa(jina[i]);
+        n32 vokali = c == 65 || c == 69 || c == 73 || c == 79 || c == 85;
+        kama (soko_ni_herufi(c) && (n == 0 || vokali == 0)) { nje[n] = c; n = n + 1; }
+        i = i + 1;
+    }
+    // epuka misimbo inayofanana
+    n64 jaribio = 0;
+    n32 sawa = 1;
+    wakati (sawa && jaribio < 26) {
+        sawa = 0;
+        n64 j = 0;
+        wakati (j < taifa) {
+            Sarafu2* s = soko_sarafu[j];
+            kama (s->msimbo[0] == nje[0] && s->msimbo[1] == nje[1] && s->msimbo[2] == nje[2]) { sawa = 1; }
+            j = j + 1;
+        }
+        kama (sawa) { nje[2] = 65 + (nje[2] - 65 + 1) % 26; jaribio = jaribio + 1; }
+    }
+}
+
+// Kiwango cha ubadilishaji: vipimo vya sarafu ya `b` kwa kipimo kimoja cha
+// sarafu ya `a`, x10000.
+n64 soko_kiwango_kati(n64 a, n64 b) {
+    Sarafu2* sa = soko_sarafu_ya(a);
+    Sarafu2* sb = soko_sarafu_ya(b);
+    kama (sa == 0 || sb == 0 || sa->kiwango == 0) { rudisha 10000; }
+    rudisha (sb->kiwango * 10000) / sa->kiwango;
+}
+
+// Kiasi cha dhahabu (vipimo kamili) kwa sarafu ya taifa (vipimo kamili).
+n64 soko_kwa_sarafu(n64 taifa, n64 dhahabu) {
+    Sarafu2* s = soko_sarafu_ya(taifa);
+    kama (s == 0) { rudisha dhahabu; }
+    // epuka kufurika: gawanya kwanza kwa thamani kubwa
+    kama (dhahabu > 100000000000) { rudisha (dhahabu / 10000) * s->kiwango; }
+    rudisha (dhahabu * s->kiwango) / 10000;
+}
+
+n64 soko_kwa_dhahabu(n64 taifa, n64 kiasi) {
+    Sarafu2* s = soko_sarafu_ya(taifa);
+    kama (s == 0 || s->kiwango == 0) { rudisha kiasi; }
+    kama (kiasi > 100000000000) { rudisha (kiasi / s->kiwango) * 10000; }
+    rudisha (kiasi * 10000) / s->kiwango;
+}
+
+// ---------- makampuni ----------
+
+n64 SEKTA_IDADI = 18;
+
+n8* sekta_jina(n64 s) {
+    kama (s == 0) { rudisha ui("Banking"); }
+    kama (s == 1) { rudisha ui("Insurance"); }
+    kama (s == 2) { rudisha ui("Shipping"); }
+    kama (s == 3) { rudisha ui("Textiles"); }
+    kama (s == 4) { rudisha ui("Mining"); }
+    kama (s == 5) { rudisha ui("Agriculture"); }
+    kama (s == 6) { rudisha ui("Trading"); }
+    kama (s == 7) { rudisha ui("Arms"); }
+    kama (s == 8) { rudisha ui("Railways"); }
+    kama (s == 9) { rudisha ui("Telegraph"); }
+    kama (s == 10) { rudisha ui("Steel"); }
+    kama (s == 11) { rudisha ui("Chemicals"); }
+    kama (s == 12) { rudisha ui("Oil"); }
+    kama (s == 13) { rudisha ui("Electricity"); }
+    kama (s == 14) { rudisha ui("Pharmaceuticals"); }
+    kama (s == 15) { rudisha ui("Motor vehicles"); }
+    kama (s == 16) { rudisha ui("Aviation"); }
+    rudisha ui("Broadcasting");
+}
+
+// Neno la jina la kampuni kwa sekta.
+n8* sekta_neno(n64 s) {
+    kama (s == 0) { rudisha "Bank"; }
+    kama (s == 1) { rudisha "Assurance"; }
+    kama (s == 2) { rudisha "Shipping Lines"; }
+    kama (s == 3) { rudisha "Mills"; }
+    kama (s == 4) { rudisha "Mining"; }
+    kama (s == 5) { rudisha "Estates"; }
+    kama (s == 6) { rudisha "Trading House"; }
+    kama (s == 7) { rudisha "Arsenal"; }
+    kama (s == 8) { rudisha "Railway"; }
+    kama (s == 9) { rudisha "Telegraph"; }
+    kama (s == 10) { rudisha "Steel Works"; }
+    kama (s == 11) { rudisha "Chemical"; }
+    kama (s == 12) { rudisha "Petroleum"; }
+    kama (s == 13) { rudisha "Electric"; }
+    kama (s == 14) { rudisha "Pharma"; }
+    kama (s == 15) { rudisha "Motors"; }
+    kama (s == 16) { rudisha "Aero"; }
+    rudisha "Broadcasting";
+}
+
+// Mwaka ambao sekta inaanza kuwepo.
+n64 sekta_mwaka(n64 s) {
+    kama (s == 3) { rudisha 1750; }
+    kama (s == 8) { rudisha 1830; }
+    kama (s == 9) { rudisha 1850; }
+    kama (s == 10 || s == 11) { rudisha 1860; }
+    kama (s == 12) { rudisha 1870; }
+    kama (s == 13) { rudisha 1885; }
+    kama (s == 14) { rudisha 1900; }
+    kama (s == 15) { rudisha 1905; }
+    kama (s == 16 || s == 17) { rudisha 1920; }
+    rudisha 1700;
+}
+
+muundo Kampuni {
+    n64 taifa;
+    n8* jina;
+    n8* tika;           // herufi 4
+    n64 sekta;
+    n64 hisa;           // hisa zilizotolewa
+    n64 bei;            // senti
+    n64 bei_ya_wiki;    // bei ya wiki iliyopita
+    n64* historia;      // SOKO_WIKI bei za zamani (mduara)
+    n64 faida;          // faida kwa hisa, senti kwa mwaka
+    n64 gawio;          // gawio, alama za msingi (100 = 1%)
+    n64 mmiliki;        // tajiri (faharisi ya soko_matajiri), au -1 dola
+    n64 ujazo;          // hisa zilizouzwa wiki hii
+}
+
+muundo Tajiri {
+    n64 taifa;
+    n8* jina;
+    n64 umri;
+    n64 tabia_1;
+    n64 tabia_2;
+    n64 msimamo;        // kwa mchezaji
+    n64 ushawishi;      // 1..10
+    n64 chama;          // chama anachokiunga, au -1
+    n32 oligarki;
+}
+
+n64 SOKO_KAMPUNI_JUU = 6000;
+n64 SOKO_MATAJIRI_JUU = 3000;
+n64 soko_kampuni_idadi = 0;
+n64* soko_kampuni = 0;          // Kampuni*
+n64* soko_kampuni_mwanzo = 0;   // [taifa]: kampuni ya kwanza
+n64* soko_kampuni_hesabu = 0;   // [taifa]
+n64 soko_matajiri_idadi = 0;
+n64* soko_matajiri = 0;         // Tajiri*
+n64* soko_matajiri_mwanzo = 0;
+n64* soko_matajiri_hesabu = 0;
+n64* soko_kielezo = 0;          // [taifa]: kielezo cha soko, x100
+n64* soko_kielezo_historia = 0; // [taifa * SOKO_WIKI]
+n64* soko_mshtuko_wa_sekta = 0; // [sekta]: mshtuko wa wiki hii, alama za msingi
+
+Kampuni* soko_kampuni_pata(n64 i) {
+    kama (i < 0 || i >= soko_kampuni_idadi) { rudisha 0; }
+    rudisha soko_kampuni[i];
+}
+
+Tajiri* soko_tajiri_pata(n64 i) {
+    kama (i < 0 || i >= soko_matajiri_idadi) { rudisha 0; }
+    rudisha soko_matajiri[i];
+}
+
+// Bei ya wiki `nyuma` zilizopita (0 = ya sasa) kutoka historia ya mduara.
+n64 soko_bei_ya_zamani(Kampuni* k, n64 nyuma) {
+    kama (nyuma <= 0) { rudisha k->bei; }
+    kama (nyuma >= SOKO_WIKI) { nyuma = SOKO_WIKI - 1; }
+    n64 j = (soko_wiki - nyuma) % SOKO_WIKI;
+    kama (j < 0) { j = j + SOKO_WIKI; }
+    rudisha k->historia[j];
+}
+
+n64 soko_kielezo_cha_zamani(n64 taifa, n64 nyuma) {
+    kama (nyuma <= 0) { rudisha soko_kielezo[taifa]; }
+    kama (nyuma >= SOKO_WIKI) { nyuma = SOKO_WIKI - 1; }
+    n64 j = (soko_wiki - nyuma) % SOKO_WIKI;
+    kama (j < 0) { j = j + SOKO_WIKI; }
+    rudisha soko_kielezo_historia[taifa * SOKO_WIKI + j];
+}
+
+n64 soko_kiwango_cha_zamani(Sarafu2* s, n64 nyuma) {
+    kama (nyuma <= 0) { rudisha s->kiwango; }
+    kama (nyuma >= SOKO_WIKI) { nyuma = SOKO_WIKI - 1; }
+    n64 j = (soko_wiki - nyuma) % SOKO_WIKI;
+    kama (j < 0) { j = j + SOKO_WIKI; }
+    rudisha s->historia[j];
+}
+
+// Mtaji wa soko wa kampuni kwa sarafu ya taifa (vipimo kamili).
+n64 soko_mtaji_wa_kampuni(Kampuni* k) { rudisha (k->bei / 100) * k->hisa; }
+
+// Mabadiliko ya bei kwa wiki `wiki`, alama za msingi.
+n64 soko_badiliko(Kampuni* k, n64 wiki) {
+    n64 a = soko_bei_ya_zamani(k, wiki);
+    kama (a <= 0) { rudisha 0; }
+    rudisha ((k->bei - a) * 10000) / a;
+}
+
+// ---------- kumbukumbu ya matukio ya mataifa ----------
+
+n64 TUKIO_MGOMO = 0;
+n64 TUKIO_MAPINDUZI = 1;
+n64 TUKIO_JARIBIO_LA_MAPINDUZI = 2;
+n64 TUKIO_UCHAGUZI = 3;
+n64 TUKIO_SARAFU = 4;
+n64 TUKIO_SOKO = 5;
+n64 TUKIO_UKUAJI = 6;
+n64 TUKIO_MAANDAMANO = 7;
+n64 TUKIO_KATIBA = 8;            // taifa limerekebisha katiba yake
+
+muundo TukioLaTaifa {
+    n64 taifa;
+    n64 aina;
+    n64 zamu;
+    n64 thamani;        // kiasi cha tukio (asilimia, viti...)
+}
+
+n64 SOKO_MATUKIO_JUU = 512;
+n64 soko_matukio_idadi = 0;
+n64 soko_matukio_yote = 0;      // jumla tangu kuanza (habari husoma mapya)
+n64* soko_matukio = 0;
+
+w0 soko_tukio(n64 taifa, n64 aina, n64 zamu, n64 thamani) {
+    kama (soko_matukio == 0) { soko_matukio = tenga(8 * SOKO_MATUKIO_JUU); }
+    kama (soko_matukio_idadi >= SOKO_MATUKIO_JUU) {
+        achilia soko_matukio[0];
+        n64 i = 1;
+        wakati (i < soko_matukio_idadi) { soko_matukio[i - 1] = soko_matukio[i]; i = i + 1; }
+        soko_matukio_idadi = soko_matukio_idadi - 1;
+    }
+    TukioLaTaifa* t = tenga(ukubwa(TukioLaTaifa));
+    t->taifa = taifa;
+    t->aina = aina;
+    t->zamu = zamu;
+    t->thamani = thamani;
+    soko_matukio[soko_matukio_idadi] = t;
+    soko_matukio_idadi = soko_matukio_idadi + 1;
+    soko_matukio_yote = soko_matukio_yote + 1;
+}
+
+// Tukio la i kuanzia la zamani kabisa lililobaki.
+TukioLaTaifa* soko_tukio_pata(n64 i) {
+    kama (i < 0 || i >= soko_matukio_idadi) { rudisha 0; }
+    rudisha soko_matukio[i];
+}
+
+// ---------- uzalishaji ----------
+
+// Nafasi ya pato ya taifa (0 = kubwa zaidi).
+n64 soko_nafasi_ya_pato(Mchezo* g, n64 taifa) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 p = skrini_pato_la_taifa(dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa));
+    n64 n = 0;
+    n64 i = 0;
+    wakati (i < tm->idadi) {
+        kama (skrini_pato_la_taifa(dunia_taifa_mfumo_pata_kwa_faharisi(tm, i)) > p) { n = n + 1; }
+        i = i + 1;
+    }
+    rudisha n;
+}
+
+// Taifa kuu ambalo sarafu ya `taifa` hufungwa kwake: kuu lenye mpaka nalo,
+// au kuu kubwa zaidi la kundi lake la utawala, au kuu kubwa zaidi.
+n64 soko_nanga_ya(Mchezo* g, n64 taifa, n64* makuu, n64 idadi_ya_makuu) {
+    n64 k = 0;
+    wakati (k < idadi_ya_makuu) {
+        kama (dunia_atlasi_mpaka(taifa, makuu[k]) > 0) { rudisha makuu[k]; }
+        k = k + 1;
+    }
+    rudisha makuu[dola_nasibu(taifa, 77) % idadi_ya_makuu];
+}
+
+w0 soko_zalisha_sarafu(Mchezo* g, n64 taifa, n64* makuu, n64 idadi_ya_makuu) {
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), taifa);
+    Sarafu2* s = tenga(ukubwa(Sarafu2));
+    n64 kipimo = dola_nasibu(taifa, 70) % 16;
+    s->jina = tenga(64);
+    mfuatano_umbiza(s->jina, 64, "%s %s", tn->jina, soko_jina_la_kipimo(kipimo), 0, 0, 0, 0);
+    s->msimbo = tenga(4);
+    soko_sarafu[taifa] = s;
+    soko_msimbo(tn->jina, s->msimbo, taifa);
+    s->historia = tenga(8 * SOKO_WIKI);
+    s->akiba = 40 + dola_nasibu(taifa, 71) % 50;
+    n64 ni_kuu = 0;
+    n64 k = 0;
+    wakati (k < idadi_ya_makuu) { kama (makuu[k] == taifa) { ni_kuu = 1; } k = k + 1; }
+    // ukubwa wa kipimo: kati ya 0.5 na 2000 kwa dhahabu, kwa ngazi
+    n64 ngazi = dola_nasibu(taifa, 72) % 4;
+    n64 msingi = 5000 + dola_nasibu(taifa, 73) % 40000;      // 0.5 .. 4.5
+    kama (ngazi >= 1) { msingi = msingi * 10; }
+    kama (ngazi >= 2) { msingi = msingi * 10; }
+    kama (ngazi >= 3) { msingi = msingi * 5; }
+    kama (ni_kuu) {
+        s->nanga = NANGA_DHAHABU;
+        s->kiwango = 10000 + dola_nasibu(taifa, 74) % 190000;   // 1 .. 20 kwa dhahabu
+        s->kiwango_cha_nanga = 0;
+    } sivyo kama (dola_nasibu(taifa, 75) % 100 < 60) {
+        s->nanga = soko_nanga_ya(g, taifa, makuu, idadi_ya_makuu);
+        // kiwango cha kifungo: vipimo vya sarafu hii kwa kipimo cha nanga
+        s->kiwango_cha_nanga = 2500 + dola_nasibu(taifa, 76) % 200000;
+        s->kiwango = 0;     // huwekwa baada ya sarafu kuu kuwepo
+    } sivyo {
+        s->nanga = NANGA_HURU;
+        s->kiwango = msingi;
+        s->kiwango_cha_nanga = 0;
+    }
+}
+
+// Jina la kampuni: jina la ukoo + neno la sekta, au taifa + neno.
+w0 soko_jina_la_kampuni(n8* nje, n64 mbegu, n64 sekta, n8* taifa) {
+    n8 mtu[40];
+    wahusika_jina(mtu, mbegu);
+    n64 i = 0;
+    wakati (mtu[i] != 0 && mtu[i] != 32) { i = i + 1; }
+    n8* ukoo = &mtu[i + 1];
+    kama (mtu[i] == 0) { ukoo = mtu; }
+    n64 aina = dola_nasibu(mbegu, 80) % 4;
+    kama (aina == 0) { mfuatano_umbiza(nje, 64, "%s %s", taifa, sekta_neno(sekta), 0, 0, 0, 0); rudisha; }
+    kama (aina == 1) { mfuatano_umbiza(nje, 64, "%s & Sons %s", ukoo, sekta_neno(sekta), 0, 0, 0, 0); rudisha; }
+    kama (aina == 2) { mfuatano_umbiza(nje, 64, "Royal %s %s", taifa, sekta_neno(sekta), 0, 0, 0, 0); rudisha; }
+    mfuatano_umbiza(nje, 64, "%s %s", ukoo, sekta_neno(sekta), 0, 0, 0, 0);
+}
+
+w0 soko_tika(n8* jina, n8* nje, n64 mbegu) {
+    n64 n = 0;
+    n64 i = 0;
+    wakati (jina[i] != 0 && n < 4) {
+        n64 c = soko_herufi_kubwa(jina[i]);
+        kama (soko_ni_herufi(c) && (i == 0 || jina[i - 1] == 32 || n >= 2)) { nje[n] = c; n = n + 1; }
+        i = i + 1;
+    }
+    wakati (n < 4) { nje[n] = 65 + dola_nasibu(mbegu, 90 + n) % 26; n = n + 1; }
+    nje[4] = 0;
+}
+
+// Tika isiyorudiwa ndani ya soko la taifa: herufi za mwisho hubadilishwa.
+w0 soko_tika_ya_kipekee(n8* tika, n64 mwanzo, n64 mwisho) {
+    n64 jaribio = 0;
+    n32 sawa = 1;
+    wakati (sawa && jaribio < 676) {
+        sawa = 0;
+        n64 i = mwanzo;
+        wakati (i < mwisho) {
+            Kampuni* c = soko_kampuni[i];
+            kama (linganisha_mfuatano(c->tika, tika) == 0) { sawa = 1; }
+            i = i + 1;
+        }
+        kama (sawa) {
+            jaribio = jaribio + 1;
+            tika[3] = 65 + (tika[3] - 65 + 1) % 26;
+            kama (jaribio % 26 == 0) { tika[2] = 65 + (tika[2] - 65 + 1) % 26; }
+        }
+    }
+}
+
+w0 soko_zalisha_matajiri(Mchezo* g, n64 taifa, n64 idadi) {
+    Dola* d = skrini_siasa_dola(g, taifa);
+    soko_matajiri_mwanzo[taifa] = soko_matajiri_idadi;
+    n64 k = 0;
+    wakati (k < idadi && soko_matajiri_idadi < SOKO_MATAJIRI_JUU) {
+        Tajiri* t = tenga(ukubwa(Tajiri));
+        n64 m = taifa * 1009 + k * 31 + 5;
+        t->taifa = taifa;
+        t->jina = tenga(40);
+        wahusika_jina(t->jina, m * 7 + 3);
+        t->umri = 34 + dola_nasibu(m, 1) % 46;
+        t->tabia_1 = dola_nasibu(m, 2) % TABIA_IDADI;
+        t->tabia_2 = (t->tabia_1 + 1 + dola_nasibu(m, 3) % (TABIA_IDADI - 1)) % TABIA_IDADI;
+        t->msimamo = dola_nasibu(m, 4) % 101 - 50;
+        t->ushawishi = 3 + dola_nasibu(m, 5) % 8;
+        t->chama = 0 - 1;
+        kama (d != 0 && d->vyama > 0) { t->chama = dola_nasibu(m, 6) % d->vyama; }
+        t->oligarki = 0;
+        kama (d != 0 && (d->aina == DOLA_CHAMA_KIMOJA || d->aina == DOLA_UTAWALA_WA_KIJESHI || d->aina == DOLA_UDIKTETA || d->aina == DOLA_MILKI)) { t->oligarki = 1; }
+        soko_matajiri[soko_matajiri_idadi] = t;
+        soko_matajiri_idadi = soko_matajiri_idadi + 1;
+        k = k + 1;
+    }
+    soko_matajiri_hesabu[taifa] = soko_matajiri_idadi - soko_matajiri_mwanzo[taifa];
+}
+
+w0 soko_zalisha_makampuni(Mchezo* g, n64 taifa, n64 idadi, n64 mwaka) {
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), taifa);
+    Dola* d = skrini_siasa_dola(g, taifa);
+    n32 ya_dola = d != 0 && (d->aina == DOLA_CHAMA_KIMOJA);
+    // pato kwa sarafu ya taifa: mtaji wa soko ni sehemu ya pato
+    n64 pato = soko_kwa_sarafu(taifa, skrini_pato_la_taifa(tn));
+    soko_kampuni_mwanzo[taifa] = soko_kampuni_idadi;
+    n64 k = 0;
+    wakati (k < idadi && soko_kampuni_idadi < SOKO_KAMPUNI_JUU) {
+        Kampuni* c = tenga(ukubwa(Kampuni));
+        n64 m = taifa * 2003 + k * 37 + 11;
+        c->taifa = taifa;
+        // sekta inayowezekana katika mwaka wa kuanza
+        n64 s = dola_nasibu(m, 1) % SEKTA_IDADI;
+        n64 jaribio = 0;
+        wakati (sekta_mwaka(s) > mwaka && jaribio < 40) { s = dola_nasibu(m, 2 + jaribio) % SEKTA_IDADI; jaribio = jaribio + 1; }
+        kama (sekta_mwaka(s) > mwaka) { s = 6; }
+        c->sekta = s;
+        c->jina = tenga(64);
+        soko_jina_la_kampuni(c->jina, m, s, tn->jina);
+        c->tika = tenga(8);
+        soko_tika(c->jina, c->tika, m);
+        soko_tika_ya_kipekee(c->tika, soko_kampuni_mwanzo[taifa], soko_kampuni_idadi);
+        // mtaji: kampuni za mwanzo ni kubwa (sheria ya mamlaka)
+        n64 sehemu = 1500 / (k + 2) + dola_nasibu(m, 3) % 60;         // kwa elfu kumi ya pato
+        n64 mtaji = (pato / 10000) * sehemu;
+        kama (mtaji < 1000) { mtaji = 1000; }
+        c->bei = 500 + dola_nasibu(m, 4) % 30000;                       // senti
+        c->hisa = (mtaji * 100) / c->bei;
+        kama (c->hisa < 1000) { c->hisa = 1000; }
+        c->bei_ya_wiki = c->bei;
+        c->faida = (c->bei * (4 + dola_nasibu(m, 5) % 12)) / 100;
+        c->gawio = 100 + dola_nasibu(m, 6) % 700;
+        c->mmiliki = 0 - 1;
+        kama (ya_dola == 0 && soko_matajiri_hesabu[taifa] > 0) {
+            c->mmiliki = soko_matajiri_mwanzo[taifa] + dola_nasibu(m, 7) % soko_matajiri_hesabu[taifa];
+        }
+        c->historia = tenga(8 * SOKO_WIKI);
+        n64 w = 0;
+        wakati (w < SOKO_WIKI) { c->historia[w] = c->bei; w = w + 1; }
+        c->ujazo = 0;
+        soko_kampuni[soko_kampuni_idadi] = c;
+        soko_kampuni_idadi = soko_kampuni_idadi + 1;
+        k = k + 1;
+    }
+    soko_kampuni_hesabu[taifa] = soko_kampuni_idadi - soko_kampuni_mwanzo[taifa];
+}
+
+// Kielezo cha soko: thamani ya mtaji wa soko ikilinganishwa na mwanzo.
+n64* soko_mtaji_wa_mwanzo = 0;
+
+n64 soko_mtaji_wa_soko(n64 taifa) {
+    n64 s = 0;
+    n64 k = 0;
+    wakati (k < soko_kampuni_hesabu[taifa]) {
+        s = s + soko_mtaji_wa_kampuni(soko_kampuni[soko_kampuni_mwanzo[taifa] + k]);
+        k = k + 1;
+    }
+    rudisha s;
+}
+
+w0 soko_hesabu_kielezo(n64 taifa) {
+    n64 msingi = soko_mtaji_wa_mwanzo[taifa];
+    kama (msingi <= 0) { soko_kielezo[taifa] = 100000; rudisha; }
+    n64 sasa = soko_mtaji_wa_soko(taifa);
+    soko_kielezo[taifa] = (sasa / 1000) * 100000 / (msingi / 1000 + 1);
+}
+
+// ---------- wiki moja ya masoko ----------
+
+// Mabadiliko ya pato kwa wiki 4, alama za msingi.
+n64 soko_ukuaji(Mchezo* g, n64 taifa) {
+    TakwimuHistoria* h = mchezo_pata_historia_ya_taifa(g, taifa);
+    kama (h == 0 || h->idadi < 5) { rudisha 0; }
+    d64 a = h->sampuli[h->idadi - 5];
+    kama (a <= 0.0) { rudisha 0; }
+    d64 r = ((h->sampuli[h->idadi - 1] - a) * 10000.0) / a;
+    n64 v = r;
+    rudisha v;
+}
+
+// Wiki moja: mshtuko wa sekta, bei za makampuni, vielezo, sarafu.
+w0 soko_wiki_moja(Mchezo* g, n64 zamu, n32 matukio) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    soko_wiki = soko_wiki + 1;
+    n64 j = soko_wiki % SOKO_WIKI;
+    n64 s = 0;
+    wakati (s < SEKTA_IDADI) {
+        soko_mshtuko_wa_sekta[s] = dola_nasibu(soko_wiki * 31 + s, 500) % 301 - 150;
+        s = s + 1;
+    }
+    n64 t = 0;
+    wakati (t < tm->idadi) {
+        Dola* d = skrini_siasa_dola(g, t);
+        n64 ukuaji = soko_ukuaji(g, t);
+        n64 utulivu = 50;
+        kama (d != 0) { utulivu = d->utulivu; }
+        // hisia ya soko zima la taifa wiki hii
+        // msingi wa ukuaji wa muda mrefu (karibu 4% kwa mwaka), uchumi wa
+        // taifa, utulivu, na hisia ya wiki
+        n64 hisia = 8 + ukuaji / 3 + (utulivu - 50) / 2 + dola_nasibu(t * 7 + soko_wiki, 501) % 201 - 100;
+        n64 k = 0;
+        wakati (k < soko_kampuni_hesabu[t]) {
+            Kampuni* c = soko_kampuni[soko_kampuni_mwanzo[t] + k];
+            n64 kelele = dola_nasibu(soko_kampuni_mwanzo[t] + k, soko_wiki * 3 + 502) % 601 - 300;
+            n64 badiliko = hisia + soko_mshtuko_wa_sekta[c->sekta] + kelele;
+            c->bei_ya_wiki = c->bei;
+            c->historia[j] = c->bei;
+            c->bei = c->bei + (c->bei * badiliko) / 10000;
+            kama (c->bei < 5) { c->bei = 5; }
+            c->ujazo = (c->hisa / 400) * (1 + dola_nasibu(soko_wiki, soko_kampuni_mwanzo[t] + k) % 9);
+            kama (badiliko > 300 || badiliko < 0 - 300) { c->ujazo = c->ujazo * 3; }
+            k = k + 1;
+        }
+        soko_kielezo_historia[t * SOKO_WIKI + j] = soko_kielezo[t];
+        n64 kabla = soko_kielezo[t];
+        soko_hesabu_kielezo(t);
+        kama (matukio && kabla > 0 && (soko_kielezo[t] - kabla) * 100 / kabla <= 0 - 8) { soko_tukio(t, TUKIO_SOKO, zamu, ((soko_kielezo[t] - kabla) * 100) / kabla); }
+        t = t + 1;
+    }
+    // sarafu: zinazoelea husonga; zilizofungwa hufuata nanga; akiba hulinda kifungo
+    t = 0;
+    wakati (t < tm->idadi) {
+        Sarafu2* sr = soko_sarafu[t];
+        sr->historia[j] = sr->kiwango;
+        Dola* dd = skrini_siasa_dola(g, t);
+        n64 hazina = 50;
+        n64 utulivu2 = 50;
+        kama (dd != 0) { hazina = dd->hazina; utulivu2 = dd->utulivu; }
+        kama (sr->nanga == NANGA_HURU) {
+            // thamani hushuka uchumi ukishuka, hazina ikiwa tupu na utulivu mdogo
+            n64 shinikizo = (50 - utulivu2) + (50 - hazina) - soko_ukuaji(g, t) / 10 + dola_nasibu(t * 13 + soko_wiki, 503) % 61 - 30;
+            sr->kiwango = sr->kiwango + (sr->kiwango * shinikizo) / 20000;
+            kama (sr->kiwango < 100) { sr->kiwango = 100; }
+        } sivyo kama (sr->nanga == NANGA_DHAHABU) {
+            sr->kiwango = sr->kiwango + (sr->kiwango * (dola_nasibu(t, soko_wiki + 504) % 7 - 3)) / 10000;
+        } sivyo {
+            sr->akiba = nguvu_bana_soko(sr->akiba + (hazina - 50) / 20 - (50 - utulivu2) / 25, 0, 100);
+            kama (sr->akiba < 8 && utulivu2 < 40) {
+                // kifungo kinavunjika: sarafu hushuka 20% hadi 45%
+                n64 kushuka = 20 + dola_nasibu(t, soko_wiki + 505) % 26;
+                sr->kiwango_cha_nanga = sr->kiwango_cha_nanga + (sr->kiwango_cha_nanga * kushuka) / 100;
+                sr->akiba = 35;
+                kama (matukio) { soko_tukio(t, TUKIO_SARAFU, zamu, kushuka); }
+            }
+            Sarafu2* nanga = soko_sarafu[sr->nanga];
+            sr->kiwango = (nanga->kiwango / 100) * sr->kiwango_cha_nanga / 100;
+            kama (sr->kiwango < 100) { sr->kiwango = 100; }
+        }
+        t = t + 1;
+    }
+}
+
+n64 nguvu_bana_soko(n64 v, n64 chini, n64 juu) {
+    kama (v < chini) { rudisha chini; }
+    kama (v > juu) { rudisha juu; }
+    rudisha v;
+}
+
+// ---------- mataifa hai ----------
+
+// Kila taifa husonga lenyewe kila wiki. Taifa la mchezaji hupata mabadiliko
+// ya uchumi na mshtuko lakini si mapinduzi wala chaguzi za kulazimishwa.
+w0 soko_mataifa_hai(Mchezo* g, n64 zamu) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 t = 0;
+    wakati (t < tm->idadi) {
+        Dola* d = skrini_siasa_dola(g, t);
+        kama (d != 0) {
+            n64 ukuaji = soko_ukuaji(g, t);
+            n64 m = t * 7919 + zamu * 31;
+            n64 kelele = dola_nasibu(m, 600) % 5 - 2;
+            // kurudi kwa wastani pamoja na uchumi
+            n64 mwelekeo = 0;
+            kama (d->utulivu < 50 && dola_nasibu(m, 601) % 4 == 0) { mwelekeo = 1; }
+            kama (d->utulivu > 70 && dola_nasibu(m, 602) % 4 == 0) { mwelekeo = 0 - 1; }
+            kama (ukuaji > 150 && dola_nasibu(m, 603) % 3 == 0) { mwelekeo = mwelekeo + 1; }
+            kama (ukuaji < 0 - 100 && dola_nasibu(m, 604) % 3 == 0) { mwelekeo = mwelekeo - 1; }
+            d->utulivu = dola_rekebisha(d->utulivu, mwelekeo + kelele / 2);
+            kama (dola_nasibu(m, 605) % 5 == 0) { d->uhalali = dola_rekebisha(d->uhalali, dola_nasibu(m, 606) % 3 - 1 + ukuaji / 300); }
+            kama (dola_nasibu(m, 607) % 3 == 0) { d->hazina = dola_rekebisha(d->hazina, ukuaji / 150 + dola_nasibu(m, 608) % 3 - 1); }
+            n32 mchezaji = t == tm->faharisi_ya_taifa_la_mchezaji;
+            // migomo na maandamano
+            kama (d->utulivu < 45 && dola_nasibu(m, 610) % 100 < 6) {
+                soko_tukio(t, TUKIO_MGOMO, zamu, 50 - d->utulivu);
+                d->utulivu = dola_rekebisha(d->utulivu, 0 - 2);
+            }
+            kama (d->uhalali < 35 && dola_nasibu(m, 611) % 100 < 5) {
+                soko_tukio(t, TUKIO_MAANDAMANO, zamu, 40 - d->uhalali);
+                d->uhalali = dola_rekebisha(d->uhalali, 0 - 2);
+            }
+            // mapinduzi: utulivu mdogo sana; dola za kijeshi na udikteta ziko hatarini zaidi
+            n64 hatari = 0;
+            kama (d->utulivu < 25) { hatari = (25 - d->utulivu) / 5 + 1; }
+            kama (d->aina == DOLA_UTAWALA_WA_KIJESHI || d->aina == DOLA_UDIKTETA || d->aina == DOLA_SERIKALI_YA_MPITO) { hatari = hatari * 2; }
+            kama (mchezaji == 0 && hatari > 0 && dola_nasibu(m, 612) % 100 < hatari) {
+                kama (dola_nasibu(m, 613) % 2 == 0) {
+                    soko_tukio(t, TUKIO_MAPINDUZI, zamu, 0);
+                    hati_ongeza_toleo(t);
+                    d->aina = DOLA_UTAWALA_WA_KIJESHI;
+                    d->mkuu_wa_dola = ui("Chairman of the Military Council");
+                    d->mkuu_wa_serikali = 0;
+                    d->utulivu = 40;
+                    d->uhalali = 20;
+                    d->umri_wa_katiba = 0;
+                } sivyo {
+                    soko_tukio(t, TUKIO_JARIBIO_LA_MAPINDUZI, zamu, 0);
+                    d->utulivu = dola_rekebisha(d->utulivu, 0 - 5);
+                }
+            }
+            // marekebisho ya katiba: mataifa hubadilisha katiba zao wenyewe,
+            // mara nyingi zaidi uhalali ukiwa chini (mageuzi au kujiimarisha)
+            kama (mchezaji == 0 && dola_nasibu(m, 615) % 1000 < 4 + (100 - d->uhalali) / 10) {
+                hati_ongeza_toleo(t);
+                soko_tukio(t, TUKIO_KATIBA, zamu, hati_toleo_la(t));
+            }
+            // chaguzi kwa muhula: vyama vya serikali hubaki uhalali ukiwa juu
+            kama (mchezaji == 0 && d->muhula > 0 && d->vyama > 1 && d->mabaraza > 0 && (zamu + t * 3) % (d->muhula * 52) == 0) {
+                n32 imeshindwa = d->uhalali < 45 && dola_nasibu(m, 614) % 100 < 70;
+                kama (imeshindwa) {
+                    n64 c = 0;
+                    wakati (c < d->vyama) { d->chama_serikalini[c] = d->chama_serikalini[c] == 0; c = c + 1; }
+                    d->uhalali = 60;
+                }
+                soko_tukio(t, TUKIO_UCHAGUZI, zamu, imeshindwa);
+            }
+        }
+        t = t + 1;
+    }
+}
+
+// ---------- pochi ya mchezaji ----------
+
+n64 MSHAURI_FEDHA = 0;          // huona mwelekeo wa bei
+n64 MSHAURI_SIASA = 1;          // +1 mtaji wa kisiasa kila wiki
+n64 MSHAURI_ULINZI = 2;         // hatari ya kashfa -1 kila wiki
+n64 MSHAURI_HABARI = 3;         // uhalali hupanda polepole
+
+n8* mshauri_jina_la_fani(n64 f) {
+    kama (f == MSHAURI_FEDHA) { rudisha ui("Financial adviser"); }
+    kama (f == MSHAURI_SIASA) { rudisha ui("Political strategist"); }
+    kama (f == MSHAURI_ULINZI) { rudisha ui("Head of security"); }
+    rudisha ui("Press secretary");
+}
+
+n8* mshauri_faida(n64 f) {
+    kama (f == MSHAURI_FEDHA) { rudisha ui("Shows the expected weekly move of every share"); }
+    kama (f == MSHAURI_SIASA) { rudisha ui("+1 political capital every week"); }
+    kama (f == MSHAURI_ULINZI) { rudisha ui("Scandal risk falls by 1 every week"); }
+    rudisha ui("Legitimacy +1 every four weeks");
+}
+
+muundo Pochi {
+    n64 taifa;          // sarafu ya nyumbani
+    n64 fedha;          // senti za sarafu ya nyumbani
+    n64 dhahabu;        // vipimo vya dhahabu x100
+    n64 mshahara;       // senti kwa wiki
+    n64* hisa;          // [kampuni]: hisa anazomiliki mchezaji (orodha fupi)
+    n64* kampuni;
+    n64* gharama;       // bei ya wastani ya kununua, senti
+    n64 idadi;
+    n64 mshauri;        // fani ya mshauri aliyeajiriwa, au -1
+    n64 mshauri_ada;    // senti kwa wiki
+    n8* mshauri_jina;
+    n64 faida_iliyopatikana;    // senti
+}
+
+n64 POCHI_NAFASI = 64;
+Pochi* soko_pochi = 0;
+
+Pochi* soko_pochi_pata() { rudisha soko_pochi; }
+
+// Mshahara wa ofisi kwa ngazi: mkuu wa dola hupata dhahabu 40 kwa wiki.
+w0 soko_pochi_anzisha(n64 taifa, n64 ngazi) {
+    Pochi* p = tenga(ukubwa(Pochi));
+    p->taifa = taifa;
+    p->dhahabu = 50000;                                     // dhahabu 500
+    p->fedha = soko_kwa_sarafu(taifa, 2000) * 100;
+    p->mshahara = soko_kwa_sarafu(taifa, 4 + ngazi * 4) * 100;
+    p->hisa = tenga(8 * POCHI_NAFASI);
+    p->kampuni = tenga(8 * POCHI_NAFASI);
+    p->gharama = tenga(8 * POCHI_NAFASI);
+    p->idadi = 0;
+    p->mshauri = 0 - 1;
+    p->mshauri_ada = 0;
+    p->mshauri_jina = 0;
+    p->faida_iliyopatikana = 0;
+    soko_pochi = p;
+}
+
+n64 soko_pochi_nafasi_ya(n64 kampuni) {
+    n64 i = 0;
+    wakati (i < soko_pochi->idadi) {
+        kama (soko_pochi->kampuni[i] == kampuni) { rudisha i; }
+        i = i + 1;
+    }
+    rudisha 0 - 1;
+}
+
+// Sarafu ya kununua: ya taifa la kampuni. Mchezaji hulipa kwa sarafu yake
+// ya nyumbani; kampuni ya nje hubadilishwa kwa kiwango cha sasa.
+n64 soko_bei_kwa_sarafu_ya_nyumbani(Kampuni* c, n64 hisa) {
+    n64 jumla = c->bei * hisa;
+    kama (c->taifa == soko_pochi->taifa) { rudisha jumla; }
+    n64 kiwango = soko_kiwango_kati(c->taifa, soko_pochi->taifa);
+    rudisha (jumla / 100) * kiwango / 100;
+}
+
+n64 SOKO_SAWA = 0;
+n64 SOKO_HAKUNA_FEDHA = 1;
+n64 SOKO_HAKUNA_HISA = 2;
+n64 SOKO_POCHI_IMEJAA = 3;
+
+// Nunua hisa (ada ya dalali 0.5%); ununuzi mkubwa husukuma bei juu kidogo.
+n64 soko_nunua(n64 kampuni, n64 hisa) {
+    Kampuni* c = soko_kampuni_pata(kampuni);
+    kama (c == 0 || hisa <= 0) { rudisha SOKO_HAKUNA_HISA; }
+    n64 gharama = soko_bei_kwa_sarafu_ya_nyumbani(c, hisa);
+    gharama = gharama + gharama / 200;
+    kama (gharama > soko_pochi->fedha) { rudisha SOKO_HAKUNA_FEDHA; }
+    n64 i = soko_pochi_nafasi_ya(kampuni);
+    kama (i < 0) {
+        kama (soko_pochi->idadi >= POCHI_NAFASI) { rudisha SOKO_POCHI_IMEJAA; }
+        i = soko_pochi->idadi;
+        soko_pochi->kampuni[i] = kampuni;
+        soko_pochi->hisa[i] = 0;
+        soko_pochi->gharama[i] = 0;
+        soko_pochi->idadi = i + 1;
+    }
+    n64 kabla = soko_pochi->hisa[i];
+    soko_pochi->gharama[i] = (soko_pochi->gharama[i] * kabla + c->bei * hisa) / (kabla + hisa);
+    soko_pochi->hisa[i] = kabla + hisa;
+    soko_pochi->fedha = soko_pochi->fedha - gharama;
+    c->bei = c->bei + (c->bei * hisa * 20) / (c->hisa + 1);
+    c->ujazo = c->ujazo + hisa;
+    rudisha SOKO_SAWA;
+}
+
+n64 soko_uza(n64 kampuni, n64 hisa) {
+    Kampuni* c = soko_kampuni_pata(kampuni);
+    n64 i = soko_pochi_nafasi_ya(kampuni);
+    kama (c == 0 || i < 0 || hisa <= 0 || soko_pochi->hisa[i] < hisa) { rudisha SOKO_HAKUNA_HISA; }
+    n64 mapato = soko_bei_kwa_sarafu_ya_nyumbani(c, hisa);
+    mapato = mapato - mapato / 200;
+    soko_pochi->fedha = soko_pochi->fedha + mapato;
+    soko_pochi->faida_iliyopatikana = soko_pochi->faida_iliyopatikana + (c->bei - soko_pochi->gharama[i]) * hisa;
+    soko_pochi->hisa[i] = soko_pochi->hisa[i] - hisa;
+    c->bei = c->bei - (c->bei * hisa * 20) / (c->hisa + 1);
+    kama (c->bei < 5) { c->bei = 5; }
+    c->ujazo = c->ujazo + hisa;
+    // ondoa nafasi tupu
+    kama (soko_pochi->hisa[i] == 0) {
+        n64 k = i + 1;
+        wakati (k < soko_pochi->idadi) {
+            soko_pochi->kampuni[k - 1] = soko_pochi->kampuni[k];
+            soko_pochi->hisa[k - 1] = soko_pochi->hisa[k];
+            soko_pochi->gharama[k - 1] = soko_pochi->gharama[k];
+            k = k + 1;
+        }
+        soko_pochi->idadi = soko_pochi->idadi - 1;
+    }
+    rudisha SOKO_SAWA;
+}
+
+// Badilisha fedha za nyumbani kuwa dhahabu (kiasi ni senti) au kinyume (kiasi
+// ni dhahabu x100). Ada 1%.
+n64 soko_nunua_dhahabu(n64 senti) {
+    kama (senti <= 0 || senti > soko_pochi->fedha) { rudisha SOKO_HAKUNA_FEDHA; }
+    soko_pochi->fedha = soko_pochi->fedha - senti;
+    n64 dhahabu = soko_kwa_dhahabu(soko_pochi->taifa, senti / 100) * 100;
+    soko_pochi->dhahabu = soko_pochi->dhahabu + dhahabu - dhahabu / 100;
+    rudisha SOKO_SAWA;
+}
+
+n64 soko_uza_dhahabu(n64 dhahabu) {
+    kama (dhahabu <= 0 || dhahabu > soko_pochi->dhahabu) { rudisha SOKO_HAKUNA_FEDHA; }
+    soko_pochi->dhahabu = soko_pochi->dhahabu - dhahabu;
+    n64 senti = soko_kwa_sarafu(soko_pochi->taifa, dhahabu / 100) * 100;
+    soko_pochi->fedha = soko_pochi->fedha + senti - senti / 100;
+    rudisha SOKO_SAWA;
+}
+
+// Thamani ya hisa zote kwa senti za nyumbani.
+n64 soko_thamani_ya_hisa() {
+    n64 s = 0;
+    n64 i = 0;
+    wakati (i < soko_pochi->idadi) {
+        s = s + soko_bei_kwa_sarafu_ya_nyumbani(soko_kampuni_pata(soko_pochi->kampuni[i]), soko_pochi->hisa[i]);
+        i = i + 1;
+    }
+    rudisha s;
+}
+
+// Ajiri mshauri wa fani `fani`; ada hukatwa kila wiki.
+w0 soko_ajiri(n64 fani, n64 ada, n8* jina) {
+    soko_pochi->mshauri = fani;
+    soko_pochi->mshauri_ada = ada;
+    soko_pochi->mshauri_jina = jina;
+}
+
+w0 soko_fukuza() {
+    soko_pochi->mshauri = 0 - 1;
+    soko_pochi->mshauri_ada = 0;
+    soko_pochi->mshauri_jina = 0;
+}
+
+// Ada ya mshauri wa fani kwa sarafu ya nyumbani (senti kwa wiki).
+n64 soko_ada_ya_mshauri(n64 fani) {
+    rudisha soko_kwa_sarafu(soko_pochi->taifa, 6 + fani * 2) * 100;
+}
+
+// Wiki ya pochi: mshahara, ada ya mshauri, gawio.
+w0 soko_pochi_wiki() {
+    kama (soko_pochi == 0) { rudisha; }
+    soko_pochi->fedha = soko_pochi->fedha + soko_pochi->mshahara - soko_pochi->mshauri_ada;
+    kama (soko_pochi->fedha < 0) { soko_fukuza(); soko_pochi->fedha = 0; }
+    n64 i = 0;
+    wakati (i < soko_pochi->idadi) {
+        Kampuni* c = soko_kampuni_pata(soko_pochi->kampuni[i]);
+        // gawio la mwaka kwa wiki 52
+        n64 gawio = (soko_bei_kwa_sarafu_ya_nyumbani(c, soko_pochi->hisa[i]) * c->gawio) / (10000 * 52);
+        soko_pochi->fedha = soko_pochi->fedha + gawio;
+        i = i + 1;
+    }
+}
+
+// Mwelekeo unaotarajiwa wa wiki ijayo (kwa mshauri wa fedha): hisia ya
+// taifa na mshtuko wa sekta wa wiki hii, alama za msingi.
+n64 soko_mwelekeo(Mchezo* g, Kampuni* c) {
+    Dola* d = skrini_siasa_dola(g, c->taifa);
+    n64 utulivu = 50;
+    kama (d != 0) { utulivu = d->utulivu; }
+    rudisha 8 + soko_ukuaji(g, c->taifa) / 3 + (utulivu - 50) / 2 + soko_mshtuko_wa_sekta[c->sekta];
+}
+
+// ---------- kuanzisha ----------
+
+w0 soko_anzisha(Mchezo* g, n64 mwaka) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 n = tm->idadi;
+    soko_mataifa = n;
+    soko_sarafu = tenga(8 * n);
+    soko_kampuni = tenga(8 * SOKO_KAMPUNI_JUU);
+    soko_kampuni_mwanzo = tenga(8 * n);
+    soko_kampuni_hesabu = tenga(8 * n);
+    soko_matajiri = tenga(8 * SOKO_MATAJIRI_JUU);
+    soko_matajiri_mwanzo = tenga(8 * n);
+    soko_matajiri_hesabu = tenga(8 * n);
+    soko_kielezo = tenga(8 * n);
+    soko_kielezo_historia = tenga(8 * n * SOKO_WIKI);
+    soko_mtaji_wa_mwanzo = tenga(8 * n);
+    soko_mshtuko_wa_sekta = tenga(8 * SEKTA_IDADI);
+    soko_kampuni_idadi = 0;
+    soko_matajiri_idadi = 0;
+    soko_wiki = 0;
+    // mataifa makuu manane kwa pato
+    n64* makuu = tenga(8 * 8);
+    n64 idadi_ya_makuu = 0;
+    n64 i = 0;
+    wakati (i < n) {
+        kama (soko_nafasi_ya_pato(g, i) < 8 && idadi_ya_makuu < 8) { makuu[idadi_ya_makuu] = i; idadi_ya_makuu = idadi_ya_makuu + 1; }
+        i = i + 1;
+    }
+    i = 0;
+    wakati (i < n) { soko_zalisha_sarafu(g, i, makuu, idadi_ya_makuu); i = i + 1; }
+    // viwango vya sarafu zilizofungwa hutoka kwa nanga zao
+    i = 0;
+    wakati (i < n) {
+        Sarafu2* s = soko_sarafu[i];
+        kama (s->nanga >= 0) {
+            Sarafu2* nanga = soko_sarafu[s->nanga];
+            s->kiwango = (nanga->kiwango / 100) * s->kiwango_cha_nanga / 100;
+            kama (s->kiwango < 100) { s->kiwango = 100; }
+        }
+        n64 w = 0;
+        wakati (w < SOKO_WIKI) { s->historia[w] = s->kiwango; w = w + 1; }
+        i = i + 1;
+    }
+    // makampuni na matajiri: idadi hufuata nafasi ya pato
+    i = 0;
+    wakati (i < n) {
+        n64 nafasi = soko_nafasi_ya_pato(g, i);
+        n64 makampuni = 40 - (nafasi * 36) / n;
+        kama (makampuni < 4) { makampuni = 4; }
+        n64 matajiri = 3 + makampuni / 3;
+        soko_zalisha_matajiri(g, i, matajiri);
+        soko_zalisha_makampuni(g, i, makampuni, mwaka);
+        soko_mtaji_wa_mwanzo[i] = soko_mtaji_wa_soko(i);
+        soko_kielezo[i] = 100000;
+        i = i + 1;
+    }
+    // mwaka mmoja wa historia kabla ya mchezo (bila matukio)
+    n64 w = 0;
+    wakati (w < SOKO_WIKI) { soko_wiki_moja(g, 0, 0); w = w + 1; }
+    achilia makuu;
+}
+
+// Thamani ya mali ya tajiri kwa sarafu ya taifa: sehemu yake ya makampuni
+// anayomiliki (asilimia 30 hadi 60 ya kila moja).
+n64 soko_utajiri(n64 tajiri) {
+    Tajiri* t = soko_tajiri_pata(tajiri);
+    kama (t == 0) { rudisha 0; }
+    n64 s = 0;
+    n64 k = 0;
+    wakati (k < soko_kampuni_hesabu[t->taifa]) {
+        Kampuni* c = soko_kampuni[soko_kampuni_mwanzo[t->taifa] + k];
+        kama (c->mmiliki == tajiri) { s = s + (soko_mtaji_wa_kampuni(c) * (30 + dola_nasibu(tajiri, k) % 31)) / 100; }
+        k = k + 1;
+    }
+    rudisha s;
+}
+
+n64 soko_kampuni_za_tajiri(n64 tajiri) {
+    Tajiri* t = soko_tajiri_pata(tajiri);
+    kama (t == 0) { rudisha 0; }
+    n64 n = 0;
+    n64 k = 0;
+    wakati (k < soko_kampuni_hesabu[t->taifa]) {
+        Kampuni* c = soko_kampuni[soko_kampuni_mwanzo[t->taifa] + k];
+        kama (c->mmiliki == tajiri) { n = n + 1; }
+        k = k + 1;
+    }
+    rudisha n;
+}
+
+// Bei kama maandishi: senti -> "1,234.56".
+w0 soko_bei_maandishi(n8* nje, n64 senti) {
+    n8 nzima[32];
+    n64 ishara = 0;
+    kama (senti < 0) { ishara = 1; senti = 0 - senti; }
+    sura_namba(nzima, senti / 100);
+    n64 sehemu = senti % 100;
+    kama (ishara) { mfuatano_umbiza(nje, 40, "-%s.%d%d", nzima, sehemu / 10, sehemu % 10, 0, 0, 0); }
+    sivyo { mfuatano_umbiza(nje, 40, "%s.%d%d", nzima, sehemu / 10, sehemu % 10, 0, 0, 0); }
+}
+
+// Kiwango x10000 kama maandishi: "12.3456".
+w0 soko_kiwango_maandishi(n8* nje, n64 x) {
+    n8 nzima[32];
+    sura_namba(nzima, x / 10000);
+    n64 s = x % 10000;
+    mfuatano_umbiza(nje, 40, "%s.%d%d%d%d", nzima, s / 1000, (s / 100) % 10, (s / 10) % 10, s % 10, 0);
+}
+
+// Kiasi kamili kwa sarafu ya taifa kwa ufupi: "12.40 B CHQ".
+w0 soko_fedha_maandishi(n8* nje, n64 taifa, n64 kiasi) {
+    n8 m[32];
+    sura_namba_fupi(m, kiasi);
+    Sarafu2* s = soko_sarafu_ya(taifa);
+    kama (s == 0) { mfuatano_umbiza(nje, 48, "%s", m, 0, 0, 0, 0, 0); rudisha; }
+    mfuatano_umbiza(nje, 48, "%s %s", m, s->msimbo, 0, 0, 0, 0);
+}
+
+// Tajiri kama mhusika wa mazungumzo ya AI.
+MhusikaWaDola* soko_tajiri_kama_mhusika(n64 i, Dola* d, MhusikaWaDola* nje) {
+    Tajiri* t = soko_tajiri_pata(i);
+    kama (t == 0) { rudisha 0; }
+    weka_sifuri(nje, ukubwa(MhusikaWaDola));
+    nje->jina = t->jina;
+    n8* cheo = tenga(160);
+    n8 utajiri[48];
+    soko_fedha_maandishi(utajiri, t->taifa, soko_utajiri(i));
+    n8* aina = "industrialist";
+    kama (t->oligarki) { aina = "oligarch close to the regime"; }
+    mfuatano_umbiza(cheo, 160, "%s worth %s, controlling %d listed companies", aina, utajiri, soko_kampuni_za_tajiri(i), 0, 0, 0);
+    nje->cheo = cheo;
+    nje->tawi = TAWI_UTENDAJI;
+    nje->ngazi = 5;
+    nje->bosi = 0 - 1;
+    nje->mteuzi = 0 - 1;
+    nje->uhakiki = 0 - 1;
+    nje->faharisi_ya_chama = t->chama;
+    nje->itikadi = ITIKADI_HURU;
+    kama (d != 0 && t->chama >= 0 && t->chama < d->vyama) {
+        nje->itikadi = d->chama_itikadi[t->chama];
+        nje->chama = d->chama_jina[t->chama];
+    }
+    nje->tabia_1 = t->tabia_1;
+    nje->tabia_2 = t->tabia_2;
+    nje->umri = t->umri;
+    nje->msimamo = t->msimamo;
+    rudisha nje;
+}

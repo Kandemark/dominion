@@ -94,6 +94,22 @@ The player spends **political capital** (regenerates each week with legitimacy):
 
 A motion is voted two weeks after it is tabled. Each member votes yes when party line × loyalty + attitude × 0.6 (sign depending on the side of the motion) plus a fixed per-member noise is positive; the same computation run before the vote gives the forecast and the odds shown on the page. Impeaching the Speaker needs two thirds and makes the sponsor Speaker; no confidence swaps government and opposition; finance bills move treasury and legitimacy; bills wait two weeks for assent or veto. Each week the opposition may table its own motion (more likely when legitimacy is low and its seats many; an allied Speaker halves the chance), and accumulated scandal risk can be exposed by the press, costing legitimacy. Results arrive in the inbox.
 
+## Currencies and markets
+
+`moduli/soko/masoko.swa`. Simulation values are in gold units; each nation's currency has a rate in its units per gold (×10000). The eight largest economies are on the gold standard; about 60% of the rest peg to one of them (a land neighbour if possible) with reserves that move with treasury and stability and, when exhausted under low stability, break the peg and devalue it by 20–45%; the rest float with stability, treasury and growth.
+
+Each exchange lists companies whose sectors exist in the start year (railways from 1830, oil from 1870, motor vehicles from 1905...). Prices move each week by a long-run drift, the nation's growth and stability, a world shock per sector and company noise; a year of history is generated before turn one. Tycoons own most companies (the state owns them in one-party states); their net worth is their stake. The player's wallet holds home cash, gold and shares bought in any currency, receives the office salary and dividends, and pays a hired adviser.
+
+The same weekly pass moves every nation's state: stability and legitimacy drift with the economy, and strikes, protests, coups (likelier under military rule and dictatorship), elections on the constitutional term, devaluations and sell-offs are logged as events.
+
+## The constitution
+
+`moduli/siasa/hati.swa` is a clause engine, not a text. A generator walks the state and emits clauses by rule: every appointed office (appointment, confirming chamber, days to confirm), every senior office (age and citizenship requirements), every ministry, every chamber (composition, term, eligibility, quorum, removal of the Speaker, sittings, immunity, vacancies), every standing committee, every province on the map (establishment, governor, council), a catalogue of 36 rights admitted by the form of government and the start year (the right to strike only after 1880, social rights after 1900), the division of legislative power over 22 policy areas, lower court tiers, independent institutions of the era, public finance, elections, emergency, amendment, and transitional provisions. Each clause has a kind, a subject and up to four numeric parameters; the text is assembled from them with grammar pieces that vary per clause. Clauses are numbered into parts, articles and sections and laid out as a paginated book.
+
+The engine reads the parameters: vote thresholds for every kind of motion, weeks before a vote, weeks for assent, the veto and its override threshold, the term of the head of state, and the amendment procedure (decree under emergency or absolute rule, the legislature with a referendum where the amendment clause requires one, the party congress, a referendum, or the council of chiefs and governors). Any parameter of any clause can be amended, or a clause repealed, through that procedure; entrenched rights cannot be curtailed. Every amendment is recorded.
+
+Constitutions evolve: each nation has a version that rises when it amends its own constitution or suffers a coup, and each version mutates a share of the parameters of the one before.
+
 ## Dashboard panels
 
 `moduli/skrini/jopo.swa` holds the panels shared by the nation pages, each reading one metric (GDP, per capita, population, the four indices, stability, legitimacy, growth, treasury) for all 232 nations: world ranking, distribution histogram, scatter of two metrics (GDP and population on a log scale), land neighbours, averages by form of government, and the offices of a branch. The page's nation is highlighted everywhere, and clicking a nation opens it. Clicks on these panels, the World page and the Government page go through `moduli/onyesho/bofya.swa`, where every clickable element registers its rectangle while it is drawn.

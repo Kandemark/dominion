@@ -1,8 +1,40 @@
-husisha { moduli/skrini/uchumi.swa }
+husisha { moduli/skrini/kituo.swa }
+husisha { moduli/skrini/wasifu.swa }
 
-// jaribio_uchumi.swa -- chora skrini ya uchumi wa taifa la mchezaji kutoka mchezo halisi
-// baada ya zamu kadhaa, na uandike fremu ghafi (BGRA) kwenye njia iliyopewa.
+// jaribio_uchumi.swa -- kituo cha masoko na wasifu wa mchezaji kutoka mchezo
+// halisi: kila kichupo kwa kila wigo huchorwa, oda hutekelezwa kwa kubofya,
+// na fremu ghafi (BGRA) huandikwa: <njia> (MARKETS), <njia>.fx, <njia>.watu,
+// <njia>.mkoa, <njia>.dunia, <njia>.wasifu.
 //   jaribio_uchumi <njia> [zamu]
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+w0 andika_fremu(n8* njia, n8* kiambishi, Turubai* t) {
+    n8 jina[256];
+    mfuatano_umbiza(jina, 256, "%s%s", njia, kiambishi, 0, 0, 0, 0);
+    n64 fd = mfumo_fungua(jina, 577, 420);
+    mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
+    mfumo_funga(fd);
+}
+
+// Bofya eneo la kwanza lenye kitendo na hoja hizi kwenye kituo.
+n32 bofya_kituo(Mchezo* g, n64 kitendo, n64 hoja) {
+    n64 i = 0;
+    wakati (i < bofya_idadi) {
+        kama (bofya_maeneo[i * 6 + 4] == kitendo && bofya_maeneo[i * 6 + 5] == hoja) {
+            n64 f = 0;
+            n64 k = 0;
+            skrini_uchumi_bofya(g, bofya_x(i) + 2, bofya_y(i) + 2, &f, &k);
+            rudisha 1;
+        }
+        i = i + 1;
+    }
+    rudisha 0;
+}
 
 n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     Mchezo* g = mchezo_unda();
@@ -10,21 +42,72 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     mchezo_usanidi_chaguomsingi(&usanidi);
     CivMatokeo r = mchezo_anzisha(g, &usanidi);
     kama (r.hitilafu != CIV_SAWA) { andika("SHINDWA: mchezo_anzisha\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
-    n64 zamu = 40;
+    n64 taifa = mchezo_pata_taifa(g)->faharisi_ya_taifa_la_mchezaji;
+    soko_anzisha(g, 1900);
+    soko_pochi_anzisha(taifa, 9);
+    n64 zamu = 8;
     kama (idadi_ya_hoja > 2) { zamu = mfuatano_hadi_n64(hoja_za_mstari[2]); }
     n64 i = 0;
     wakati (i < zamu) {
         mchezo_sasisha(g);
         mchezo_maliza_zamu(g);
+        soko_wiki_moja(g, g->zamu_ya_sasa, 1);
+        soko_mataifa_hai(g, g->zamu_ya_sasa);
+        soko_pochi_wiki();
         i = i + 1;
     }
-    Turubai* t = turubai_unda(1600, 900);
-    skrini_uchumi_chora(g, t, mchezo_pata_taifa(g)->faharisi_ya_taifa_la_mchezaji);
-    kama (idadi_ya_hoja > 1) {
-        n64 fd = mfumo_fungua(hoja_za_mstari[1], 577, 420);
-        mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
-        mfumo_funga(fd);
+    Turubai* t = turubai_unda(1920, 1080);
+    skrini_uchumi_chora(g, t, taifa);
+    thibitisha("maeneo ya kituo", bofya_idadi > 40);
+    kama (idadi_ya_hoja > 1) { andika_fremu(hoja_za_mstari[1], "", t); }
+    // oda ya kununua kwa kubofya
+    Pochi* p = soko_pochi_pata();
+    n64 fedha = p->fedha;
+    thibitisha("kitufe cha kununua", bofya_kituo(g, KT_NUNUA, 100));
+    thibitisha("oda imetekelezwa", p->fedha < fedha && p->idadi == 1);
+    skrini_uchumi_chora(g, t, taifa);
+    thibitisha("kitufe cha kuuza", bofya_kituo(g, KT_UZA, 0 - 1));
+    thibitisha("nafasi imefungwa", p->idadi == 0);
+    // vichupo na wigo
+    thibitisha("FX", bofya_kituo(g, KT_TABO, KT_FX) && kt_tabo == KT_FX);
+    skrini_uchumi_chora(g, t, taifa);
+    kama (idadi_ya_hoja > 1) { andika_fremu(hoja_za_mstari[1], ".fx", t); }
+    thibitisha("PEOPLE", bofya_kituo(g, KT_TABO, KT_WATU) && kt_tabo == KT_WATU);
+    skrini_uchumi_chora(g, t, taifa);
+    thibitisha("tajiri", bofya_kituo(g, KT_TAJIRI, soko_matajiri_mwanzo[taifa]));
+    skrini_uchumi_chora(g, t, taifa);
+    kama (idadi_ya_hoja > 1) { andika_fremu(hoja_za_mstari[1], ".watu", t); }
+    thibitisha("MARKETS", bofya_kituo(g, KT_TABO, KT_MASOKO));
+    skrini_uchumi_chora(g, t, taifa);
+    thibitisha("REGION", bofya_kituo(g, KT_WIGO, WIGO_MKOA) && skrini_wigo == WIGO_MKOA);
+    skrini_uchumi_chora(g, t, taifa);
+    thibitisha("mikoa", kt_mikoa_idadi > 0);
+    kama (idadi_ya_hoja > 1) { andika_fremu(hoja_za_mstari[1], ".mkoa", t); }
+    thibitisha("WORLD", bofya_kituo(g, KT_WIGO, WIGO_DUNIA) && skrini_wigo == WIGO_DUNIA);
+    skrini_uchumi_chora(g, t, taifa);
+    kama (idadi_ya_hoja > 1) { andika_fremu(hoja_za_mstari[1], ".dunia", t); }
+    thibitisha("MACRO", bofya_kituo(g, KT_TABO, KT_MAKRO));
+    skrini_uchumi_chora(g, t, taifa);
+    // wasifu: kuajiri mshauri
+    soko_nunua(soko_kampuni_mwanzo[taifa] + 1, 50);
+    skrini_wasifu_chora(g, t, taifa);
+    n64 k = 0;
+    n32 ameajiriwa = 0;
+    wakati (k < bofya_idadi) {
+        kama (bofya_kitendo(k) == WS_AJIRI && bofya_maeneo[k * 6 + 5] == MSHAURI_FEDHA) {
+            n64 kituo = 0;
+            skrini_wasifu_bofya(g, bofya_x(k) + 2, bofya_y(k) + 2, &kituo);
+            ameajiriwa = p->mshauri == MSHAURI_FEDHA;
+        }
+        k = k + 1;
     }
-    andika("zamu %d, mataifa %d\n", g->zamu_ya_sasa, mchezo_pata_taifa(g)->idadi, 0, 0, 0, 0);
+    thibitisha("mshauri ameajiriwa", ameajiriwa);
+    skrini_wasifu_chora(g, t, taifa);
+    kama (idadi_ya_hoja > 1) { andika_fremu(hoja_za_mstari[1], ".wasifu", t); }
+    kama (makosa > 0) {
+        andika("uchumi: makosa %d\n", makosa, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("uchumi: sawa, makampuni %d, mikoa %d\n", soko_kampuni_hesabu[taifa], kt_mikoa_idadi, 0, 0, 0, 0);
     rudisha 0;
 }

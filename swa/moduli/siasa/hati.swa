@@ -1,0 +1,1159 @@
+husisha { moduli/siasa/nguvu.swa }
+
+// hati.swa -- injini ya katiba: vifungu kama data inayozalishwa na kubadilika.
+//
+// Katiba si maandishi yaliyoandikwa mara moja. Kizalishaji hupitia kila
+// taasisi ya dola na kutoa vifungu kwa kanuni:
+//   kila cheo cha mti wa dola        uteuzi, uthibitisho, mamlaka, urithi
+//   kila wizara                      kuanzishwa kwake
+//   kila baraza                      muundo, muhula, sifa, akidi, spika,
+//                                    vikao, kinga, nafasi wazi; utaratibu wa
+//                                    miswada; kamati zake zote
+//   kila mkoa wa ramani              kuanzishwa na gavana wake
+//   orodha ya haki                   haki zinazoruhusiwa na aina ya utawala
+//                                    na mwaka (mgomo baada ya 1880...), na
+//                                    mipaka yake na ulinzi wa mahakama
+//   fedha, uchaguzi, mahakama, ulinzi, dharura, marekebisho, mpito
+// Kila kifungu kina aina, mada (cheo, baraza, mkoa, haki) na vigezo vinne vya
+// namba (asilimia, siku, miaka, viti). Maandishi huundwa kutoka vigezo kwa
+// sarufi ya vipande (kitenzi cha lazima, muda, sharti) kinachobadilika kwa
+// mbegu ya kifungu. Injini husoma vigezo: kiwango cha kura cha kila hoja,
+// wiki za kura na idhini, kiwango cha kupindua turufu, muhula, utaratibu wa
+// marekebisho.
+//
+// Mageuko: marekebisho hubadilisha vigezo au kufuta vifungu, kila badiliko
+// likihifadhiwa. Mataifa mengine hubadilisha katiba zao (toleo la katiba
+// hupanda kwa marekebisho na mapinduzi), na kila toleo hubadilisha baadhi ya
+// vigezo kidogo kutoka toleo lililotangulia.
+
+// ---------- sehemu za katiba ----------
+
+n64 SEHEMU_IDADI = 13;
+
+n8* sehemu_jina(n64 s) {
+    kama (s == 0) { rudisha ui("General Provisions"); }
+    kama (s == 1) { rudisha ui("Fundamental Rights and Freedoms"); }
+    kama (s == 2) { rudisha ui("The Head of State"); }
+    kama (s == 3) { rudisha ui("The Executive"); }
+    kama (s == 4) { rudisha ui("The Legislature"); }
+    kama (s == 5) { rudisha ui("The Judiciary"); }
+    kama (s == 6) { rudisha ui("Defence and Security"); }
+    kama (s == 7) { rudisha ui("Provinces and Local Government"); }
+    kama (s == 8) { rudisha ui("Public Finance"); }
+    kama (s == 9) { rudisha ui("Elections and Political Parties"); }
+    kama (s == 10) { rudisha ui("States of Emergency"); }
+    kama (s == 11) { rudisha ui("Amendment of this Constitution"); }
+    rudisha ui("Transitional and Final Provisions");
+}
+
+// ---------- aina za vifungu ----------
+
+n64 K_DOLA = 0;
+n64 K_MAMLAKA = 1;
+n64 K_ENEO = 2;             // p0 idadi ya mikoa
+n64 K_SARAFU = 3;
+n64 K_URAIA = 4;            // p0 miaka ya ukaazi
+n64 K_HAKI = 5;             // mada haki; p0 mipaka (0 kamili, 1 kwa sheria, 2 kwa amri); p1 mahakama huilinda
+n64 K_MKUU_UTEUZI = 6;      // p0 namna, p1 muhula, p2 kikomo, p3 umri wa chini
+n64 K_MKUU_KIAPO = 7;
+n64 K_MKUU_TURUFU = 8;      // p0 turufu, p1 asilimia ya kupindua, p2 siku za idhini
+n64 K_MKUU_MSAMAHA = 9;
+n64 K_MKUU_KUONDOLEWA = 10; // p0 asilimia
+n64 K_URITHI = 11;          // mada cheo; p0 nafasi
+n64 K_UTEUZI = 12;          // mada cheo; p0 baraza la uthibitisho + 1; p1 siku
+n64 K_WIZARA = 13;          // mada cheo
+n64 K_IMANI = 14;           // p0 asilimia, p1 siku za kuunda serikali
+n64 K_BARAZA = 15;          // mada baraza; p0 viti, p1 namna
+n64 K_BARAZA_MUHULA = 16;   // p0 miaka
+n64 K_BARAZA_SIFA = 17;     // p0 umri
+n64 K_AKIDI = 18;           // p0 asilimia
+n64 K_SPIKA = 19;           // p0 asilimia ya kumwondoa
+n64 K_VIKAO = 20;           // p0 vikao kwa mwaka
+n64 K_KINGA = 21;           // p0
+n64 K_NAFASI_WAZI = 22;     // p0 siku
+n64 K_MSWADA = 23;          // p0 asilimia, p1 siku kabla ya kura
+n64 K_KAMATI = 24;          // mada cheo
+n64 K_MAHAKAMA = 25;        // p0 majaji
+n64 K_JAJI_MUDA = 26;       // p0 umri wa kustaafu
+n64 K_JAJI_KUONDOLEWA = 27; // p0 asilimia
+n64 K_MAPITIO = 28;         // p0
+n64 K_AMRI_JESHI = 29;      // mada cheo
+n64 K_VITA = 30;            // p0 bunge huamua, p1 asilimia
+n64 K_MKOA = 31;            // mada mkoa; p0 gavana huchaguliwa
+n64 K_BAJETI = 32;          // p0 mwezi
+n64 K_KODI = 33;
+n64 K_DENI = 34;            // p0 asilimia ya pato
+n64 K_BENKI = 35;           // p0 uhuru
+n64 K_UKAGUZI = 36;         // p0 miaka
+n64 K_KURA = 37;            // p0 haki ya kura, p1 umri
+n64 K_TUME = 38;            // p0 wajumbe
+n64 K_VYAMA = 39;           // p0 vyama vingi, p1 saini (maelfu)
+n64 K_DHARURA = 40;         // p0 siku, p1 asilimia ya kuongeza, p2 iko sasa
+n64 K_MAREKEBISHO = 41;     // p0 asilimia, p1 kura ya maoni, p2 siku
+n64 K_ZISIZOGUSWA = 42;     // p0
+n64 K_MPITO = 43;           // p0 miaka
+n64 K_UHURU_HABARI = 44;    // p0
+n64 K_MGAWANYO = 45;        // mada eneo la sera; p0 0 taifa, 1 pamoja, 2 mikoa
+n64 K_SIFA_YA_CHEO = 46;    // mada cheo; p0 umri wa chini, p1 miaka ya uraia
+n64 K_MAHAKAMA_NDOGO = 47;  // mada ngazi; p0 majaji kwa kila mahakama
+n64 K_TAASISI = 48;         // mada taasisi huru; p0 muhula wa mkuu wake
+n64 K_MKOA_BARAZA = 49;     // mada mkoa; p0 viti vya baraza la mkoa
+n64 K_AINA_IDADI = 50;
+
+n64 hati_sehemu_ya_aina(n64 k) {
+    kama (k == K_MGAWANYO || k == K_MKOA_BARAZA) { rudisha 7; }
+    kama (k == K_SIFA_YA_CHEO) { rudisha 3; }
+    kama (k == K_MAHAKAMA_NDOGO) { rudisha 5; }
+    kama (k == K_TAASISI) { rudisha 12; }
+    kama (k <= K_URAIA) { rudisha 0; }
+    kama (k == K_HAKI || k == K_UHURU_HABARI) { rudisha 1; }
+    kama (k <= K_URITHI) { rudisha 2; }
+    kama (k <= K_IMANI) { rudisha 3; }
+    kama (k <= K_KAMATI) { rudisha 4; }
+    kama (k <= K_MAPITIO) { rudisha 5; }
+    kama (k <= K_VITA) { rudisha 6; }
+    kama (k == K_MKOA) { rudisha 7; }
+    kama (k <= K_UKAGUZI) { rudisha 8; }
+    kama (k <= K_VYAMA) { rudisha 9; }
+    kama (k == K_DHARURA) { rudisha 10; }
+    kama (k <= K_ZISIZOGUSWA) { rudisha 11; }
+    rudisha 12;
+}
+
+// Jina la kigezo i cha aina k, au 0 ikiwa aina haina kigezo hicho.
+n8* hati_jina_la_kigezo(n64 k, n64 i) {
+    kama (i == 0) {
+        kama (k == K_URAIA) { rudisha ui("Years of residence"); }
+        kama (k == K_HAKI) { rudisha ui("Limitation (0 none, 1 by law, 2 by decree)"); }
+        kama (k == K_MKUU_UTEUZI) { rudisha ui("Selection (0 hereditary, 1 people, 2 legislature, 3 council)"); }
+        kama (k == K_MKUU_TURUFU) { rudisha ui("Veto (1 yes)"); }
+        kama (k == K_KINGA || k == K_MAPITIO || k == K_BENKI || k == K_UHURU_HABARI || k == K_ZISIZOGUSWA) { rudisha ui("In force (1 yes)"); }
+        kama (k == K_MKUU_KUONDOLEWA || k == K_IMANI || k == K_SPIKA || k == K_JAJI_KUONDOLEWA || k == K_MSWADA || k == K_MAREKEBISHO) { rudisha ui("Votes required (%)"); }
+        kama (k == K_UTEUZI) { rudisha ui("Confirming chamber (0 none)"); }
+        kama (k == K_BARAZA) { rudisha ui("Seats"); }
+        kama (k == K_BARAZA_MUHULA || k == K_UKAGUZI) { rudisha ui("Term (years)"); }
+        kama (k == K_BARAZA_SIFA) { rudisha ui("Minimum age"); }
+        kama (k == K_AKIDI) { rudisha ui("Quorum (%)"); }
+        kama (k == K_VIKAO) { rudisha ui("Sittings a year"); }
+        kama (k == K_NAFASI_WAZI) { rudisha ui("Days to fill a vacancy"); }
+        kama (k == K_MAHAKAMA) { rudisha ui("Justices"); }
+        kama (k == K_JAJI_MUDA) { rudisha ui("Retirement age"); }
+        kama (k == K_VITA) { rudisha ui("Declared by the legislature (1 yes)"); }
+        kama (k == K_MKOA) { rudisha ui("Governor elected (1 yes)"); }
+        kama (k == K_BAJETI) { rudisha ui("Budget month"); }
+        kama (k == K_DENI) { rudisha ui("Debt limit (% of output)"); }
+        kama (k == K_KURA) { rudisha ui("Franchise (0 all, 1 property, 2 estates, 3 none)"); }
+        kama (k == K_TUME) { rudisha ui("Commissioners"); }
+        kama (k == K_VYAMA) { rudisha ui("Several parties (1 yes)"); }
+        kama (k == K_DHARURA) { rudisha ui("Duration (days)"); }
+        kama (k == K_MGAWANYO) { rudisha ui("Level (0 national, 1 shared, 2 provincial)"); }
+        kama (k == K_SIFA_YA_CHEO) { rudisha ui("Minimum age"); }
+        kama (k == K_MAHAKAMA_NDOGO) { rudisha ui("Judges on each bench"); }
+        kama (k == K_TAASISI) { rudisha ui("Term of its head (years)"); }
+        kama (k == K_MKOA_BARAZA) { rudisha ui("Council seats"); }
+        rudisha 0;
+    }
+    kama (i == 1) {
+        kama (k == K_HAKI) { rudisha ui("Enforced by the courts (1 yes)"); }
+        kama (k == K_MKUU_UTEUZI) { rudisha ui("Term (years, 0 life)"); }
+        kama (k == K_MKUU_TURUFU) { rudisha ui("Override (%)"); }
+        kama (k == K_UTEUZI) { rudisha ui("Days to confirm"); }
+        kama (k == K_IMANI) { rudisha ui("Days to form a government"); }
+        kama (k == K_MSWADA) { rudisha ui("Days before the vote"); }
+        kama (k == K_VITA) { rudisha ui("Votes required (%)"); }
+        kama (k == K_KURA) { rudisha ui("Voting age"); }
+        kama (k == K_VYAMA) { rudisha ui("Signatures to register (thousands)"); }
+        kama (k == K_DHARURA) { rudisha ui("Votes to extend (%)"); }
+        kama (k == K_MAREKEBISHO) { rudisha ui("Referendum (1 yes)"); }
+        kama (k == K_SIFA_YA_CHEO) { rudisha ui("Years of citizenship"); }
+        rudisha 0;
+    }
+    kama (i == 2) {
+        kama (k == K_MKUU_UTEUZI) { rudisha ui("Term limit (0 none)"); }
+        kama (k == K_MKUU_TURUFU) { rudisha ui("Days to assent"); }
+        kama (k == K_DHARURA) { rudisha ui("Emergency declared (1 yes)"); }
+        kama (k == K_MAREKEBISHO) { rudisha ui("Days of waiting"); }
+        rudisha 0;
+    }
+    kama (i == 3 && k == K_MKUU_UTEUZI) { rudisha ui("Minimum age"); }
+    rudisha 0;
+}
+
+n64 hati_kigezo_chini(n64 k, n64 i) {
+    kama (i == 0 && (k == K_MSWADA || k == K_MAREKEBISHO || k == K_IMANI || k == K_SPIKA || k == K_MKUU_KUONDOLEWA || k == K_JAJI_KUONDOLEWA || k == K_AKIDI)) { rudisha 10; }
+    kama (k == K_MKUU_TURUFU && i == 1) { rudisha 51; }
+    kama (k == K_BAJETI) { rudisha 1; }
+    rudisha 0;
+}
+
+n64 hati_kigezo_juu(n64 k, n64 i) {
+    kama (hati_jina_la_kigezo(k, i) == 0) { rudisha 0; }
+    kama (k == K_MGAWANYO) { rudisha 2; }
+    kama (k == K_SIFA_YA_CHEO) { kama (i == 0) { rudisha 80; } rudisha 40; }
+    kama (k == K_MAHAKAMA_NDOGO) { rudisha 15; }
+    kama (k == K_TAASISI) { rudisha 15; }
+    kama (k == K_MKOA_BARAZA) { rudisha 200; }
+    kama (k == K_HAKI && i == 0) { rudisha 2; }
+    kama ((k == K_MKUU_UTEUZI || k == K_KURA) && i == 0) { rudisha 3; }
+    kama (k == K_BAJETI) { rudisha 12; }
+    kama (k == K_UTEUZI && i == 0) { rudisha 4; }
+    kama (k == K_BARAZA) { rudisha 2000; }
+    kama (k == K_VYAMA && i == 1) { rudisha 500; }
+    kama ((k == K_DHARURA && i == 0) || (k == K_MAREKEBISHO && i == 2)) { rudisha 365; }
+    kama (k == K_NAFASI_WAZI || ((k == K_UTEUZI || k == K_IMANI || k == K_MSWADA) && i == 1) || (k == K_MKUU_TURUFU && i == 2)) { rudisha 180; }
+    kama (k == K_VIKAO) { rudisha 52; }
+    kama (k == K_MAHAKAMA || k == K_TUME) { rudisha 25; }
+    kama (k == K_JAJI_MUDA || k == K_BARAZA_SIFA || (k == K_MKUU_UTEUZI && i == 3) || (k == K_KURA && i == 1)) { rudisha 90; }
+    kama (k == K_DENI) { rudisha 200; }
+    kama (k == K_URAIA || k == K_UKAGUZI || k == K_BARAZA_MUHULA || (k == K_MKUU_UTEUZI && i == 1)) { rudisha 15; }
+    kama (k == K_MKUU_UTEUZI && i == 2) { rudisha 5; }
+    kama (i == 0 && (k == K_MSWADA || k == K_MAREKEBISHO || k == K_IMANI || k == K_SPIKA || k == K_MKUU_KUONDOLEWA || k == K_JAJI_KUONDOLEWA || k == K_AKIDI)) { rudisha 100; }
+    kama (i == 1 && (k == K_MKUU_TURUFU || k == K_VITA || k == K_DHARURA)) { rudisha 100; }
+    rudisha 1;
+}
+
+// ---------- haki ----------
+
+n64 HAKI_IDADI = 36;
+
+n8* haki_jina(n64 h) {
+    kama (h == 0) { rudisha ui("equality before the law"); }
+    kama (h == 1) { rudisha ui("life"); }
+    kama (h == 2) { rudisha ui("freedom from torture and cruel punishment"); }
+    kama (h == 3) { rudisha ui("freedom from slavery and forced labour"); }
+    kama (h == 4) { rudisha ui("personal liberty and protection from arbitrary arrest"); }
+    kama (h == 5) { rudisha ui("the writ of habeas corpus"); }
+    kama (h == 6) { rudisha ui("a fair and public trial"); }
+    kama (h == 7) { rudisha ui("the presumption of innocence"); }
+    kama (h == 8) { rudisha ui("protection from retroactive punishment"); }
+    kama (h == 9) { rudisha ui("privacy of the home and of correspondence"); }
+    kama (h == 10) { rudisha ui("freedom of conscience and religion"); }
+    kama (h == 11) { rudisha ui("freedom of expression"); }
+    kama (h == 12) { rudisha ui("freedom of the press"); }
+    kama (h == 13) { rudisha ui("freedom of peaceful assembly"); }
+    kama (h == 14) { rudisha ui("freedom of association"); }
+    kama (h == 15) { rudisha ui("freedom of movement and residence"); }
+    kama (h == 16) { rudisha ui("leave and return to the country"); }
+    kama (h == 17) { rudisha ui("property"); }
+    kama (h == 18) { rudisha ui("compensation for property taken by the state"); }
+    kama (h == 19) { rudisha ui("petition the authorities"); }
+    kama (h == 20) { rudisha ui("vote and to stand for office"); }
+    kama (h == 21) { rudisha ui("access to public office on merit"); }
+    kama (h == 22) { rudisha ui("education"); }
+    kama (h == 23) { rudisha ui("work"); }
+    kama (h == 24) { rudisha ui("form trade unions"); }
+    kama (h == 25) { rudisha ui("strike"); }
+    kama (h == 26) { rudisha ui("protection of mothers and children"); }
+    kama (h == 27) { rudisha ui("care in sickness and old age"); }
+    kama (h == 28) { rudisha ui("the use of one's own language"); }
+    kama (h == 29) { rudisha ui("the protection of minorities"); }
+    kama (h == 30) { rudisha ui("freedom of scientific and artistic work"); }
+    kama (h == 31) { rudisha ui("bear arms"); }
+    kama (h == 32) { rudisha ui("trial by jury"); }
+    kama (h == 33) { rudisha ui("asylum for the persecuted"); }
+    kama (h == 34) { rudisha ui("inherit property"); }
+    rudisha ui("freedom of trade and enterprise");
+}
+
+n64 haki_mwaka(n64 h) {
+    kama (h == 22 || h == 23) { rudisha 1840; }
+    kama (h == 24) { rudisha 1860; }
+    kama (h == 25) { rudisha 1880; }
+    kama (h == 26 || h == 27 || h == 29) { rudisha 1900; }
+    kama (h == 30) { rudisha 1910; }
+    rudisha 1700;
+}
+
+// Kanuni za haki kwa aina ya utawala: mamlaka kuu hukata haki za kisiasa,
+// chama kimoja hukata mali na vyama, utawala wa kidini hukata uhuru wa
+// dini na sanaa, falme hukata nafasi kwa sifa na mgomo.
+n32 haki_inakubalika(Dola* d, n64 h) {
+    n64 a = d->aina;
+    n32 kuu = a == DOLA_UFALME_KAMILI || a == DOLA_MILKI || a == DOLA_UDIKTETA || a == DOLA_UTAWALA_WA_KIJESHI;
+    n32 kisiasa = h == 11 || h == 12 || h == 13 || h == 14 || h == 20 || h == 25 || h == 33;
+    kama (kuu && kisiasa) { rudisha 0; }
+    kama (a == DOLA_CHAMA_KIMOJA && (h == 12 || h == 14 || h == 17 || h == 35 || h == 31)) { rudisha 0; }
+    kama (a == DOLA_UTAWALA_WA_KIDINI && (h == 10 || h == 30)) { rudisha 0; }
+    kama ((wahusika_ni_ufalme(d) || a == DOLA_JUMUIYA_YA_WAUNGWANA) && (h == 21 || h == 25)) { rudisha 0; }
+    kama (a == DOLA_BILA_SERIKALI && (h == 17 || h == 34)) { rudisha 0; }
+    rudisha 1;
+}
+
+// ---------- maeneo ya sera na taasisi huru ----------
+
+n64 MAENEO_IDADI = 22;
+
+n8* eneo_la_sera(n64 e) {
+    kama (e == 0) { rudisha ui("foreign affairs and treaties"); }
+    kama (e == 1) { rudisha ui("defence and the armed forces"); }
+    kama (e == 2) { rudisha ui("currency, coinage and banking"); }
+    kama (e == 3) { rudisha ui("customs and foreign trade"); }
+    kama (e == 4) { rudisha ui("citizenship and immigration"); }
+    kama (e == 5) { rudisha ui("criminal law"); }
+    kama (e == 6) { rudisha ui("civil and commercial law"); }
+    kama (e == 7) { rudisha ui("police and public order"); }
+    kama (e == 8) { rudisha ui("prisons"); }
+    kama (e == 9) { rudisha ui("education"); }
+    kama (e == 10) { rudisha ui("public health"); }
+    kama (e == 11) { rudisha ui("agriculture and forests"); }
+    kama (e == 12) { rudisha ui("mines and minerals"); }
+    kama (e == 13) { rudisha ui("roads and bridges"); }
+    kama (e == 14) { rudisha ui("railways"); }
+    kama (e == 15) { rudisha ui("ports and shipping"); }
+    kama (e == 16) { rudisha ui("posts and telegraphs"); }
+    kama (e == 17) { rudisha ui("labour and industry"); }
+    kama (e == 18) { rudisha ui("land and its registration"); }
+    kama (e == 19) { rudisha ui("local taxation"); }
+    kama (e == 20) { rudisha ui("religious affairs"); }
+    rudisha ui("electricity and water");
+}
+
+n64 eneo_mwaka(n64 e) {
+    kama (e == 14) { rudisha 1830; }
+    kama (e == 16) { rudisha 1850; }
+    kama (e == 21) { rudisha 1885; }
+    rudisha 1700;
+}
+
+n64 TAASISI_IDADI = 10;
+
+n8* taasisi_jina(n64 t) {
+    kama (t == 0) { rudisha ui("Public Service Commission"); }
+    kama (t == 1) { rudisha ui("Office of the Ombudsman"); }
+    kama (t == 2) { rudisha ui("National Statistics Office"); }
+    kama (t == 3) { rudisha ui("Commission on Human Rights"); }
+    kama (t == 4) { rudisha ui("Judicial Service Commission"); }
+    kama (t == 5) { rudisha ui("Anti-Corruption Commission"); }
+    kama (t == 6) { rudisha ui("Office of the Public Prosecutor"); }
+    kama (t == 7) { rudisha ui("National Archives"); }
+    kama (t == 8) { rudisha ui("Commission on Boundaries"); }
+    rudisha ui("Broadcasting Authority");
+}
+
+n64 taasisi_mwaka(n64 t) {
+    kama (t == 3) { rudisha 1945; }
+    kama (t == 5) { rudisha 1950; }
+    kama (t == 9) { rudisha 1925; }
+    kama (t == 2) { rudisha 1800; }
+    rudisha 1700;
+}
+
+// ---------- hali ya katiba ----------
+
+muundo Kifungu {
+    n64 aina;
+    n64 mada;
+    n64 p0;
+    n64 p1;
+    n64 p2;
+    n64 p3;
+    n64 hai;
+    n64 marekebisho;
+    n64 ibara;
+    n64 namba;
+}
+
+n64 HATI_VIFUNGU_JUU = 4096;
+n64 hati_taifa = -1;
+n64 hati_toleo = 0;
+n64 hati_idadi = 0;
+n64* hati_vifungu = 0;
+n64 hati_ibara_idadi = 0;
+n8* hati_jina_la_sarafu = 0;    // huwekwa na mwitaji
+n64 hati_mikoa_idadi = 0;       // huwekwa na mwitaji (mikoa ya ramani)
+n64* hati_mikoa_majina = 0;
+n64 hati_mwaka = 1900;
+n64 hati_mbegu = 0;
+
+n64* hati_matoleo = 0;
+n64 HATI_MATAIFA_JUU = 512;
+
+n64 hati_toleo_la(n64 taifa) {
+    kama (hati_matoleo == 0 || taifa < 0 || taifa >= HATI_MATAIFA_JUU) { rudisha 0; }
+    rudisha hati_matoleo[taifa];
+}
+
+// Taifa limebadilisha katiba yake (marekebisho au mapinduzi).
+w0 hati_ongeza_toleo(n64 taifa) {
+    kama (hati_matoleo == 0) {
+        hati_matoleo = tenga(8 * HATI_MATAIFA_JUU);
+        weka_sifuri(hati_matoleo, 8 * HATI_MATAIFA_JUU);
+    }
+    kama (taifa >= 0 && taifa < HATI_MATAIFA_JUU) { hati_matoleo[taifa] = hati_matoleo[taifa] + 1; }
+}
+
+Kifungu* hati_pata(n64 i) {
+    kama (i < 0 || i >= hati_idadi) { rudisha 0; }
+    rudisha hati_vifungu[i];
+}
+
+n64 hati_nasibu(n64 n, n64 c) { rudisha dola_nasibu(hati_mbegu * 131 + n * 7, c); }
+
+n64 hati_ongeza(n64 aina, n64 mada, n64 p0, n64 p1, n64 p2, n64 p3) {
+    kama (hati_idadi >= HATI_VIFUNGU_JUU) { rudisha 0 - 1; }
+    Kifungu* k = tenga(ukubwa(Kifungu));
+    k->aina = aina;
+    k->mada = mada;
+    k->p0 = p0;
+    k->p1 = p1;
+    k->p2 = p2;
+    k->p3 = p3;
+    k->hai = 1;
+    k->marekebisho = 0;
+    k->ibara = 0;
+    k->namba = 0;
+    hati_vifungu[hati_idadi] = k;
+    hati_idadi = hati_idadi + 1;
+    rudisha hati_idadi - 1;
+}
+
+// Mageuko: kila toleo la katiba hubadilisha kigezo kwa uwezekano mdogo.
+n64 hati_badilisha(n64 thamani, n64 kifungu, n64 chaneli, n64 hatua) {
+    n64 v = thamani;
+    n64 t = 1;
+    wakati (t <= hati_toleo) {
+        kama (dola_nasibu(hati_mbegu + t * 977 + kifungu * 13, chaneli) % 100 < 18) {
+            v = v + (dola_nasibu(hati_mbegu + t * 31 + kifungu, chaneli + 1) % 3 - 1) * hatua;
+        }
+        t = t + 1;
+    }
+    kama (v < 0) { v = 0; }
+    rudisha v;
+}
+
+// ---------- kizalishaji ----------
+
+n64 hati_namna_ya_mkuu(Dola* d) {
+    n64 a = d->aina;
+    kama (wahusika_ni_ufalme(d) || a == DOLA_MUUNGANO_WA_KABILA) { rudisha 0; }
+    kama (a == DOLA_JAMHURI_YA_BUNGE || a == DOLA_UFALME_WA_KUCHAGULIWA) { rudisha 2; }
+    kama (a == DOLA_CHAMA_KIMOJA || a == DOLA_UTAWALA_WA_KIJESHI || a == DOLA_UTAWALA_WA_KIDINI || a == DOLA_UTAWALA_WA_WATAALAMU) { rudisha 3; }
+    rudisha 1;
+}
+
+n32 hati_ni_jamhuri(Dola* d) {
+    n64 a = d->aina;
+    rudisha a == DOLA_JAMHURI_YA_BUNGE || a == DOLA_JAMHURI_YA_RAIS || a == DOLA_JAMHURI_NUSU_RAIS || a == DOLA_JAMHURI_YA_SHIRIKISHO || a == DOLA_JAMHURI_YA_WAFANYABIASHARA || a == DOLA_SERIKALI_YA_MPITO;
+}
+
+n32 hati_ni_kuu(Dola* d) {
+    n64 a = d->aina;
+    rudisha a == DOLA_UFALME_KAMILI || a == DOLA_MILKI || a == DOLA_UDIKTETA || a == DOLA_UTAWALA_WA_KIJESHI;
+}
+
+n32 hati_ni_waziri(MhusikaWaDola* m) { rudisha tafuta_mfuatano(m->cheo, "Minister") == 0; }
+n32 hati_ni_kamati(MhusikaWaDola* m) { rudisha tafuta_mfuatano(m->cheo, "Committee") >= 0; }
+
+w0 hati_zalisha_dola_na_haki(Dola* d) {
+    n32 jamhuri = hati_ni_jamhuri(d);
+    n32 kuu = hati_ni_kuu(d);
+    hati_ongeza(K_DOLA, 0 - 1, d->aina, 0, 0, 0);
+    hati_ongeza(K_MAMLAKA, 0 - 1, 0, 0, 0, 0);
+    hati_ongeza(K_ENEO, 0 - 1, hati_mikoa_idadi, 0, 0, 0);
+    hati_ongeza(K_SARAFU, 0 - 1, 0, 0, 0, 0);
+    hati_ongeza(K_URAIA, 0 - 1, hati_badilisha(3 + hati_nasibu(1, 1) % 9, 1, 2, 1), 0, 0, 0);
+    n64 h = 0;
+    wakati (h < HAKI_IDADI) {
+        kama (haki_mwaka(h) <= hati_mwaka && haki_inakubalika(d, h)) {
+            n64 mipaka = 1;
+            kama (h == 1 || h == 2 || h == 3 || h == 8) { mipaka = 0; }
+            kama (kuu) { mipaka = 2; }
+            n64 mahakama = jamhuri || d->aina == DOLA_UFALME_WA_KATIBA;
+            hati_ongeza(K_HAKI, h, hati_badilisha(mipaka, 10 + h, 3, 1), mahakama, 0, 0);
+        }
+        h = h + 1;
+    }
+    hati_ongeza(K_UHURU_HABARI, 0 - 1, haki_inakubalika(d, 12), 0, 0, 0);
+}
+
+w0 hati_zalisha_utendaji(Dola* d, Wahusika* w) {
+    n32 bunge = d->mabaraza > 0;
+    n64 kikomo = 0;
+    kama (d->aina == DOLA_JAMHURI_YA_RAIS || d->aina == DOLA_JAMHURI_NUSU_RAIS) { kikomo = 2; }
+    hati_ongeza(K_MKUU_UTEUZI, 0 - 1, hati_namna_ya_mkuu(d), d->muhula, hati_badilisha(kikomo, 50, 4, 1), hati_badilisha(30 + hati_nasibu(2, 2) % 11, 51, 5, 5));
+    hati_ongeza(K_MKUU_KIAPO, 0 - 1, 0, 0, 0, 0);
+    n64 a = d->aina;
+    n64 turufu = a == DOLA_JAMHURI_YA_RAIS || a == DOLA_JAMHURI_NUSU_RAIS || a == DOLA_JAMHURI_YA_SHIRIKISHO || a == DOLA_UFALME_KAMILI || a == DOLA_UFALME_WA_KATIBA || a == DOLA_MILKI;
+    hati_ongeza(K_MKUU_TURUFU, 0 - 1, turufu, hati_badilisha(60 + hati_nasibu(3, 3) % 16, 52, 6, 3), hati_badilisha(10 + hati_nasibu(4, 4) % 21, 53, 7, 7), 0);
+    hati_ongeza(K_MKUU_MSAMAHA, 0 - 1, 1, 0, 0, 0);
+    kama (wahusika_ni_ufalme(d) == 0 && bunge) { hati_ongeza(K_MKUU_KUONDOLEWA, 0 - 1, hati_badilisha(60 + hati_nasibu(5, 5) % 21, 54, 8, 5), 0, 0, 0); }
+    n64 i = 0;
+    n64 warithi = 0;
+    wakati (i < w->idadi && warithi < 4) {
+        MhusikaWaDola* m = wahusika_pata(w, i);
+        kama (i > 0 && m->tawi == TAWI_UTENDAJI && m->ngazi >= 7) { hati_ongeza(K_URITHI, i, warithi + 1, 0, 0, 0); warithi = warithi + 1; }
+        i = i + 1;
+    }
+    i = 0;
+    wakati (i < w->idadi) {
+        MhusikaWaDola* m = wahusika_pata(w, i);
+        kama (m->tawi == TAWI_UTENDAJI && hati_ni_waziri(m)) { hati_ongeza(K_WIZARA, i, 0, 0, 0, 0); }
+        kama (m->ujazaji == UJAZAJI_KUTEULIWA && m->tawi != TAWI_OFISI) {
+            hati_ongeza(K_UTEUZI, i, m->uhakiki + 1, hati_badilisha(14 + hati_nasibu(100 + i, 6) % 47, 100 + i, 9, 7), 0, 0);
+        }
+        i = i + 1;
+    }
+    kama (a == DOLA_JAMHURI_YA_BUNGE || a == DOLA_UFALME_WA_KATIBA || a == DOLA_JAMHURI_NUSU_RAIS) {
+        hati_ongeza(K_IMANI, 0 - 1, hati_badilisha(51, 55, 10, 1), hati_badilisha(14 + hati_nasibu(6, 7) % 30, 56, 11, 7), 0, 0);
+    }
+}
+
+w0 hati_zalisha_bunge(Dola* d, Wahusika* w) {
+    n32 jamhuri = hati_ni_jamhuri(d);
+    n64 b = 0;
+    wakati (b < d->mabaraza) {
+        hati_ongeza(K_BARAZA, b, d->baraza_viti[b], d->baraza_uteuzi[b], 0, 0);
+        hati_ongeza(K_BARAZA_MUHULA, b, hati_badilisha(d->muhula + b, 60 + b, 12, 1), 0, 0, 0);
+        hati_ongeza(K_BARAZA_SIFA, b, hati_badilisha(21 + b * 9 + hati_nasibu(b, 8) % 5, 61 + b, 13, 1), 0, 0, 0);
+        hati_ongeza(K_AKIDI, b, hati_badilisha(25 + hati_nasibu(b, 9) % 26, 62 + b, 14, 5), 0, 0, 0);
+        hati_ongeza(K_SPIKA, b, hati_badilisha(60 + hati_nasibu(b, 10) % 16, 63 + b, 15, 2), 0, 0, 0);
+        hati_ongeza(K_VIKAO, b, hati_badilisha(2 + hati_nasibu(b, 11) % 3, 64 + b, 16, 1), 0, 0, 0);
+        hati_ongeza(K_KINGA, b, jamhuri || d->aina == DOLA_UFALME_WA_KATIBA, 0, 0, 0);
+        hati_ongeza(K_NAFASI_WAZI, b, hati_badilisha(60 + hati_nasibu(b, 12) % 61, 65 + b, 17, 10), 0, 0, 0);
+        b = b + 1;
+    }
+    kama (d->mabaraza > 0) { hati_ongeza(K_MSWADA, 0 - 1, hati_badilisha(51, 66, 18, 1), hati_badilisha(14, 67, 19, 7), 0, 0); }
+    n64 i = 0;
+    wakati (i < w->idadi) {
+        MhusikaWaDola* m = wahusika_pata(w, i);
+        kama (hati_ni_kamati(m)) { hati_ongeza(K_KAMATI, i, 0, 0, 0, 0); }
+        i = i + 1;
+    }
+}
+
+w0 hati_zalisha_mengine(Dola* d, Wahusika* w) {
+    n32 jamhuri = hati_ni_jamhuri(d);
+    n32 kuu = hati_ni_kuu(d);
+    n32 bunge = d->mabaraza > 0;
+    hati_ongeza(K_MAHAKAMA, 0 - 1, NGUVU_BENCHI, 0, 0, 0);
+    hati_ongeza(K_JAJI_MUDA, 0 - 1, hati_badilisha(65 + hati_nasibu(7, 13) % 11, 70, 20, 1), 0, 0, 0);
+    hati_ongeza(K_JAJI_KUONDOLEWA, 0 - 1, hati_badilisha(60 + hati_nasibu(8, 14) % 21, 71, 21, 5), 0, 0, 0);
+    hati_ongeza(K_MAPITIO, 0 - 1, jamhuri, 0, 0, 0);
+    n64 i = 0;
+    wakati (i < w->idadi) {
+        MhusikaWaDola* m = wahusika_pata(w, i);
+        kama (m->tawi == TAWI_JESHI) { hati_ongeza(K_AMRI_JESHI, i, 0, 0, 0, 0); }
+        i = i + 1;
+    }
+    hati_ongeza(K_VITA, 0 - 1, bunge && kuu == 0, hati_badilisha(51 + hati_nasibu(9, 15) % 17, 72, 22, 1), 0, 0);
+    n64 r = 0;
+    wakati (r < hati_mikoa_idadi) {
+        hati_ongeza(K_MKOA, r, d->aina == DOLA_JAMHURI_YA_SHIRIKISHO || d->aina == DOLA_MUUNGANO_WA_DOLA, 0, 0, 0);
+        hati_ongeza(K_MKOA_BARAZA, r, hati_badilisha(15 + hati_nasibu(600 + r, 41) % 46, 600 + r, 42, 5), 0, 0, 0);
+        r = r + 1;
+    }
+    hati_ongeza(K_BAJETI, 0 - 1, 1 + hati_nasibu(10, 16) % 12, 0, 0, 0);
+    kama (bunge) { hati_ongeza(K_KODI, 0 - 1, 0, 0, 0, 0); }
+    hati_ongeza(K_DENI, 0 - 1, hati_badilisha(30 + hati_nasibu(11, 17) % 71, 73, 23, 5), 0, 0, 0);
+    hati_ongeza(K_BENKI, 0 - 1, jamhuri, 0, 0, 0);
+    hati_ongeza(K_UKAGUZI, 0 - 1, hati_badilisha(5 + hati_nasibu(12, 18) % 6, 74, 24, 1), 0, 0, 0);
+    n64 kura = 0;
+    kama (tafuta_mfuatano(d->haki_ya_kura, "estate") >= 0 || tafuta_mfuatano(d->haki_ya_kura, "Nobility") >= 0) { kura = 2; }
+    kama (tafuta_mfuatano(d->haki_ya_kura, "No franchise") >= 0 || tafuta_mfuatano(d->haki_ya_kura, "Suspended") >= 0) { kura = 3; }
+    hati_ongeza(K_KURA, 0 - 1, kura, hati_badilisha(21, 75, 25, 1), 0, 0);
+    kama (kura < 3) { hati_ongeza(K_TUME, 0 - 1, hati_badilisha(5 + hati_nasibu(13, 19) % 7, 76, 26, 1), 0, 0, 0); }
+    hati_ongeza(K_VYAMA, 0 - 1, d->vyama > 1, hati_badilisha(5 + hati_nasibu(14, 20) % 46, 77, 27, 5), 0, 0);
+    hati_ongeza(K_DHARURA, 0 - 1, hati_badilisha(30 + hati_nasibu(15, 21) % 61, 78, 28, 10), hati_badilisha(60 + hati_nasibu(16, 22) % 16, 79, 29, 3), kuu, 0);
+    n64 hatua = 67;
+    kama (kuu) { hatua = 51; }
+    hati_ongeza(K_MAREKEBISHO, 0 - 1, hati_badilisha(hatua, 80, 30, 3), jamhuri, hati_badilisha(30 + hati_nasibu(17, 23) % 61, 81, 31, 10), 0);
+    hati_ongeza(K_ZISIZOGUSWA, 0 - 1, jamhuri, 0, 0, 0);
+    hati_ongeza(K_MPITO, 0 - 1, d->umri_wa_katiba, 0, 0, 0);
+    hati_zalisha_kina(d, w);
+}
+
+// Familia za kina: mgawanyo wa mamlaka kwa kila eneo la sera, sifa za kila
+// cheo cha juu, ngazi za mahakama za chini, taasisi huru za enzi hiyo, na
+// baraza la kila mkoa.
+w0 hati_zalisha_kina(Dola* d, Wahusika* w) {
+    n32 shirikisho = d->aina == DOLA_JAMHURI_YA_SHIRIKISHO || d->aina == DOLA_MUUNGANO_WA_DOLA || d->aina == DOLA_MUUNGANO_WA_KABILA;
+    n32 kuu = hati_ni_kuu(d);
+    n64 e = 0;
+    wakati (e < MAENEO_IDADI) {
+        kama (eneo_mwaka(e) <= hati_mwaka) {
+            n64 ngazi = 0;
+            kama (e >= 9) {
+                kama (shirikisho) { ngazi = 1 + hati_nasibu(200 + e, 30) % 2; }
+                sivyo kama (kuu == 0 && hati_nasibu(200 + e, 31) % 3 == 0) { ngazi = 1; }
+            }
+            hati_ongeza(K_MGAWANYO, e, hati_badilisha(ngazi, 200 + e, 32, 1), 0, 0, 0);
+        }
+        e = e + 1;
+    }
+    n64 i = 0;
+    wakati (i < w->idadi) {
+        MhusikaWaDola* m = wahusika_pata(w, i);
+        kama (m->ngazi >= 5 && m->tawi != TAWI_OFISI) {
+            hati_ongeza(K_SIFA_YA_CHEO, i, hati_badilisha(25 + m->ngazi + hati_nasibu(300 + i, 33) % 6, 300 + i, 34, 1), hati_badilisha(5 + hati_nasibu(301 + i, 35) % 11, 301 + i, 36, 1), 0, 0);
+        }
+        i = i + 1;
+    }
+    n64 ngazi_za_mahakama = 2 + hati_nasibu(18, 37) % 3;
+    n64 n = 0;
+    wakati (n < ngazi_za_mahakama) {
+        hati_ongeza(K_MAHAKAMA_NDOGO, n, hati_badilisha(1 + (ngazi_za_mahakama - n) * 2, 400 + n, 38, 1), 0, 0, 0);
+        n = n + 1;
+    }
+    n64 t = 0;
+    wakati (t < TAASISI_IDADI) {
+        n32 inafaa = taasisi_mwaka(t) <= hati_mwaka;
+        kama ((t == 1 || t == 3 || t == 5) && (kuu || d->aina == DOLA_CHAMA_KIMOJA)) { inafaa = 0; }
+        kama (t == 4 && d->mabaraza == 0) { inafaa = 0; }
+        kama (inafaa) { hati_ongeza(K_TAASISI, t, hati_badilisha(4 + hati_nasibu(500 + t, 39) % 7, 500 + t, 40, 1), 0, 0, 0); }
+        t = t + 1;
+    }
+}
+
+// Zalisha katiba yote ya taifa kutoka dola, mti wake, mikoa yake na toleo lake.
+w0 hati_zalisha(Dola* d, Wahusika* w, n64 taifa) {
+    kama (hati_vifungu == 0) { hati_vifungu = tenga(8 * HATI_VIFUNGU_JUU); }
+    n64 i = 0;
+    wakati (i < hati_idadi) { achilia hati_vifungu[i]; i = i + 1; }
+    hati_idadi = 0;
+    hati_taifa = taifa;
+    hati_toleo = hati_toleo_la(taifa);
+    hati_mbegu = taifa * 7919 + 17;
+    hati_historia_idadi = 0;
+    hati_zalisha_dola_na_haki(d);
+    hati_zalisha_utendaji(d, w);
+    hati_zalisha_bunge(d, w);
+    hati_zalisha_mengine(d, w);
+    hati_panga_ibara();
+}
+
+// Namba za ibara na vifungu: vifungu vya aina na mada ileile ni ibara moja;
+// vifungu vya baraza moja ni ibara moja; haki zote ni ibara moja.
+w0 hati_panga_ibara() {
+    n64* mpya = tenga(8 * hati_idadi + 8);
+    n64 n = 0;
+    n64 s = 0;
+    wakati (s < SEHEMU_IDADI) {
+        n64 j = 0;
+        wakati (j < hati_idadi) {
+            Kifungu* k = hati_vifungu[j];
+            kama (hati_sehemu_ya_aina(k->aina) == s) { mpya[n] = k; n = n + 1; }
+            j = j + 1;
+        }
+        s = s + 1;
+    }
+    n64 i = 0;
+    wakati (i < n) { hati_vifungu[i] = mpya[i]; i = i + 1; }
+    achilia mpya;
+    n64 ibara = 0;
+    n64 namba = 0;
+    n64 aina_ya_mwisho = 0 - 1;
+    n64 mada_ya_mwisho = 0 - 2;
+    i = 0;
+    wakati (i < hati_idadi) {
+        Kifungu* k = hati_vifungu[i];
+        n32 mpya_ibara = 1;
+        n32 ni_baraza = k->aina >= K_BARAZA && k->aina <= K_NAFASI_WAZI;
+        n32 mwisho_ni_baraza = aina_ya_mwisho >= K_BARAZA && aina_ya_mwisho <= K_NAFASI_WAZI;
+        kama (ni_baraza && mwisho_ni_baraza && k->mada == mada_ya_mwisho) { mpya_ibara = 0; }
+        kama (k->aina == aina_ya_mwisho && k->mada == mada_ya_mwisho) { mpya_ibara = 0; }
+        kama ((k->aina == K_HAKI || k->aina == K_URITHI || k->aina == K_AMRI_JESHI || k->aina == K_KAMATI || k->aina == K_MGAWANYO || k->aina == K_SIFA_YA_CHEO || k->aina == K_MAHAKAMA_NDOGO) && k->aina == aina_ya_mwisho) { mpya_ibara = 0; }
+        // baraza la mkoa ni sehemu ya ibara ya mkoa wake
+        kama (k->aina == K_MKOA_BARAZA && aina_ya_mwisho == K_MKOA && k->mada == mada_ya_mwisho) { mpya_ibara = 0; }
+        kama (mpya_ibara) { ibara = ibara + 1; namba = 1; } sivyo { namba = namba + 1; }
+        k->ibara = ibara;
+        k->namba = namba;
+        aina_ya_mwisho = k->aina;
+        mada_ya_mwisho = k->mada;
+        i = i + 1;
+    }
+    hati_ibara_idadi = ibara;
+}
+
+// ---------- vigezo ambavyo injini husoma ----------
+
+Kifungu* hati_tafuta(n64 aina, n64 mada) {
+    n64 i = 0;
+    wakati (i < hati_idadi) {
+        Kifungu* k = hati_vifungu[i];
+        kama (k->aina == aina && k->hai && (mada < 0 || k->mada == mada)) { rudisha k; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+w0 hati_tumia_kwa_injini(Dola* d) {
+    nguvu_vigezo_vya_mwanzo();
+    Kifungu* k = hati_tafuta(K_SPIKA, 0);
+    kama (k != 0) { nguvu_kiwango_cha_hoja[HOJA_KUMSHTAKI_SPIKA] = k->p0; }
+    k = hati_tafuta(K_IMANI, 0 - 1);
+    kama (k != 0) { nguvu_kiwango_cha_hoja[HOJA_KUTOKUWA_NA_IMANI] = k->p0; }
+    k = hati_tafuta(K_MSWADA, 0 - 1);
+    kama (k != 0) {
+        nguvu_kiwango_cha_hoja[HOJA_KUPANDISHA_KODI] = k->p0;
+        nguvu_kiwango_cha_hoja[HOJA_KUSHUSHA_KODI] = k->p0;
+        nguvu_kiwango_cha_hoja[HOJA_UCHUNGUZI] = k->p0;
+        nguvu_kiwango_cha_hoja[HOJA_MSAMAHA] = k->p0;
+        nguvu_kiwango_cha_hoja[HOJA_LAWAMA] = k->p0;
+        nguvu_wiki_za_kura = (k->p1 + 6) / 7;
+        kama (nguvu_wiki_za_kura < 1) { nguvu_wiki_za_kura = 1; }
+    }
+    k = hati_tafuta(K_MAREKEBISHO, 0 - 1);
+    kama (k != 0) { nguvu_kiwango_cha_hoja[HOJA_MAREKEBISHO] = k->p0; }
+    k = hati_tafuta(K_MKUU_TURUFU, 0 - 1);
+    kama (k != 0) {
+        nguvu_turufu_ya_katiba = k->p0;
+        nguvu_kiwango_cha_kupindua = k->p1;
+        nguvu_wiki_za_idhini = (k->p2 + 6) / 7;
+        kama (nguvu_wiki_za_idhini < 1) { nguvu_wiki_za_idhini = 1; }
+    } sivyo { nguvu_turufu_ya_katiba = 0; }
+    k = hati_tafuta(K_MKUU_UTEUZI, 0 - 1);
+    kama (k != 0) { d->muhula = k->p1; }
+}
+
+// ---------- utaratibu wa marekebisho ----------
+
+n64 UTARATIBU_AMRI = 0;
+n64 UTARATIBU_BUNGE = 1;
+n64 UTARATIBU_CHAMA = 2;
+n64 UTARATIBU_KURA = 3;
+n64 UTARATIBU_MABARAZA = 4;
+
+n64 hati_utaratibu(Dola* d) {
+    n64 a = d->aina;
+    Kifungu* dh = hati_tafuta(K_DHARURA, 0 - 1);
+    kama (dh != 0 && dh->p2) { rudisha UTARATIBU_AMRI; }
+    kama (hati_ni_kuu(d) || a == DOLA_UTAWALA_WA_KIDINI) { rudisha UTARATIBU_AMRI; }
+    kama (a == DOLA_CHAMA_KIMOJA) { rudisha UTARATIBU_CHAMA; }
+    kama (a == DOLA_DEMOKRASIA_YA_MOJA_KWA_MOJA || a == DOLA_BILA_SERIKALI) { rudisha UTARATIBU_KURA; }
+    kama (a == DOLA_MUUNGANO_WA_KABILA || a == DOLA_MUUNGANO_WA_DOLA || a == DOLA_JUMUIYA_YA_WAUNGWANA) { rudisha UTARATIBU_MABARAZA; }
+    kama (d->mabaraza == 0) { rudisha UTARATIBU_AMRI; }
+    rudisha UTARATIBU_BUNGE;
+}
+
+n8* utaratibu_jina(n64 u) {
+    kama (u == UTARATIBU_AMRI) { rudisha ui("by decree of the head of state"); }
+    kama (u == UTARATIBU_BUNGE) { rudisha ui("by the legislature"); }
+    kama (u == UTARATIBU_CHAMA) { rudisha ui("by the congress of the ruling party"); }
+    kama (u == UTARATIBU_KURA) { rudisha ui("by referendum of all citizens"); }
+    rudisha ui("by the council of chiefs and governors");
+}
+
+// ---------- marekebisho ----------
+
+n64 HATI_HISTORIA_JUU = 256;
+n64* hati_historia = 0;         // [kifungu, kigezo (-1 kufuta), thamani, zamu]
+n64 hati_historia_idadi = 0;
+
+w0 hati_tumia(Dola* d, n64 kifungu, n64 kigezo, n64 thamani, n64 zamu) {
+    Kifungu* k = hati_pata(kifungu);
+    kama (k == 0) { rudisha; }
+    kama (kigezo < 0) { k->hai = 0; }
+    kama (kigezo == 0) { k->p0 = thamani; }
+    kama (kigezo == 1) { k->p1 = thamani; }
+    kama (kigezo == 2) { k->p2 = thamani; }
+    kama (kigezo == 3) { k->p3 = thamani; }
+    k->marekebisho = k->marekebisho + 1;
+    // athari: kukata haki hupunguza uhalali; kupanua mamlaka huleta utulivu
+    // kwa gharama ya uhalali
+    kama (k->aina == K_HAKI && kigezo < 0) { d->uhalali = dola_rekebisha(d->uhalali, 0 - 4); }
+    kama (k->aina == K_HAKI && kigezo == 0) { d->uhalali = dola_rekebisha(d->uhalali, 1 - thamani * 2); }
+    kama (k->aina == K_UHURU_HABARI) { kama (thamani) { d->uhalali = dola_rekebisha(d->uhalali, 4); } sivyo { d->uhalali = dola_rekebisha(d->uhalali, 0 - 6); } }
+    kama (k->aina == K_DHARURA && kigezo == 2 && thamani) { d->utulivu = dola_rekebisha(d->utulivu, 5); d->uhalali = dola_rekebisha(d->uhalali, 0 - 5); }
+    kama (k->aina == K_MKUU_UTEUZI && kigezo >= 1) { d->uhalali = dola_rekebisha(d->uhalali, 0 - 2); }
+    kama (k->aina == K_KURA && kigezo == 0) { d->uhalali = dola_rekebisha(d->uhalali, 1 - thamani * 2); }
+    kama (k->aina == K_VYAMA && kigezo == 0) { kama (thamani) { d->uhalali = dola_rekebisha(d->uhalali, 5); } sivyo { d->uhalali = dola_rekebisha(d->uhalali, 0 - 8); } }
+    d->umri_wa_katiba = 0;
+    kama (hati_historia == 0) { hati_historia = tenga(8 * 4 * HATI_HISTORIA_JUU); }
+    kama (hati_historia_idadi < HATI_HISTORIA_JUU) {
+        n64 b = hati_historia_idadi * 4;
+        hati_historia[b] = kifungu;
+        hati_historia[b + 1] = kigezo;
+        hati_historia[b + 2] = thamani;
+        hati_historia[b + 3] = zamu;
+        hati_historia_idadi = hati_historia_idadi + 1;
+    }
+    hati_tumia_kwa_injini(d);
+}
+
+n64 HATI_IMEPITISHWA = 0;
+n64 HATI_KWA_BUNGE = 1;
+n64 HATI_IMEKATALIWA = 2;
+n64 HATI_HAKUNA_MAMLAKA = 3;
+n64 HATI_HAKUNA_MTAJI = 4;
+n64 HATI_IMELINDWA = 5;
+
+n64 GHARAMA_MAREKEBISHO = 20;
+
+n64 hati_pendekeza(Dola* d, Wahusika* w, n64 ofisi, n64 kifungu, n64 kigezo, n64 thamani, n64 zamu) {
+    MhusikaWaDola* mimi = wahusika_pata(w, ofisi);
+    Kifungu* k = hati_pata(kifungu);
+    kama (mimi == 0 || k == 0) { rudisha HATI_HAKUNA_MAMLAKA; }
+    Kifungu* linda = hati_tafuta(K_ZISIZOGUSWA, 0 - 1);
+    kama (linda != 0 && linda->p0 && k->aina == K_HAKI && (kigezo < 0 || (kigezo == 0 && thamani > k->p0))) { rudisha HATI_IMELINDWA; }
+    kama (nguvu_mtaji < GHARAMA_MAREKEBISHO) { rudisha HATI_HAKUNA_MTAJI; }
+    n64 u = hati_utaratibu(d);
+    kama (u == UTARATIBU_AMRI) {
+        kama (mimi->ngazi < 9) { rudisha HATI_HAKUNA_MAMLAKA; }
+        nguvu_mtaji = nguvu_mtaji - GHARAMA_MAREKEBISHO;
+        hati_tumia(d, kifungu, kigezo, thamani, zamu);
+        d->uhalali = dola_rekebisha(d->uhalali, 0 - 2);
+        rudisha HATI_IMEPITISHWA;
+    }
+    nguvu_mtaji = nguvu_mtaji - GHARAMA_MAREKEBISHO;
+    kama (u == UTARATIBU_BUNGE) {
+        n64 mdhamini = nguvu_mwenye_jukumu(0, JUKUMU_KIONGOZI_WA_WENGI);
+        kama (mdhamini < 0) { mdhamini = nguvu_mwanzo[0]; }
+        n64 h = nguvu_ongeza_hoja(HOJA_MAREKEBISHO, 0, mdhamini, 1, zamu);
+        Hoja* hj = nguvu_hoja_pata(h);
+        hj->kifungu = kifungu;
+        hj->thamani = thamani;
+        hj->kigezo = kigezo;
+        rudisha HATI_KWA_BUNGE;
+    }
+    n64 kura = d->uhalali + dola_nasibu(zamu * 17 + kifungu, 920) % 31 - 15;
+    kama (u == UTARATIBU_CHAMA) { kura = nguvu_mtaji + 30 + dola_nasibu(zamu, 921) % 41 - 20; }
+    kama (u == UTARATIBU_MABARAZA) {
+        n64 s = 0;
+        n64 n = 0;
+        n64 i = 0;
+        wakati (i < w->idadi) {
+            MhusikaWaDola* m = wahusika_pata(w, i);
+            kama (m->tawi == TAWI_MIKOA) { s = s + m->msimamo; n = n + 1; }
+            i = i + 1;
+        }
+        kura = 50;
+        kama (n > 0) { kura = 50 + s / n; }
+    }
+    kama (kura > 50) { hati_tumia(d, kifungu, kigezo, thamani, zamu); rudisha HATI_IMEPITISHWA; }
+    d->uhalali = dola_rekebisha(d->uhalali, 0 - 2);
+    rudisha HATI_IMEKATALIWA;
+}
+
+// "Article 87(3)".
+w0 hati_kichwa_cha_kifungu(n64 i, n8* nje, n64 uwezo) {
+    Kifungu* k = hati_pata(i);
+    kama (k == 0) { nje[0] = 0; rudisha; }
+    mfuatano_umbiza(nje, uwezo, ui("Article %d(%d)"), k->ibara, k->namba, 0, 0, 0, 0);
+}
+
+w0 hati_zamu(Dola* d, Wahusika* w, n64 zamu) {
+    kama (hati_vifungu == 0) { rudisha; }
+    Kifungu* km = hati_tafuta(K_MAREKEBISHO, 0 - 1);
+    n32 kura_ya_maoni = km != 0 && km->p1;
+    n64 i = 0;
+    wakati (i < nguvu_hoja_idadi) {
+        Hoja* h = nguvu_hoja_pata(i);
+        kama (h->aina == HOJA_MAREKEBISHO && h->hatua == HOJA_IMEPITA && h->imetumika == 0) {
+            h->imetumika = 1;
+            n32 kubali = 1;
+            kama (kura_ya_maoni) { kubali = d->uhalali + dola_nasibu(zamu, 922 + i) % 31 - 15 > 45; }
+            n8* mwili = tenga(320);
+            n8 jina[160];
+            hati_kichwa_cha_kifungu(h->kifungu, jina, 160);
+            kama (kubali) {
+                hati_tumia(d, h->kifungu, h->kigezo, h->thamani, zamu);
+                mfuatano_umbiza(mwili, 320, ui("The amendment to %s is ratified and enters the constitution."), jina, 0, 0, 0, 0, 0);
+                kikasha_ongeza(w->msaidizi, UJUMBE_SHAJARA, zamu, tarehe_siku_ya_zamu(zamu), ui("Constitution amended"), mwili);
+            } sivyo {
+                d->uhalali = dola_rekebisha(d->uhalali, 0 - 3);
+                mfuatano_umbiza(mwili, 320, ui("The people rejected the amendment to %s in the referendum."), jina, 0, 0, 0, 0, 0);
+                kikasha_ongeza(w->msaidizi, UJUMBE_TAHADHARI, zamu, tarehe_siku_ya_zamu(zamu), ui("Referendum lost"), mwili);
+            }
+            achilia mwili;
+        }
+        i = i + 1;
+    }
+}
+
+// ---------- sarufi ----------
+
+n8* hati_lazima(n64 i) {
+    n64 v = hati_nasibu(i, 900) % 3;
+    kama (v == 0) { rudisha ui("shall"); }
+    kama (v == 1) { rudisha ui("must"); }
+    rudisha ui("is bound to");
+}
+
+n8* hati_ndani_ya(n64 i) {
+    n64 v = hati_nasibu(i, 901) % 3;
+    kama (v == 0) { rudisha ui("within %d days"); }
+    kama (v == 1) { rudisha ui("not later than %d days after"); }
+    rudisha ui("before %d days have passed");
+}
+
+n8* hati_kwa_mujibu(n64 i) {
+    n64 v = hati_nasibu(i, 902) % 3;
+    kama (v == 0) { rudisha ui("Subject to this Constitution, "); }
+    kama (v == 1) { rudisha ui("Save as otherwise provided by law, "); }
+    rudisha "";
+}
+
+n8* hati_mkuu(Dola* d) { rudisha ui(d->mkuu_wa_dola); }
+
+n8* hati_baraza(Dola* d, n64 b) {
+    kama (b < 0 || b >= d->mabaraza) { rudisha ui("legislature"); }
+    rudisha d->baraza_jina[b];
+}
+
+n8* hati_jina_la_mkoa(n64 r) {
+    kama (hati_mikoa_majina != 0 && r >= 0 && r < hati_mikoa_idadi && hati_mikoa_majina[r] != 0) { rudisha hati_mikoa_majina[r]; }
+    rudisha ui("the province");
+}
+
+w0 hati_herufi_kubwa_ya_kwanza(n8* s) {
+    kama (s[0] >= 97 && s[0] <= 122) { s[0] = s[0] - 32; }
+}
+
+// Maandishi ya kifungu i.
+w0 hati_andika(n64 i, Dola* d, Wahusika* w, n8* taifa, n8* nje, n64 uwezo) {
+    Kifungu* k = hati_pata(i);
+    nje[0] = 0;
+    kama (k == 0) { rudisha; }
+    kama (k->hai == 0) { mfuatano_umbiza(nje, uwezo, "%s", ui("[Repealed.]"), 0, 0, 0, 0, 0); rudisha; }
+    n64 t = k->aina;
+    kama (t <= K_URAIA || t == K_HAKI || t == K_UHURU_HABARI) { hati_andika_jumla(k, i, d, taifa, nje, uwezo); rudisha; }
+    kama (t <= K_IMANI) { hati_andika_utendaji(k, i, d, w, nje, uwezo); rudisha; }
+    kama (t <= K_KAMATI) { hati_andika_bunge(k, i, d, w, nje, uwezo); rudisha; }
+    hati_andika_mengine(k, i, d, w, taifa, nje, uwezo);
+}
+
+w0 hati_andika_jumla(Kifungu* k, n64 i, Dola* d, n8* taifa, n8* nje, n64 uwezo) {
+    n64 t = k->aina;
+    kama (t == K_DOLA) { mfuatano_umbiza(nje, uwezo, ui("%s is a %s, one and indivisible."), taifa, ui(dola_aina_jina(k->p0)), 0, 0, 0, 0); }
+    kama (t == K_MAMLAKA) {
+        n8* chanzo = ui("the people, who exercise it through their representatives and by referendum");
+        kama (wahusika_ni_ufalme(d)) { chanzo = ui("the Crown, which exercises it according to this Constitution"); }
+        kama (d->aina == DOLA_CHAMA_KIMOJA) { chanzo = ui("the working people, under the leadership of the Party"); }
+        kama (d->aina == DOLA_UTAWALA_WA_KIJESHI) { chanzo = ui("the nation, held in trust by the Armed Forces"); }
+        kama (d->aina == DOLA_UTAWALA_WA_KIDINI) { chanzo = ui("God, and is exercised by the guardians of the Faith"); }
+        mfuatano_umbiza(nje, uwezo, ui("Sovereignty belongs to %s."), chanzo, 0, 0, 0, 0, 0);
+    }
+    kama (t == K_ENEO) {
+        kama (k->p0 > 0) { mfuatano_umbiza(nje, uwezo, ui("The territory of %s comprises %d provinces, whose boundaries may be altered only in the manner of an amendment to this Constitution."), taifa, k->p0, 0, 0, 0, 0); }
+        sivyo { mfuatano_umbiza(nje, uwezo, ui("The territory of %s is that held by it on the day this Constitution came into force."), taifa, 0, 0, 0, 0, 0); }
+    }
+    kama (t == K_SARAFU) {
+        n8* jina = hati_jina_la_sarafu;
+        kama (jina == 0) { jina = ui("national currency"); }
+        mfuatano_umbiza(nje, uwezo, ui("The currency of the state is the %s. Its issue is reserved to the state."), jina, 0, 0, 0, 0, 0);
+    }
+    kama (t == K_URAIA) { mfuatano_umbiza(nje, uwezo, ui("Citizenship is acquired by birth to a citizen, or by naturalisation after %d years of lawful residence. No citizen %s be deprived of citizenship except by judgment of a court."), k->p0, hati_lazima(i), 0, 0, 0, 0); }
+    kama (t == K_HAKI) {
+        n8* mipaka = ui("This right is absolute and admits no limitation.");
+        kama (k->p0 == 1) { mipaka = ui("It may be limited only by law, and only so far as necessary for public order, health or the rights of others."); }
+        kama (k->p0 >= 2) { mipaka = ui("It may be suspended by decree when the security of the state so requires."); }
+        n8* mahakama = "";
+        kama (k->p1) { mahakama = ui(" Any person whose right is infringed may seek a remedy in the courts."); }
+        n8* kitenzi = ui("Every person is entitled to");
+        kama (k->mada >= 16 && k->mada <= 25 && k->mada != 17 && k->mada != 18) { kitenzi = ui("Every citizen has the right to"); }
+        mfuatano_umbiza(nje, uwezo, "%s %s. %s%s", kitenzi, haki_jina(k->mada), mipaka, mahakama, 0, 0);
+    }
+    kama (t == K_UHURU_HABARI) {
+        kama (k->p0) { mfuatano_umbiza(nje, uwezo, "%s", ui("No licence, censorship or prior restraint shall be imposed on printing, publication or the distribution of news."), 0, 0, 0, 0, 0); }
+        sivyo { mfuatano_umbiza(nje, uwezo, "%s", ui("Printing and publication require a licence from the state, which may examine any matter before it is published."), 0, 0, 0, 0, 0); }
+    }
+}
+
+w0 hati_andika_utendaji(Kifungu* k, n64 i, Dola* d, Wahusika* w, n8* nje, n64 uwezo) {
+    n8 a[128];
+    n8 b[128];
+    n64 t = k->aina;
+    MhusikaWaDola* m = wahusika_pata(w, k->mada);
+    kama (t == K_MKUU_UTEUZI) {
+        n8* namna = ui("succeeds by hereditary right");
+        kama (k->p0 == 1) { namna = ui("is elected by direct vote of the citizens"); }
+        kama (k->p0 == 2) { namna = ui("is elected by the legislature"); }
+        kama (k->p0 == 3) { namna = ui("is chosen by the ruling council"); }
+        kama (k->p1 > 0) { mfuatano_umbiza(a, 128, ui("for a term of %d years"), k->p1, 0, 0, 0, 0, 0); } sivyo { nakili_mfuatano(a, ui("for life")); }
+        kama (k->p2 > 0) { mfuatano_umbiza(b, 128, ui(" No person may hold the office for more than %d terms."), k->p2, 0, 0, 0, 0, 0); } sivyo { b[0] = 0; }
+        mfuatano_umbiza(nje, uwezo, ui("The %s %s and holds office %s. A candidate %s be at least %d years of age.%s"), hati_mkuu(d), namna, a, hati_lazima(i), k->p3, b);
+    }
+    kama (t == K_MKUU_KIAPO) { mfuatano_umbiza(nje, uwezo, ui("Before taking office the %s %s swear to uphold this Constitution and to discharge the duties of the office faithfully."), hati_mkuu(d), hati_lazima(i), 0, 0, 0, 0); }
+    kama (t == K_MKUU_TURUFU) {
+        kama (k->p0) {
+            mfuatano_umbiza(a, 128, hati_ndani_ya(i), k->p2, 0, 0, 0, 0, 0);
+            mfuatano_umbiza(nje, uwezo, ui("Every bill passed by the legislature is presented to the %s, who %s assent to it or return it with objections %s presentation. A returned bill becomes law if passed again by %d per cent of the members."), hati_mkuu(d), hati_lazima(i), a, k->p1, 0, 0);
+        } sivyo { mfuatano_umbiza(nje, uwezo, ui("The %s %s assent to every bill passed by the legislature."), hati_mkuu(d), hati_lazima(i), 0, 0, 0, 0); }
+    }
+    kama (t == K_MKUU_MSAMAHA) { mfuatano_umbiza(nje, uwezo, ui("The %s may grant pardons, commute sentences and remit penalties, save in cases of impeachment."), hati_mkuu(d), 0, 0, 0, 0, 0); }
+    kama (t == K_MKUU_KUONDOLEWA) { mfuatano_umbiza(nje, uwezo, ui("The %s may be removed from office for grave violation of this Constitution by a resolution supported by %d per cent of the members of the legislature."), hati_mkuu(d), k->p0, 0, 0, 0, 0); }
+    kama (t == K_URITHI && m != 0) { mfuatano_umbiza(nje, uwezo, ui("Should the office of %s fall vacant, the %s, who stands %d in the order of succession, %s act until a successor takes office."), hati_mkuu(d), m->cheo, k->p0, hati_lazima(i), 0, 0); }
+    kama (t == K_UTEUZI && m != 0) {
+        MhusikaWaDola* mteuzi = wahusika_pata(w, m->mteuzi);
+        n8* nani = hati_mkuu(d);
+        kama (mteuzi != 0) { nani = mteuzi->cheo; }
+        kama (k->p0 > 0) {
+            mfuatano_umbiza(a, 128, hati_ndani_ya(i), k->p1, 0, 0, 0, 0, 0);
+            mfuatano_umbiza(nje, uwezo, ui("%sthe %s is appointed by the %s with the consent of the %s, which %s decide %s the nomination. "), hati_kwa_mujibu(i), m->cheo, nani, hati_baraza(d, k->p0 - 1), hati_lazima(i), a);
+            n64 l = urefu_wa_mfuatano(nje);
+            mfuatano_umbiza(&nje[l], uwezo - l, ui("The %s may dismiss the holder."), nani, 0, 0, 0, 0, 0);
+        } sivyo { mfuatano_umbiza(nje, uwezo, ui("%sthe %s is appointed by the %s and holds office at the pleasure of the %s."), hati_kwa_mujibu(i), m->cheo, nani, nani, 0, 0); }
+        hati_herufi_kubwa_ya_kwanza(nje);
+    }
+    kama (t == K_WIZARA && m != 0) { mfuatano_umbiza(nje, uwezo, ui("There is established the office of %s, responsible for the affairs assigned to it by law and answerable to the head of government."), m->cheo, 0, 0, 0, 0, 0); }
+    kama (t == K_IMANI) {
+        mfuatano_umbiza(a, 128, hati_ndani_ya(i), k->p1, 0, 0, 0, 0, 0);
+        mfuatano_umbiza(nje, uwezo, ui("The government %s resign if %d per cent of the members of the legislature pass a motion of no confidence in it, and a new government %s be formed %s the vote."), hati_lazima(i), k->p0, hati_lazima(i + 1), a, 0, 0);
+    }
+}
+
+w0 hati_andika_bunge(Kifungu* k, n64 i, Dola* d, Wahusika* w, n8* nje, n64 uwezo) {
+    n8 a[128];
+    n64 t = k->aina;
+    MhusikaWaDola* m = wahusika_pata(w, k->mada);
+    n8* baraza = hati_baraza(d, k->mada);
+    kama (t == K_BARAZA) { mfuatano_umbiza(nje, uwezo, ui("The %s consists of %d members, %s."), baraza, k->p0, ui(dola_uteuzi_jina(k->p1)), 0, 0, 0); }
+    kama (t == K_BARAZA_MUHULA) { mfuatano_umbiza(nje, uwezo, ui("Members of the %s hold their seats for %d years, unless the chamber is dissolved sooner."), baraza, k->p0, 0, 0, 0, 0); }
+    kama (t == K_BARAZA_SIFA) { mfuatano_umbiza(nje, uwezo, ui("No person under %d years of age may sit in the %s."), k->p0, baraza, 0, 0, 0, 0); }
+    kama (t == K_AKIDI) { mfuatano_umbiza(nje, uwezo, ui("The %s may not transact business unless %d per cent of its members are present."), baraza, k->p0, 0, 0, 0, 0); }
+    kama (t == K_SPIKA) { mfuatano_umbiza(nje, uwezo, ui("The %s elects a Speaker from among its members, who may be removed by a resolution of %d per cent of the members."), baraza, k->p0, 0, 0, 0, 0); }
+    kama (t == K_VIKAO) { mfuatano_umbiza(nje, uwezo, ui("The %s %s meet in at least %d sessions in every year."), baraza, hati_lazima(i), k->p0, 0, 0, 0); }
+    kama (t == K_KINGA) {
+        kama (k->p0) { mfuatano_umbiza(nje, uwezo, ui("No member of the %s may be prosecuted for words spoken or votes cast in the chamber, nor arrested during a session without its leave."), baraza, 0, 0, 0, 0, 0); }
+        sivyo { mfuatano_umbiza(nje, uwezo, ui("Members of the %s enjoy no immunity beyond that of every citizen."), baraza, 0, 0, 0, 0, 0); }
+    }
+    kama (t == K_NAFASI_WAZI) {
+        mfuatano_umbiza(a, 128, hati_ndani_ya(i), k->p0, 0, 0, 0, 0, 0);
+        mfuatano_umbiza(nje, uwezo, ui("A seat in the %s that falls vacant %s be filled %s the vacancy."), baraza, hati_lazima(i), a, 0, 0, 0);
+    }
+    kama (t == K_MSWADA) { mfuatano_umbiza(nje, uwezo, ui("A bill becomes law when passed by %d per cent of the members voting, no sooner than %d days after it is tabled."), k->p0, k->p1, 0, 0, 0, 0); }
+    kama (t == K_KAMATI && m != 0) { mfuatano_umbiza(nje, uwezo, ui("There is established a standing committee whose chair, the %s, may summon any minister or official to give evidence on oath."), m->cheo, 0, 0, 0, 0, 0); }
+}
+
+w0 hati_andika_mengine(Kifungu* k, n64 i, Dola* d, Wahusika* w, n8* taifa, n8* nje, n64 uwezo) {
+    n64 t = k->aina;
+    MhusikaWaDola* m = wahusika_pata(w, k->mada);
+    kama (t == K_MGAWANYO) {
+        n8* nani = ui("is reserved to the national legislature");
+        kama (k->p0 == 1) { nani = ui("is shared: the provinces may legislate so far as national law does not provide"); }
+        kama (k->p0 >= 2) { nani = ui("belongs to the provinces, within the limits of this Constitution"); }
+        mfuatano_umbiza(nje, uwezo, ui("The power to make laws on %s %s."), eneo_la_sera(k->mada), nani, 0, 0, 0, 0);
+    }
+    kama (t == K_SIFA_YA_CHEO && m != 0) { mfuatano_umbiza(nje, uwezo, ui("No person may hold the office of %s unless a citizen of at least %d years' standing who has reached the age of %d, and no holder may engage in trade or receive any other salary."), m->cheo, k->p1, k->p0, 0, 0, 0); }
+    kama (t == K_MAHAKAMA_NDOGO) {
+        n8* jina = ui("Magistrates' Courts");
+        kama (k->mada == 0) { jina = ui("Court of Appeal"); }
+        kama (k->mada == 1) { jina = ui("Provincial Courts"); }
+        kama (k->mada == 2) { jina = ui("District Courts"); }
+        mfuatano_umbiza(nje, uwezo, ui("There are established the %s, each sitting with %d judges, whose decisions may be appealed to the court above it."), jina, k->p0, 0, 0, 0, 0);
+    }
+    kama (t == K_TAASISI) { mfuatano_umbiza(nje, uwezo, ui("There is established a %s, independent in the exercise of its functions, whose head is appointed for %d years and may be removed only as a justice of the High Court."), taasisi_jina(k->mada), k->p0, 0, 0, 0, 0); }
+    kama (t == K_MKOA_BARAZA) { mfuatano_umbiza(nje, uwezo, ui("The Province of %s has a council of %d members, elected for the term of the national legislature, which makes laws for the province within its powers."), hati_jina_la_mkoa(k->mada), k->p0, 0, 0, 0, 0); }
+    kama (t == K_MAHAKAMA) { mfuatano_umbiza(nje, uwezo, ui("The judicial power of %s is vested in a High Court of %d justices and in such lower courts as the law establishes."), taifa, k->p0, 0, 0, 0, 0); }
+    kama (t == K_JAJI_MUDA) { mfuatano_umbiza(nje, uwezo, ui("A justice holds office until the age of %d, and his or her salary may not be reduced while in office."), k->p0, 0, 0, 0, 0, 0); }
+    kama (t == K_JAJI_KUONDOLEWA) { mfuatano_umbiza(nje, uwezo, ui("A justice may be removed only for proved misconduct or incapacity, by resolution of %d per cent of the members of the legislature."), k->p0, 0, 0, 0, 0, 0); }
+    kama (t == K_MAPITIO) {
+        kama (k->p0) { mfuatano_umbiza(nje, uwezo, "%s", ui("The High Court may declare void any law or act inconsistent with this Constitution."), 0, 0, 0, 0, 0); }
+        sivyo { mfuatano_umbiza(nje, uwezo, "%s", ui("No court may question the validity of a law duly enacted."), 0, 0, 0, 0, 0); }
+    }
+    kama (t == K_AMRI_JESHI && m != 0) { mfuatano_umbiza(nje, uwezo, ui("The %s commands under the authority of the %s, who is Commander-in-Chief."), m->cheo, hati_mkuu(d), 0, 0, 0, 0); }
+    kama (t == K_VITA) {
+        kama (k->p0) { mfuatano_umbiza(nje, uwezo, ui("War may be declared, and forces sent abroad, only with the approval of %d per cent of the members of the legislature."), k->p1, 0, 0, 0, 0, 0); }
+        sivyo { mfuatano_umbiza(nje, uwezo, ui("The %s declares war and makes peace."), hati_mkuu(d), 0, 0, 0, 0, 0); }
+    }
+    kama (t == K_MKOA) {
+        n8* gavana = ui("appointed by the head of state");
+        kama (k->p0) { gavana = ui("elected by its inhabitants"); }
+        mfuatano_umbiza(nje, uwezo, ui("There is established the Province of %s, administered by a governor %s, with a council for its local affairs."), hati_jina_la_mkoa(k->mada), gavana, 0, 0, 0, 0);
+    }
+    kama (t == K_BAJETI) { mfuatano_umbiza(nje, uwezo, ui("The government %s lay the estimates of revenue and expenditure before the legislature in month %d of every year; no money may be spent except as appropriated by law."), hati_lazima(i), k->p0, 0, 0, 0, 0); }
+    kama (t == K_KODI) { mfuatano_umbiza(nje, uwezo, "%s", ui("No tax or duty may be imposed, altered or abolished except by law."), 0, 0, 0, 0, 0); }
+    kama (t == K_DENI) { mfuatano_umbiza(nje, uwezo, ui("Public debt may not exceed %d per cent of the annual output of the nation without the approval of two thirds of the legislature."), k->p0, 0, 0, 0, 0, 0); }
+    kama (t == K_BENKI) {
+        kama (k->p0) { mfuatano_umbiza(nje, uwezo, "%s", ui("The central bank is independent and takes no instructions from the government on the value of the currency."), 0, 0, 0, 0, 0); }
+        sivyo { mfuatano_umbiza(nje, uwezo, "%s", ui("The central bank acts on the instructions of the government."), 0, 0, 0, 0, 0); }
+    }
+    kama (t == K_UKAGUZI) { mfuatano_umbiza(nje, uwezo, ui("An Auditor-General, appointed for %d years, %s examine the accounts of every public body and report to the legislature."), k->p0, hati_lazima(i), 0, 0, 0, 0); }
+    kama (t == K_KURA) {
+        n8* nani = ui("Every citizen");
+        kama (k->p0 == 1) { nani = ui("Every citizen owning property"); }
+        kama (k->p0 == 2) { nani = ui("Every member of an estate of the realm"); }
+        kama (k->p0 >= 3) { mfuatano_umbiza(nje, uwezo, "%s", ui("There is no general franchise; offices are filled as this Constitution provides."), 0, 0, 0, 0, 0); }
+        sivyo { mfuatano_umbiza(nje, uwezo, ui("%s who has reached the age of %d has the right to vote, by secret ballot."), nani, k->p1, 0, 0, 0, 0); }
+    }
+    kama (t == K_TUME) { mfuatano_umbiza(nje, uwezo, ui("An Electoral Commission of %d members, independent of the government, %s conduct all elections and referendums."), k->p0, hati_lazima(i), 0, 0, 0, 0); }
+    kama (t == K_VYAMA) {
+        kama (k->p0) { mfuatano_umbiza(nje, uwezo, ui("Citizens may form political parties freely. A party is registered on the signatures of %d thousand citizens."), k->p1, 0, 0, 0, 0, 0); }
+        sivyo { mfuatano_umbiza(nje, uwezo, "%s", ui("The ruling party is the leading force of state and society; no other party may be formed."), 0, 0, 0, 0, 0); }
+    }
+    kama (t == K_DHARURA) {
+        n8* sasa = "";
+        kama (k->p2) { sasa = ui(" A state of emergency is now in force, and the head of state may govern and amend this Constitution by decree."); }
+        mfuatano_umbiza(nje, uwezo, ui("In time of war or grave disorder the %s may declare a state of emergency for no longer than %d days, which may be extended only by %d per cent of the legislature.%s"), hati_mkuu(d), k->p0, k->p1, sasa, 0, 0);
+    }
+    kama (t == K_MAREKEBISHO) {
+        n8* kura = "";
+        kama (k->p1) { kura = ui(" and approved by the citizens in a referendum"); }
+        mfuatano_umbiza(nje, uwezo, ui("This Constitution may be amended %s, by a measure supported by %d per cent%s, no sooner than %d days after the amendment is published."), utaratibu_jina(hati_utaratibu(d)), k->p0, kura, k->p2, 0, 0);
+    }
+    kama (t == K_ZISIZOGUSWA) {
+        kama (k->p0) { mfuatano_umbiza(nje, uwezo, "%s", ui("The rights declared in Part II may be extended by amendment but never abolished or further limited."), 0, 0, 0, 0, 0); }
+        sivyo { mfuatano_umbiza(nje, uwezo, "%s", ui("No provision of this Constitution is beyond amendment."), 0, 0, 0, 0, 0); }
+    }
+    kama (t == K_MPITO) { mfuatano_umbiza(nje, uwezo, ui("This Constitution came into force %d years ago. Laws then in force continue until repealed, so far as they are consistent with it."), k->p0, 0, 0, 0, 0, 0); }
+}
+
+// Kichwa cha ibara inayoanzia kifungu i.
+w0 hati_kichwa_cha_ibara(n64 i, Dola* d, Wahusika* w, n8* nje, n64 uwezo) {
+    Kifungu* k = hati_pata(i);
+    nje[0] = 0;
+    kama (k == 0) { rudisha; }
+    MhusikaWaDola* m = wahusika_pata(w, k->mada);
+    n64 t = k->aina;
+    n8* jina = ui("Provision");
+    kama (t == K_DOLA) { jina = ui("The State"); }
+    kama (t == K_MAMLAKA) { jina = ui("Sovereignty"); }
+    kama (t == K_ENEO) { jina = ui("Territory"); }
+    kama (t == K_SARAFU) { jina = ui("Currency"); }
+    kama (t == K_URAIA) { jina = ui("Citizenship"); }
+    kama (t == K_HAKI) { jina = ui("Declaration of Rights"); }
+    kama (t == K_UHURU_HABARI) { jina = ui("The Press"); }
+    kama (t == K_MKUU_UTEUZI) { jina = ui("Election and Term"); }
+    kama (t == K_MKUU_KIAPO) { jina = ui("Oath of Office"); }
+    kama (t == K_MKUU_TURUFU) { jina = ui("Assent to Bills"); }
+    kama (t == K_MKUU_MSAMAHA) { jina = ui("Prerogative of Mercy"); }
+    kama (t == K_MKUU_KUONDOLEWA) { jina = ui("Impeachment"); }
+    kama (t == K_URITHI) { jina = ui("Succession"); }
+    kama (t == K_IMANI) { jina = ui("Confidence"); }
+    kama (t == K_MSWADA) { jina = ui("Legislative Procedure"); }
+    kama (t == K_KAMATI) { jina = ui("Standing Committees"); }
+    kama (t == K_MAHAKAMA) { jina = ui("The High Court"); }
+    kama (t == K_JAJI_MUDA) { jina = ui("Tenure of Judges"); }
+    kama (t == K_JAJI_KUONDOLEWA) { jina = ui("Removal of Judges"); }
+    kama (t == K_MAPITIO) { jina = ui("Constitutional Review"); }
+    kama (t == K_AMRI_JESHI) { jina = ui("Command of the Forces"); }
+    kama (t == K_VITA) { jina = ui("War and Peace"); }
+    kama (t == K_BAJETI) { jina = ui("Budget"); }
+    kama (t == K_KODI) { jina = ui("Taxation"); }
+    kama (t == K_DENI) { jina = ui("Public Debt"); }
+    kama (t == K_BENKI) { jina = ui("Central Bank"); }
+    kama (t == K_UKAGUZI) { jina = ui("Auditor-General"); }
+    kama (t == K_KURA) { jina = ui("Franchise"); }
+    kama (t == K_TUME) { jina = ui("Electoral Commission"); }
+    kama (t == K_VYAMA) { jina = ui("Political Parties"); }
+    kama (t == K_DHARURA) { jina = ui("State of Emergency"); }
+    kama (t == K_MAREKEBISHO) { jina = ui("Amendment"); }
+    kama (t == K_ZISIZOGUSWA) { jina = ui("Entrenched Provisions"); }
+    kama (t == K_MPITO) { jina = ui("Commencement"); }
+    kama (t == K_MGAWANYO) { jina = ui("Division of Legislative Powers"); }
+    kama (t == K_SIFA_YA_CHEO) { jina = ui("Qualifications for Office"); }
+    kama (t == K_MAHAKAMA_NDOGO) { jina = ui("Lower Courts"); }
+    kama (t == K_TAASISI) { jina = taasisi_jina(k->mada); }
+    kama (t == K_MKOA_BARAZA) { jina = hati_jina_la_mkoa(k->mada); }
+    kama ((t == K_UTEUZI || t == K_WIZARA) && m != 0) { jina = m->cheo; }
+    kama (t >= K_BARAZA && t <= K_NAFASI_WAZI) { jina = hati_baraza(d, k->mada); }
+    kama (t == K_MKOA) { jina = hati_jina_la_mkoa(k->mada); }
+    mfuatano_umbiza(nje, uwezo, ui("Article %d. %s"), k->ibara, jina, 0, 0, 0, 0);
+}
+
+n64 hati_hai() {
+    n64 n = 0;
+    n64 i = 0;
+    wakati (i < hati_idadi) {
+        Kifungu* k = hati_vifungu[i];
+        kama (k->hai) { n = n + 1; }
+        i = i + 1;
+    }
+    rudisha n;
+}
+
+// Hakikisha katiba ya taifa imezalishwa (na kwa toleo lake la sasa).
+w0 hati_hakikisha(Dola* d, Wahusika* w, n64 taifa) {
+    kama (hati_taifa == taifa && hati_toleo == hati_toleo_la(taifa) && hati_idadi > 0) { rudisha; }
+    hati_zalisha(d, w, taifa);
+}

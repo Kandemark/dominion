@@ -263,7 +263,8 @@ n64 HOJA_KUSHUSHA_KODI = 3;
 n64 HOJA_UCHUNGUZI = 4;
 n64 HOJA_MSAMAHA = 5;
 n64 HOJA_LAWAMA = 6;
-n64 HOJA_AINA_IDADI = 7;
+n64 HOJA_MAREKEBISHO = 7;      // marekebisho ya katiba (siasa/hati.swa)
+n64 HOJA_AINA_IDADI = 8;
 
 n8* hoja_jina(n64 a) {
     kama (a == HOJA_KUMSHTAKI_SPIKA) { rudisha ui("Impeach the Speaker"); }
@@ -272,13 +273,33 @@ n8* hoja_jina(n64 a) {
     kama (a == HOJA_KUSHUSHA_KODI) { rudisha ui("Finance bill: cut taxes"); }
     kama (a == HOJA_UCHUNGUZI) { rudisha ui("Inquiry into the opposition"); }
     kama (a == HOJA_MSAMAHA) { rudisha ui("Amnesty bill"); }
+    kama (a == HOJA_MAREKEBISHO) { rudisha ui("Constitutional amendment"); }
     rudisha ui("Censure of the government");
 }
 
 // Hoja inahitaji asilimia gani ya kura za ndiyo.
+// Vigezo vya katiba ambavyo injini husoma (siasa/hati.swa huviweka kutoka
+// vifungu vya katiba ya taifa la mchezaji): asilimia ya kura za ndiyo kwa
+// kila aina ya hoja, wiki kati ya kuwasilisha na kura, wiki za idhini ya
+// mswada, na asilimia ya kupindua turufu.
+n64* nguvu_kiwango_cha_hoja = 0;
+n64 nguvu_wiki_za_kura = 2;
+n64 nguvu_wiki_za_idhini = 2;
+n64 nguvu_kiwango_cha_kupindua = 67;
+
+w0 nguvu_vigezo_vya_mwanzo() {
+    kama (nguvu_kiwango_cha_hoja != 0) { rudisha; }
+    nguvu_kiwango_cha_hoja = tenga(8 * 16);
+    n64 a = 0;
+    wakati (a < 16) { nguvu_kiwango_cha_hoja[a] = 51; a = a + 1; }
+    nguvu_kiwango_cha_hoja[0] = 67;     // kumshtaki spika
+    nguvu_kiwango_cha_hoja[7] = 67;     // marekebisho ya katiba
+}
+
 n64 hoja_kiwango(n64 a) {
-    kama (a == HOJA_KUMSHTAKI_SPIKA) { rudisha 67; }
-    rudisha 51;
+    nguvu_vigezo_vya_mwanzo();
+    kama (a < 0 || a >= 16) { rudisha 51; }
+    rudisha nguvu_kiwango_cha_hoja[a];
 }
 
 // Mswada (si azimio): unaweza kuzuiwa kwa kura ya turufu.
@@ -305,6 +326,10 @@ muundo Hoja {
     n64 hapana;
     n64 mbegu;
     n64 imeripotiwa;    // habari imeshatolewa
+    n64 kifungu;        // marekebisho: kifungu cha katiba
+    n64 thamani;        // marekebisho: thamani mpya
+    n64 kigezo;         // marekebisho: kigezo cha kifungu (-1 kufuta kifungu)
+    n64 imetumika;      // marekebisho yaliyopita yameshatumika
 }
 
 n64 NGUVU_HOJA_JUU = 128;
@@ -329,12 +354,16 @@ n64 nguvu_ongeza_hoja(n64 aina, n64 baraza, n64 mdhamini, n64 upande, n64 zamu) 
     h->baraza = baraza;
     h->mdhamini = mdhamini;
     h->upande = upande;
-    h->zamu_ya_kura = zamu + 2;
+    h->zamu_ya_kura = zamu + nguvu_wiki_za_kura;
     h->hatua = HOJA_INASUBIRI;
     h->ndiyo = 0;
     h->hapana = 0;
     h->mbegu = zamu * 131 + aina * 17 + mdhamini;
     h->imeripotiwa = 0;
+    h->kifungu = 0;
+    h->thamani = 0;
+    h->kigezo = 0;
+    h->imetumika = 0;
     nguvu_hoja[nguvu_hoja_idadi] = h;
     nguvu_hoja_idadi = nguvu_hoja_idadi + 1;
     rudisha nguvu_hoja_idadi - 1;
@@ -603,9 +632,14 @@ w0 nguvu_tumia_hoja(Hoja* h, Dola* d) {
 
 // Je, ofisi ya mchezaji ina kura ya turufu? Mkuu wa dola katika jamhuri za
 // rais, nusu-rais, shirikisho, na falme (idhini ya kifalme).
+// Kifungu cha turufu cha katiba (siasa/hati.swa huweka): -1 hufuata aina
+// ya utawala, 0 hakuna turufu, 1 mkuu wa dola ana turufu.
+n64 nguvu_turufu_ya_katiba = -1;
+
 n32 nguvu_ina_turufu(Wahusika* w, Dola* d, n64 ofisi) {
     MhusikaWaDola* m = wahusika_pata(w, ofisi);
     kama (m == 0 || m->ngazi < 9) { rudisha 0; }
+    kama (nguvu_turufu_ya_katiba >= 0) { rudisha nguvu_turufu_ya_katiba; }
     n64 a = d->aina;
     rudisha a == DOLA_JAMHURI_YA_RAIS || a == DOLA_JAMHURI_NUSU_RAIS || a == DOLA_JAMHURI_YA_SHIRIKISHO || a == DOLA_UFALME_KAMILI || a == DOLA_UFALME_WA_KATIBA || a == DOLA_MILKI;
 }
@@ -621,7 +655,7 @@ n64 nguvu_turufu(n64 i, Wahusika* w, Dola* d, n64 ofisi, n64 zamu) {
     // ya upande ule ule wa mswada
     nguvu_hesabu_kura(h, d);
     n64 jumla = h->ndiyo + h->hapana;
-    kama (jumla > 0 && h->ndiyo * 3 >= jumla * 2) {
+    kama (jumla > 0 && h->ndiyo * 100 >= jumla * nguvu_kiwango_cha_kupindua) {
         h->hatua = HOJA_TURUFU_IMEPINDULIWA;
         nguvu_tumia_hoja(h, d);
         d->uhalali = dola_rekebisha(d->uhalali, 0 - 3);
@@ -700,7 +734,7 @@ w0 nguvu_zamu(Dola* d, Wahusika* w, n64 taifa, n64 zamu) {
             nguvu_hesabu_kura(h, d);
             n64 inahitajika = nguvu_zinazohitajika(h);
             kama (h->ndiyo >= inahitajika) {
-                kama (hoja_ni_mswada(h->aina)) { h->hatua = HOJA_INASUBIRI_IDHINI; h->zamu_ya_kura = zamu + 2; }
+                kama (hoja_ni_mswada(h->aina)) { h->hatua = HOJA_INASUBIRI_IDHINI; h->zamu_ya_kura = zamu + nguvu_wiki_za_idhini; }
                 sivyo { h->hatua = HOJA_IMEPITA; nguvu_tumia_hoja(h, d); }
             } sivyo { h->hatua = HOJA_IMESHINDWA; }
             mfuatano_umbiza(mwili, 320, ui("%s: %d in favour, %d against (%d needed)."), hoja_jina(h->aina), h->ndiyo, h->hapana, inahitajika, 0, 0);

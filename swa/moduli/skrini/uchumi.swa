@@ -1,4 +1,5 @@
 husisha { moduli/skrini/jopo.swa }
+husisha { moduli/soko/masoko.swa }
 
 n64 skrini_uchumi_dirisha_la_historia = 24;
 
@@ -107,27 +108,21 @@ w0 skrini_uchumi_bajeti(Mchezo* g, Turubai* t, n64 x, n64 y, n64 w) {
     }
 }
 
-w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
-    sura_anzisha(t);
-    bofya_anza();
-    turubai_brashi(t, SURA_USULI, 255);
-    turubai_jaza(t, 0, 0, t->upana, t->kimo);
-    skrini_upau_wa_juu(g, t);
-    skrini_urambazaji(t, 1);
+// Kitendo cha kubofya: urefu wa historia ya pato (hoja = zamu).
+n64 UCHUMI_MUDA = 60;
 
+// Uchumi mkuu (kichupo cha MACRO cha kituo): vigae, historia ya pato,
+// uzalishaji dhidi ya matumizi, nafasi, bajeti na mataifa yote, kuanzia y0.
+w0 skrini_uchumi_makro_chora(Mchezo* g, Turubai* t, n64 taifa, n64 y0) {
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
     kama (tn == 0) { rudisha; }
     TakwimuHistoria* h = mchezo_pata_historia_ya_taifa(g, taifa);
 
     n64 x = SKRINI_UPANA_WA_PEMBENI + 25;
-    n64 y = SKRINI_UPAU_WA_JUU + 25;
+    n64 y = y0;
     n64 w = t->upana - x - 24;
     n64 pengo = 16;
-
-    // Kichwa cha ukurasa: taifa ndilo linalotawala, skrini inaelezwa chini.
-    skrini_kichwa_fm(g, t, ui("Economy"), tn->jina, x, y - 15);
-    y = y + 58;
 
     // kadi nne
     n64 wk = (w - 3 * pengo) / 4;
@@ -150,7 +145,7 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n8 gdp_delta[24];
     n64 gdp_change = skrini_mabadiliko(h, 10);
     sura_asilimia(gdp_delta, gdp_change, 1);
-    sura_namba_fupi(chombo, skrini_pato_la_taifa(tn));
+    soko_fedha_maandishi(chombo, taifa, soko_kwa_sarafu(taifa, skrini_pato_la_taifa(tn)));
     sura_kadi_sparkline(ui("GDP"), chombo, gdp_delta, gdp_change, gdp_trend, gdp_trend_n, x, y, wk, 92);
     kama (gdp_trend != 0) { achilia gdp_trend; }
     n64 tija = tn->pato_kwa_kila_mtu;
@@ -177,6 +172,10 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_segmenti("24T", controls_x + 46, controls_y, 44, skrini_uchumi_dirisha_la_historia == 24, 0);
     sura_segmenti("60T", controls_x + 92, controls_y, 44, skrini_uchumi_dirisha_la_historia == 60, 0);
     sura_segmenti("240T", controls_x + 138, controls_y, 50, skrini_uchumi_dirisha_la_historia >= 240, 0);
+    bofya_ongeza(controls_x, controls_y, 44, 28, UCHUMI_MUDA, 12);
+    bofya_ongeza(controls_x + 46, controls_y, 44, 28, UCHUMI_MUDA, 24);
+    bofya_ongeza(controls_x + 92, controls_y, 44, 28, UCHUMI_MUDA, 60);
+    bofya_ongeza(controls_x + 138, controls_y, 50, 28, UCHUMI_MUDA, 240);
     kama (h == 0 || h->idadi < 2) {
         sura_rangi(SURA_HAFIFU);
         sura_lebo(ui("History appears after two turns."), x + 16, y + 140, 14);

@@ -1,6 +1,6 @@
 husisha { msingi/maktaba/mfuatano.swa }
 husisha { moduli/skrini/ramani.swa }
-husisha { moduli/skrini/uchumi.swa }
+husisha { moduli/skrini/kituo.swa }
 husisha { moduli/skrini/diplomasia.swa }
 husisha { moduli/skrini/siasa.swa }
 husisha { moduli/skrini/jeshi.swa }
@@ -13,6 +13,8 @@ husisha { moduli/skrini/dashibodi.swa }
 husisha { moduli/skrini/kalenda.swa }
 husisha { moduli/skrini/kikasha.swa }
 husisha { moduli/skrini/dunia.swa }
+husisha { moduli/skrini/wasifu.swa }
+husisha { moduli/skrini/katiba.swa }
 husisha { moduli/onyesho/wayland/dirisha.swa }
 
 // dominion.swa -- programu ya mchezo: dirisha la Wayland, mchezo halisi,
@@ -70,6 +72,8 @@ n64 SKRINI_MKUTANO = 9;
 n64 SKRINI_DUNIA_YOTE = 10;
 n64 SKRINI_KIKASHA = 11;
 n64 SKRINI_KALENDA = 12;
+n64 SKRINI_WASIFU = 13;
+n64 SKRINI_KATIBA = 14;
 
 // Skrini zote zisizo ramani: kila moja huchora taifa lililochaguliwa.
 w0 chora_skrini_ya_taifa(Mchezo* g, Turubai* t, n64 skrini, n64 taifa) {
@@ -84,6 +88,8 @@ w0 chora_skrini_ya_taifa(Mchezo* g, Turubai* t, n64 skrini, n64 taifa) {
     kama (skrini == SKRINI_DUNIA_YOTE) { skrini_dunia_kituo_chora(g, t); rudisha; }
     kama (skrini == SKRINI_KIKASHA) { skrini_kikasha_chora(g, t, taifa); rudisha; }
     kama (skrini == SKRINI_KALENDA) { skrini_kalenda_chora(g, t, taifa); rudisha; }
+    kama (skrini == SKRINI_WASIFU) { skrini_wasifu_chora(g, t, taifa); rudisha; }
+    kama (skrini == SKRINI_KATIBA) { skrini_katiba_chora(g, t, taifa); rudisha; }
     skrini_dashibodi_chora(g, t, taifa);
 }
 
@@ -572,19 +578,34 @@ w0 bofya_skrini(Mchezo* g, Hali* h, n64 skrini, n64 upana, n64 kimo, n64 px, n64
         }
         mipangilio_akili_tekeleza(skrini_mipangilio_bofya_akili(upana, px, py));
     }
-    kama (skrini == SKRINI_UCHUMI && py >= SKRINI_UPAU_WA_JUU + 199 && py < SKRINI_UPAU_WA_JUU + 231) {
-        n64 body_w = upana - x0 - 24;
-        n64 control_x = skrini_uchumi_muda_x(x0, (body_w * 3) / 5);
-        kama (px >= control_x && px < control_x + 44) { skrini_uchumi_dirisha_la_historia = 12; }
-        kama (px >= control_x + 46 && px < control_x + 90) { skrini_uchumi_dirisha_la_historia = 24; }
-        kama (px >= control_x + 92 && px < control_x + 136) { skrini_uchumi_dirisha_la_historia = 60; }
-        kama (px >= control_x + 138 && px < control_x + 188) { skrini_uchumi_dirisha_la_historia = 240; }
-    }
     kama (skrini == SKRINI_DUNIA_YOTE) { bofya_dunia(g, h, px, py); }
     // vipengele vya dashibodi (jopo.swa) kwenye kurasa za taifa: kubofya taifa hulifungua
     kama (skrini == SKRINI_SIASA || skrini == SKRINI_JESHI || skrini == SKRINI_UTAMADUNI || skrini == SKRINI_TEKNOLOJIA || skrini == SKRINI_DIPLOMASIA || skrini == SKRINI_UCHUMI) {
         n64 hoja = 0;
         kama (bofya_tafuta(px, py, &hoja) == JOPO_FUNGUA) { h->taifa = hoja; chafua_ukurasa(h); rudisha; }
+    }
+    kama (skrini == SKRINI_KATIBA && skrini_katiba_bofya(g, h->taifa, px, py)) { chafua_ukurasa(h); rudisha; }
+    kama (skrini == SKRINI_WASIFU) {
+        n64 kituo = 0;
+        kama (skrini_wasifu_bofya(g, px, py, &kituo)) {
+            kama (kituo) { fungua_ukurasa(h, SKRINI_UCHUMI); }
+            chafua_ukurasa(h);
+            rudisha;
+        }
+    }
+    kama (skrini == SKRINI_UCHUMI) {
+        n64 fungua = 0;
+        n64 kutana = 0;
+        kama (skrini_uchumi_bofya(g, px, py, &fungua, &kutana)) {
+            kama (fungua >= 0) { h->taifa = fungua; }
+            kama (kutana >= 0) {
+                skrini_mkutano_chagua_tajiri(kutana);
+                h->taifa = mchezo_pata_taifa(g)->faharisi_ya_taifa_la_mchezaji;
+                fungua_ukurasa(h, SKRINI_MKUTANO);
+            }
+            chafua_ukurasa(h);
+            rudisha;
+        }
     }
     kama (skrini == SKRINI_DIPLOMASIA) { bofya_diplomasia(g, h, upana, kimo, px, py); }
     kama (skrini == SKRINI_KALENDA) { skrini_kalenda_bofya(upana, kimo, tarehe_siku_ya_zamu(g->zamu_ya_sasa), px, py); }
@@ -764,6 +785,19 @@ w0 zamu_inayofuata(Mchezo* g, Hali* h) {
     // maamuzi yaliyo hai (biashara, mikopo, vikwazo, vita...) hufanya kazi kila wiki
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     uamuzi_zamu(g->zamu_ya_sasa, skrini_siasa_dola(g, tm->faharisi_ya_taifa_la_mchezaji));
+    // masoko na mataifa hai: bei, sarafu, matukio ya kila taifa, pochi
+    soko_wiki_moja(g, g->zamu_ya_sasa, 1);
+    soko_mataifa_hai(g, g->zamu_ya_sasa);
+    soko_pochi_wiki();
+    Pochi* pochi = soko_pochi_pata();
+    kama (pochi != 0 && pochi->mshauri == MSHAURI_SIASA) { nguvu_mtaji = nguvu_bana(nguvu_mtaji + 1, 0, 100); }
+    kama (pochi != 0 && pochi->mshauri == MSHAURI_ULINZI) { nguvu_hatari = nguvu_bana(nguvu_hatari - 1, 0, 100); }
+    kama (pochi != 0 && pochi->mshauri == MSHAURI_HABARI && g->zamu_ya_sasa % 4 == 0) {
+        Dola* dh = skrini_siasa_dola(g, tm->faharisi_ya_taifa_la_mchezaji);
+        dh->uhalali = dola_rekebisha(dh->uhalali, 1);
+    }
+    // katiba: marekebisho yaliyopita barazani huthibitishwa (na kura ya maoni)
+    hati_zamu(skrini_siasa_dola(g, tm->faharisi_ya_taifa_la_mchezaji), skrini_mkutano_watu(g, tm->faharisi_ya_taifa_la_mchezaji), g->zamu_ya_sasa);
     // siasa ya wiki: kazi za msaidizi, kura za hoja, upinzani, kashfa
     nguvu_zamu(skrini_siasa_dola(g, tm->faharisi_ya_taifa_la_mchezaji), skrini_mkutano_watu(g, tm->faharisi_ya_taifa_la_mchezaji), tm->faharisi_ya_taifa_la_mchezaji, g->zamu_ya_sasa);
     habari_zamu(g);
@@ -846,6 +880,11 @@ w0 shughulikia(Mchezo* g, Hali* h, Dirisha* d) {
         kama (aina == DIRISHA_KITUFE && a == KITUFE_KUSHOTO) {
             kama (b == 1) { bonyeza(g, h, d, d->kielekezi_x, d->kielekezi_y); }
             sivyo { achia(h, d, d->kielekezi_x, d->kielekezi_y); }
+        }
+        kama (aina == DIRISHA_GURUDUMU && h->skrini == SKRINI_KATIBA) {
+            kama (a > 0) { skrini_katiba_tembeza(80); }
+            kama (a < 0) { skrini_katiba_tembeza(0 - 80); }
+            h->haja = 1;
         }
         kama (aina == DIRISHA_GURUDUMU && h->skrini == SKRINI_MKUTANO) {
             // gurudumu kwenye ukurasa wa serikali husogeza mti wa dola
@@ -1062,6 +1101,17 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     Atlasi* a = mchezo_pata_atlasi(g);
     h->taifa = tm->faharisi_ya_taifa_la_mchezaji;
+    // masoko: sarafu, soko la hisa la kila taifa, matajiri, na pochi ya mchezaji
+    soko_anzisha(g, TAREHE_MWAKA_WA_MWANZO);
+    soko_pochi_anzisha(h->taifa, 9);
+    // katiba ya taifa la mchezaji: vigezo vyake huendesha siasa za kila wiki
+    hati_mwaka = TAREHE_MWAKA_WA_MWANZO;
+    kt_kusanya_mikoa(h->taifa);
+    hati_mikoa_idadi = kt_mikoa_idadi;
+    hati_mikoa_majina = kt_mkoa_jina;
+    hati_jina_la_sarafu = soko_sarafu_ya(h->taifa)->jina;
+    hati_hakikisha(skrini_siasa_dola(g, h->taifa), skrini_mkutano_watu(g, h->taifa), h->taifa);
+    hati_tumia_kwa_injini(skrini_siasa_dola(g, h->taifa));
     // daftari la maamuzi ya nafasi ya hifadhi: maamuzi ya zamani hurudi kazini
     n8* njia_ya_maamuzi = tenga(128);
     uamuzi_njia(njia_ya_maamuzi, 128, mkutano_nafasi);

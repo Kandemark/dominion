@@ -1,0 +1,295 @@
+husisha { moduli/skrini/mkutano.swa }
+husisha { moduli/soko/masoko.swa }
+
+// wasifu.swa -- ukurasa wa mchezaji: utambulisho, pochi (fedha za nyumbani,
+// dhahabu, hisa, thamani yote), hisa anazomiliki pamoja na faida au hasara,
+// washauri binafsi wa kuajiri, na watu aliowalipa au wanaomtegemea.
+
+n64 WS_UZA_ZOTE = 90;
+n64 WS_AJIRI = 91;
+n64 WS_FUKUZA = 92;
+n64 WS_KITUO = 93;
+
+// Jina la mgombea wa ushauri wa fani `fani` kwa taifa.
+w0 wasifu_jina_la_mgombea(n8* nje, n64 taifa, n64 fani) {
+    wahusika_jina(nje, taifa * 97 + fani * 13 + 7);
+}
+
+w0 wasifu_mstari(n8* lebo, n8* thamani, n64 rangi, n64 x, n64 y, n64 w) {
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(lebo, x, y, 12);
+    sura_rangi(rangi);
+    sura_lebo_kulia(thamani, x + w, y, 13);
+}
+
+w0 wasifu_utambulisho(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h) {
+    sura_paneli(x, y, w, h, ui("YOU"));
+    Wahusika* wh = skrini_mkutano_watu(g, taifa);
+    Dola* d = skrini_siasa_dola(g, taifa);
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), taifa);
+    kama (wh == 0 || d == 0 || tn == 0) { rudisha; }
+    MhusikaWaDola* mimi = wahusika_pata(wh, mkutano_ofisi);
+    kama (mimi == 0) { rudisha; }
+    n8 herufi[4];
+    serikali_herufi_za_jina(mimi->jina, herufi);
+    sura_avatar(herufi, x + 50, y + 74, 32, SURA_LAFUDHI, 255);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(mimi->jina, x + 96, y + 46, 20);
+    n8 m[160];
+    mfuatano_umbiza(m, 160, "%s  ·  %s", mimi->cheo, tn->jina, 0, 0, 0, 0);
+    sura_rangi(SURA_LAFUDHI);
+    sura_lebo_kati(m, x + 96, y + 76, 13);
+    n8* chama = ui("No party");
+    kama (mimi->chama != 0) { chama = mimi->chama; }
+    mfuatano_umbiza(m, 160, "%s  ·  %d  ·  %s, %s", chama, mimi->umri, tabia_jina(mimi->tabia_1), tabia_jina(mimi->tabia_2), 0, 0);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(m, x + 96, y + 98, 12);
+    n64 yy = y + 134;
+    n8 n[48];
+    sura_namba(n, nguvu_mtaji);
+    wasifu_mstari(ui("Political capital"), n, SURA_LAFUDHI, x + 16, yy, w - 32);
+    yy = yy + 24;
+    sura_namba(n, nguvu_hatari);
+    wasifu_mstari(ui("Scandal risk"), n, SURA_HASI, x + 16, yy, w - 32);
+    yy = yy + 24;
+    sura_namba(n, nguvu_kashfa);
+    wasifu_mstari(ui("Scandals exposed"), n, SURA_MAANDISHI, x + 16, yy, w - 32);
+    yy = yy + 24;
+    sura_namba(n, uamuzi_idadi);
+    wasifu_mstari(ui("Decisions on record"), n, SURA_MAANDISHI, x + 16, yy, w - 32);
+    yy = yy + 24;
+    n64 hoja = 0;
+    n64 zilizopita = 0;
+    n64 i = 0;
+    wakati (i < nguvu_hoja_idadi) {
+        Hoja* hj = nguvu_hoja_pata(i);
+        kama (hj->upande == 1) {
+            hoja = hoja + 1;
+            kama (hj->hatua == HOJA_IMEPITA || hj->hatua == HOJA_SHERIA || hj->hatua == HOJA_TURUFU_IMEPINDULIWA) { zilizopita = zilizopita + 1; }
+        }
+        i = i + 1;
+    }
+    mfuatano_umbiza(n, 48, "%d / %d", zilizopita, hoja, 0, 0, 0, 0);
+    wasifu_mstari(ui("Your motions carried"), n, SURA_MAANDISHI, x + 16, yy, w - 32);
+    yy = yy + 24;
+    sura_namba(n, d->uhalali);
+    wasifu_mstari(ui("Legitimacy of your government"), n, SURA_BAHARI, x + 16, yy, w - 32);
+}
+
+w0 wasifu_pochi(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
+    sura_paneli(x, y, w, h, ui("WALLET"));
+    Pochi* p = soko_pochi_pata();
+    kama (p == 0) { rudisha; }
+    Sarafu2* s = soko_sarafu_ya(p->taifa);
+    n8 b[48];
+    n8 m[96];
+    n64 hisa = soko_thamani_ya_hisa();
+    n64 dhahabu_kwa_nyumbani = soko_kwa_sarafu(p->taifa, p->dhahabu / 100) * 100;
+    n64 jumla = p->fedha + hisa + dhahabu_kwa_nyumbani;
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo_kati(ui("NET WORTH"), x + 16, y + 36, 10);
+    soko_bei_maandishi(b, jumla);
+    mfuatano_umbiza(m, 96, "%s %s", b, s->msimbo, 0, 0, 0, 0);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(m, x + 16, y + 52, 24);
+    soko_bei_maandishi(b, soko_kwa_dhahabu(p->taifa, jumla / 100) * 100);
+    mfuatano_umbiza(m, 96, "%s %s", b, ui("in gold"), 0, 0, 0, 0);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(m, x + 16, y + 86, 12);
+    n64 yy = y + 116;
+    soko_bei_maandishi(b, p->fedha);
+    mfuatano_umbiza(m, 96, "%s %s", b, s->msimbo, 0, 0, 0, 0);
+    wasifu_mstari(ui("Cash"), m, SURA_MAANDISHI, x + 16, yy, w - 32);
+    yy = yy + 24;
+    soko_bei_maandishi(b, p->dhahabu);
+    mfuatano_umbiza(m, 96, "%s G", b, 0, 0, 0, 0, 0);
+    wasifu_mstari(ui("Gold"), m, 15237962, x + 16, yy, w - 32);
+    yy = yy + 24;
+    soko_bei_maandishi(b, hisa);
+    mfuatano_umbiza(m, 96, "%s %s", b, s->msimbo, 0, 0, 0, 0);
+    wasifu_mstari(ui("Shares"), m, SURA_MAANDISHI, x + 16, yy, w - 32);
+    yy = yy + 24;
+    soko_bei_maandishi(b, p->mshahara);
+    mfuatano_umbiza(m, 96, "+%s %s", b, s->msimbo, 0, 0, 0, 0);
+    wasifu_mstari(ui("Salary of your office, weekly"), m, SURA_CHANYA, x + 16, yy, w - 32);
+    yy = yy + 24;
+    soko_bei_maandishi(b, p->mshauri_ada);
+    mfuatano_umbiza(m, 96, "-%s %s", b, s->msimbo, 0, 0, 0, 0);
+    wasifu_mstari(ui("Adviser fee, weekly"), m, SURA_HASI, x + 16, yy, w - 32);
+    yy = yy + 24;
+    soko_bei_maandishi(b, p->faida_iliyopatikana);
+    mfuatano_umbiza(m, 96, "%s %s", b, s->msimbo, 0, 0, 0, 0);
+    n64 rangi = SURA_CHANYA;
+    kama (p->faida_iliyopatikana < 0) { rangi = SURA_HASI; }
+    wasifu_mstari(ui("Realised profit"), m, rangi, x + 16, yy, w - 32);
+    yy = yy + 34;
+    serikali_kitufe(ui("Open the market terminal"), x + 16, yy, 1, 1, WS_KITUO, 0);
+}
+
+w0 wasifu_hisa(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
+    sura_paneli(x, y, w, h, ui("PORTFOLIO"));
+    Pochi* p = soko_pochi_pata();
+    kama (p == 0) { rudisha; }
+    n64 yh = y + 40;
+    sura_kichwa_cha_safuwima(ui("SECURITY"), x + 16, yh, 0);
+    sura_kichwa_cha_safuwima(ui("SHARES"), x + (w * 46) / 100, yh, 1);
+    sura_kichwa_cha_safuwima(ui("AVG COST"), x + (w * 60) / 100, yh, 1);
+    sura_kichwa_cha_safuwima(ui("LAST"), x + (w * 72) / 100, yh, 1);
+    sura_kichwa_cha_safuwima(ui("P/L"), x + (w * 84) / 100, yh, 1);
+    n8 m[64];
+    n64 i = 0;
+    wakati (i < p->idadi && yh + 22 + (i + 1) * 34 < y + h) {
+        Kampuni* c = soko_kampuni_pata(p->kampuni[i]);
+        n64 ry = yh + 22 + i * 34;
+        sura_safu(x + 8, ry - 4, w - 16, 32, i, 0);
+        sura_rangi(SURA_LAFUDHI);
+        sura_lebo_kati(c->tika, x + 16, ry, 12);
+        sura_rangi(SURA_MAANDISHI);
+        turubai_kata(sura_t, x + 70, ry - 4, (w * 46) / 100 - 160, 32);
+        sura_lebo(c->jina, x + 70, ry, 12);
+        turubai_kata_yote(sura_t);
+        sura_namba(m, p->hisa[i]);
+        sura_lebo_kulia(m, x + (w * 46) / 100, ry, 12);
+        soko_bei_maandishi(m, p->gharama[i]);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo_kulia(m, x + (w * 60) / 100, ry, 12);
+        soko_bei_maandishi(m, c->bei);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kulia(m, x + (w * 72) / 100, ry, 12);
+        n64 pl = 0;
+        kama (p->gharama[i] > 0) { pl = ((c->bei - p->gharama[i]) * 10000) / p->gharama[i]; }
+        sura_asilimia(m, pl, 1);
+        kama (pl >= 0) { sura_rangi(SURA_CHANYA); } sivyo { sura_rangi(SURA_HASI); }
+        sura_lebo_kulia(m, x + (w * 84) / 100, ry, 12);
+        serikali_kitufe(ui("Sell all"), x + w - 90, ry - 2, 0, 1, WS_UZA_ZOTE, p->kampuni[i]);
+        i = i + 1;
+    }
+    kama (p->idadi == 0) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(ui("You own no shares. Buy them from the market terminal."), x + 16, yh + 26, 12);
+    }
+}
+
+w0 wasifu_washauri(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h) {
+    sura_paneli(x, y, w, h, ui("PERSONAL ADVISERS"));
+    Pochi* p = soko_pochi_pata();
+    kama (p == 0) { rudisha; }
+    Sarafu2* s = soko_sarafu_ya(p->taifa);
+    n64 kh = (h - 44) / 4;
+    n8 jina[40];
+    n8 m[96];
+    n8 b[48];
+    n64 f = 0;
+    wakati (f < 4) {
+        n64 ky = y + 38 + f * kh;
+        n32 ameajiriwa = p->mshauri == f;
+        kama (ameajiriwa) {
+            turubai_brashi(sura_t, SURA_LAFUDHI, 26);
+            turubai_mviringo(sura_t, x + 8, ky, w - 16, kh - 8, 8);
+        }
+        wasifu_jina_la_mgombea(jina, taifa, f);
+        n8 herufi[4];
+        serikali_herufi_za_jina(jina, herufi);
+        sura_avatar(herufi, x + 36, ky + 28, 18, 11032472, 255);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_nene(jina, x + 64, ky + 8, 14);
+        sura_rangi(SURA_LAFUDHI);
+        sura_lebo_kati(mshauri_jina_la_fani(f), x + 64, ky + 28, 11);
+        sura_rangi(SURA_HAFIFU);
+        turubai_kata(sura_t, x + 64, ky, w - 190, kh);
+        sura_lebo(mshauri_faida(f), x + 64, ky + 46, 11);
+        turubai_kata_yote(sura_t);
+        soko_bei_maandishi(b, soko_ada_ya_mshauri(f));
+        mfuatano_umbiza(m, 96, "%s %s / %s", b, s->msimbo, ui("week"), 0, 0, 0);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kulia(m, x + w - 16, ky + 8, 12);
+        kama (ameajiriwa) { serikali_kitufe(ui("Dismiss"), x + w - 90, ky + 34, 0, 1, WS_FUKUZA, f); }
+        sivyo { serikali_kitufe(ui("Hire"), x + w - 70, ky + 34, 0, p->fedha >= soko_ada_ya_mshauri(f), WS_AJIRI, f); }
+        f = f + 1;
+    }
+}
+
+// Watu uliowalipa (wajumbe wenye hongo) na matajiri wanaokupenda.
+w0 wasifu_mtandao(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h) {
+    sura_paneli(x, y, w, h, ui("YOUR NETWORK"));
+    n64 yy = y + 38;
+    n8 m[96];
+    n64 i = 0;
+    wakati (i < nguvu_idadi && yy + 22 < y + h) {
+        Mbunge* mb = nguvu_pata(i);
+        kama (mb->hongo > 0) {
+            sura_rangi(SURA_MAANDISHI);
+            sura_lebo(mb->jina, x + 16, yy, 12);
+            mfuatano_umbiza(m, 96, "%s  ·  %dM  ·  %d", ui("paid"), mb->hongo, mb->msimamo, 0, 0, 0);
+            sura_rangi(SURA_HASI);
+            sura_lebo_kulia(m, x + w - 16, yy, 11);
+            yy = yy + 22;
+        }
+        i = i + 1;
+    }
+    i = 0;
+    wakati (i < soko_matajiri_hesabu[taifa] && yy + 22 < y + h) {
+        Tajiri* t = soko_tajiri_pata(soko_matajiri_mwanzo[taifa] + i);
+        kama (t->msimamo >= 30) {
+            sura_rangi(SURA_MAANDISHI);
+            sura_lebo(t->jina, x + 16, yy, 12);
+            mfuatano_umbiza(m, 96, "%s  ·  %d", ui("ally in business"), t->msimamo, 0, 0, 0, 0);
+            sura_rangi(SURA_CHANYA);
+            sura_lebo_kulia(m, x + w - 16, yy, 11);
+            yy = yy + 22;
+        }
+        i = i + 1;
+    }
+    kama (yy == y + 38) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(ui("No one owes you anything yet."), x + 16, yy, 12);
+    }
+}
+
+w0 skrini_wasifu_chora(Mchezo* g, Turubai* t, n64 taifa) {
+    sura_anzisha(t);
+    bofya_anza();
+    turubai_brashi(t, SURA_USULI, 255);
+    turubai_jaza(t, 0, 0, t->upana, t->kimo);
+    skrini_upau_wa_juu(g, t);
+    skrini_urambazaji(t, 13);
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 nyumbani = tm->faharisi_ya_taifa_la_mchezaji;
+    n64 x = SKRINI_UPANA_WA_PEMBENI + 25;
+    n64 y = SKRINI_UPAU_WA_JUU + 10;
+    n64 w = t->upana - x - 24;
+    skrini_kichwa_fm(g, t, ui("Profile"), ui("Your person, your money and the people around you."), x, y);
+    y = y + 70;
+    n64 pengo = 12;
+    n64 h = t->kimo - y - 16;
+    n64 w1 = (w * 30) / 100;
+    n64 w3 = (w * 30) / 100;
+    n64 w2 = w - w1 - w3 - 2 * pengo;
+    n64 x2 = x + w1 + pengo;
+    n64 x3 = x2 + w2 + pengo;
+    wasifu_utambulisho(g, nyumbani, x, y, w1, 300);
+    wasifu_pochi(g, x, y + 300 + pengo, w1, h - 300 - pengo);
+    wasifu_hisa(g, x2, y, w2, (h * 60) / 100);
+    wasifu_mtandao(g, nyumbani, x2, y + (h * 60) / 100 + pengo, w2, h - (h * 60) / 100 - pengo);
+    wasifu_washauri(g, nyumbani, x3, y, w3, h);
+}
+
+// Bofya kwenye wasifu. Hurudisha 1 kwa kitendo; *kituo = 1 kufungua kituo.
+n32 skrini_wasifu_bofya(Mchezo* g, n64 px, n64 py, n64* kituo) {
+    kituo[0] = 0;
+    n64 hoja = 0;
+    n64 k = bofya_tafuta(px, py, &hoja);
+    kama (k == 0) { rudisha 0; }
+    kama (k == WS_KITUO) { kituo[0] = 1; }
+    kama (k == WS_UZA_ZOTE) {
+        n64 nafasi = soko_pochi_nafasi_ya(hoja);
+        kama (nafasi >= 0) { soko_uza(hoja, soko_pochi_pata()->hisa[nafasi]); }
+    }
+    kama (k == WS_AJIRI) {
+        n8* jina = tenga(40);
+        wasifu_jina_la_mgombea(jina, mchezo_pata_taifa(g)->faharisi_ya_taifa_la_mchezaji, hoja);
+        soko_ajiri(hoja, soko_ada_ya_mshauri(hoja), jina);
+    }
+    kama (k == WS_FUKUZA) { soko_fukuza(); }
+    rudisha 1;
+}

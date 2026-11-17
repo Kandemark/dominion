@@ -1,0 +1,128 @@
+husisha { moduli/soko/masoko.swa }
+
+// jaribio_masoko.swa -- sarafu na vifungo, makampuni kwa mwaka wa kuanza,
+// bei zinazosonga, pochi (kununua, kuuza, dhahabu, mshauri), na mataifa hai.
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) { andika("SHINDWA: mchezo_anzisha\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    soko_anzisha(g, 1820);
+
+    // sarafu: kila taifa lina msimbo wa kipekee; vifungo hufuata nanga
+    n64 dhahabu = 0;
+    n64 zilizofungwa = 0;
+    n64 huru = 0;
+    n32 misimbo_ya_kipekee = 1;
+    n32 vifungo_sahihi = 1;
+    n64 i = 0;
+    wakati (i < tm->idadi) {
+        Sarafu2* s = soko_sarafu_ya(i);
+        kama (s->nanga == NANGA_DHAHABU) { dhahabu = dhahabu + 1; }
+        kama (s->nanga == NANGA_HURU) { huru = huru + 1; }
+        kama (s->nanga >= 0) {
+            zilizofungwa = zilizofungwa + 1;
+            kama (soko_sarafu_ya(s->nanga)->nanga != NANGA_DHAHABU) { vifungo_sahihi = 0; }
+            n64 kati = soko_kiwango_kati(s->nanga, i);
+            n64 tofauti = kati - s->kiwango_cha_nanga;
+            kama (tofauti < 0) { tofauti = 0 - tofauti; }
+            kama (tofauti * 100 > s->kiwango_cha_nanga) { vifungo_sahihi = 0; }
+        }
+        n64 j = 0;
+        wakati (j < i) {
+            Sarafu2* b = soko_sarafu_ya(j);
+            kama (linganisha_mfuatano(s->msimbo, b->msimbo) == 0) { misimbo_ya_kipekee = 0; }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+    andika("sarafu: dhahabu %d, zilizofungwa %d, huru %d\n", dhahabu, zilizofungwa, huru, 0, 0, 0);
+    thibitisha("mataifa makuu manane", dhahabu == 8);
+    thibitisha("vifungo vipo", zilizofungwa > 50 && huru > 30);
+    thibitisha("misimbo ya kipekee", misimbo_ya_kipekee);
+    thibitisha("vifungo kwa sarafu za dhahabu", vifungo_sahihi);
+    // ubadilishaji ni kinyume
+    n64 a = soko_kiwango_kati(0, 1);
+    n64 b2 = soko_kiwango_kati(1, 0);
+    thibitisha("kiwango kinyume", (a / 100) * (b2 / 100) > 9000 && (a / 100) * (b2 / 100) < 11000);
+
+    // makampuni: 4..40 kwa taifa, hakuna sekta ya baadaye mwaka 1820
+    n32 sekta_sahihi = 1;
+    n32 idadi_sahihi = 1;
+    i = 0;
+    wakati (i < tm->idadi) {
+        kama (soko_kampuni_hesabu[i] < 4 || soko_kampuni_hesabu[i] > 40) { idadi_sahihi = 0; }
+        i = i + 1;
+    }
+    i = 0;
+    wakati (i < soko_kampuni_idadi) {
+        Kampuni* c = soko_kampuni_pata(i);
+        kama (sekta_mwaka(c->sekta) > 1820) { sekta_sahihi = 0; }
+        i = i + 1;
+    }
+    andika("makampuni %d, matajiri %d\n", soko_kampuni_idadi, soko_matajiri_idadi, 0, 0, 0, 0);
+    thibitisha("idadi ya makampuni", idadi_sahihi);
+    thibitisha("sekta za 1820", sekta_sahihi);
+    // historia: bei zimesonga katika mwaka wa kabla ya mchezo
+    Kampuni* k0 = soko_kampuni_pata(0);
+    thibitisha("historia ya bei", soko_bei_ya_zamani(k0, 51) != k0->bei || soko_bei_ya_zamani(k0, 20) != k0->bei);
+    thibitisha("kielezo", soko_kielezo[0] > 0);
+
+    // pochi: nunua, uza, dhahabu, mshauri
+    n64 mimi = tm->faharisi_ya_taifa_la_mchezaji;
+    soko_pochi_anzisha(mimi, 9);
+    Pochi* p = soko_pochi_pata();
+    n64 kampuni = soko_kampuni_mwanzo[mimi];
+    n64 kabla = p->fedha;
+    thibitisha("nunua", soko_nunua(kampuni, 10) == SOKO_SAWA);
+    thibitisha("fedha zimepungua", p->fedha < kabla);
+    thibitisha("hisa zipo", p->idadi == 1 && p->hisa[0] == 10);
+    thibitisha("haitoshi", soko_nunua(kampuni, 1000000000) == SOKO_HAKUNA_FEDHA);
+    thibitisha("uza", soko_uza(kampuni, 10) == SOKO_SAWA && p->idadi == 0);
+    thibitisha("uza zaidi ya ulizo nazo", soko_uza(kampuni, 1) == SOKO_HAKUNA_HISA);
+    n64 dh = p->dhahabu;
+    thibitisha("nunua dhahabu", soko_nunua_dhahabu(p->fedha / 2) == SOKO_SAWA && p->dhahabu > dh);
+    thibitisha("uza dhahabu", soko_uza_dhahabu(100) == SOKO_SAWA);
+    soko_ajiri(MSHAURI_FEDHA, soko_ada_ya_mshauri(MSHAURI_FEDHA), "Test");
+    kabla = p->fedha;
+    soko_pochi_wiki();
+    thibitisha("mshahara na ada", p->fedha == kabla + p->mshahara - p->mshauri_ada);
+    // hisa ya nje: inalipwa kwa sarafu ya nyumbani
+    n64 nje = soko_kampuni_mwanzo[(mimi + 1) % tm->idadi];
+    thibitisha("nunua ya nje", soko_nunua(nje, 5) == SOKO_SAWA);
+
+    // mataifa hai: mwaka mmoja wa wiki huzaa matukio na bei mpya
+    n64 bei = k0->bei;
+    n64 z = 1;
+    wakati (z <= 52) {
+        mchezo_sasisha(g);
+        mchezo_maliza_zamu(g);
+        soko_wiki_moja(g, z, 1);
+        soko_mataifa_hai(g, z);
+        z = z + 1;
+    }
+    andika("matukio %d\n", soko_matukio_yote, 0, 0, 0, 0, 0);
+    thibitisha("matukio", soko_matukio_yote > 5);
+    thibitisha("bei imesonga", k0->bei != bei);
+    n8 m[48];
+    soko_bei_maandishi(m, 123456);
+    thibitisha("bei kama maandishi", linganisha_mfuatano(m, "1,234.56") == 0);
+    soko_kiwango_maandishi(m, 123456);
+    thibitisha("kiwango kama maandishi", linganisha_mfuatano(m, "12.3456") == 0);
+
+    kama (makosa > 0) {
+        andika("masoko: makosa %d\n", makosa, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("masoko: sawa\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}
