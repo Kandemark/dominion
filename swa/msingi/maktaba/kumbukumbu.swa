@@ -166,6 +166,11 @@ n64 mfumo_unda_saraka(n8* njia, n64 ruhusa) {
     rudisha wito_wa_mfumo(83, njia, ruhusa, 0, 0, 0, 0);
 }
 
+// Futa faili (unlink). Hurudisha 0, au hasi kwa hitilafu.
+n64 mfumo_futa(n8* njia) {
+    rudisha wito_wa_mfumo(87, njia, 0, 0, 0, 0, 0);
+}
+
 // ==========================================================
 // Uchapishaji -- andika_n64 / andika_mfuatano / andika_baiti
 // Hizi ndizo kazi zinazoitwa na builtin ya andika katika mzalishaji.

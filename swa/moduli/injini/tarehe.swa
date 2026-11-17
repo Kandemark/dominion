@@ -2,11 +2,20 @@ husisha { moduli/onyesho/maneno.swa }
 
 // tarehe.swa -- kalenda ya mchezo: kila zamu ni wiki moja.
 //
-// Siku 0 ni Jumatatu, 4 Januari 1954; zamu 1 huanza siku hiyo, zamu 2 wiki
-// moja baadaye, na kadhalika. Tarehe ni hesabu safi kutoka namba ya siku,
-// hivyo hakuna hali ya kuhifadhi: zamu ndiyo inayoamua tarehe.
+// Mchezaji huchagua mwaka wa kuanza (1700 hadi 2000). Siku 0 ni 1 Januari ya
+// mwaka huo; zamu 1 huanza siku hiyo, zamu 2 wiki moja baadaye, na kadhalika.
+// Tarehe ni hesabu safi kutoka namba ya siku, hivyo hakuna hali ya
+// kuhifadhi zaidi ya mwaka wa kuanza.
 
-n64 TAREHE_MWAKA_WA_MWANZO = 1954;
+n64 TAREHE_MWAKA_WA_MWANZO = 1900;
+n64 TAREHE_MWAKA_CHINI = 1700;
+n64 TAREHE_MWAKA_JUU = 2000;
+
+w0 tarehe_weka_mwaka_wa_mwanzo(n64 mwaka) {
+    kama (mwaka < TAREHE_MWAKA_CHINI) { mwaka = TAREHE_MWAKA_CHINI; }
+    kama (mwaka > TAREHE_MWAKA_JUU) { mwaka = TAREHE_MWAKA_JUU; }
+    TAREHE_MWAKA_WA_MWANZO = mwaka;
+}
 n64 TAREHE_SIKU_ZA_WIKI = 7;
 
 n32 tarehe_mwaka_mrefu(n64 mwaka) {
@@ -24,14 +33,14 @@ n64 tarehe_siku_za_mwezi(n64 mwaka, n64 mwezi) {
     rudisha 31;
 }
 
-// Siku ya kwanza ya zamu (siku 0 = Jumatatu 4 Januari 1954).
+// Siku ya kwanza ya zamu (siku 0 = 1 Januari ya mwaka wa kuanza).
 n64 tarehe_siku_ya_zamu(n64 zamu) {
     kama (zamu < 1) { rudisha 0; }
     rudisha (zamu - 1) * TAREHE_SIKU_ZA_WIKI;
 }
 
 // Namba ya siku ya tarehe (mwaka, mwezi 1..12, siku 1..31); inaweza kuwa hasi
-// kwa tarehe kabla ya 4 Januari 1954.
+// kwa tarehe kabla ya mwaka wa kuanza.
 n64 tarehe_siku_ya(n64 mwaka, n64 mwezi, n64 siku) {
     n64 n = 0;
     n64 y = TAREHE_MWAKA_WA_MWANZO;
@@ -41,15 +50,21 @@ n64 tarehe_siku_ya(n64 mwaka, n64 mwezi, n64 siku) {
         n = n + urefu;
         y = y + 1;
     }
+    wakati (y > mwaka) {
+        y = y - 1;
+        n64 urefu2 = 365;
+        kama (tarehe_mwaka_mrefu(y)) { urefu2 = 366; }
+        n = n - urefu2;
+    }
     n64 m = 1;
     wakati (m < mwezi) { n = n + tarehe_siku_za_mwezi(mwaka, m); m = m + 1; }
-    rudisha n + siku - 4;
+    rudisha n + siku - 1;
 }
 
 // Tarehe ya siku `n`: huandika mwaka, mwezi na siku ya mwezi.
 w0 tarehe_ya_siku(n64 n, n64* mwaka, n64* mwezi, n64* siku) {
     n64 y = TAREHE_MWAKA_WA_MWANZO;
-    n64 baki = n + 3;                   // siku tangu 1 Januari 1954
+    n64 baki = n;                       // siku tangu 1 Januari ya mwaka wa kuanza
     wakati (baki < 0) {
         y = y - 1;
         n64 urefu = 365;
@@ -73,9 +88,17 @@ w0 tarehe_ya_siku(n64 n, n64* mwaka, n64* mwezi, n64* siku) {
     siku[0] = baki + 1;
 }
 
+// Siku ya wiki ya 1 Januari ya mwaka y: 0 Jumatatu .. 6 Jumapili
+// (kalenda ya Gregori, njia ya Sakamoto).
+n64 tarehe_wiki_ya_mwaka_mpya(n64 y) {
+    n64 a = y - 1;
+    n64 jumapili_0 = (a + a / 4 - a / 100 + a / 400 + 1) % 7;    // 0 = Jumapili
+    rudisha (jumapili_0 + 6) % 7;
+}
+
 // Siku ya wiki: 0 Jumatatu .. 6 Jumapili.
 n64 tarehe_siku_ya_wiki(n64 n) {
-    n64 w = n % 7;
+    n64 w = (n + tarehe_wiki_ya_mwaka_mpya(TAREHE_MWAKA_WA_MWANZO)) % 7;
     kama (w < 0) { w = w + 7; }
     rudisha w;
 }
@@ -105,7 +128,7 @@ n8* tarehe_jina_la_mwezi(n64 m) {
     rudisha ui("January");
 }
 
-// "4 January 1954"
+// "4 January 1900"
 w0 tarehe_maandishi(n64 n, n8* nje, n64 uwezo) {
     n64 y = 0;
     n64 m = 0;
@@ -114,7 +137,7 @@ w0 tarehe_maandishi(n64 n, n8* nje, n64 uwezo) {
     mfuatano_umbiza(nje, uwezo, "%d %s %d", d, tarehe_jina_la_mwezi(m), y, 0, 0, 0);
 }
 
-// "MON 04/01/1954"
+// "MON 01/01/1900"
 w0 tarehe_maandishi_mafupi(n64 n, n8* nje, n64 uwezo) {
     n64 y = 0;
     n64 m = 0;

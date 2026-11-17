@@ -1,0 +1,88 @@
+husisha { moduli/skrini/dunia.swa }
+
+// jaribio_dunia.swa -- ukurasa wa World kutoka mchezo halisi: habari
+// huzaliwa kila zamu, uamuzi huwa habari, maeneo ya kubofya yapo, na fremu
+// ghafi (BGRA) huandikwa kwenye njia iliyopewa.
+//   jaribio_dunia <njia> [zamu]
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) { andika("SHINDWA: mchezo_anzisha\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    habari_zamu(g);
+    thibitisha("habari ya mwanzo", habari_idadi >= 1 && habari_mpya(habari_idadi - 1)->aina == HABARI_DUNIA);
+
+    // uamuzi wa mchezaji huwa habari ya diplomasia
+    n64 mimi = tm->faharisi_ya_taifa_la_mchezaji;
+    n64 yeye = (mimi + 1) % tm->idadi;
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, yeye);
+    // jina lenye nafasi huandikwa kwa _ kama AI inavyoelekezwa
+    n8 jina[96];
+    nakili_mfuatano(jina, tn->jina);
+    n64 k = 0;
+    wakati (jina[k] != 0) { kama (jina[k] == 32) { jina[k] = 95; } k = k + 1; }
+    n8* jibu = tenga(512);
+    mfuatano_umbiza(jibu, 512, "Done.\nDECISION: kind=trade with=%s volume=80 weeks=20", jina, 0, 0, 0, 0, 0);
+    Uamuzi u;
+    thibitisha("uamuzi umesomwa", uamuzi_changanua(jibu, tm, mimi, g->zamu_ya_sasa, &u) == UAMUZI_SAWA);
+    uamuzi_ongeza(&u, skrini_siasa_dola(g, mimi));
+
+    n64 zamu = 12;
+    kama (idadi_ya_hoja > 2) { zamu = mfuatano_hadi_n64(hoja_za_mstari[2]); }
+    n64 i = 0;
+    wakati (i < zamu) {
+        mchezo_sasisha(g);
+        mchezo_maliza_zamu(g);
+        uamuzi_zamu(g->zamu_ya_sasa, skrini_siasa_dola(g, mimi));
+        habari_zamu(g);
+        i = i + 1;
+    }
+    n32 diplomasia = 0;
+    i = 0;
+    wakati (i < habari_idadi) {
+        Habari* h = habari_mpya(i);
+        kama (h->aina == HABARI_DIPLOMASIA && h->taifa == yeye) { diplomasia = 1; }
+        i = i + 1;
+    }
+    thibitisha("habari ya uamuzi", diplomasia);
+    thibitisha("habari nyingi", habari_idadi >= 5);
+    thibitisha("biashara inaonekana", uamuzi_biashara_jumla() == 80);
+
+    Turubai* t = turubai_unda(1920, 1080);
+    skrini_dunia_kituo_chora(g, t);
+    thibitisha("maeneo ya kubofya", dunia_bofya_idadi > 20);
+    // kitufe cha kwanza cha "Respond" kipo na kinarudisha habari
+    n32 jibu_lipo = 0;
+    i = 0;
+    wakati (i < dunia_bofya_idadi) {
+        kama (dunia_bofya[i * 6 + 4] == DUNIA_JIBU) {
+            n64 hoja = 0;
+            n64 kk = skrini_dunia_bofya(dunia_bofya[i * 6] + 2, dunia_bofya[i * 6 + 1] + 2, &hoja);
+            kama (kk == DUNIA_JIBU && habari_mpya(hoja) != 0) { jibu_lipo = 1; }
+        }
+        i = i + 1;
+    }
+    thibitisha("kitufe cha kujibu", jibu_lipo);
+    skrini_dunia_jibu(0);
+    thibitisha("swali limeandaliwa", mkutano_urefu > 10 && mkutano_mteule == 0 - 1);
+    kama (idadi_ya_hoja > 1) {
+        n64 fd = mfumo_fungua(hoja_za_mstari[1], 577, 420);
+        mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
+        mfumo_funga(fd);
+    }
+    kama (makosa > 0) {
+        andika("dunia: makosa %d\n", makosa, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("dunia: sawa, habari %d\n", habari_idadi, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

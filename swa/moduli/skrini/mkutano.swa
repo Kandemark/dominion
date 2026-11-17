@@ -32,6 +32,7 @@ n64 mkutano_tembea = 0;             // safu zilizosogezwa juu
 n64 mkutano_ruhusa = 1;             // mchezaji anaweza kuzungumza na mteule
 n64 mkutano_hali = 0;               // 0 tulivu, 1 inatuma, 2 jibu lipo, 3 hitilafu
 n64 mkutano_kosa = 0;
+Mchezo* mkutano_g = 0;            // mchezo unaochorwa sasa
 n64 mkutano_nafasi = 1;             // nafasi ya hifadhi ya kumbukumbu
 n64 mkutano_urefu = 0;
 n64 mkutano_idadi_ya_safu = 0;
@@ -343,9 +344,40 @@ w0 skrini_mkutano_tuma(Mchezo* g, n64 taifa) {
     skrini_mkutano_tarehe(g, tarehe, 96);
     n8 njia[128];
     kumbukumbu_njia(njia, 128, mkutano_nafasi);
+    n8* njia_ya_maamuzi = tenga(128);
+    uamuzi_njia(njia_ya_maamuzi, 128, mkutano_nafasi);
+    mazungumzo_weka_muktadha(tm, tm->faharisi_ya_taifa_la_mchezaji, g->zamu_ya_sasa, njia_ya_maamuzi);
     n64 r = mazungumzo_sema(mipangilio_akili_pata(), d, tn->jina, tarehe, m, skrini_mkutano_cheo_cha_mchezaji(w), maneno_lugha_jina(maneno_lugha), njia, mkutano_kauli, mkutano_jibu, 8192, mkutano_athari);
     kama (r < 0) { mkutano_hali = 3; mkutano_kosa = r; }
     sivyo { mkutano_hali = 2; }
+    achilia njia_ya_maamuzi;
+}
+
+// Uamuzi uliotokana na jibu la mwisho, kama mstari mmoja: "Trade agreement
+// with Baical, 52 weeks". Hurudisha 0 ikiwa hakuna uamuzi.
+n32 skrini_mkutano_uamuzi_maandishi(Mchezo* g, n8* nje, n64 uwezo) {
+    nje[0] = 0;
+    kama (mazungumzo_uamuzi == 0) { rudisha 0; }
+    kama (mazungumzo_uamuzi_hali == UAMUZI_HAKUNA_MSTARI) { rudisha 0; }
+    Uamuzi* u = mazungumzo_uamuzi;
+    kama (mazungumzo_uamuzi_hali == UAMUZI_TAIFA_HALIJULIKANI) {
+        mfuatano_umbiza(nje, uwezo, "%s", ui("A decision named a nation that does not exist; nothing was recorded."), 0, 0, 0, 0, 0);
+        rudisha 2;
+    }
+    kama (mazungumzo_uamuzi_hali != UAMUZI_SAWA) {
+        mfuatano_umbiza(nje, uwezo, "%s", ui("The reply carried a decision the engine could not read; nothing was recorded."), 0, 0, 0, 0, 0);
+        rudisha 2;
+    }
+    n8 muda[48];
+    muda[0] = 0;
+    kama (u->wiki > 0) { mfuatano_umbiza(muda, 48, ", %d %s", u->wiki, ui("weeks"), 0, 0, 0, 0); }
+    kama (u->lengwa >= 0) {
+        TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), u->lengwa);
+        mfuatano_umbiza(nje, uwezo, "%s: %s %s %s%s", ui("Decision recorded"), ui(uamuzi_aina_jina(u->aina)), ui("with"), tn->jina, muda, 0);
+    } sivyo {
+        mfuatano_umbiza(nje, uwezo, "%s: %s%s", ui("Decision recorded"), ui(uamuzi_aina_jina(u->aina)), muda, 0, 0, 0);
+    }
+    rudisha 1;
 }
 
 // Mti wa dola: Mshauri, msaidizi, kisha matawi; anayeshikwa na mchezaji
@@ -518,10 +550,15 @@ w0 skrini_mkutano_mazungumzo_chora(MhusikaWaDola* m, n64 xr, n64 ym, n64 wr, n64
         xa = skrini_mkutano_athari_chora(ui("Legitimacy"), mkutano_athari[ATHARI_UHALALI], xa, ym + hm - 24);
         xa = skrini_mkutano_athari_chora(ui("Treasury"), mkutano_athari[ATHARI_HAZINA], xa, ym + hm - 24);
         kama (xa == xr + 16) { sura_rangi(SURA_HAFIFU); sura_lebo(ui("No measurable consequence."), xa, ym + hm - 24, 12); }
+        n8 uamuzi_m[256];
+        n32 ua = skrini_mkutano_uamuzi_maandishi(mkutano_g, uamuzi_m, 256);
+        kama (ua == 1) { sura_rangi(SURA_LAFUDHI); sura_lebo_kati(uamuzi_m, xa, ym + hm - 24, 12); }
+        kama (ua == 2) { sura_rangi(SURA_HASI); sura_lebo_kati(uamuzi_m, xa, ym + hm - 24, 12); }
     }
 }
 
 w0 skrini_mkutano_chora(Mchezo* g, Turubai* t, n64 taifa) {
+    mkutano_g = g;
     mkutano_andaa();
     sura_anzisha(t);
     turubai_brashi(t, SURA_USULI, 255);

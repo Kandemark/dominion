@@ -16,7 +16,10 @@ kiambishi chake.
    pamoja (`msingi/`) badala ya kunakiliwa kwa majina tofauti kidogo.
 4. Maandishi anayoyaona mchezaji hupitia `ui("...")`
    (`moduli/onyesho/maneno.swa`); msimbo na maoni ni Kiswahili.
-5. `hali` na `vunja` ni maneno muhimu ya Swa: hayatumiki kama majina.
+5. `hali`, `vunja` na `endelea` ni maneno muhimu ya Swa: hayatumiki kama majina.
+6. Mkusanyaji una kikomo cha vigeu 1024 vya ngazi ya juu kwa programu
+   nzima. Thamani za orodha ambazo msimbo hautaji kwa jina huandikwa kama
+   maoni (`//   BAJETI_JESHI = 0`) badala ya vigeu.
 
 ## Viambishi kwa saraka
 
@@ -43,9 +46,10 @@ kiambishi chake.
 | `moduli/siasa/` (kikundi, siasa, upinzani) | `siasa_` | mfumo wa siasa wa uigaji |
 | `moduli/akili/mshauri.swa` | `akili_` | mteja wa HTTP wa mshauri wa AI |
 | `moduli/akili/mazungumzo.swa` | `mazungumzo_`, `kumbukumbu_` | mazungumzo na kumbukumbu |
+| `moduli/akili/uamuzi.swa` | `uamuzi_`, `UAMUZI_` | kichanganuzi cha DECISION na daftari la maamuzi |
 | `moduli/akili/` (mbinu, mfumo, mkakati, msingi) | `akili_<sehemu>_` | AI ya mataifa ndani ya uigaji |
 | `moduli/injini/` | `injini_<sehemu>_` | huduma za injini |
-| `moduli/injini/tarehe.swa` | `tarehe_` | kalenda ya mchezo (zamu = wiki) |
+| `moduli/injini/tarehe.swa` | `tarehe_` | kalenda ya mchezo (zamu = wiki, mwaka wa kuanza 1700 hadi 2000) |
 | `moduli/onyesho/turubai.swa` | `turubai_` | uchoraji wa 2D |
 | `moduli/onyesho/maandishi.swa` | `maandishi_` | maandishi ya TrueType |
 | `moduli/onyesho/sura.swa`, `vipengele.swa` | `sura_` | vipengele vya kiolesura |
@@ -54,6 +58,7 @@ kiambishi chake.
 | `moduli/onyesho/dunia_halisi.swa` | `dunia_halisi_`, `dh_` | kupakia na kuchora dunia |
 | `moduli/onyesho/maneno.swa` | `maneno_`, `ui` | tafsiri ya kiolesura |
 | `moduli/onyesho/wayland/` | `dirisha_`, `wayland_<sehemu>_` | mteja wa Wayland |
+| `moduli/skrini/dunia.swa` | `skrini_dunia_`, `habari_`, `dunia_bofya_`, `DUNIA_`, `HABARI_` | ukurasa wa World na habari za dunia |
 | `moduli/skrini/` | `skrini_<ukurasa>_`, na jina la ukurasa kwa kazi zake za ndani (`dashibodi_`, `mkutano_`, `kalenda_`, `kikasha_`, `mandhari_`, `kuwasha_`) | kurasa za mchezo |
 | `moduli/programu/dominion.swa` | majina ya programu (`bonyeza`, `chora_fremu`, `kadi_`, `fungua_ukurasa`) | dirisha, ingizo, kurasa |
 

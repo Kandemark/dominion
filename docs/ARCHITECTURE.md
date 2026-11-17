@@ -35,7 +35,7 @@ The state of the program is a `Hali`: the current page, the map's centre and zoo
 - **Map page:** the map (with the top bar and side navigation) is drawn once per view into `h->msingi` and copied each frame. Only the summary cards and the nation card under the pointer are drawn on top, so hovering is cheap.
 - **Other pages:** `chora_skrini_ya_taifa` draws the whole page. Pages share the frame drawn by `skrini_upau_wa_juu` (top bar) and `skrini_urambazaji` (side navigation).
 
-**Continue** and Space call `zamu_inayofuata`: the simulation advances one week, the inbox receives the week's messages, and the page is redrawn.
+**Continue** and Space call `songa_kipindi`, which runs `zamu_inayofuata` once or repeatedly: one week, until the month changes, thirteen weeks, or until a turn produces a request, a warning or a diary meeting (at most 26 weeks). Each turn advances the simulation, applies the active decisions, generates the inbox and the world press, and marks the page for redrawing.
 
 ## The world file
 
@@ -95,9 +95,33 @@ EFFECT: attitude=N stability=N legitimacy=N treasury=N
 
 The game removes the line from the displayed text, clamps the numbers (attitude ±10, the rest ±5), applies them, and appends the exchange to the memory file.
 
+### Decisions
+
+Conversations can be about anything, but the engine alone decides what an agreement does. When an exchange concludes something, the reply carries one more line of short tokens (`moduli/akili/uamuzi.swa`):
+
+```
+DECISION: kind=trade with=Baical volume=120 friendliness=5 corruption=0 fund=-20 tax=0 support=0 weeks=52
+```
+
+| Key | Meaning | Range |
+|---|---|---|
+| `kind` | trade, aid, loan, sanction, treaty, alliance, war, peace, tax, budget, law, election, project, reform, crackdown, amnesty | |
+| `with` | the other nation (spaces written as `_`); required for the first eight kinds | |
+| `volume` | trade in millions per week | 0 to 1000 |
+| `friendliness` | change in relations with that nation | −20 to 20 |
+| `corruption` | change in the national corruption level | −10 to 10 |
+| `fund` | one-off amount in millions (negative is spending) | −100 to 100 |
+| `tax` | change in tax, percentage points | −10 to 10 |
+| `support` | change in public approval | −10 to 10 |
+| `weeks` | how long the decision lasts (0 is one-off) | 0 to 520 |
+
+Missing keys are 0, keys are matched whole (`supporttax=` is not `tax=`), every number is clamped, and an unknown kind or nation is rejected with a reason the meeting page shows. An accepted decision is appended to `saves/nafasi_N/maamuzi` as ten integers per line, applied once (relations, corruption, treasury, legitimacy), and then applied every week while it is active: trade adds its volume and treasury income, aid and loans move the treasury, sanctions erode relations and stop trade, war drains stability, public works build it. On start-up the ledger is read back and replayed, so relations and corruption are rebuilt from the recorded decisions alone.
+
 ## Time
 
-`moduli/injini/tarehe.swa`: day 0 is Monday 4 January 1954 and turn *n* starts on day 7(*n* − 1). Dates are computed from the day number, so there is no clock state to save. `kalenda.swa` derives the recurring events of any day from the constitution and adds the meetings booked in the diary.
+`moduli/injini/tarehe.swa`: the start year is chosen at launch (`--mwaka`, 1700 to 2000, default 1900). Day 0 is 1 January of that year and turn *n* starts on day 7(*n* − 1). Weekdays come from the Gregorian calendar, so 1 January 1820 is a Saturday and 1 January 1900 a Monday. Dates are computed from the day number, so the start year is the only clock state. `kalenda.swa` derives the recurring events of any day from the constitution and adds the meetings booked in the diary.
+
+The borders on the map are still the approved world's; a start year changes the calendar and the history, not the map. Borders that move with the start year come with the world generator port.
 
 ## Tests
 

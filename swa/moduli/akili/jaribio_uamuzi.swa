@@ -1,0 +1,123 @@
+husisha { moduli/akili/uamuzi.swa }
+
+// jaribio_uamuzi.swa -- kichanganuzi cha DECISION, daftari, zamu na hifadhi.
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+TaifaMfumo* mataifa_matatu() {
+    TaifaMfumo* tm = dunia_taifa_mfumo_unda();
+    n8** majina = tenga(24);
+    majina[0] = "Cheqing";
+    majina[1] = "Baical";
+    majina[2] = "New Hjoriry";
+    n64 i = 0;
+    wakati (i < 3) {
+        TaifaNchi* t = tenga(ukubwa(TaifaNchi));
+        t->jina = majina[i];
+        tm->mataifa[i] = t;
+        i = i + 1;
+    }
+    tm->idadi = 3;
+    rudisha tm;
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    TaifaMfumo* tm = mataifa_matatu();
+    Dola* d = dola_unda(7, "Republic of Cheqing", 8000000);
+    d->hazina = 50;
+    d->uhalali = 50;
+    d->utulivu = 50;
+    Uamuzi u;
+
+    // mkataba wa biashara: mstari huondolewa, namba husomwa na kubanwa
+    n8* jibu = tenga(1024);
+    nakili_mfuatano(jibu, "We have a deal, Minister.\nDECISION: kind=Trade with=baical volume=+120 friendliness=5 corruption=-2 fund=-40 weeks=52\nEFFECT: attitude=3 stability=0 legitimacy=1 treasury=1");
+    n64 r = uamuzi_changanua(jibu, tm, 0, 1, &u);
+    thibitisha("biashara sawa", r == UAMUZI_SAWA);
+    thibitisha("aina", u.aina == UAMUZI_BIASHARA);
+    thibitisha("lengwa", u.lengwa == 1);
+    thibitisha("kiasi", u.kiasi == 120);
+    thibitisha("urafiki", u.urafiki == 5);
+    thibitisha("rushwa", u.rushwa == 0 - 2);
+    thibitisha("mfuko", u.mfuko == 0 - 40);
+    thibitisha("wiki", u.wiki == 52);
+    thibitisha("mstari umeondolewa", tafuta_mfuatano(jibu, "DECISION") < 0);
+    thibitisha("EFFECT imebaki", tafuta_mfuatano(jibu, "EFFECT: attitude=3") >= 0);
+    thibitisha("maandishi yamebaki", tafuta_mfuatano(jibu, "We have a deal") == 0);
+
+    uamuzi_anzisha();
+    uamuzi_ongeza(&u, d);
+    thibitisha("daftari 1", uamuzi_idadi == 1);
+    thibitisha("urafiki wa Baical", uamuzi_urafiki[1] == 5);
+    thibitisha("hazina baada ya mfuko", d->hazina == 48);
+    thibitisha("rushwa imeshuka", uamuzi_rushwa_jumla == 18);
+
+    // zamu: biashara inahesabiwa; kila wiki 4 hazina hupanda
+    n64 z = 1;
+    wakati (z <= 8) { uamuzi_zamu(z, d); z = z + 1; }
+    thibitisha("biashara ya wiki", uamuzi_biashara_jumla() == 120);
+    thibitisha("hazina imepanda", d->hazina == 52);
+    thibitisha("bado hai", uamuzi_hai_idadi(8) == 1);
+    thibitisha("imeisha", uamuzi_hai_idadi(53) == 0);
+
+    // kubana: thamani kubwa mno hubanwa
+    nakili_mfuatano(jibu, "DECISION: kind=tax tax=99 support=-50 volume=99999");
+    r = uamuzi_changanua(jibu, tm, 0, 9, &u);
+    thibitisha("kodi sawa", r == UAMUZI_SAWA);
+    thibitisha("kodi imebanwa", u.kodi == 10);
+    thibitisha("uungwaji umebanwa", u.uungwaji == 0 - 10);
+    thibitisha("kiasi kimebanwa", u.kiasi == 1000);
+    thibitisha("jibu tupu", jibu[0] == 0);
+
+    // jina lenye nafasi kwa _
+    nakili_mfuatano(jibu, "Agreed.\nDECISION: kind=alliance with=New_Hjoriry friendliness=15 weeks=104");
+    r = uamuzi_changanua(jibu, tm, 0, 9, &u);
+    thibitisha("muungano", r == UAMUZI_SAWA && u.lengwa == 2);
+    thibitisha("Agreed", linganisha_mfuatano(jibu, "Agreed.") == 0);
+
+    // makosa
+    nakili_mfuatano(jibu, "Talk only.");
+    thibitisha("hakuna mstari", uamuzi_changanua(jibu, tm, 0, 9, &u) == UAMUZI_HAKUNA_MSTARI);
+    nakili_mfuatano(jibu, "DECISION: kind=dance");
+    thibitisha("aina haijulikani", uamuzi_changanua(jibu, tm, 0, 9, &u) == UAMUZI_AINA_HAIJULIKANI);
+    nakili_mfuatano(jibu, "DECISION: kind=trade with=Atlantis volume=5");
+    thibitisha("taifa halijulikani", uamuzi_changanua(jibu, tm, 0, 9, &u) == UAMUZI_TAIFA_HALIJULIKANI);
+    nakili_mfuatano(jibu, "DECISION: kind=war with=Cheqing");
+    thibitisha("taifa lako", uamuzi_changanua(jibu, tm, 0, 9, &u) == UAMUZI_TAIFA_LAKO);
+    // ufunguo ndani ya neno jingine hausomwi (supporttax=5 si tax)
+    nakili_mfuatano(jibu, "DECISION: kind=law supporttax=5");
+    uamuzi_changanua(jibu, tm, 0, 9, &u);
+    thibitisha("ufunguo kamili tu", u.kodi == 0);
+
+    // hifadhi na pakia: daftari hujengwa upya pamoja na urafiki
+    n8 njia[128];
+    uamuzi_njia(njia, 128, 99);
+    mfumo_futa(njia);
+    nakili_mfuatano(jibu, "DECISION: kind=sanction with=Baical friendliness=-12 weeks=26");
+    uamuzi_changanua(jibu, tm, 0, 10, &u);
+    uamuzi_anzisha();
+    uamuzi_hifadhi_mmoja(njia, &u);
+    nakili_mfuatano(jibu, "DECISION: kind=aid with=New_Hjoriry fund=-60 friendliness=8 weeks=12");
+    uamuzi_changanua(jibu, tm, 0, 11, &u);
+    uamuzi_hifadhi_mmoja(njia, &u);
+    Dola* d2 = dola_unda(7, "Republic of Cheqing", 8000000);
+    d2->hazina = 50;
+    n64 k = uamuzi_pakia(njia, d2);
+    thibitisha("pakia 2", k == 2);
+    thibitisha("urafiki Baical upya", uamuzi_urafiki[1] == 0 - 12);
+    thibitisha("urafiki Hjoriry upya", uamuzi_urafiki[2] == 8);
+    thibitisha("aina ya pili", uamuzi_pata(1)->aina == UAMUZI_MSAADA && uamuzi_pata(1)->mfuko == 0 - 60);
+    thibitisha("hazina baada ya msaada", d2->hazina == 47);
+    mfumo_futa(njia);
+
+    kama (makosa > 0) {
+        andika("uamuzi: makosa %d\n", makosa, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("uamuzi: sawa\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

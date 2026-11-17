@@ -17,20 +17,33 @@ w0 tarehe_ni(n64 n, n64 y, n64 m, n64 d, n8* jina) {
 }
 
 n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
-    // tarehe
-    tarehe_ni(0, 1954, 1, 4, "siku 0");
-    tarehe_ni(28, 1954, 2, 1, "siku 28");
-    tarehe_ni(361, 1954, 12, 31, "mwisho wa 1954");
-    tarehe_ni(362, 1955, 1, 1, "mwaka mpya");
-    tarehe_ni(0 - 3, 1954, 1, 1, "kabla ya mwanzo");
+    // tarehe kwa mwaka wa kuanza 1954: 1 Januari 1954 ilikuwa Ijumaa
+    tarehe_weka_mwaka_wa_mwanzo(1954);
+    tarehe_ni(0, 1954, 1, 1, "siku 0");
+    tarehe_ni(31, 1954, 2, 1, "siku 31");
+    tarehe_ni(364, 1954, 12, 31, "mwisho wa 1954");
+    tarehe_ni(365, 1955, 1, 1, "mwaka mpya");
+    tarehe_ni(0 - 1, 1953, 12, 31, "kabla ya mwanzo");
     tarehe_ni(tarehe_siku_ya(1956, 2, 29), 1956, 2, 29, "siku ya mwaka mrefu");
-    thibitisha("siku_ya ni kinyume", tarehe_siku_ya(1960, 7, 15) >= 0 && tarehe_siku_ya(1954, 1, 4) == 0);
-    thibitisha("zamu 1 Jumatatu", tarehe_siku_ya_wiki(tarehe_siku_ya_zamu(1)) == 0 && tarehe_siku_ya_zamu(3) == 14);
-    // 1 Januari 1954 ilikuwa Ijumaa
-    thibitisha("1/1/1954 Ijumaa", tarehe_siku_ya_wiki(0 - 3) == 4);
+    thibitisha("siku_ya ni kinyume", tarehe_siku_ya(1954, 1, 1) == 0 && tarehe_siku_ya(1953, 12, 31) == 0 - 1);
+    thibitisha("1/1/1954 Ijumaa", tarehe_siku_ya_wiki(0) == 4);
+    thibitisha("zamu 3", tarehe_siku_ya_zamu(3) == 14);
     n8 m[48];
     tarehe_maandishi_mafupi(0, m, 48);
-    thibitisha("maandishi mafupi", linganisha_mfuatano(m, "MON 04/01/1954") == 0);
+    thibitisha("maandishi mafupi", linganisha_mfuatano(m, "FRI 01/01/1954") == 0);
+    // miaka mingine: 1 Januari 1800 Jumatano, 1 Januari 1900 Jumatatu, 1 Januari 1750 Alhamisi
+    tarehe_weka_mwaka_wa_mwanzo(1800);
+    thibitisha("1/1/1800 Jumatano", tarehe_siku_ya_wiki(0) == 2);
+    tarehe_ni(tarehe_siku_ya(1804, 3, 1), 1804, 3, 1, "1804 mwaka mrefu");
+    tarehe_weka_mwaka_wa_mwanzo(1900);
+    thibitisha("1/1/1900 Jumatatu", tarehe_siku_ya_wiki(0) == 0);
+    tarehe_ni(59, 1900, 3, 1, "1900 si mwaka mrefu");
+    tarehe_weka_mwaka_wa_mwanzo(1750);
+    thibitisha("1/1/1750 Alhamisi", tarehe_siku_ya_wiki(0) == 3);
+    tarehe_weka_mwaka_wa_mwanzo(1600);
+    thibitisha("mwaka hubanwa", TAREHE_MWAKA_WA_MWANZO == 1700);
+    // matukio hufuata siku ya wiki: weka 1900 (siku 0 ni Jumatatu)
+    tarehe_weka_mwaka_wa_mwanzo(1900);
 
     // matukio: jamhuri ya rais yenye mabaraza mawili
     n64 mbegu = 0;
