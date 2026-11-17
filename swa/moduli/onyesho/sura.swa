@@ -11,16 +11,16 @@ husisha { moduli/onyesho/maneno.swa }
 // kidogo, maandishi meupe-hafifu, na lafudhi moja ya dhahabu. Kijani na
 // nyekundu zimehifadhiwa kwa "imepanda"/"imeshuka" pekee.
 
-n64 SURA_USULI = 657932;          // 0x0A0A0C -- grafiti, bila toni ya buluu
-n64 SURA_PANELI = 1315863;        // 0x141417
-n64 SURA_PANELI_JUU = 1973795;    // 0x1E1E23
-n64 SURA_MPAKA = 2894899;         // 0x2C2C33
-n64 SURA_MAANDISHI = 16119287;    // 0xF5F5F7
-n64 SURA_HAFIFU = 9342614;        // 0x8E8E96
-n64 SURA_LAFUDHI = 16766474;      // 0xFFD60A -- njano ya matangazo ya michezo
-n64 SURA_CHANYA = 3199320;        // 0x30D158
-n64 SURA_HASI = 16729402;         // 0xFF453A
-n64 SURA_BAHARI = 689407;         // 0x0A84FF
+n64 SURA_USULI = 921640;          // 0x0E1028 -- buluu-usiku wa pembeni na msingi
+n64 SURA_PANELI = 1450042;        // 0x16203A
+n64 SURA_PANELI_JUU = 1846599;    // 0x1C2D47 -- uso ulioinuliwa
+n64 SURA_MPAKA = 2504026;         // 0x26355A
+n64 SURA_MAANDISHI = 15922682;    // 0xF2F5FA
+n64 SURA_HAFIFU = 9214900;        // 0x8C9BB4
+n64 SURA_LAFUDHI = 16765471;      // 0xFFD21F -- njano ya FM
+n64 SURA_CHANYA = 4054148;        // 0x3DDC84
+n64 SURA_HASI = 16734815;         // 0xFF5A5F
+n64 SURA_BAHARI = 4891647;        // 0x4AA3FF -- buluu ya viungo
 
 Turubai* sura_t = 0;
 Fonti* sura_kawaida = 0;

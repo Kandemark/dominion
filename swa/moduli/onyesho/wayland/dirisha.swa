@@ -113,6 +113,7 @@ muundo Dirisha {
 
 // Ombi lenye hoja za namba pekee (hadi 6).
 w0 dirisha_ombi(Dirisha* d, n64 kitu, n64 opcode, n64 idadi, n64 a1, n64 a2, n64 a3, n64 a4, n64 a5, n64 a6) {
+    kama (d->fd < 0) { rudisha; }                   // dirisha bila compositor
     n64 ukubwa = 8 + idadi * 4;
     n8* b = d->tuma;
     weka_u32(b, 0, kitu);
@@ -209,6 +210,7 @@ n8* dirisha_bafa(Dirisha* d) {
 // Onyesha bafa iliyochorwa: attach + damage + frame + commit, kisha badili
 // kwenda bafa nyingine kwa fremu inayofuata.
 w0 dirisha_onyesha(Dirisha* d) {
+    kama (d->fd < 0) { d->fremu_tayari = 1; rudisha; }
     n64 id = d->bafa_id_0;
     kama (d->bafa_hai == 1) { id = d->bafa_id_1; }
     dirisha_ombi(d, d->surface_id, 1, 3, id, 0, 0, 0, 0, 0);                  // attach
@@ -332,6 +334,7 @@ w0 dirisha_shughulikia(Dirisha* d, n64 kitu, n64 op, n64 m) {
 // Soma kila kilichopo kwenye soketi na ushughulikie matukio. Ikiwa hakuna
 // kitu na kusubiri_ms > 0, lala kidogo na ujaribu tena hadi muda huo.
 w0 dirisha_soma(Dirisha* d, n64 kusubiri_ms) {
+    kama (d->fd < 0) { rudisha; }
     n64 imesubiri = 0;
     n64 kitu_kimekuja = 0;
     wakati (d->imefungwa == 0) {
@@ -436,11 +439,43 @@ Dirisha* dirisha_fungua(n8** envp, n64 upana, n64 kimo, n8* kichwa) {
     n8* msg = wayland_waya_jenga_set_title(d->toplevel_id, kichwa);
     wayland_soketi_tuma(d->fd, msg, wayland_waya_set_title_ukubwa(kichwa));
     achilia msg;
-    dirisha_ombi(d, d->toplevel_id, 7, 2, 960, 600, 0, 0, 0, 0);     // set_min_size
+    // xdg_toplevel: 7 = set_max_size, 8 = set_min_size. Hapo awali hii iliita 7,
+    // hivyo dirisha lilibanwa kwenye ukubwa wa JUU wa 960x600 kila mara.
+    dirisha_ombi(d, d->toplevel_id, 8, 2, 960, 600, 0, 0, 0, 0);     // set_min_size
     dirisha_ombi(d, d->surface_id, 6, 0, 0, 0, 0, 0, 0, 0);          // commit (bila bafa)
     kama (dirisha_unda_bafa(d) == 0) { andika_kosa("dirisha: kumbukumbu ya pamoja imeshindwa\n", 0, 0, 0, 0, 0, 0); rudisha 0; }
     jaribio = 0;
     wakati (d->imesanidiwa == 0 && d->imefungwa == 0 && jaribio < 250) { dirisha_soma(d, 20); jaribio = jaribio + 1; }
     kama (d->imesanidiwa == 0) { andika_kosa("dirisha: hakuna configure kutoka kwa compositor\n", 0, 0, 0, 0, 0, 0); rudisha 0; }
+    rudisha d;
+}
+
+// Omba skrini nzima (washa = 1) au rudi kwenye dirisha (washa = 0).
+// xdg_toplevel: 11 = set_fullscreen(output, inaweza kuwa tupu), 12 = unset_fullscreen.
+w0 dirisha_skrini_nzima(Dirisha* d, n32 washa) {
+    kama (washa) { dirisha_ombi(d, d->toplevel_id, 11, 1, 0, 0, 0, 0, 0, 0); }
+    sivyo { dirisha_ombi(d, d->toplevel_id, 12, 0, 0, 0, 0, 0, 0, 0); }
+}
+
+// Dirisha lisilo na compositor: bafa ya kumbukumbu tu, kwa kuchora fremu za
+// ukubwa wowote bila kufungua dirisha kwenye skrini (majaribio, picha).
+// Maombi yote ya Wayland hupuuzwa; foleni ya matukio hubaki tupu.
+Dirisha* dirisha_bila_compositor(n64 upana, n64 kimo) {
+    Dirisha* d = tenga(ukubwa(Dirisha));
+    weka_sifuri(d, ukubwa(Dirisha));
+    d->fd = 0 - 1;
+    d->upana = upana;
+    d->kimo = kimo;
+    d->hatua = upana * 4;
+    d->shm_ukubwa = upana * kimo * 4 * 2;
+    d->shm = tenga(d->shm_ukubwa);
+    weka_sifuri(d->shm, d->shm_ukubwa);
+    d->imesanidiwa = 1;
+    d->sync_imekamilika = 1;
+    d->fremu_tayari = 1;
+    d->tuma = tenga(256);
+    d->f_aina = tenga(8 * DIRISHA_FOLENI);
+    d->f_a = tenga(8 * DIRISHA_FOLENI);
+    d->f_b = tenga(8 * DIRISHA_FOLENI);
     rudisha d;
 }
