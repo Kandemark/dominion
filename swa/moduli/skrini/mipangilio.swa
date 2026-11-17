@@ -1,9 +1,15 @@
 husisha { moduli/skrini/muhtasari.swa }
+husisha { moduli/akili/mshauri.swa }
 
-// mipangilio.swa -- skrini ya mipangilio: lugha ya kiolesura.
+// mipangilio.swa -- skrini ya mipangilio: lugha ya kiolesura na mshauri wa AI.
 //
-// Chaguo huhifadhiwa kwenye saves/mipangilio (baiti moja: tarakimu ya
-// lugha) na husomwa mchezo unapowaka, kabla ya skrini ya kwanza.
+// Lugha huhifadhiwa kwenye saves/mipangilio (baiti moja: tarakimu ya lugha)
+// na husomwa mchezo unapowaka, kabla ya skrini ya kwanza.
+//
+// Mshauri wa AI: mchezaji huchagua kuzima, modeli ya ndani ya mashine hii,
+// au seva maalum yenye ufunguo. Anwani, modeli na ufunguo huandikwa kwenye
+// saves/akili (angalia moduli/akili/mshauri.swa); skrini huonyesha hali na
+// hujaribu muunganisho.
 
 n64 SKRINI_MIPANGILIO_SAFU = 56;        // kimo cha safu moja ya lugha
 
@@ -60,6 +66,115 @@ n8* skrini_mipangilio_maelezo(n64 l) {
     rudisha ui("English");
 }
 
+// ---------- mshauri wa AI ----------
+
+AkiliUsanidi* mipangilio_akili = 0;
+n64 mipangilio_akili_hali = 0;          // 0 haijajaribiwa, 1 imeunganishwa, 2 haifikiki
+
+AkiliUsanidi* mipangilio_akili_pata() {
+    kama (mipangilio_akili == 0) { mipangilio_akili = akili_soma_usanidi("saves/akili"); }
+    rudisha mipangilio_akili;
+}
+
+n64 skrini_mipangilio_akili_y() {
+    rudisha skrini_mipangilio_y() + SKRINI_MIPANGILIO_SAFU * MANENO_LUGHA_IDADI + 76;
+}
+
+n8* skrini_mipangilio_mtoa_jina(n64 m) {
+    kama (m == AKILI_WA_NDANI) { rudisha ui("Local model on this computer"); }
+    kama (m == AKILI_MAALUM) { rudisha ui("Custom server with API key"); }
+    rudisha ui("Off");
+}
+
+n8* skrini_mipangilio_mtoa_maelezo(n64 m) {
+    kama (m == AKILI_WA_NDANI) { rudisha ui("Ollama at 127.0.0.1:11434. Nothing leaves this machine."); }
+    kama (m == AKILI_MAALUM) { rudisha ui("Any chat-completions server. Uses the address, model and key in saves/akili."); }
+    rudisha ui("No adviser. The game makes no network connections."); 
+}
+
+// Kitendo cha bofya kwenye sehemu ya mshauri: 0..2 = mtoa, 10 = jaribu
+// muunganisho, -1 = hakuna.
+n64 skrini_mipangilio_bofya_akili(n64 upana, n64 px, n64 py) {
+    n64 x = skrini_mipangilio_x();
+    n64 y = skrini_mipangilio_akili_y();
+    n64 w = skrini_mipangilio_w(upana);
+    kama (px < x || px >= x + w || py < y) { rudisha 0 - 1; }
+    n64 safu = (py - y) / SKRINI_MIPANGILIO_SAFU;
+    kama (safu < AKILI_WATOA) { rudisha safu; }
+    n64 y_kitufe = y + SKRINI_MIPANGILIO_SAFU * AKILI_WATOA + 92;
+    kama (py >= y_kitufe && py < y_kitufe + 32 && px < x + 180) { rudisha 10; }
+    rudisha 0 - 1;
+}
+
+// Tekeleza kitendo cha bofya_akili.
+w0 mipangilio_akili_tekeleza(n64 kitendo) {
+    AkiliUsanidi* u = mipangilio_akili_pata();
+    kama (kitendo >= 0 && kitendo < AKILI_WATOA) {
+        kama (u->mtoa != kitendo) {
+            u->mtoa = kitendo;
+            // mtoa wa ndani hurudi kwenye anwani ya Ollama ya chaguo-msingi
+            kama (kitendo == AKILI_WA_NDANI) { nakili_mfuatano(u->anwani, "127.0.0.1"); u->bandari = 11434; }
+            akili_hifadhi_usanidi(u, "saves/akili");
+            mipangilio_akili_hali = 0;
+        }
+    }
+    kama (kitendo == 10) {
+        mipangilio_akili_hali = 2;
+        kama (akili_jaribu(u)) { mipangilio_akili_hali = 1; }
+    }
+}
+
+w0 skrini_mipangilio_akili_chora(Turubai* t, n64 x, n64 w) {
+    AkiliUsanidi* u = mipangilio_akili_pata();
+    n64 y = skrini_mipangilio_akili_y();
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo_kati(ui("AI ADVISER"), x + 4, y - 26, 12);
+    sura_paneli(x, y, w, SKRINI_MIPANGILIO_SAFU * AKILI_WATOA, 0);
+    n64 m = 0;
+    wakati (m < AKILI_WATOA) {
+        n64 sy = y + m * SKRINI_MIPANGILIO_SAFU;
+        n64 hai = 0;
+        kama (m == u->mtoa) { hai = 1; }
+        kama (hai) {
+            turubai_brashi(t, SURA_LAFUDHI, 22);
+            turubai_mviringo(t, x + 4, sy + 4, w - 8, SKRINI_MIPANGILIO_SAFU - 8, 6);
+        }
+        kama (m > 0) {
+            turubai_brashi(t, 16777215, 10);
+            turubai_jaza(t, x + 52, sy, w - 68, 1);
+        }
+        sura_radio(x + 28, sy + SKRINI_MIPANGILIO_SAFU / 2, hai, SURA_LAFUDHI, 255);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kati(skrini_mipangilio_mtoa_jina(m), x + 52, sy + 9, 15);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(skrini_mipangilio_mtoa_maelezo(m), x + 52, sy + 31, 11);
+        m = m + 1;
+    }
+    // undani wa muunganisho
+    n64 dy = y + SKRINI_MIPANGILIO_SAFU * AKILI_WATOA + 14;
+    n8 chombo[160];
+    mfuatano_umbiza(chombo, 160, "%s:%d", u->anwani, u->bandari, 0, 0, 0, 0);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(ui("Server"), x + 4, dy, 12);
+    sura_lebo(ui("Model"), x + 4, dy + 22, 12);
+    sura_lebo(ui("API key"), x + 4, dy + 44, 12);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo(chombo, x + 110, dy, 12);
+    sura_lebo(u->modeli, x + 110, dy + 22, 12);
+    kama (u->ufunguo[0] != 0) { sura_lebo(ui("Set (hidden)"), x + 110, dy + 44, 12); }
+    sivyo { sura_rangi(SURA_HAFIFU); sura_lebo(ui("Not set"), x + 110, dy + 44, 12); }
+    // kitufe cha kujaribu na hali
+    n64 by = dy + 78;
+    turubai_brashi(t, SURA_PANELI_JUU, 255);
+    turubai_mviringo(t, x, by, 176, 32, 7);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kati(ui("Test connection"), x + 16, by + 7, 13);
+    kama (mipangilio_akili_hali == 1) { sura_rangi(SURA_CHANYA); sura_lebo_kati(ui("Connected"), x + 196, by + 7, 13); }
+    kama (mipangilio_akili_hali == 2) { sura_rangi(SURA_HASI); sura_lebo_kati(ui("Not reachable"), x + 196, by + 7, 13); }
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(ui("To change the server, model or key, edit the file saves/akili and reopen Settings."), x + 4, by + 46, 11);
+}
+
 w0 skrini_mipangilio_chora(Mchezo* g, Turubai* t) {
     sura_anzisha(t);
     turubai_brashi(t, SURA_USULI, 255);
@@ -69,7 +184,7 @@ w0 skrini_mipangilio_chora(Mchezo* g, Turubai* t) {
 
     n64 x = skrini_mipangilio_x();
     n64 w = skrini_mipangilio_w(t->upana);
-    sura_kichwa_ukurasa(ui("Settings"), ui("Interface language"), x, SKRINI_UPAU_WA_JUU + 20);
+    sura_kichwa_ukurasa(ui("Settings"), ui("Language and adviser"), x, SKRINI_UPAU_WA_JUU + 20);
 
     n64 y = skrini_mipangilio_y();
     sura_rangi(SURA_HAFIFU);
@@ -101,4 +216,5 @@ w0 skrini_mipangilio_chora(Mchezo* g, Turubai* t) {
     sura_rangi(SURA_HAFIFU);
     sura_lebo(ui("Names of nations, cities and rivers stay in their own languages."), x + 4,
               y + SKRINI_MIPANGILIO_SAFU * MANENO_LUGHA_IDADI + 14, 12);
+    skrini_mipangilio_akili_chora(t, x, w);
 }

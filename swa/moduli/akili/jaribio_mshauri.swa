@@ -1,0 +1,85 @@
+husisha { moduli/akili/mshauri.swa }
+
+// jaribio_mshauri.swa -- mshauri wa AI bila mtandao: usanidi, JSON, na
+// kuchanganua majibu ya HTTP (ya kawaida na ya vipande).
+//   jaribio_mshauri                   majaribio ya ndani pekee
+//   jaribio_mshauri hai <bandari> [swali]   pia ungana na seva ya 127.0.0.1
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    // usanidi: andika -> changanua hurudisha vilevile
+    AkiliUsanidi* u = akili_usanidi_chaguomsingi();
+    u->mtoa = AKILI_MAALUM;
+    nakili_mfuatano(u->anwani, "10.0.0.7");
+    u->bandari = 8080;
+    nakili_mfuatano(u->modeli, "mfano-mkubwa");
+    nakili_mfuatano(u->ufunguo, "sk-jaribio-123");
+    n8 bafa[1024];
+    akili_andika_usanidi(u, bafa, 1024);
+    AkiliUsanidi* v = akili_usanidi_chaguomsingi();
+    akili_changanua_usanidi(v, bafa);
+    thibitisha("usanidi mtoa", v->mtoa == AKILI_MAALUM);
+    thibitisha("usanidi anwani", linganisha_mfuatano(v->anwani, "10.0.0.7") == 0);
+    thibitisha("usanidi bandari", v->bandari == 8080);
+    thibitisha("usanidi modeli", linganisha_mfuatano(v->modeli, "mfano-mkubwa") == 0);
+    thibitisha("usanidi ufunguo", linganisha_mfuatano(v->ufunguo, "sk-jaribio-123") == 0);
+
+    // IPv4
+    n8 ip[4];
+    thibitisha("ipv4 halali", akili_changanua_ipv4("127.0.0.1", ip) == 1 && (ip[0] & 255) == 127 && ip[3] == 1);
+    thibitisha("ipv4 batili", akili_changanua_ipv4("999.1.1.1", ip) == 0);
+    thibitisha("ipv4 jina", akili_changanua_ipv4("localhost", ip) == 0);
+
+    // JSON: toroka na kufungua
+    n8 t1[128];
+    akili_json_toroka(t1, 128, "Sema \"ndiyo\"\nau hapana\\");
+    thibitisha("json toroka", linganisha_mfuatano(t1, "Sema \\\"ndiyo\\\"\\nau hapana\\\\") == 0);
+    n8 t2[128];
+    akili_json_soma_mfuatano("Raise taxes\\nby 2\\u0025 \\u00e9\" , x", t2, 128);
+    thibitisha("json fungua", linganisha_mfuatano(t2, "Raise taxes\nby 2% é") == 0);
+
+    // jibu la kawaida
+    // (majibu huandikwa kwa LF na kubadilishwa kuwa CR LF kama ya seva halisi)
+    n8 j1[512];
+    akili_crlf(j1, "HTTP/1.1 200 OK\nContent-Type: application/json\nContent-Length: 90\n\n{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"Hold the border.\"}}]}");
+    n8 nje[256];
+    n64 n = akili_toa_jibu(j1, urefu_wa_mfuatano(j1), nje, 256);
+    thibitisha("jibu la kawaida", n == 16 && linganisha_mfuatano(nje, "Hold the border.") == 0);
+
+    // jibu la vipande: mwili umegawanywa katikati ya neno
+    n8 j2[512];
+    akili_crlf(j2, "HTTP/1.1 200 OK\nTransfer-Encoding: chunked\n\n2a\n{\"message\":{\"role\":\"assistant\",\"content\":\"\n10\nCall an election\n3\n\"}}\n0\n\n");
+    n = akili_toa_jibu(j2, urefu_wa_mfuatano(j2), nje, 256);
+    thibitisha("jibu la vipande", linganisha_mfuatano(nje, "Call an election") == 0);
+    n8 k1[64];
+    thibitisha("crlf", akili_crlf(k1, "a\nb\n") == 6 && k1[1] == 13 && k1[2] == 10);
+
+    // hitilafu ya seva
+    n8 j3[128];
+    akili_crlf(j3, "HTTP/1.1 401 Unauthorized\n\n{\"error\":\"bad key\"}");
+    thibitisha("hali 401", akili_toa_jibu(j3, urefu_wa_mfuatano(j3), nje, 256) == 0 - 10);
+
+    // mshauri aliyezimwa hajaribu mtandao
+    AkiliUsanidi* z = akili_usanidi_chaguomsingi();
+    thibitisha("amezimwa", akili_jaribu(z) == 0 && akili_uliza(z, "a", "b", nje, 256) == 0 - 1);
+
+    kama (idadi_ya_hoja > 2 && linganisha_mfuatano(hoja_za_mstari[1], "hai") == 0) {
+        AkiliUsanidi* h = akili_usanidi_chaguomsingi();
+        h->mtoa = AKILI_WA_NDANI;
+        h->bandari = mfuatano_hadi_n64(hoja_za_mstari[2]);
+        andika("seva 127.0.0.1:%d inafikika: %d\n", h->bandari, akili_jaribu(h), 0, 0, 0, 0);
+        kama (idadi_ya_hoja > 3) {
+            n8* jibu = tenga(8192);
+            n64 r = akili_uliza(h, "You advise the head of state. Answer in one sentence.", hoja_za_mstari[3], jibu, 8192);
+            kama (r >= 0) { andika("jibu (%d): %s\n", r, jibu, 0, 0, 0, 0); }
+            sivyo { andika("hitilafu ya mshauri: %d\n", r, 0, 0, 0, 0, 0); }
+        }
+    }
+    kama (makosa == 0) { andika("mshauri: sawa\n", 0, 0, 0, 0, 0, 0); rudisha 0; }
+    rudisha 1;
+}
