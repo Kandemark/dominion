@@ -26,6 +26,9 @@ Turubai* sura_t = 0;
 Fonti* sura_kawaida = 0;
 Fonti* sura_kati = 0;
 Fonti* sura_nene = 0;
+Fonti* sura_mono = 0;            // Noto Sans Mono: vituo vya masoko na majedwali ya namba
+Fonti* sura_mono_nene = 0;
+Fonti* sura_serif = 0;           // Noto Serif Italic: nyaraka kama katiba
 
 // Funga sura kwenye turubai na upakie fonti (mara moja). Hurudisha 0 kwa
 // sawa, -1 ikiwa fonti haikupatikana.
@@ -36,6 +39,13 @@ n32 sura_anzisha(Turubai* t) {
     sura_kati = maandishi_pakia("rasilimali/fonti/NotoSans-Medium.ttf");
     sura_nene = maandishi_pakia("rasilimali/fonti/NotoSans-Bold.ttf");
     kama (sura_kawaida == 0 || sura_kati == 0 || sura_nene == 0) { rudisha 0 - 1; }
+    // fonti za ziada; zikikosekana, za kawaida hutumika
+    sura_mono = maandishi_pakia("rasilimali/fonti/NotoSansMono-Regular.ttf");
+    sura_mono_nene = maandishi_pakia("rasilimali/fonti/NotoSansMono-Bold.ttf");
+    sura_serif = maandishi_pakia("rasilimali/fonti/NotoSerif-Italic.ttf");
+    kama (sura_mono == 0) { sura_mono = sura_kawaida; }
+    kama (sura_mono_nene == 0) { sura_mono_nene = sura_nene; }
+    kama (sura_serif == 0) { sura_serif = sura_kawaida; }
     rudisha 0;
 }
 

@@ -3,6 +3,7 @@ husisha { moduli/skrini/mipangilio.swa }
 husisha { moduli/akili/mazungumzo.swa }
 husisha { moduli/siasa/kikasha.swa }
 husisha { moduli/siasa/nguvu.swa }
+husisha { moduli/soko/masoko.swa }
 husisha { moduli/onyesho/bofya.swa }
 husisha { moduli/onyesho/chati_kadi.swa }
 
@@ -28,6 +29,7 @@ husisha { moduli/onyesho/chati_kadi.swa }
 
 n64 mkutano_mteule = -1;            // -1 = Mshauri; >= 0 = mhusika wa mti
 n64 mkutano_mbunge = -1;            // >= 0: mjumbe wa baraza au jaji (nguvu.swa)
+n64 mkutano_tajiri = -1;            // >= 0: tajiri (soko/masoko.swa)
 n64 mkutano_taifa = -1;
 n64 mkutano_ofisi = 0;              // cheo anachoshika mchezaji
 n64 mkutano_leo = 0;                // siku ya leo (kalenda ya mchezo)
@@ -116,6 +118,7 @@ w0 skrini_mkutano_chagua(n64 mtu) {
     kama (mtu < 0 - 1 || (mtu == mkutano_mteule && mkutano_mbunge < 0)) { rudisha; }
     mkutano_mteule = mtu;
     mkutano_mbunge = 0 - 1;
+    mkutano_tajiri = 0 - 1;
     serikali_chagua_hoja = 0;
     mkutano_hali = 0;
     mkutano_kauli[0] = 0;
@@ -128,12 +131,27 @@ w0 skrini_mkutano_chagua_mbunge(n64 i) {
     mkutano_andaa();
     kama (nguvu_pata(i) == 0 || i == mkutano_mbunge) { rudisha; }
     mkutano_mbunge = i;
+    mkutano_tajiri = 0 - 1;
     mkutano_mteule = 0 - 2;
     serikali_chagua_hoja = 0;
     mkutano_hali = 0;
     mkutano_kauli[0] = 0;
     mkutano_jibu[0] = 0;
     mkutano_ujumbe[0] = 0;
+}
+
+// Chagua tajiri (kutoka kituo cha masoko) kwa mazungumzo.
+w0 skrini_mkutano_chagua_tajiri(n64 i) {
+    mkutano_andaa();
+    kama (soko_tajiri_pata(i) == 0) { rudisha; }
+    mkutano_tajiri = i;
+    mkutano_mbunge = 0 - 1;
+    mkutano_mteule = 0 - 2;
+    serikali_chagua_hoja = 0;
+    mkutano_hali = 0;
+    mkutano_kauli[0] = 0;
+    mkutano_jibu[0] = 0;
+    mfuatano_umbiza(mkutano_ujumbe, 240, ui("%s has come to see you."), soko_tajiri_pata(i)->jina, 0, 0, 0, 0, 0);
 }
 
 // Malipo ya siri kwa mjumbe aliyechaguliwa.
@@ -318,6 +336,10 @@ w0 skrini_mkutano_tuma(Mchezo* g, n64 taifa) {
         muda = tenga(ukubwa(MhusikaWaDola));
         m = nguvu_kama_mhusika(mkutano_mbunge, d, muda);
     }
+    kama (mkutano_tajiri >= 0) {
+        muda = tenga(ukubwa(MhusikaWaDola));
+        m = soko_tajiri_kama_mhusika(mkutano_tajiri, d, muda);
+    }
     n8 tarehe[96];
     skrini_mkutano_tarehe(g, tarehe, 96);
     n8 njia[128];
@@ -332,6 +354,8 @@ w0 skrini_mkutano_tuma(Mchezo* g, n64 taifa) {
     kama (muda != 0) {
         Mbunge* mb = nguvu_pata(mkutano_mbunge);
         kama (mb != 0) { mb->msimamo = muda->msimamo; }
+        Tajiri* tj = soko_tajiri_pata(mkutano_tajiri);
+        kama (tj != 0) { tj->msimamo = muda->msimamo; }
         achilia muda->cheo;
         achilia muda;
     }
@@ -916,6 +940,31 @@ n64 serikali_jalada_mbunge(Dola* d, n64 i, n64 x, n64 y, n64 wk) {
     rudisha by + 30;
 }
 
+// Jalada la tajiri aliyekuja kukuona.
+n64 serikali_jalada_tajiri(Dola* d, n64 i, n64 x, n64 y, n64 wk) {
+    Tajiri* t = soko_tajiri_pata(i);
+    n8 h[4];
+    serikali_herufi_za_jina(t->jina, h);
+    sura_avatar(h, x + 44, y + 58, 26, 15237962, 255);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(t->jina, x + 84, y + 36, 18);
+    n8 c[200];
+    n8 u[48];
+    soko_fedha_maandishi(u, t->taifa, soko_utajiri(i));
+    n8* aina = ui("Industrialist");
+    kama (t->oligarki) { aina = ui("Oligarch"); }
+    mfuatano_umbiza(c, 200, "%s  ·  %s  ·  %d %s  ·  %d", aina, u, soko_kampuni_za_tajiri(i), ui("companies"), t->umri, 0);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(c, x + 84, y + 62, 12);
+    mfuatano_umbiza(c, 200, "%s, %s", tabia_jina(t->tabia_1), tabia_jina(t->tabia_2), 0, 0, 0, 0);
+    sura_lebo(c, x + 84, y + 80, 12);
+    n64 sw = (wk - 32 - 12) / 2;
+    serikali_sifa(ui("ATTITUDE"), t->msimamo, 200, SURA_CHANYA, x + 16, y + 106, sw);
+    serikali_sifa(ui("INFLUENCE"), t->ushawishi, 10, 11032472, x + 28 + sw, y + 106, sw);
+    serikali_kitufe(ui("Talk"), x + 16, y + 142, 0, 1, SB_KITENDO, 1005);
+    rudisha y + 172;
+}
+
 // Jalada la afisa wa mti wa dola (au Mshauri), na vitendo vyake.
 n64 serikali_jalada_afisa(Dola* d, Wahusika* w, n64 x, n64 y, n64 wk) {
     MhusikaWaDola* m = wahusika_pata(w, mkutano_mteule);
@@ -1047,6 +1096,10 @@ w0 serikali_mazungumzo_chora(Turubai* t, Dola* d, Wahusika* w, n64 x, n64 y, n64
         muda = tenga(ukubwa(MhusikaWaDola));
         m = nguvu_kama_mhusika(mkutano_mbunge, d, muda);
     }
+    kama (mkutano_tajiri >= 0) {
+        muda = tenga(ukubwa(MhusikaWaDola));
+        m = soko_tajiri_kama_mhusika(mkutano_tajiri, d, muda);
+    }
     n64 h_ingizo = 40;
     skrini_mkutano_mazungumzo_chora(m, x, y, wk, h - h_ingizo - 8);
     kama (muda != 0) { achilia muda->cheo; achilia muda; }
@@ -1146,7 +1199,7 @@ w0 skrini_mkutano_chora(Mchezo* g, Turubai* t, n64 taifa) {
     // ruhusa ya kuzungumza: Mshauri, msaidizi, wajumbe, walio chini au sawa,
     // na waliokubali mkutano
     mkutano_ruhusa = 1;
-    kama (mkutano_mbunge < 0 && m != 0 && mimi != 0 && mkutano_mteule != w->msaidizi && mkutano_mteule != mkutano_ofisi) {
+    kama (mkutano_mbunge < 0 && mkutano_tajiri < 0 && m != 0 && mimi != 0 && mkutano_mteule != w->msaidizi && mkutano_mteule != mkutano_ofisi) {
         n32 amekubali = m->mkutano == 1 || (m->mkutano == 3 && mkutano_leo >= m->mkutano_siku);
         kama (m->ngazi > mimi->ngazi && amekubali == 0) { mkutano_ruhusa = 0; }
     }
@@ -1189,6 +1242,7 @@ w0 skrini_mkutano_chora(Mchezo* g, Turubai* t, n64 taifa) {
     kama (serikali_chagua_hoja && mkutano_mbunge >= 0) { h_jalada = 274; }
     sura_paneli(xc, y, wc, h_jalada, ui("DOSSIER"));
     kama (mkutano_mbunge >= 0) { serikali_jalada_mbunge(d, mkutano_mbunge, xc, y, wc); }
+    sivyo kama (mkutano_tajiri >= 0) { serikali_jalada_tajiri(d, mkutano_tajiri, xc, y, wc); }
     sivyo { serikali_jalada_afisa(d, w, xc, y, wc); }
     // hoja hupata nusu ya nafasi iliyobaki, mazungumzo nusu nyingine
     n64 h_hoja = (h - h_jalada - 2 * pengo) / 2;
