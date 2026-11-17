@@ -1,0 +1,58 @@
+husisha { moduli/skrini/mkutano.swa }
+
+// jaribio_mkutano.swa -- skrini ya mikutano: kuandika, kutuma, kuchagua mtu,
+// na kuchora. Mshauri amezimwa, hivyo kutuma hutoa ujumbe wa hitilafu badala
+// ya kuunganisha na mtandao.
+//   jaribio_mkutano <njia>     huandika fremu <njia> (Mshauri) na <njia>.mtu
+
+w0 andika_fremu(n8* njia, n8* kiambishi, Turubai* t) {
+    n8 jina[256];
+    mfuatano_umbiza(jina, 256, "%s%s", njia, kiambishi, 0, 0, 0, 0);
+    n64 fd = mfumo_fungua(jina, 577, 420);
+    mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
+    mfumo_funga(fd);
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) { andika("SHINDWA: mchezo_anzisha\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 taifa = tm->faharisi_ya_taifa_la_mchezaji;
+    // mshauri amezimwa kwa jaribio, bila kugusa faili la mchezaji
+    mipangilio_akili = akili_usanidi_chaguomsingi();
+    Turubai* t = turubai_unda(1600, 900);
+    skrini_mkutano_chora(g, t, taifa);
+
+    // kuandika: "Hi?" kwa Shift, kisha kufuta herufi moja
+    skrini_mkutano_kibodi(35, 1);
+    skrini_mkutano_kibodi(23, 0);
+    skrini_mkutano_kibodi(53, 1);
+    kama (linganisha_mfuatano(mkutano_ingizo, "Hi?") != 0) { andika("SHINDWA: ingizo [%s]\n", mkutano_ingizo, 0, 0, 0, 0, 0); rudisha 1; }
+    skrini_mkutano_kibodi(14, 0);
+    kama (linganisha_mfuatano(mkutano_ingizo, "Hi") != 0) { andika("SHINDWA: kufuta\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (skrini_mkutano_kibodi(28, 0) != 1 || mkutano_hali != 1) { andika("SHINDWA: kutuma\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    skrini_mkutano_tuma(g, taifa);
+    kama (mkutano_hali != 3 || mkutano_kosa != 0 - 1) { andika("SHINDWA: mshauri aliyezimwa (hali %d kosa %d)\n", mkutano_hali, mkutano_kosa, 0, 0, 0, 0); rudisha 1; }
+    skrini_mkutano_chora(g, t, taifa);
+    kama (idadi_ya_hoja > 1) { andika_fremu(hoja_za_mstari[1], "", t); }
+
+    // kuchagua mtu wa tatu kwenye orodha, na jibu la mfano lenye athari
+    Dola* d = skrini_siasa_dola(g, taifa);
+    Wahusika* w = wahusika_wa_taifa(taifa, d);
+    n64 mtu = skrini_mkutano_bofya(SKRINI_UPANA_WA_PEMBENI + 60, SKRINI_UPAU_WA_JUU + 25 + 62 + 36 + 3 * MKUTANO_SAFU + 5, w->idadi);
+    kama (mtu != 2) { andika("SHINDWA: bofya ya orodha %d\n", mtu, 0, 0, 0, 0, 0); rudisha 1; }
+    skrini_mkutano_chagua(mtu);
+    nakili_mfuatano(mkutano_kauli, "Minister, I intend to raise the grain tax by a third to pay the army. Can the treasury manage without it?");
+    nakili_mfuatano(mkutano_jibu, "Your Excellency, the treasury can carry the army for two more seasons, but only if the harvest holds. A third is too much at once: the guilds will close their shops and the provinces will hide their grain. Raise it by a tenth now and I will find the rest in the customs houses.");
+    mkutano_athari[ATHARI_MSIMAMO] = 4;
+    mkutano_athari[ATHARI_UTULIVU] = 0 - 2;
+    mkutano_athari[ATHARI_HAZINA] = 3;
+    mkutano_hali = 2;
+    skrini_mkutano_chora(g, t, taifa);
+    kama (idadi_ya_hoja > 1) { andika_fremu(hoja_za_mstari[1], ".mtu", t); }
+    andika("mkutano: watu %d, sawa\n", w->idadi, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

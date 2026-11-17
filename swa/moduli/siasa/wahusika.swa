@@ -1,0 +1,184 @@
+husisha { moduli/siasa/dola.swa }
+
+// wahusika.swa -- watu wa dola: kila taifa lina orodha ya watu wenye vyeo,
+// vyama, tabia na msimamo wao kwa mchezaji.
+//
+// Mchezaji si lazima awe mkuu wa dola. Ngazi za uongozi huanzia chifu wa
+// kijiji hadi mkuu wa dola, na orodha ina mtu wa kila ngazi: aliye juu ya
+// mchezaji ni bosi wake, walio chini ni watu wake. Kila mhusika ana tabia
+// mbili zinazoongoza namna anavyozungumza, na msimamo (-100..100)
+// unaobadilika kadiri mchezaji anavyoshughulika naye.
+
+n64 NGAZI_KIJIJI = 0;
+n64 NGAZI_WILAYA = 1;
+n64 NGAZI_MKOA = 2;
+n64 NGAZI_BUNGE = 3;
+n64 NGAZI_WAZIRI = 4;
+n64 NGAZI_SERIKALI = 5;
+n64 NGAZI_DOLA = 6;
+n64 NGAZI_IDADI = 7;
+
+n8* ngazi_jina(n64 n) {
+    kama (n == NGAZI_KIJIJI) { rudisha ui("Village chief"); }
+    kama (n == NGAZI_WILAYA) { rudisha ui("District commissioner"); }
+    kama (n == NGAZI_MKOA) { rudisha ui("Provincial governor"); }
+    kama (n == NGAZI_BUNGE) { rudisha ui("Member of the legislature"); }
+    kama (n == NGAZI_WAZIRI) { rudisha ui("Minister"); }
+    kama (n == NGAZI_SERIKALI) { rudisha ui("Head of government"); }
+    rudisha ui("Head of state");
+}
+
+n64 TABIA_IDADI = 12;
+
+n8* tabia_jina(n64 t) {
+    kama (t == 1) { rudisha ui("ambitious"); }
+    kama (t == 2) { rudisha ui("loyal"); }
+    kama (t == 3) { rudisha ui("corrupt"); }
+    kama (t == 4) { rudisha ui("idealistic"); }
+    kama (t == 5) { rudisha ui("pragmatic"); }
+    kama (t == 6) { rudisha ui("hawkish"); }
+    kama (t == 7) { rudisha ui("conciliatory"); }
+    kama (t == 8) { rudisha ui("populist"); }
+    kama (t == 9) { rudisha ui("technocratic"); }
+    kama (t == 10) { rudisha ui("devout"); }
+    kama (t == 11) { rudisha ui("cynical"); }
+    rudisha ui("cautious");
+}
+
+muundo MhusikaWaDola {
+    n8* jina;
+    n8* cheo;               // cheo kamili ("Minister of Finance")
+    n64 ngazi;              // NGAZI_*
+    n64 itikadi;
+    n8* chama;              // jina la chama, au 0
+    n64 tabia_1;
+    n64 tabia_2;
+    n64 umri;
+    n64 msimamo;            // -100..100 kwa mchezaji
+}
+
+n64 WAHUSIKA_JUU = 16;
+
+muundo Wahusika {
+    n64 idadi;
+    n64* watu;              // MhusikaWaDola* kwa kila mmoja
+}
+
+// Jina la kubuni la mtu: jina la kwanza na la ukoo kutoka silabi.
+w0 wahusika_jina(n8* nje, n64 mbegu) {
+    n8* konsonanti = "bdfghjklmnprstvz";
+    n8* vokali = "aeiou";
+    n64 n = 0;
+    n64 neno = 0;
+    wakati (neno < 2) {
+        n64 silabi = 2 + dola_nasibu(mbegu, 300 + neno) % 2;
+        n64 i = 0;
+        wakati (i < silabi) {
+            n64 k = dola_nasibu(mbegu, 310 + neno * 16 + i);
+            n64 c = konsonanti[k % 16];
+            kama (i == 0) { c = c - 32; }
+            nje[n] = c;
+            nje[n + 1] = vokali[(k >> 8) % 5];
+            n = n + 2;
+            // mara moja moja silabi hufungwa kwa konsonanti
+            kama ((k >> 16) % 4 == 0 && i == silabi - 1) { nje[n] = konsonanti[(k >> 20) % 16]; n = n + 1; }
+            i = i + 1;
+        }
+        kama (neno == 0) { nje[n] = 32; n = n + 1; }
+        neno = neno + 1;
+    }
+    nje[n] = 0;
+}
+
+w0 wahusika_ongeza(Wahusika* w, Dola* d, n64 mbegu, n8* cheo, n64 ngazi, n64 chama) {
+    kama (w->idadi >= WAHUSIKA_JUU) { rudisha; }
+    MhusikaWaDola* m = tenga(ukubwa(MhusikaWaDola));
+    n64 k = mbegu * 31 + w->idadi;
+    m->jina = tenga(40);
+    wahusika_jina(m->jina, k);
+    m->cheo = cheo;
+    m->ngazi = ngazi;
+    m->itikadi = ITIKADI_HURU;
+    m->chama = 0;
+    kama (chama >= 0 && chama < d->vyama) {
+        m->itikadi = d->chama_itikadi[chama];
+        m->chama = d->chama_jina[chama];
+    }
+    m->tabia_1 = dola_nasibu(k, 400) % TABIA_IDADI;
+    m->tabia_2 = (m->tabia_1 + 1 + dola_nasibu(k, 401) % (TABIA_IDADI - 1)) % TABIA_IDADI;
+    m->umri = 34 + dola_nasibu(k, 402) % 40;
+    m->msimamo = dola_nasibu(k, 403) % 121 - 40;
+    w->watu[w->idadi] = m;
+    w->idadi = w->idadi + 1;
+}
+
+// Chama cha kwanza cha serikali, na cha kwanza cha upinzani chenye viti (au -1).
+n64 wahusika_chama_cha_serikali(Dola* d) {
+    n64 c = 0;
+    wakati (c < d->vyama) {
+        kama (d->chama_serikalini[c]) { rudisha c; }
+        c = c + 1;
+    }
+    rudisha 0 - 1;
+}
+
+n64 wahusika_chama_cha_upinzani(Dola* d) {
+    n64 c = 0;
+    wakati (c < d->vyama) {
+        kama (d->chama_serikalini[c] == 0) { rudisha c; }
+        c = c + 1;
+    }
+    rudisha 0 - 1;
+}
+
+// Watu wa dola: wakuu, mawaziri, spika, upinzani, jeshi, na ngazi za chini.
+Wahusika* wahusika_unda(Dola* d, n64 mbegu) {
+    Wahusika* w = tenga(ukubwa(Wahusika));
+    w->idadi = 0;
+    w->watu = tenga(8 * WAHUSIKA_JUU);
+    n64 gs = wahusika_chama_cha_serikali(d);
+    n64 up = wahusika_chama_cha_upinzani(d);
+    kama (d->aina != DOLA_BILA_SERIKALI) {
+        wahusika_ongeza(w, d, mbegu, d->mkuu_wa_dola, NGAZI_DOLA, gs);
+        kama (d->mkuu_wa_serikali != 0) { wahusika_ongeza(w, d, mbegu, d->mkuu_wa_serikali, NGAZI_SERIKALI, gs); }
+        wahusika_ongeza(w, d, mbegu, ui("Minister of Finance"), NGAZI_WAZIRI, gs);
+        wahusika_ongeza(w, d, mbegu, ui("Minister of Foreign Affairs"), NGAZI_WAZIRI, gs);
+        wahusika_ongeza(w, d, mbegu, ui("Minister of Defence"), NGAZI_WAZIRI, gs);
+        wahusika_ongeza(w, d, mbegu, ui("Minister of the Interior"), NGAZI_WAZIRI, gs);
+        wahusika_ongeza(w, d, mbegu, ui("Minister of Justice"), NGAZI_WAZIRI, gs);
+        wahusika_ongeza(w, d, mbegu, ui("Chief of the General Staff"), NGAZI_WAZIRI, 0 - 1);
+        wahusika_ongeza(w, d, mbegu, ui("Press Secretary"), NGAZI_WAZIRI, gs);
+    }
+    kama (d->mabaraza > 0) { wahusika_ongeza(w, d, mbegu, ui("Speaker of the legislature"), NGAZI_BUNGE, gs); }
+    kama (d->mabaraza > 0 && up >= 0) { wahusika_ongeza(w, d, mbegu, ui("Leader of the Opposition"), NGAZI_BUNGE, up); }
+    wahusika_ongeza(w, d, mbegu, ui("Governor of the capital province"), NGAZI_MKOA, gs);
+    wahusika_ongeza(w, d, mbegu, ui("District commissioner"), NGAZI_WILAYA, 0 - 1);
+    wahusika_ongeza(w, d, mbegu, ui("Village chief"), NGAZI_KIJIJI, 0 - 1);
+    rudisha w;
+}
+
+// Akiba: orodha moja kwa kila taifa.
+n64* wahusika_akiba = 0;
+
+Wahusika* wahusika_wa_taifa(n64 faharisi, Dola* d) {
+    kama (faharisi < 0 || faharisi >= DOLA_AKIBA_UWEZO || d == 0) { rudisha 0; }
+    kama (wahusika_akiba == 0) {
+        wahusika_akiba = tenga(8 * DOLA_AKIBA_UWEZO);
+        weka_sifuri(wahusika_akiba, 8 * DOLA_AKIBA_UWEZO);
+    }
+    kama (wahusika_akiba[faharisi] == 0) { wahusika_akiba[faharisi] = wahusika_unda(d, faharisi); }
+    rudisha wahusika_akiba[faharisi];
+}
+
+MhusikaWaDola* wahusika_pata(Wahusika* w, n64 i) {
+    kama (w == 0 || i < 0 || i >= w->idadi) { rudisha 0; }
+    rudisha w->watu[i];
+}
+
+n8* msimamo_jina(n64 m) {
+    kama (m >= 50) { rudisha ui("devoted"); }
+    kama (m >= 15) { rudisha ui("friendly"); }
+    kama (m > 0 - 15) { rudisha ui("neutral"); }
+    kama (m > 0 - 50) { rudisha ui("wary"); }
+    rudisha ui("hostile");
+}

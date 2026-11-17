@@ -64,6 +64,7 @@ w0 skrini_urambazaji(Turubai* t, n64 hai) {
     sura_urambazaji(ui("Culture"), 12, y + 200, SKRINI_UPANA_WA_PEMBENI - 24, hai == 5);
     sura_urambazaji(ui("Technology"), 12, y + 240, SKRINI_UPANA_WA_PEMBENI - 24, hai == 6);
     sura_urambazaji(ui("Map"), 12, y + 280, SKRINI_UPANA_WA_PEMBENI - 24, hai == 7);
+    sura_urambazaji(ui("Meetings"), 12, y + 320, SKRINI_UPANA_WA_PEMBENI - 24, hai == 9);
     // mipangilio hukaa chini kabisa, mbali na skrini za taifa
     sura_urambazaji(ui("Settings"), 12, t->kimo - 54, SKRINI_UPANA_WA_PEMBENI - 24, hai == 8);
 }

@@ -16,6 +16,7 @@ husisha { msingi/maktaba/mfuatano.swa }
 //   bandari=11434
 //   modeli=llama3
 //   ufunguo=
+//   tokeni=400
 // Ufunguo hutumwa kama "Authorization: Bearer <ufunguo>".
 //
 // Mteja ni HTTP/1.1 ya wazi juu ya TCP kwa wito wa mfumo pekee. Hakuna TLS
@@ -34,6 +35,7 @@ muundo AkiliUsanidi {
     n64 bandari;
     n8* modeli;
     n8* ufunguo;
+    n64 tokeni;         // kikomo cha urefu wa jibu (tokeni)
 }
 
 n64 AKILI_SYS_SOCKET = 41;
@@ -50,6 +52,7 @@ AkiliUsanidi* akili_usanidi_chaguomsingi() {
     u->bandari = 11434;
     nakili_mfuatano(u->modeli, "llama3");
     u->ufunguo[0] = 0;
+    u->tokeni = 400;
     rudisha u;
 }
 
@@ -76,6 +79,10 @@ w0 akili_changanua_usanidi(AkiliUsanidi* u, n8* maandishi) {
         kama (anza_kwa_mfuatano(mstari, "bandari=")) { u->bandari = mfuatano_hadi_n64(&mstari[8]); }
         kama (anza_kwa_mfuatano(mstari, "modeli=")) { akili_nakili_thamani(u->modeli, 128, &mstari[7]); }
         kama (anza_kwa_mfuatano(mstari, "ufunguo=")) { akili_nakili_thamani(u->ufunguo, 256, &mstari[8]); }
+        kama (anza_kwa_mfuatano(mstari, "tokeni=")) {
+            u->tokeni = mfuatano_hadi_n64(&mstari[7]);
+            kama (u->tokeni < 16 || u->tokeni > 8192) { u->tokeni = 400; }
+        }
         wakati (maandishi[i] != 0 && maandishi[i] != 10) { i = i + 1; }
         kama (maandishi[i] == 10) { i = i + 1; }
     }
@@ -98,7 +105,7 @@ AkiliUsanidi* akili_soma_usanidi(n8* njia) {
 
 // Andika usanidi kama mistari ya ufunguo=thamani. Hurudisha urefu.
 n64 akili_andika_usanidi(AkiliUsanidi* u, n8* bafa, n64 uwezo) {
-    rudisha mfuatano_umbiza(bafa, uwezo, "mtoa=%d\nanwani=%s\nbandari=%d\nmodeli=%s\nufunguo=%s\n", u->mtoa, u->anwani, u->bandari, u->modeli, u->ufunguo, 0);
+    rudisha mfuatano_umbiza(bafa, uwezo, "mtoa=%d\nanwani=%s\nbandari=%d\nmodeli=%s\nufunguo=%s\ntokeni=%d\n", u->mtoa, u->anwani, u->bandari, u->modeli, u->ufunguo, u->tokeni);
 }
 
 w0 akili_hifadhi_usanidi(AkiliUsanidi* u, n8* njia) {
@@ -340,7 +347,11 @@ n64 akili_jenga_swali(AkiliUsanidi* u, n8* maelekezo, n8* swali, n8* mwili, n64 
     akili_json_toroka(m1, uwezo / 2, maelekezo);
     akili_json_toroka(m2, uwezo / 2, swali);
     akili_json_toroka(m3, 256, u->modeli);
-    n64 n = mfuatano_umbiza(mwili, uwezo, "{\"model\":\"%s\",\"stream\":false,\"messages\":[{\"role\":\"system\",\"content\":\"%s\"},{\"role\":\"user\",\"content\":\"%s\"}]}", m3, m1, m2, 0, 0, 0);
+    // Modeli za ndani zenye "kufikiri" hutumia dakika kwa jibu moja kwenye CPU:
+    // kwa mtoa wa ndani kufikiri huzimwa, na jibu lina kikomo cha tokeni.
+    n8* fikra = "";
+    kama (u->mtoa == AKILI_WA_NDANI) { fikra = "\"reasoning_effort\":\"none\","; }
+    n64 n = mfuatano_umbiza(mwili, uwezo, "{\"model\":\"%s\",\"stream\":false,%s\"max_tokens\":%d,\"messages\":[{\"role\":\"system\",\"content\":\"%s\"},{\"role\":\"user\",\"content\":\"%s\"}]}", m3, fikra, u->tokeni, m1, m2, 0);
     achilia m1;
     achilia m2;
     achilia m3;

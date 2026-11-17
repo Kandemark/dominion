@@ -211,6 +211,9 @@ muundo Dola {
     n64 umri_wa_dola;           // miaka tangu kuanzishwa
     n64 umri_wa_katiba;         // miaka tangu katiba ya sasa
     n64 tawala;                 // asilimia ya chini ya chama kikuu (0 = ushindani huru)
+    n64 utulivu;                // 0..100: utulivu wa kisiasa
+    n64 uhalali;                // 0..100: uhalali wa serikali machoni mwa watu
+    n64 hazina;                 // 0..100: hali ya hazina ya serikali
 }
 
 n64 dola_nasibu(n64 i, n64 mbegu) {
@@ -632,6 +635,10 @@ Dola* dola_unda(n64 mbegu, n8* cheo, n64 watu) {
     d->umri_wa_katiba = 1 + dola_nasibu(mbegu, 9) % 90;
     kama (d->umri_wa_katiba > d->umri_wa_dola) { d->umri_wa_katiba = d->umri_wa_dola; }
     kama (d->aina == DOLA_SERIKALI_YA_MPITO) { d->umri_wa_katiba = 1 + dola_nasibu(mbegu, 9) % 3; }
+    d->utulivu = 35 + dola_nasibu(mbegu, 10) % 55;
+    d->uhalali = 30 + dola_nasibu(mbegu, 11) % 60;
+    d->hazina = 25 + dola_nasibu(mbegu, 12) % 60;
+    kama (d->aina == DOLA_SERIKALI_YA_MPITO || d->aina == DOLA_BILA_SERIKALI) { d->utulivu = 15 + dola_nasibu(mbegu, 10) % 30; }
     rudisha d;
 }
 
@@ -647,4 +654,12 @@ Dola* dola_ya_taifa(n64 faharisi, n8* cheo, n64 watu) {
     }
     kama (dola_akiba[faharisi] == 0) { dola_akiba[faharisi] = dola_unda(faharisi, cheo, watu); }
     rudisha dola_akiba[faharisi];
+}
+
+// Badilisha kiashiria cha dola kwa `tofauti`, kikibaki ndani ya 0..100.
+n64 dola_rekebisha(n64 thamani, n64 tofauti) {
+    n64 v = thamani + tofauti;
+    kama (v < 0) { v = 0; }
+    kama (v > 100) { v = 100; }
+    rudisha v;
 }
