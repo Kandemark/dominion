@@ -1,6 +1,129 @@
 husisha { moduli/skrini/muhtasari.swa }
+husisha { moduli/skrini/ramani.swa }
+husisha { moduli/onyesho/bunge.swa }
+husisha { moduli/siasa/dola.swa }
 
-// Skrini ya siasa: hali ya taifa na uwiano wa vikundi halisi vya kisiasa.
+// siasa.swa -- skrini ya siasa ya taifa: aina ya utawala, vyeo vya dola,
+// mabaraza yake (hakuna hadi manne) kila moja kwa namna yake ya kukaa, na
+// vyama vyenye viti vyake.
+//
+// Kila taifa lina dola yake (moduli/siasa/dola.swa). Ufalme kamili unaweza
+// kutokuwa na baraza kabisa; milki ina manne. Baraza huchaguliwa kwa vitufe
+// vya I..IV juu ya mchoro.
+
+n64 skrini_siasa_baraza = 0;            // baraza linaloonyeshwa
+n64 skrini_siasa_taifa = -1;            // taifa la mchoro wa mwisho
+n64 skrini_siasa_mabaraza = 0;          // idadi ya mabaraza ya mchoro wa mwisho
+n64 skrini_siasa_tabo_x = 0;            // mwanzo wa vitufe vya mabaraza
+n64 skrini_siasa_tabo_y = 0;
+
+// Jina kamili la Kiingereza la dola ("Kingdom of X"), kutoka dunia iliyokubaliwa.
+n8* skrini_siasa_cheo(n64 taifa, TaifaNchi* tn) {
+    DuniaHalisi* d = skrini_dunia_pata();
+    kama (d != 0 && taifa >= 0 && taifa < d->mataifa) {
+        n8* p = d->data;
+        n64 o = d->jina[taifa];
+        n64 o_asili = o + 1 + dh_u8(p, o);
+        n64 o_eng = o_asili + 1 + dh_u8(p, o_asili);
+        rudisha dh_jina(p, o_eng);
+    }
+    rudisha "Republic of";
+}
+
+Dola* skrini_siasa_dola(Mchezo* g, n64 taifa) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
+    kama (tn == 0) { rudisha 0; }
+    rudisha dola_ya_taifa(taifa, skrini_siasa_cheo(taifa, tn), tn->idadi_ya_watu);
+}
+
+n8* skrini_siasa_namba_ya_kirumi(n64 i) {
+    kama (i == 1) { rudisha "II"; }
+    kama (i == 2) { rudisha "III"; }
+    kama (i == 3) { rudisha "IV"; }
+    rudisha "I";
+}
+
+// Baraza lililobofywa kwenye (px, py), au -1.
+n64 skrini_siasa_bofya(n64 px, n64 py) {
+    kama (skrini_siasa_mabaraza < 2) { rudisha 0 - 1; }
+    kama (py < skrini_siasa_tabo_y || py >= skrini_siasa_tabo_y + 28) { rudisha 0 - 1; }
+    kama (px < skrini_siasa_tabo_x) { rudisha 0 - 1; }
+    n64 i = (px - skrini_siasa_tabo_x) / 40;
+    kama (i >= skrini_siasa_mabaraza) { rudisha 0 - 1; }
+    rudisha i;
+}
+
+// Lebo ndogo juu ya thamani: ukweli mmoja wa katiba.
+w0 skrini_siasa_ukweli(n8* lebo, n8* thamani, n64 x, n64 y) {
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo_kati(lebo, x, y, 11);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kati(thamani, x, y + 17, 14);
+}
+
+n8* skrini_siasa_idadi_ya_mabaraza(n64 n) {
+    kama (n == 0) { rudisha ui("None"); }
+    kama (n == 1) { rudisha ui("Unicameral"); }
+    kama (n == 2) { rudisha ui("Bicameral"); }
+    kama (n == 3) { rudisha ui("Tricameral"); }
+    rudisha ui("Tetracameral");
+}
+
+// Mchoro wa baraza b: viti vya serikali kwanza (kushoto), kisha upinzani.
+w0 skrini_siasa_chora_baraza(Dola* d, n64 b, n64 x, n64 y, n64 w, n64 h) {
+    n64 viti[8];
+    n64 rangi[8];
+    n64 uwazi[8];
+    n64 n = 0;
+    n64 raundi = 1;
+    wakati (raundi >= 0) {
+        n64 c = 0;
+        wakati (c < d->vyama) {
+            kama (d->chama_serikalini[c] == raundi && d->viti[b * DOLA_VYAMA_JUU + c] > 0) {
+                viti[n] = d->viti[b * DOLA_VYAMA_JUU + c];
+                rangi[n] = itikadi_rangi(d->chama_itikadi[c]);
+                uwazi[n] = 255;
+                n = n + 1;
+            }
+            c = c + 1;
+        }
+        raundi = raundi - 1;
+    }
+    kama (n == 0) { rudisha; }
+    n64 safu = 2 + turubai_kipeuo(d->baraza_viti[b]) / 3;
+    kama (safu > 10) { safu = 10; }
+    sura_bunge_aina(d->baraza_kukaa[b], x, y, w, h, safu, viti, rangi, uwazi, n, dola_viti_vya_serikali(d, b));
+}
+
+// Orodha ya vyama: rangi ya itikadi, jina, itikadi, viti vya baraza b.
+w0 skrini_siasa_chora_vyama(Dola* d, n64 b, n64 x, n64 y, n64 w, n64 h) {
+    n8 chombo[32];
+    n64 hatua = 40;
+    kama (d->vyama * hatua > h) { hatua = h / d->vyama; }
+    kama (hatua < 26) { hatua = 26; }
+    n64 c = 0;
+    wakati (c < d->vyama && (c + 1) * hatua <= h + 6) {
+        n64 ry = y + c * hatua;
+        turubai_brashi(sura_t, itikadi_rangi(d->chama_itikadi[c]), 255);
+        turubai_mviringo(sura_t, x, ry + 3, 4, hatua - 12, 2);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kati(d->chama_jina[c], x + 14, ry, 13);
+        sura_rangi(SURA_HAFIFU);
+        kama (hatua >= 34) { sura_lebo(itikadi_jina(d->chama_itikadi[c]), x + 14, ry + 17, 11); }
+        kama (d->mabaraza > 0) {
+            sura_namba(chombo, d->viti[b * DOLA_VYAMA_JUU + c]);
+            sura_rangi(SURA_MAANDISHI);
+            sura_lebo_kulia(chombo, x + w, ry, 13);
+        }
+        kama (d->chama_serikalini[c]) {
+            sura_rangi(SURA_LAFUDHI);
+            sura_lebo_kulia(ui("in government"), x + w, ry + 17, 10);
+        }
+        c = c + 1;
+    }
+}
+
 w0 skrini_siasa_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_anzisha(t);
     turubai_brashi(t, SURA_USULI, 255);
@@ -10,82 +133,102 @@ w0 skrini_siasa_chora(Mchezo* g, Turubai* t, n64 taifa) {
 
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
-    SiasaMfumo* si = mchezo_pata_siasa(g);
-    SiasaKikundiMfumo* vik = mchezo_pata_kikundi(g);
     kama (tn == 0) { rudisha; }
+    Dola* d = skrini_siasa_dola(g, taifa);
+    kama (d == 0) { rudisha; }
+    kama (taifa != skrini_siasa_taifa) { skrini_siasa_baraza = 0; skrini_siasa_taifa = taifa; }
+    kama (skrini_siasa_baraza >= d->mabaraza) { skrini_siasa_baraza = 0; }
+    skrini_siasa_mabaraza = d->mabaraza;
+    n64 b = skrini_siasa_baraza;
 
     n64 x = SKRINI_UPANA_WA_PEMBENI + 25;
     n64 y = SKRINI_UPAU_WA_JUU + 25;
     n64 w = t->upana - x - 24;
     turubai_brashi(t, tn->rangi, 255);
     turubai_mviringo(t, x, y + 6, 24, 16, 4);
-    sura_kichwa_ukurasa(tn->jina, ui("WORLD POLITICS · NATIONAL DATA NOT YET LINKED"), x + 36, y - 5);
-    y = y + 66;
+    sura_kichwa_ukurasa(tn->jina, dola_aina_jina(d->aina), x + 36, y - 5);
+    y = y + 62;
 
-    n8 value[48];
-    n64 gap = 16;
-    n64 card_w = (w - 3 * gap) / 4;
-    n64 legitimacy = 0;
-    n64 stability = 0;
-    kama (si != 0) {
-        legitimacy = si->uhalali * 1000.0;
-        stability = si->utulivu * 1000.0;
+    // katiba kwa mtazamo mmoja
+    n8 chombo[64];
+    n64 safuwima = w / 4;
+    skrini_siasa_ukweli(ui("HEAD OF STATE"), d->mkuu_wa_dola, x, y);
+    n8* serikali = d->mkuu_wa_serikali;
+    kama (serikali == 0) { serikali = d->mkuu_wa_dola; }
+    skrini_siasa_ukweli(ui("HEAD OF GOVERNMENT"), serikali, x + safuwima, y);
+    skrini_siasa_ukweli(ui("LEGISLATURE"), skrini_siasa_idadi_ya_mabaraza(d->mabaraza), x + 2 * safuwima, y);
+    n8* muhula = ui("For life");
+    kama (d->muhula > 0) {
+        n8 miaka[16];
+        sura_namba(miaka, d->muhula);
+        mfuatano_umbiza(chombo, 64, ui("%s years"), miaka, 0, 0, 0, 0, 0);
+        muhula = chombo;
     }
-    sura_asilimia(value, legitimacy, 0);
-    sura_kadi(x, y, card_w, ui("LEGITIMACY (WORLD)"), value, 0);
-    sura_asilimia(value, stability, 0);
-    sura_kadi(x + card_w + gap, y, card_w, ui("STABILITY (WORLD)"), value, 0);
-    n8 count_text[24];
-    n64 faction_count = 0;
-    kama (vik != 0) { faction_count = vik->idadi; }
-    sura_namba(count_text, faction_count);
-    sura_kadi(x + 2 * (card_w + gap), y, card_w, ui("POLITICAL FACTIONS"), count_text, 0);
-    sura_namba(count_text, g->zamu_ya_sasa);
-    sura_kadi(x + 3 * (card_w + gap), y, card_w, ui("CURRENT TURN"), count_text, 0);
-    y = y + 108;
+    skrini_siasa_ukweli(ui("TERM OF OFFICE"), muhula, x + 3 * safuwima, y);
+    y = y + 50;
 
-    n64 left_w = (w - gap) * 3 / 5;
-    n64 right_x = x + left_w + gap;
-    n64 right_w = w - left_w - gap;
-    n64 panel_h = t->kimo - y - 24;
-    sura_paneli(x, y, left_w, panel_h, ui("FACTION REPRESENTATION"));
-    sura_paneli(right_x, y, right_w, panel_h, ui("STATE OF GOVERNMENT"));
-    kama (vik == 0 || vik->idadi == 0) {
-        sura_hali_tupu(ui("No factions formed"), ui("The political system is waiting for its first factions."), 0,
-                       x + 12, y + 56, left_w - 24, panel_h - 72);
+    n64 pengo = 16;
+    n64 w_kushoto = ((w - pengo) * 62) / 100;
+    n64 x_kulia = x + w_kushoto + pengo;
+    n64 w_kulia = w - w_kushoto - pengo;
+    n64 h_paneli = t->kimo - y - 52;
+    kama (h_paneli < 160) { h_paneli = 160; }
+
+    kama (d->mabaraza == 0) {
+        sura_paneli(x, y, w_kushoto, h_paneli, ui("LEGISLATURE"));
+        sura_hali_tupu(ui("No legislature"), ui("Power rests with the head of state, who rules by decree."), 0,
+                       x + 12, y + 40, w_kushoto - 24, h_paneli - 60);
+        skrini_siasa_tabo_x = 0;
     } sivyo {
-        n64 row = 0;
-        n64 row_limit = (panel_h - 60) / 48;
-        kama (row_limit > 12) { row_limit = 12; }
-        wakati (row < vik->idadi && row < row_limit) {
-            SiasaKikundi* k = &vik->vikundi[row];
-            n64 ry = y + 48 + row * 48;
-            n64 support = k->uungwaji_mkono * 1000.0;
-            sura_safu(x + 12, ry, left_w - 24, 44, row, 0);
-            sura_rangi(SURA_MAANDISHI);
-            sura_lebo(k->jina, x + 26, ry + 4, 13);
-            sura_rangi(SURA_HAFIFU);
-            n8 percent[24];
-            sura_asilimia(percent, support, 0);
-            sura_lebo_kulia(percent, x + left_w - 20, ry + 4, 12);
-            sura_mita(ui("Support"), 0, x + 26, ry + 24, left_w - 62, support, SURA_LAFUDHI);
-            row = row + 1;
+        n8* jina = d->baraza_jina[b];
+        sura_paneli(x, y, w_kushoto, h_paneli, jina);
+        // vitufe vya mabaraza I..IV
+        skrini_siasa_tabo_x = x + w_kushoto - 12 - d->mabaraza * 40;
+        skrini_siasa_tabo_y = y + 6;
+        kama (d->mabaraza > 1) {
+            n64 i = 0;
+            wakati (i < d->mabaraza) {
+                sura_segmenti(skrini_siasa_namba_ya_kirumi(i), skrini_siasa_tabo_x + i * 40, skrini_siasa_tabo_y, 36, i == b, 0);
+                i = i + 1;
+            }
         }
+        skrini_siasa_chora_baraza(d, b, x + 20, y + 44, w_kushoto - 40, h_paneli - 92);
+        // viti, namna ya kupata wajumbe, na wingi wa serikali
+        n8 viti_m[16];
+        sura_namba(viti_m, d->baraza_viti[b]);
+        mfuatano_umbiza(chombo, 64, ui("%s seats"), viti_m, 0, 0, 0, 0, 0);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kati(chombo, x + 16, y + h_paneli - 38, 13);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(dola_uteuzi_jina(d->baraza_uteuzi[b]), x + 16, y + h_paneli - 20, 11);
+        n64 vs = dola_viti_vya_serikali(d, b);
+        n8 vs_m[16];
+        n8 asilimia[16];
+        sura_namba(vs_m, vs);
+        sura_asilimia(asilimia, (vs * 10000) / d->baraza_viti[b], 0);
+        mfuatano_umbiza(chombo, 64, ui("Government %s · %s"), vs_m, asilimia, 0, 0, 0, 0);
+        kama (vs * 2 > d->baraza_viti[b]) { sura_rangi(SURA_CHANYA); }
+        sivyo { sura_rangi(SURA_HASI); }
+        sura_lebo_kulia(chombo, x + w_kushoto - 16, y + h_paneli - 38, 13);
     }
-    n8 percent2[24];
+
+    n8* kichwa_cha_vyama = ui("PARTIES");
+    kama (d->mabaraza == 0) { kichwa_cha_vyama = ui("COURT FACTIONS"); }
+    sura_paneli(x_kulia, y, w_kulia, h_paneli, kichwa_cha_vyama);
+    kama (d->vyama == 0) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(ui("No organised parties."), x_kulia + 16, y + 44, 12);
+    } sivyo {
+        skrini_siasa_chora_vyama(d, b, x_kulia + 16, y + 44, w_kulia - 32, h_paneli - 56);
+    }
+
+    // historia ya katiba
+    n8 a1[16];
+    n8 a2[16];
+    sura_namba(a1, d->umri_wa_dola);
+    sura_namba(a2, d->umri_wa_katiba);
+    n8 mstari[160];
+    mfuatano_umbiza(mstari, 160, ui("State founded %s years ago  ·  Present constitution in force %s years  ·  Franchise: %s"), a1, a2, d->haki_ya_kura, 0, 0, 0);
     sura_rangi(SURA_HAFIFU);
-    sura_lebo(ui("Government legitimacy"), right_x + 18, y + 58, 12);
-    sura_asilimia(percent2, legitimacy, 0);
-    sura_rangi(SURA_MAANDISHI);
-    sura_lebo_kulia(percent2, right_x + right_w - 18, y + 58, 12);
-    sura_mita(0, 0, right_x + 18, y + 82, right_w - 36, legitimacy, SURA_BAHARI);
-    sura_rangi(SURA_HAFIFU);
-    sura_lebo(ui("Political stability"), right_x + 18, y + 118, 12);
-    sura_asilimia(percent2, stability, 0);
-    sura_rangi(SURA_MAANDISHI);
-    sura_lebo_kulia(percent2, right_x + right_w - 18, y + 118, 12);
-    sura_mita(0, 0, right_x + 18, y + 142, right_w - 36, stability, SURA_CHANYA);
-    sura_kigawanyaji(right_x + 18, y + 174, right_w - 36, SURA_MPAKA, 255);
-    sura_rangi(SURA_HAFIFU);
-    sura_lebo(ui("Indicators are simulation state; policy and votes are not yet linked."), right_x + 18, y + 190, 11);
+    sura_lebo(mstari, x, y + h_paneli + 14, 12);
 }

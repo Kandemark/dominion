@@ -1,0 +1,650 @@
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/onyesho/maneno.swa }
+
+// dola.swa -- muundo wa dola ya kila taifa: aina ya utawala, mabaraza ya
+// kutunga sheria (hakuna, moja, mawili, matatu au manne), vyama na itikadi
+// zake, na katiba (vyeo, muhula, haki ya kura).
+//
+// Mataifa hayatawaliwi kwa namna moja. Aina ya utawala hutokana na cheo cha
+// dola kwenye ramani ("Kingdom of X", "People's Republic of X", "Tribes of
+// X") pamoja na mbegu ya taifa, hivyo taifa lilelile huwa na dola ileile
+// kila mara. Ufalme kamili hauna bunge; jamhuri ya bunge ina baraza moja au
+// mawili; jumuiya ya waungwana ina matatu; milki ina mabaraza manne ya
+// matabaka. Kila baraza lina namna yake ya kukaa (nusu-duara, pande
+// zinazotazamana, duara, darasa) na namna yake ya kupata wajumbe.
+//
+// Hii ni hali ya mwanzo ya dola. Uchaguzi, mapinduzi na mabadiliko ya
+// katiba bado hayajaunganishwa na uigaji.
+
+// ---------- aina za utawala ----------
+n64 DOLA_JAMHURI_YA_BUNGE = 0;
+n64 DOLA_JAMHURI_YA_RAIS = 1;
+n64 DOLA_JAMHURI_NUSU_RAIS = 2;
+n64 DOLA_JAMHURI_YA_SHIRIKISHO = 3;
+n64 DOLA_UFALME_WA_KATIBA = 4;
+n64 DOLA_UFALME_KAMILI = 5;
+n64 DOLA_UFALME_WA_KUCHAGULIWA = 6;
+n64 DOLA_UTAWALA_WA_KIDINI = 7;
+n64 DOLA_CHAMA_KIMOJA = 8;
+n64 DOLA_UTAWALA_WA_KIJESHI = 9;
+n64 DOLA_MUUNGANO_WA_DOLA = 10;
+n64 DOLA_MUUNGANO_WA_KABILA = 11;
+n64 DOLA_MILKI = 12;
+n64 DOLA_UTAWALA_WA_WATAALAMU = 13;
+n64 DOLA_JUMUIYA_YA_WAUNGWANA = 14;
+n64 DOLA_SERIKALI_YA_MPITO = 15;
+n64 DOLA_UDIKTETA = 16;
+n64 DOLA_DEMOKRASIA_YA_MOJA_KWA_MOJA = 17;
+n64 DOLA_JAMHURI_YA_WAFANYABIASHARA = 18;
+n64 DOLA_BILA_SERIKALI = 19;
+n64 DOLA_AINA_IDADI = 20;
+
+n8* dola_aina_jina(n64 a) {
+    kama (a == DOLA_JAMHURI_YA_RAIS) { rudisha ui("Presidential republic"); }
+    kama (a == DOLA_JAMHURI_NUSU_RAIS) { rudisha ui("Semi-presidential republic"); }
+    kama (a == DOLA_JAMHURI_YA_SHIRIKISHO) { rudisha ui("Federal republic"); }
+    kama (a == DOLA_UFALME_WA_KATIBA) { rudisha ui("Constitutional monarchy"); }
+    kama (a == DOLA_UFALME_KAMILI) { rudisha ui("Absolute monarchy"); }
+    kama (a == DOLA_UFALME_WA_KUCHAGULIWA) { rudisha ui("Elective monarchy"); }
+    kama (a == DOLA_UTAWALA_WA_KIDINI) { rudisha ui("Theocracy"); }
+    kama (a == DOLA_CHAMA_KIMOJA) { rudisha ui("One-party state"); }
+    kama (a == DOLA_UTAWALA_WA_KIJESHI) { rudisha ui("Military government"); }
+    kama (a == DOLA_MUUNGANO_WA_DOLA) { rudisha ui("Confederation"); }
+    kama (a == DOLA_MUUNGANO_WA_KABILA) { rudisha ui("Tribal confederation"); }
+    kama (a == DOLA_MILKI) { rudisha ui("Empire"); }
+    kama (a == DOLA_UTAWALA_WA_WATAALAMU) { rudisha ui("Technocracy"); }
+    kama (a == DOLA_JUMUIYA_YA_WAUNGWANA) { rudisha ui("Noble commonwealth"); }
+    kama (a == DOLA_SERIKALI_YA_MPITO) { rudisha ui("Provisional government"); }
+    kama (a == DOLA_UDIKTETA) { rudisha ui("Dictatorship"); }
+    kama (a == DOLA_DEMOKRASIA_YA_MOJA_KWA_MOJA) { rudisha ui("Direct democracy"); }
+    kama (a == DOLA_JAMHURI_YA_WAFANYABIASHARA) { rudisha ui("Merchant republic"); }
+    kama (a == DOLA_BILA_SERIKALI) { rudisha ui("Stateless commune"); }
+    rudisha ui("Parliamentary republic");
+}
+
+// ---------- itikadi ----------
+n64 ITIKADI_UKOMUNISTI = 0;
+n64 ITIKADI_UJAMAA = 1;
+n64 ITIKADI_DEMOKRASIA_YA_KIJAMII = 2;
+n64 ITIKADI_KIJANI = 3;
+n64 ITIKADI_ULIBERALI = 4;
+n64 ITIKADI_KATI = 5;
+n64 ITIKADI_DEMOKRASIA_YA_KIDINI = 6;
+n64 ITIKADI_UHAFIDHINA = 7;
+n64 ITIKADI_UTAIFA = 8;
+n64 ITIKADI_UFASHISTI = 9;
+n64 ITIKADI_UFALME = 10;
+n64 ITIKADI_UKLERO = 11;
+n64 ITIKADI_WAKULIMA = 12;
+n64 ITIKADI_UHURU_BINAFSI = 13;
+n64 ITIKADI_UANAKI = 14;
+n64 ITIKADI_UTAALAMU = 15;
+n64 ITIKADI_UMAARUFU = 16;
+n64 ITIKADI_UJESHI = 17;
+n64 ITIKADI_UKANDA = 18;
+n64 ITIKADI_VYAMA_VYA_WAFANYAKAZI = 19;
+n64 ITIKADI_MILA = 20;
+n64 ITIKADI_HURU = 21;
+n64 ITIKADI_IDADI = 22;
+
+n8* itikadi_jina(n64 i) {
+    kama (i == ITIKADI_UKOMUNISTI) { rudisha ui("Communism"); }
+    kama (i == ITIKADI_UJAMAA) { rudisha ui("Socialism"); }
+    kama (i == ITIKADI_DEMOKRASIA_YA_KIJAMII) { rudisha ui("Social democracy"); }
+    kama (i == ITIKADI_KIJANI) { rudisha ui("Green politics"); }
+    kama (i == ITIKADI_ULIBERALI) { rudisha ui("Liberalism"); }
+    kama (i == ITIKADI_KATI) { rudisha ui("Centrism"); }
+    kama (i == ITIKADI_DEMOKRASIA_YA_KIDINI) { rudisha ui("Religious democracy"); }
+    kama (i == ITIKADI_UHAFIDHINA) { rudisha ui("Conservatism"); }
+    kama (i == ITIKADI_UTAIFA) { rudisha ui("Nationalism"); }
+    kama (i == ITIKADI_UFASHISTI) { rudisha ui("Fascism"); }
+    kama (i == ITIKADI_UFALME) { rudisha ui("Monarchism"); }
+    kama (i == ITIKADI_UKLERO) { rudisha ui("Clericalism"); }
+    kama (i == ITIKADI_WAKULIMA) { rudisha ui("Agrarianism"); }
+    kama (i == ITIKADI_UHURU_BINAFSI) { rudisha ui("Libertarianism"); }
+    kama (i == ITIKADI_UANAKI) { rudisha ui("Anarchism"); }
+    kama (i == ITIKADI_UTAALAMU) { rudisha ui("Technocracy"); }
+    kama (i == ITIKADI_UMAARUFU) { rudisha ui("Populism"); }
+    kama (i == ITIKADI_UJESHI) { rudisha ui("Militarism"); }
+    kama (i == ITIKADI_UKANDA) { rudisha ui("Regionalism"); }
+    kama (i == ITIKADI_VYAMA_VYA_WAFANYAKAZI) { rudisha ui("Syndicalism"); }
+    kama (i == ITIKADI_MILA) { rudisha ui("Traditionalism"); }
+    rudisha ui("Independent");
+}
+
+// Rangi ya itikadi (0xRRGGBB kwa desimali): kushoto nyekundu, kulia buluu.
+n64 itikadi_rangi(n64 i) {
+    kama (i == ITIKADI_UKOMUNISTI) { rudisha 12597547; }              // C0392B
+    kama (i == ITIKADI_UJAMAA) { rudisha 15158332; }                  // E74C3C
+    kama (i == ITIKADI_DEMOKRASIA_YA_KIJAMII) { rudisha 15954266; }   // F3715A
+    kama (i == ITIKADI_KIJANI) { rudisha 5025642; }                   // 4CAF6A
+    kama (i == ITIKADI_ULIBERALI) { rudisha 15909198; }               // F2C14E
+    kama (i == ITIKADI_KATI) { rudisha 12105928; }                    // B8B8C8
+    kama (i == ITIKADI_DEMOKRASIA_YA_KIDINI) { rudisha 15768126; }    // F09A3E
+    kama (i == ITIKADI_UHAFIDHINA) { rudisha 4029912; }               // 3D7DD8
+    kama (i == ITIKADI_UTAIFA) { rudisha 4219582; }                   // 4062BE
+    kama (i == ITIKADI_UFASHISTI) { rudisha 8016435; }                // 7A5233
+    kama (i == ITIKADI_UFALME) { rudisha 9329616; }                   // 8E5BD0
+    kama (i == ITIKADI_UKLERO) { rudisha 3050350; }                   // 2E8B6E
+    kama (i == ITIKADI_WAKULIMA) { rudisha 9286229; }                 // 8DB255
+    kama (i == ITIKADI_UHURU_BINAFSI) { rudisha 14932298; }           // E3D94A
+    kama (i == ITIKADI_UANAKI) { rudisha 7895170; }                   // 787882
+    kama (i == ITIKADI_UTAALAMU) { rudisha 3523265; }                 // 35C2C1
+    kama (i == ITIKADI_UMAARUFU) { rudisha 13920934; }                // D46AA6
+    kama (i == ITIKADI_UJESHI) { rudisha 7895887; }                   // 787B4F
+    kama (i == ITIKADI_UKANDA) { rudisha 12750684; }                  // C28F5C
+    kama (i == ITIKADI_VYAMA_VYA_WAFANYAKAZI) { rudisha 11874367; }   // B5303F
+    kama (i == ITIKADI_MILA) { rudisha 10910802; }                    // A67C52
+    rudisha 9081766;                                                   // 8A93A6
+}
+
+// Jina la chama kwa itikadi; `namna` (0 au 1) huchagua kati ya majina mawili.
+n8* itikadi_jina_la_chama(n64 i, n64 namna) {
+    kama (i == ITIKADI_UKOMUNISTI) { kama (namna) { rudisha ui("Workers' Vanguard"); } rudisha ui("Communist Party"); }
+    kama (i == ITIKADI_UJAMAA) { kama (namna) { rudisha ui("Socialist Workers' Party"); } rudisha ui("Socialist Party"); }
+    kama (i == ITIKADI_DEMOKRASIA_YA_KIJAMII) { kama (namna) { rudisha ui("Labour Party"); } rudisha ui("Social Democratic Party"); }
+    kama (i == ITIKADI_KIJANI) { kama (namna) { rudisha ui("Green Alliance"); } rudisha ui("The Greens"); }
+    kama (i == ITIKADI_ULIBERALI) { kama (namna) { rudisha ui("Radical Party"); } rudisha ui("Liberal Party"); }
+    kama (i == ITIKADI_KATI) { kama (namna) { rudisha ui("Democratic Centre"); } rudisha ui("Centre Union"); }
+    kama (i == ITIKADI_DEMOKRASIA_YA_KIDINI) { kama (namna) { rudisha ui("Union of the Faithful"); } rudisha ui("People's Faith Party"); }
+    kama (i == ITIKADI_UHAFIDHINA) { kama (namna) { rudisha ui("Party of Order"); } rudisha ui("Conservative Party"); }
+    kama (i == ITIKADI_UTAIFA) { kama (namna) { rudisha ui("Homeland Front"); } rudisha ui("National Party"); }
+    kama (i == ITIKADI_UFASHISTI) { kama (namna) { rudisha ui("Iron Legion"); } rudisha ui("National Vanguard"); }
+    kama (i == ITIKADI_UFALME) { kama (namna) { rudisha ui("Crown Loyalists"); } rudisha ui("Royalist League"); }
+    kama (i == ITIKADI_UKLERO) { kama (namna) { rudisha ui("Guardians of the Faith"); } rudisha ui("Clerical Union"); }
+    kama (i == ITIKADI_WAKULIMA) { kama (namna) { rudisha ui("Farmers' Union"); } rudisha ui("Agrarian League"); }
+    kama (i == ITIKADI_UHURU_BINAFSI) { kama (namna) { rudisha ui("Liberty League"); } rudisha ui("Free Citizens"); }
+    kama (i == ITIKADI_UANAKI) { kama (namna) { rudisha ui("Free Communes"); } rudisha ui("Black Banner Federation"); }
+    kama (i == ITIKADI_UTAALAMU) { kama (namna) { rudisha ui("Institute Bloc"); } rudisha ui("Technical Directorate"); }
+    kama (i == ITIKADI_UMAARUFU) { kama (namna) { rudisha ui("Common People's League"); } rudisha ui("People's Movement"); }
+    kama (i == ITIKADI_UJESHI) { kama (namna) { rudisha ui("Veterans' League"); } rudisha ui("Officers' Bloc"); }
+    kama (i == ITIKADI_UKANDA) { kama (namna) { rudisha ui("League of the Regions"); } rudisha ui("Provincial Alliance"); }
+    kama (i == ITIKADI_VYAMA_VYA_WAFANYAKAZI) { kama (namna) { rudisha ui("General Confederation of Labour"); } rudisha ui("Syndicalist Congress"); }
+    kama (i == ITIKADI_MILA) { kama (namna) { rudisha ui("Elders' Circle"); } rudisha ui("Council of Clans"); }
+    rudisha ui("Independents");
+}
+
+// ---------- baraza ----------
+n64 UTEUZI_KUCHAGULIWA = 0;
+n64 UTEUZI_KUTEULIWA = 1;
+n64 UTEUZI_KURITHI = 2;
+n64 UTEUZI_KWA_MIKOA = 3;
+n64 UTEUZI_WA_KIDINI = 4;
+n64 UTEUZI_WA_KIJESHI = 5;
+
+n8* dola_uteuzi_jina(n64 u) {
+    kama (u == UTEUZI_KUTEULIWA) { rudisha ui("Appointed"); }
+    kama (u == UTEUZI_KURITHI) { rudisha ui("Hereditary"); }
+    kama (u == UTEUZI_KWA_MIKOA) { rudisha ui("Chosen by the provinces"); }
+    kama (u == UTEUZI_WA_KIDINI) { rudisha ui("Seated by the clergy"); }
+    kama (u == UTEUZI_WA_KIJESHI) { rudisha ui("Named by the high command"); }
+    rudisha ui("Directly elected");
+}
+
+// Miundo ya kukaa: lazima ilingane na BUNGE_* ya moduli/onyesho/bunge.swa.
+n64 KUKAA_NUSU_DUARA = 0;
+n64 KUKAA_KIATU = 1;
+n64 KUKAA_DUARA = 2;
+n64 KUKAA_PANDE_MBILI = 3;
+n64 KUKAA_DARASA = 4;
+
+n64 DOLA_MABARAZA_JUU = 4;
+n64 DOLA_VYAMA_JUU = 8;
+
+muundo Dola {
+    n64 aina;
+    n64 mabaraza;               // 0..4
+    n64* baraza_jina;           // n8* kwa kila baraza
+    n64* baraza_viti;
+    n64* baraza_kukaa;
+    n64* baraza_uteuzi;
+    n64 vyama;                  // 0..8
+    n64* chama_itikadi;
+    n64* chama_jina;            // n8*
+    n64* chama_serikalini;      // 1 = sehemu ya serikali
+    n64* viti;                  // [baraza * DOLA_VYAMA_JUU + chama]
+    n8* mkuu_wa_dola;
+    n8* mkuu_wa_serikali;       // 0 = mkuu wa dola ndiye mkuu wa serikali
+    n64 muhula;                 // miaka; 0 = maisha
+    n8* haki_ya_kura;
+    n64 umri_wa_dola;           // miaka tangu kuanzishwa
+    n64 umri_wa_katiba;         // miaka tangu katiba ya sasa
+    n64 tawala;                 // asilimia ya chini ya chama kikuu (0 = ushindani huru)
+}
+
+n64 dola_nasibu(n64 i, n64 mbegu) {
+    n64 n = (i * 2654435761 + mbegu * 97003 + 4057) & 4294967295;
+    n = ((n ^ (n >> 15)) * 2246822519) & 4294967295;
+    n = ((n ^ (n >> 13)) * 3266489917) & 4294967295;
+    rudisha (n ^ (n >> 16)) & 4294967295;
+}
+
+n64 dola_kipeuo_cha_tatu(n64 n) {
+    n64 r = 0;
+    wakati ((r + 1) * (r + 1) * (r + 1) <= n) { r = r + 1; }
+    rudisha r;
+}
+
+// Aina ya utawala kutoka cheo cha Kiingereza cha dola na mbegu.
+n64 dola_aina_kutoka_cheo(n8* cheo, n64 mbegu) {
+    n64 k = dola_nasibu(mbegu, 1) % 100;
+    kama (tafuta_mfuatano(cheo, "People's Republic") >= 0) { rudisha DOLA_CHAMA_KIMOJA; }
+    kama (tafuta_mfuatano(cheo, "Federal Union") >= 0 || tafuta_mfuatano(cheo, "Federation") >= 0) { rudisha DOLA_JAMHURI_YA_SHIRIKISHO; }
+    kama (tafuta_mfuatano(cheo, "Republic of") >= 0) {
+        kama (k < 30) { rudisha DOLA_JAMHURI_YA_BUNGE; }
+        kama (k < 54) { rudisha DOLA_JAMHURI_YA_RAIS; }
+        kama (k < 66) { rudisha DOLA_JAMHURI_NUSU_RAIS; }
+        kama (k < 75) { rudisha DOLA_UDIKTETA; }
+        kama (k < 82) { rudisha DOLA_JAMHURI_YA_WAFANYABIASHARA; }
+        kama (k < 88) { rudisha DOLA_UTAWALA_WA_KIJESHI; }
+        kama (k < 93) { rudisha DOLA_DEMOKRASIA_YA_MOJA_KWA_MOJA; }
+        kama (k < 97) { rudisha DOLA_SERIKALI_YA_MPITO; }
+        rudisha DOLA_CHAMA_KIMOJA;
+    }
+    kama (tafuta_mfuatano(cheo, "Kingdom") >= 0 || tafuta_mfuatano(cheo, "Crown of") >= 0 || tafuta_mfuatano(cheo, "Realm of") >= 0) {
+        kama (k < 50) { rudisha DOLA_UFALME_WA_KATIBA; }
+        kama (k < 82) { rudisha DOLA_UFALME_KAMILI; }
+        rudisha DOLA_UFALME_WA_KUCHAGULIWA;
+    }
+    kama (tafuta_mfuatano(cheo, "Emirate") >= 0 || tafuta_mfuatano(cheo, "Sultanate") >= 0) {
+        kama (k < 62) { rudisha DOLA_UFALME_KAMILI; }
+        rudisha DOLA_UFALME_WA_KATIBA;
+    }
+    kama (tafuta_mfuatano(cheo, "Caliphate") >= 0) { rudisha DOLA_UTAWALA_WA_KIDINI; }
+    kama (tafuta_mfuatano(cheo, "Confederacy") >= 0 || tafuta_mfuatano(cheo, "Union of") >= 0) { rudisha DOLA_MUUNGANO_WA_DOLA; }
+    kama (tafuta_mfuatano(cheo, "Commonwealth") >= 0) { rudisha DOLA_JUMUIYA_YA_WAUNGWANA; }
+    kama (tafuta_mfuatano(cheo, "Principality") >= 0) {
+        kama (k < 55) { rudisha DOLA_UFALME_WA_KATIBA; }
+        rudisha DOLA_UFALME_WA_KUCHAGULIWA;
+    }
+    kama (tafuta_mfuatano(cheo, "Tribes of") >= 0 || tafuta_mfuatano(cheo, "Paramountcy") >= 0) { rudisha DOLA_MUUNGANO_WA_KABILA; }
+    kama (tafuta_mfuatano(cheo, "Empire") >= 0) { rudisha DOLA_MILKI; }
+    kama (tafuta_mfuatano(cheo, "Shogunate") >= 0) { rudisha DOLA_UTAWALA_WA_KIJESHI; }
+    kama (tafuta_mfuatano(cheo, "Concord") >= 0) { rudisha DOLA_UTAWALA_WA_WATAALAMU; }
+    kama (tafuta_mfuatano(cheo, "State of") >= 0) {
+        kama (k < 45) { rudisha DOLA_SERIKALI_YA_MPITO; }
+        kama (k < 80) { rudisha DOLA_UDIKTETA; }
+        rudisha DOLA_JAMHURI_YA_WAFANYABIASHARA;
+    }
+    // dola isiyo na cheo: jumuiya isiyo na serikali, au serikali ya mpito
+    kama (k < 60) { rudisha DOLA_BILA_SERIKALI; }
+    rudisha DOLA_SERIKALI_YA_MPITO;
+}
+
+w0 dola_ongeza_baraza(Dola* d, n8* jina, n64 viti, n64 kukaa, n64 uteuzi) {
+    kama (d->mabaraza >= DOLA_MABARAZA_JUU) { rudisha; }
+    n64 b = d->mabaraza;
+    d->baraza_jina[b] = jina;
+    kama (viti < 5) { viti = 5; }
+    d->baraza_viti[b] = viti;
+    d->baraza_kukaa[b] = kukaa;
+    d->baraza_uteuzi[b] = uteuzi;
+    d->mabaraza = b + 1;
+}
+
+w0 dola_ongeza_chama(Dola* d, n64 itikadi, n64 mbegu) {
+    kama (d->vyama >= DOLA_VYAMA_JUU) { rudisha; }
+    n64 c = 0;
+    wakati (c < d->vyama) {
+        kama (d->chama_itikadi[c] == itikadi) { rudisha; }       // itikadi moja, chama kimoja
+        c = c + 1;
+    }
+    d->chama_itikadi[d->vyama] = itikadi;
+    d->chama_jina[d->vyama] = itikadi_jina_la_chama(itikadi, dola_nasibu(mbegu, 50 + itikadi) % 2);
+    d->vyama = d->vyama + 1;
+}
+
+// Mabaraza na vyeo kwa aina ya utawala. `chini` ni ukubwa wa baraza la
+// wananchi (kanuni ya kipeuo cha tatu cha idadi ya watu).
+w0 dola_jenga_mabaraza(Dola* d, n8* cheo, n64 chini, n64 mbegu) {
+    n64 k = dola_nasibu(mbegu, 2) % 100;
+    n64 juu = chini / 3;
+    kama (juu < 21) { juu = 21; }
+    kama (juu > 150) { juu = 150; }
+    n64 a = d->aina;
+    d->mkuu_wa_dola = ui("President");
+    d->mkuu_wa_serikali = ui("Prime Minister");
+    d->muhula = 4 + dola_nasibu(mbegu, 3) % 3;
+    d->haki_ya_kura = ui("Universal suffrage");
+    kama (a == DOLA_JAMHURI_YA_BUNGE) {
+        dola_ongeza_baraza(d, ui("National Assembly"), chini, KUKAA_NUSU_DUARA, UTEUZI_KUCHAGULIWA);
+        kama (k < 40) { dola_ongeza_baraza(d, ui("Senate"), juu, KUKAA_KIATU, UTEUZI_KWA_MIKOA); }
+    }
+    kama (a == DOLA_JAMHURI_YA_RAIS) {
+        d->mkuu_wa_serikali = 0;
+        kama (k < 62) {
+            dola_ongeza_baraza(d, ui("House of Representatives"), chini, KUKAA_NUSU_DUARA, UTEUZI_KUCHAGULIWA);
+            dola_ongeza_baraza(d, ui("Senate"), juu, KUKAA_KIATU, UTEUZI_KUCHAGULIWA);
+        } sivyo { dola_ongeza_baraza(d, ui("Congress"), chini, KUKAA_NUSU_DUARA, UTEUZI_KUCHAGULIWA); }
+    }
+    kama (a == DOLA_JAMHURI_NUSU_RAIS) {
+        dola_ongeza_baraza(d, ui("National Assembly"), chini, KUKAA_NUSU_DUARA, UTEUZI_KUCHAGULIWA);
+        dola_ongeza_baraza(d, ui("Senate"), juu, KUKAA_KIATU, UTEUZI_KWA_MIKOA);
+    }
+    kama (a == DOLA_JAMHURI_YA_SHIRIKISHO) {
+        d->mkuu_wa_dola = ui("Federal President");
+        d->mkuu_wa_serikali = ui("Chancellor");
+        dola_ongeza_baraza(d, ui("Federal Assembly"), chini, KUKAA_NUSU_DUARA, UTEUZI_KUCHAGULIWA);
+        dola_ongeza_baraza(d, ui("Council of States"), juu, KUKAA_KIATU, UTEUZI_KWA_MIKOA);
+        kama (k < 35) { dola_ongeza_baraza(d, ui("Chamber of Nationalities"), juu / 2 + 15, KUKAA_DUARA, UTEUZI_KWA_MIKOA); }
+    }
+    kama (a == DOLA_UFALME_WA_KATIBA) {
+        d->mkuu_wa_dola = ui("Monarch");
+        d->muhula = 0;
+        dola_ongeza_baraza(d, ui("House of Commons"), chini, KUKAA_PANDE_MBILI, UTEUZI_KUCHAGULIWA);
+        kama (k < 70) { dola_ongeza_baraza(d, ui("House of Lords"), juu, KUKAA_PANDE_MBILI, UTEUZI_KURITHI); }
+    }
+    kama (a == DOLA_UFALME_KAMILI) {
+        d->mkuu_wa_dola = ui("Monarch");
+        d->mkuu_wa_serikali = ui("Grand Vizier");
+        d->muhula = 0;
+        d->haki_ya_kura = ui("No franchise");
+        // nusu yao wana baraza la ushauri lililoteuliwa; wengine hutawala kwa amri pekee
+        kama (k < 50) { dola_ongeza_baraza(d, ui("Consultative Council"), 20 + dola_nasibu(mbegu, 4) % 60, KUKAA_DUARA, UTEUZI_KUTEULIWA); }
+    }
+    kama (a == DOLA_UFALME_WA_KUCHAGULIWA) {
+        d->mkuu_wa_dola = ui("Elected Monarch");
+        d->mkuu_wa_serikali = ui("Chancellor");
+        d->muhula = 0;
+        d->haki_ya_kura = ui("Nobility and estates");
+        dola_ongeza_baraza(d, ui("Electoral College"), 9 + dola_nasibu(mbegu, 4) % 30, KUKAA_DUARA, UTEUZI_KURITHI);
+        dola_ongeza_baraza(d, ui("Diet"), chini / 2 + 30, KUKAA_NUSU_DUARA, UTEUZI_KUCHAGULIWA);
+    }
+    dola_jenga_mabaraza_mengine(d, cheo, chini, juu, mbegu, k);
+}
+
+w0 dola_jenga_mabaraza_mengine(Dola* d, n8* cheo, n64 chini, n64 juu, n64 mbegu, n64 k) {
+    n64 a = d->aina;
+    kama (a == DOLA_UTAWALA_WA_KIDINI) {
+        d->mkuu_wa_dola = ui("Supreme Guide");
+        d->mkuu_wa_serikali = ui("President");
+        d->muhula = 0;
+        d->haki_ya_kura = ui("Believers, candidates vetted");
+        dola_ongeza_baraza(d, ui("Assembly of Scholars"), 40 + dola_nasibu(mbegu, 4) % 50, KUKAA_DUARA, UTEUZI_WA_KIDINI);
+        kama (k < 65) { dola_ongeza_baraza(d, ui("Consultative Assembly"), chini / 2 + 40, KUKAA_NUSU_DUARA, UTEUZI_KUCHAGULIWA); }
+    }
+    kama (a == DOLA_CHAMA_KIMOJA) {
+        d->mkuu_wa_dola = ui("Chairman");
+        d->mkuu_wa_serikali = ui("Premier");
+        d->muhula = 5;
+        d->haki_ya_kura = ui("Universal, single list");
+        d->tawala = 86;
+        dola_ongeza_baraza(d, ui("Supreme People's Assembly"), chini + chini / 3, KUKAA_DARASA, UTEUZI_KUCHAGULIWA);
+    }
+    kama (a == DOLA_UTAWALA_WA_KIJESHI) {
+        d->mkuu_wa_dola = ui("Supreme Commander");
+        d->mkuu_wa_serikali = 0;
+        d->muhula = 0;
+        d->haki_ya_kura = ui("Suspended");
+        // baraza la dola la maafisa, au hakuna kabisa
+        kama (k < 60) { dola_ongeza_baraza(d, ui("Council of State"), 15 + dola_nasibu(mbegu, 4) % 30, KUKAA_DUARA, UTEUZI_WA_KIJESHI); }
+    }
+    kama (a == DOLA_MUUNGANO_WA_DOLA) {
+        d->mkuu_wa_dola = ui("Presiding Delegate");
+        d->mkuu_wa_serikali = 0;
+        d->muhula = 2;
+        d->haki_ya_kura = ui("Set by each member state");
+        dola_ongeza_baraza(d, ui("Confederal Diet"), juu + 20, KUKAA_DUARA, UTEUZI_KWA_MIKOA);
+    }
+    kama (a == DOLA_MUUNGANO_WA_KABILA) {
+        d->mkuu_wa_dola = ui("Paramount Chief");
+        d->mkuu_wa_serikali = 0;
+        d->muhula = 0;
+        d->haki_ya_kura = ui("Clan assemblies");
+        dola_ongeza_baraza(d, ui("Council of Elders"), 20 + dola_nasibu(mbegu, 4) % 50, KUKAA_DUARA, UTEUZI_KURITHI);
+    }
+    kama (a == DOLA_MILKI) {
+        // milki ya matabaka: mabaraza manne, kila tabaka na lake
+        d->mkuu_wa_dola = ui("Emperor");
+        d->mkuu_wa_serikali = ui("Chancellor");
+        d->muhula = 0;
+        d->haki_ya_kura = ui("By estate");
+        dola_ongeza_baraza(d, ui("Estate of the Nobility"), juu, KUKAA_DARASA, UTEUZI_KURITHI);
+        dola_ongeza_baraza(d, ui("Estate of the Clergy"), juu / 2 + 10, KUKAA_DARASA, UTEUZI_WA_KIDINI);
+        dola_ongeza_baraza(d, ui("Estate of the Burghers"), juu, KUKAA_DARASA, UTEUZI_KUCHAGULIWA);
+        dola_ongeza_baraza(d, ui("Estate of the Commons"), chini / 2 + 40, KUKAA_NUSU_DUARA, UTEUZI_KUCHAGULIWA);
+    }
+    kama (a == DOLA_UTAWALA_WA_WATAALAMU) {
+        d->mkuu_wa_dola = ui("Prime Coordinator");
+        d->mkuu_wa_serikali = 0;
+        d->muhula = 6;
+        d->haki_ya_kura = ui("Universal, by examination for office");
+        dola_ongeza_baraza(d, ui("Assembly of Directorates"), chini, KUKAA_NUSU_DUARA, UTEUZI_KUCHAGULIWA);
+        dola_ongeza_baraza(d, ui("Council of Experts"), 45, KUKAA_DUARA, UTEUZI_KUTEULIWA);
+    }
+    kama (a == DOLA_JUMUIYA_YA_WAUNGWANA) {
+        // jumuiya ya waungwana: mfalme wa kuchaguliwa na mabaraza matatu
+        d->mkuu_wa_dola = ui("Elected King");
+        d->mkuu_wa_serikali = ui("Grand Chancellor");
+        d->muhula = 0;
+        d->haki_ya_kura = ui("Nobility and chartered towns");
+        dola_ongeza_baraza(d, ui("Chamber of Envoys"), chini / 2 + 40, KUKAA_NUSU_DUARA, UTEUZI_KUCHAGULIWA);
+        dola_ongeza_baraza(d, ui("Senate"), juu, KUKAA_KIATU, UTEUZI_KUTEULIWA);
+        dola_ongeza_baraza(d, ui("Chamber of Burghers"), juu / 2 + 15, KUKAA_DARASA, UTEUZI_KUCHAGULIWA);
+    }
+    kama (a == DOLA_SERIKALI_YA_MPITO) {
+        d->mkuu_wa_dola = ui("Interim President");
+        d->muhula = 2;
+        dola_ongeza_baraza(d, ui("Constituent Assembly"), chini, KUKAA_NUSU_DUARA, UTEUZI_KUCHAGULIWA);
+    }
+    kama (a == DOLA_UDIKTETA) {
+        d->mkuu_wa_dola = ui("President for Life");
+        d->mkuu_wa_serikali = 0;
+        d->muhula = 0;
+        d->haki_ya_kura = ui("Universal, uncontested");
+        d->tawala = 78;
+        dola_ongeza_baraza(d, ui("National Assembly"), chini, KUKAA_DARASA, UTEUZI_KUCHAGULIWA);
+    }
+    kama (a == DOLA_DEMOKRASIA_YA_MOJA_KWA_MOJA) {
+        d->mkuu_wa_dola = ui("Speaker of the Assembly");
+        d->mkuu_wa_serikali = 0;
+        d->muhula = 1;
+        dola_ongeza_baraza(d, ui("Popular Assembly"), chini + chini / 2, KUKAA_DUARA, UTEUZI_KUCHAGULIWA);
+    }
+    kama (a == DOLA_JAMHURI_YA_WAFANYABIASHARA) {
+        d->mkuu_wa_dola = ui("Doge");
+        d->mkuu_wa_serikali = 0;
+        d->muhula = 0;
+        d->haki_ya_kura = ui("Guild members and property holders");
+        dola_ongeza_baraza(d, ui("Great Council"), chini, KUKAA_DARASA, UTEUZI_KUCHAGULIWA);
+        dola_ongeza_baraza(d, ui("Senate"), juu / 2 + 20, KUKAA_KIATU, UTEUZI_KUTEULIWA);
+    }
+    kama (a == DOLA_BILA_SERIKALI) {
+        d->mkuu_wa_dola = ui("None");
+        d->mkuu_wa_serikali = 0;
+        d->muhula = 0;
+        d->haki_ya_kura = ui("Local assemblies only");
+    }
+    // vyeo vya kifalme hufuata cheo cha dola
+    kama (tafuta_mfuatano(cheo, "Emirate") >= 0) { d->mkuu_wa_dola = ui("Emir"); }
+    kama (tafuta_mfuatano(cheo, "Sultanate") >= 0) { d->mkuu_wa_dola = ui("Sultan"); }
+    kama (tafuta_mfuatano(cheo, "Caliphate") >= 0) { d->mkuu_wa_dola = ui("Caliph"); }
+    kama (tafuta_mfuatano(cheo, "Kingdom") >= 0 && a != DOLA_UFALME_WA_KUCHAGULIWA) { d->mkuu_wa_dola = ui("King"); }
+    kama (tafuta_mfuatano(cheo, "Grand Principality") >= 0) { d->mkuu_wa_dola = ui("Grand Prince"); }
+    sivyo { kama (tafuta_mfuatano(cheo, "Principality") >= 0) { d->mkuu_wa_dola = ui("Prince"); } }
+    kama (tafuta_mfuatano(cheo, "Shogunate") >= 0) { d->mkuu_wa_dola = ui("Shogun"); }
+}
+
+// Vyama vya dola: idadi na itikadi hufuata aina ya utawala.
+w0 dola_jenga_vyama(Dola* d, n64 mbegu) {
+    n64 a = d->aina;
+    kama (a == DOLA_BILA_SERIKALI) { rudisha; }
+    kama (a == DOLA_CHAMA_KIMOJA) {
+        dola_ongeza_chama(d, ITIKADI_UKOMUNISTI, mbegu);
+        dola_ongeza_chama(d, ITIKADI_WAKULIMA, mbegu);
+        dola_ongeza_chama(d, ITIKADI_HURU, mbegu);
+        rudisha;
+    }
+    kama (a == DOLA_UDIKTETA) {
+        n64 kikuu = ITIKADI_UTAIFA;
+        kama (dola_nasibu(mbegu, 6) % 3 == 0) { kikuu = ITIKADI_UFASHISTI; }
+        kama (dola_nasibu(mbegu, 6) % 3 == 1) { kikuu = ITIKADI_UMAARUFU; }
+        dola_ongeza_chama(d, kikuu, mbegu);
+        dola_ongeza_chama(d, ITIKADI_UHAFIDHINA, mbegu);
+        dola_ongeza_chama(d, ITIKADI_HURU, mbegu);
+        rudisha;
+    }
+    kama (a == DOLA_UTAWALA_WA_KIJESHI) {
+        dola_ongeza_chama(d, ITIKADI_UJESHI, mbegu);
+        dola_ongeza_chama(d, ITIKADI_UTAIFA, mbegu);
+        dola_ongeza_chama(d, ITIKADI_UTAALAMU, mbegu);
+        rudisha;
+    }
+    kama (a == DOLA_UFALME_KAMILI) {
+        dola_ongeza_chama(d, ITIKADI_UFALME, mbegu);
+        dola_ongeza_chama(d, ITIKADI_MILA, mbegu);
+        dola_ongeza_chama(d, ITIKADI_ULIBERALI, mbegu);
+        rudisha;
+    }
+    kama (a == DOLA_UTAWALA_WA_KIDINI) {
+        dola_ongeza_chama(d, ITIKADI_UKLERO, mbegu);
+        dola_ongeza_chama(d, ITIKADI_MILA, mbegu);
+        dola_ongeza_chama(d, ITIKADI_DEMOKRASIA_YA_KIDINI, mbegu);
+        dola_ongeza_chama(d, ITIKADI_ULIBERALI, mbegu);
+        rudisha;
+    }
+    kama (a == DOLA_MUUNGANO_WA_KABILA) {
+        dola_ongeza_chama(d, ITIKADI_MILA, mbegu);
+        dola_ongeza_chama(d, ITIKADI_UKANDA, mbegu);
+        dola_ongeza_chama(d, ITIKADI_WAKULIMA, mbegu);
+        rudisha;
+    }
+    kama (a == DOLA_UTAWALA_WA_WATAALAMU) {
+        dola_ongeza_chama(d, ITIKADI_UTAALAMU, mbegu);
+        dola_ongeza_chama(d, ITIKADI_KATI, mbegu);
+        dola_ongeza_chama(d, ITIKADI_DEMOKRASIA_YA_KIJAMII, mbegu);
+        dola_ongeza_chama(d, ITIKADI_MILA, mbegu);
+        rudisha;
+    }
+    // dola zenye ushindani: vyama 3..8 kutoka wigo mzima; falme huongeza wafalme
+    kama (a == DOLA_UFALME_WA_KATIBA || a == DOLA_UFALME_WA_KUCHAGULIWA || a == DOLA_MILKI || a == DOLA_JUMUIYA_YA_WAUNGWANA) {
+        dola_ongeza_chama(d, ITIKADI_UHAFIDHINA, mbegu);
+        dola_ongeza_chama(d, ITIKADI_UFALME, mbegu);
+    }
+    kama (a == DOLA_JAMHURI_YA_WAFANYABIASHARA) { dola_ongeza_chama(d, ITIKADI_UHURU_BINAFSI, mbegu); }
+    kama (a == DOLA_DEMOKRASIA_YA_MOJA_KWA_MOJA) { dola_ongeza_chama(d, ITIKADI_UANAKI, mbegu); }
+    kama (a == DOLA_MUUNGANO_WA_DOLA || a == DOLA_JAMHURI_YA_SHIRIKISHO) { dola_ongeza_chama(d, ITIKADI_UKANDA, mbegu); }
+    n64 lengo = 3 + dola_nasibu(mbegu, 7) % 6;
+    kama (a == DOLA_JAMHURI_YA_RAIS) { lengo = 2 + dola_nasibu(mbegu, 7) % 3; }
+    n64 jaribio = 0;
+    wakati (d->vyama < lengo && jaribio < 60) {
+        dola_ongeza_chama(d, dola_nasibu(mbegu, 100 + jaribio) % ITIKADI_HURU, mbegu);
+        jaribio = jaribio + 1;
+    }
+}
+
+// Gawa viti vya baraza b kwa vyama: uzito hupungua kwa mpangilio wa chama,
+// na dola yenye chama kikuu hukipa angalau asilimia `tawala`.
+w0 dola_gawa_viti(Dola* d, n64 b, n64 mbegu) {
+    n64 n = d->vyama;
+    kama (n == 0) { rudisha; }
+    n64 viti = d->baraza_viti[b];
+    n64 uzito[8];
+    n64 jumla = 0;
+    n64 c = 0;
+    wakati (c < n) {
+        uzito[c] = (1000 * (60 + dola_nasibu(mbegu, 200 + b * 16 + c) % 80)) / (100 * (c + 1));
+        // baraza la kurithi au la kuteuliwa huelemea wafalme na wahafidhina
+        kama (d->baraza_uteuzi[b] == UTEUZI_KURITHI || d->baraza_uteuzi[b] == UTEUZI_KUTEULIWA) {
+            kama (d->chama_itikadi[c] == ITIKADI_UFALME || d->chama_itikadi[c] == ITIKADI_UHAFIDHINA || d->chama_itikadi[c] == ITIKADI_MILA) { uzito[c] = uzito[c] * 3; }
+        }
+        kama (c > 0) { jumla = jumla + uzito[c]; }
+        c = c + 1;
+    }
+    kama (d->tawala > 0 && n > 1) { uzito[0] = (jumla * d->tawala) / (100 - d->tawala) + 1; }
+    jumla = jumla + uzito[0];
+    n64 vimegawiwa = 0;
+    c = 0;
+    wakati (c < n) {
+        n64 v = (viti * uzito[c]) / jumla;
+        d->viti[b * DOLA_VYAMA_JUU + c] = v;
+        vimegawiwa = vimegawiwa + v;
+        c = c + 1;
+    }
+    c = 0;
+    wakati (vimegawiwa < viti) {
+        d->viti[b * DOLA_VYAMA_JUU + c] = d->viti[b * DOLA_VYAMA_JUU + c] + 1;
+        vimegawiwa = vimegawiwa + 1;
+        c = (c + 1) % n;
+    }
+}
+
+// Serikali: chama kikuu peke yake, au muungano hadi kuvuka nusu ya viti
+// vya baraza la kwanza la kuchaguliwa.
+w0 dola_unda_serikali(Dola* d) {
+    kama (d->vyama == 0) { rudisha; }
+    d->chama_serikalini[0] = 1;
+    kama (d->mabaraza == 0 || d->tawala > 0) { rudisha; }
+    n64 b = 0;
+    n64 i = 0;
+    wakati (i < d->mabaraza) {
+        kama (d->baraza_uteuzi[i] == UTEUZI_KUCHAGULIWA) { b = i; i = d->mabaraza; }
+        i = i + 1;
+    }
+    n64 nusu = d->baraza_viti[b] / 2;
+    n64 jumla = d->viti[b * DOLA_VYAMA_JUU];
+    n64 c = 1;
+    wakati (jumla <= nusu && c < d->vyama) {
+        d->chama_serikalini[c] = 1;
+        jumla = jumla + d->viti[b * DOLA_VYAMA_JUU + c];
+        c = c + 1;
+    }
+}
+
+// Viti vya serikali kwenye baraza b.
+n64 dola_viti_vya_serikali(Dola* d, n64 b) {
+    n64 jumla = 0;
+    n64 c = 0;
+    wakati (c < d->vyama) {
+        kama (d->chama_serikalini[c]) { jumla = jumla + d->viti[b * DOLA_VYAMA_JUU + c]; }
+        c = c + 1;
+    }
+    rudisha jumla;
+}
+
+// Dola ya taifa: `mbegu` ni faharisi ya taifa, `cheo` ni jina kamili la
+// Kiingereza la dola, `watu` ni idadi ya watu.
+Dola* dola_unda(n64 mbegu, n8* cheo, n64 watu) {
+    Dola* d = tenga(ukubwa(Dola));
+    weka_sifuri(d, ukubwa(Dola));
+    d->baraza_jina = tenga(8 * DOLA_MABARAZA_JUU);
+    d->baraza_viti = tenga(8 * DOLA_MABARAZA_JUU);
+    d->baraza_kukaa = tenga(8 * DOLA_MABARAZA_JUU);
+    d->baraza_uteuzi = tenga(8 * DOLA_MABARAZA_JUU);
+    d->chama_itikadi = tenga(8 * DOLA_VYAMA_JUU);
+    d->chama_jina = tenga(8 * DOLA_VYAMA_JUU);
+    d->chama_serikalini = tenga(8 * DOLA_VYAMA_JUU);
+    d->viti = tenga(8 * DOLA_MABARAZA_JUU * DOLA_VYAMA_JUU);
+    weka_sifuri(d->chama_serikalini, 8 * DOLA_VYAMA_JUU);
+    weka_sifuri(d->viti, 8 * DOLA_MABARAZA_JUU * DOLA_VYAMA_JUU);
+    d->aina = dola_aina_kutoka_cheo(cheo, mbegu);
+    // kanuni ya kipeuo cha tatu: viti vya baraza la wananchi ~ watu^(1/3)
+    n64 chini = dola_kipeuo_cha_tatu(watu);
+    kama (chini < 31) { chini = 31; }
+    kama (chini > 750) { chini = 750; }
+    dola_jenga_mabaraza(d, cheo, chini, mbegu);
+    dola_jenga_vyama(d, mbegu);
+    n64 b = 0;
+    wakati (b < d->mabaraza) { dola_gawa_viti(d, b, mbegu); b = b + 1; }
+    dola_unda_serikali(d);
+    d->umri_wa_dola = 12 + dola_nasibu(mbegu, 8) % 620;
+    d->umri_wa_katiba = 1 + dola_nasibu(mbegu, 9) % 90;
+    kama (d->umri_wa_katiba > d->umri_wa_dola) { d->umri_wa_katiba = d->umri_wa_dola; }
+    kama (d->aina == DOLA_SERIKALI_YA_MPITO) { d->umri_wa_katiba = 1 + dola_nasibu(mbegu, 9) % 3; }
+    rudisha d;
+}
+
+// Akiba: dola moja kwa kila taifa, hujengwa mara ya kwanza inapoombwa.
+n64 DOLA_AKIBA_UWEZO = 512;
+n64* dola_akiba = 0;
+
+Dola* dola_ya_taifa(n64 faharisi, n8* cheo, n64 watu) {
+    kama (faharisi < 0 || faharisi >= DOLA_AKIBA_UWEZO) { rudisha 0; }
+    kama (dola_akiba == 0) {
+        dola_akiba = tenga(8 * DOLA_AKIBA_UWEZO);
+        weka_sifuri(dola_akiba, 8 * DOLA_AKIBA_UWEZO);
+    }
+    kama (dola_akiba[faharisi] == 0) { dola_akiba[faharisi] = dola_unda(faharisi, cheo, watu); }
+    rudisha dola_akiba[faharisi];
+}
