@@ -12,22 +12,17 @@ w0 thibitisha(n8* jina, n32 sawa) {
 }
 
 n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
-    Dola* d = dola_unda(7, "Kingdom of Test", 9000000);
-    Wahusika* w = wahusika_unda(d, 7);
-    thibitisha("watu wapo", w->idadi >= 8 && w->idadi <= WAHUSIKA_JUU);
-    MhusikaWaDola* waziri = wahusika_pata(w, 2);
+    Dola* d = dola_unda(7, "Republic of Test", 9000000);
+    Wahusika* w = wahusika_unda(d, 7, 9000000);
+    thibitisha("watu wapo", w->idadi >= 40 && w->idadi <= WAHUSIKA_JUU);
+    n64 fedha = wahusika_tafuta(w, "Minister of Finance");
+    thibitisha("waziri wa fedha yupo", fedha >= 0);
+    MhusikaWaDola* waziri = wahusika_pata(w, fedha);
     thibitisha("jina la mtu", urefu_wa_mfuatano(waziri->jina) >= 7);
     thibitisha("tabia tofauti", waziri->tabia_1 != waziri->tabia_2);
-    // ngazi zote saba zina jina, na orodha ina ngazi ya chini kabisa
-    n64 i = 0;
-    n32 ana_chifu = 0;
-    wakati (i < w->idadi) {
-        MhusikaWaDola* m = wahusika_pata(w, i);
-        kama (m->ngazi == NGAZI_KIJIJI) { ana_chifu = 1; }
-        i = i + 1;
-    }
-    thibitisha("chifu wa kijiji", ana_chifu);
-    thibitisha("akiba ya watu", wahusika_wa_taifa(7, d) == wahusika_wa_taifa(7, d));
+    thibitisha("chifu wa kijiji", wahusika_tafuta(w, "Village Chief") >= 0);
+    thibitisha("msaidizi", w->msaidizi >= 0);
+    thibitisha("akiba ya watu", wahusika_wa_taifa(7, d, 9000000) == wahusika_wa_taifa(7, d, 9000000));
 
     // maelekezo: mhusika hubaki mwenyewe, mshauri ni AI yenyewe
     n8* p = tenga(8192);

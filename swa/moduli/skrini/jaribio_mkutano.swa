@@ -39,18 +39,41 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     skrini_mkutano_chora(g, t, taifa);
     kama (idadi_ya_hoja > 1) { andika_fremu(hoja_za_mstari[1], "", t); }
 
-    // kuchagua mtu wa tatu kwenye orodha, na jibu la mfano lenye athari
+    // mti: bofya safu ya nne (baada ya Mshauri, msaidizi na kichwa cha tawi) = mkuu wa dola
     Dola* d = skrini_siasa_dola(g, taifa);
-    Wahusika* w = wahusika_wa_taifa(taifa, d);
-    n64 mtu = skrini_mkutano_bofya(SKRINI_UPANA_WA_PEMBENI + 60, SKRINI_UPAU_WA_JUU + 25 + 62 + 36 + 3 * MKUTANO_SAFU + 5, w->idadi);
-    kama (mtu != 2) { andika("SHINDWA: bofya ya orodha %d\n", mtu, 0, 0, 0, 0, 0); rudisha 1; }
-    skrini_mkutano_chagua(mtu);
-    nakili_mfuatano(mkutano_kauli, "Minister, I intend to raise the grain tax by a third to pay the army. Can the treasury manage without it?");
-    nakili_mfuatano(mkutano_jibu, "Your Excellency, the treasury can carry the army for two more seasons, but only if the harvest holds. A third is too much at once: the guilds will close their shops and the provinces will hide their grain. Raise it by a tenth now and I will find the rest in the customs houses.");
-    mkutano_athari[ATHARI_MSIMAMO] = 4;
-    mkutano_athari[ATHARI_UTULIVU] = 0 - 2;
-    mkutano_athari[ATHARI_HAZINA] = 3;
-    mkutano_hali = 2;
+    Wahusika* w = skrini_mkutano_watu(g, taifa);
+    n64 mtu = skrini_mkutano_bofya(1600, mkutano_x() + 60, mkutano_y() + 34 + 3 * MKUTANO_SAFU + 5);
+    kama (mtu != 0) { andika("SHINDWA: bofya ya mti %d\n", mtu, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (skrini_mkutano_bofya(1600, mkutano_x() + 60, mkutano_y() + 34 + 2 * MKUTANO_SAFU + 5) != 0 - 2) { andika("SHINDWA: kichwa cha tawi kinabofyeka\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    // mchezaji ashike cheo cha chini: mkubwa wake hahitaji mkutano? anahitaji
+    n64 chini = wahusika_tafuta(w, "District Commissioner");
+    kama (chini < 0) { chini = w->idadi - 2; }
+    skrini_mkutano_tekeleza(chini, d, w);
+    skrini_mkutano_tekeleza(1002, d, w);
+    kama (mkutano_ofisi != chini) { andika("SHINDWA: kushika cheo\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    skrini_mkutano_tekeleza(0, d, w);
+    wahusika_pata(w, 0)->mkutano = 0;
+    skrini_mkutano_chora(g, t, taifa);
+    kama (mkutano_ruhusa != 0) { andika("SHINDWA: mkuu wa dola azungumzwe bila mkutano\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (skrini_mkutano_kibodi(30, 0) != 0 || mkutano_urefu != 0) { andika("SHINDWA: kuandika bila ruhusa\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    skrini_mkutano_tekeleza(1000, d, w);
+    kama (mkutano_ujumbe[0] == 0) { andika("SHINDWA: ombi la mkutano halina jibu\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    andika("ombi la mkuu wa wilaya: %s\n", mkutano_ujumbe, 0, 0, 0, 0, 0);
+    // rudi kuwa mkuu wa dola; badilisha waziri wa fedha
+    skrini_mkutano_tekeleza(0, d, w);
+    mkutano_ofisi = 0;
+    n64 fedha = wahusika_tafuta(w, "Minister of Finance");
+    kama (fedha >= 0) {
+        skrini_mkutano_tekeleza(fedha, d, w);
+        skrini_mkutano_tekeleza(1001, d, w);
+        andika("kubadilisha waziri: %s\n", mkutano_ujumbe, 0, 0, 0, 0, 0);
+        nakili_mfuatano(mkutano_kauli, "Minister, I intend to raise the grain tax by a third to pay the army. Can the treasury manage without it?");
+        nakili_mfuatano(mkutano_jibu, "Your Excellency, the treasury can carry the army for two more seasons, but only if the harvest holds. A third is too much at once: the guilds will close their shops and the provinces will hide their grain. Raise it by a tenth now and I will find the rest in the customs houses.");
+        mkutano_athari[ATHARI_MSIMAMO] = 4;
+        mkutano_athari[ATHARI_UTULIVU] = 0 - 2;
+        mkutano_athari[ATHARI_HAZINA] = 3;
+        mkutano_hali = 2;
+    }
     skrini_mkutano_chora(g, t, taifa);
     kama (idadi_ya_hoja > 1) { andika_fremu(hoja_za_mstari[1], ".mtu", t); }
     andika("mkutano: watu %d, sawa\n", w->idadi, 0, 0, 0, 0, 0);

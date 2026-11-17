@@ -1,0 +1,115 @@
+husisha { moduli/siasa/katiba.swa }
+
+// jaribio_katiba.swa -- mti wa dola hufuata katiba: vyeo hutofautiana kwa
+// aina ya utawala, uteuzi na kufuta hufuata mamlaka, uhakiki hupigiwa kura,
+// na maombi ya mikutano hufuata ngazi.
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    // jamhuri ya rais yenye mabaraza mawili: makamu wa rais yupo, seneti ipo
+    n64 mbegu = 0;
+    Dola* rais = 0;
+    wakati (rais == 0 && mbegu < 400) {
+        Dola* d = dola_unda(mbegu, "Republic of Test", 40000000);
+        kama (d->aina == DOLA_JAMHURI_YA_RAIS && d->mabaraza == 2) { rais = d; }
+        sivyo { mbegu = mbegu + 1; }
+    }
+    thibitisha("jamhuri ya rais imepatikana", rais != 0);
+    Wahusika* w = wahusika_unda(rais, mbegu, 40000000);
+    andika("jamhuri ya rais: watu %d\n", w->idadi, 0, 0, 0, 0, 0);
+    thibitisha("watu wa kutosha", w->idadi >= 60);
+    n64 makamu = wahusika_tafuta(w, "Vice President");
+    n64 mkuu = wahusika_tafuta(w, "President");
+    thibitisha("makamu wa rais", makamu >= 0 && wahusika_pata(w, makamu)->bosi == 0);
+    thibitisha("spika wa seneti", wahusika_tafuta(w, "Speaker of the Senate") >= 0);
+    thibitisha("hakuna mrithi", wahusika_tafuta(w, "Heir to the Throne") < 0);
+
+    // mamlaka: rais humteua waziri; makamu hawezi; hakuna anayemfuta spika
+    n64 fedha = wahusika_tafuta(w, "Minister of Finance");
+    n64 spika = wahusika_tafuta(w, "Speaker of the");
+    thibitisha("rais huteua waziri", katiba_anaweza_kuteua(w, 0, fedha) == 1);
+    thibitisha("makamu hateui waziri", katiba_anaweza_kuteua(w, makamu, fedha) == 0);
+    thibitisha("spika hafutwi", katiba_anaweza_kuteua(w, 0, spika) == 0);
+    thibitisha("waziri huteua naibu", katiba_anaweza_kuteua(w, fedha, wahusika_tafuta(w, "Deputy Minister of Finance")) == 1);
+
+    // kubadilisha waziri: jina hubadilika (au baraza hukataa na aliyekuwepo hubaki)
+    n8 jina_la_kwanza[40];
+    nakili_mfuatano(jina_la_kwanza, wahusika_pata(w, fedha)->jina);
+    n64 ndiyo = 0;
+    n64 viti = 0;
+    n64 r = katiba_badilisha(w, rais, 0, fedha, &ndiyo, &viti);
+    andika("uteuzi wa waziri: matokeo %d, kura %d / %d\n", r, ndiyo, viti, 0, 0, 0);
+    thibitisha("uhakiki umepigiwa kura", viti > 0);
+    kama (r == UTEUZI_UMEFANIKIWA) { thibitisha("waziri mpya", linganisha_mfuatano(jina_la_kwanza, wahusika_pata(w, fedha)->jina) != 0 && ndiyo * 2 > viti); }
+    kama (r == UTEUZI_UMEKATALIWA_NA_BARAZA) { thibitisha("waziri amebaki", linganisha_mfuatano(jina_la_kwanza, wahusika_pata(w, fedha)->jina) == 0 && ndiyo * 2 <= viti); }
+    thibitisha("bila mamlaka", katiba_badilisha(w, rais, makamu, fedha, &ndiyo, &viti) == UTEUZI_HAKUNA_MAMLAKA);
+
+    // mikutano: walio chini huja wakiitwa; chifu wa kijiji akimwomba rais husubiri au hukataliwa
+    n64 siku = 0;
+    thibitisha("rais humwita waziri", katiba_omba_mkutano(w, 0, fedha, &siku) == 1 && siku == 0);
+    n64 chifu = wahusika_tafuta(w, "Village Chief");
+    n64 jibu = katiba_omba_mkutano(w, chifu, 0, &siku);
+    thibitisha("chifu kwa rais", jibu == 2 || siku >= 16);
+    thibitisha("msaidizi daima", katiba_omba_mkutano(w, chifu, w->msaidizi, &siku) == 1);
+    n64 maombi[3];
+    n64 n = katiba_maombi_yanayoingia(w, makamu, 5, maombi, 3);
+    thibitisha("maombi yanayoingia", n >= 1 && n <= 3 && maombi[0] != makamu);
+
+    // ufalme: mrithi yupo, makamu hayupo; mkuu hurithi
+    Dola* ufalme = 0;
+    mbegu = 0;
+    wakati (ufalme == 0 && mbegu < 400) {
+        Dola* d2 = dola_unda(mbegu, "Kingdom of Test", 9000000);
+        kama (d2->aina == DOLA_UFALME_KAMILI) { ufalme = d2; }
+        sivyo { mbegu = mbegu + 1; }
+    }
+    Wahusika* wf = wahusika_unda(ufalme, mbegu, 9000000);
+    thibitisha("mrithi wa kiti", wahusika_tafuta(wf, "Heir to the Throne") >= 0);
+    thibitisha("ufalme hauna makamu", wahusika_tafuta(wf, "Vice President") < 0);
+    thibitisha("mfalme hurithi", wahusika_pata(wf, 0)->ujazaji == UJAZAJI_KURITHI);
+    kama (ufalme->mabaraza == 0) { thibitisha("hakuna spika bila baraza", wahusika_tafuta(wf, "Speaker of the") < 0); }
+
+    // jumuiya isiyo na serikali: wajumbe tu
+    Dola* huru = 0;
+    mbegu = 0;
+    wakati (huru == 0 && mbegu < 400) {
+        Dola* d3 = dola_unda(mbegu, "Test", 500000);
+        kama (d3->aina == DOLA_BILA_SERIKALI) { huru = d3; }
+        sivyo { mbegu = mbegu + 1; }
+    }
+    Wahusika* wh = wahusika_unda(huru, mbegu, 500000);
+    thibitisha("bila serikali: hakuna waziri", wahusika_tafuta(wh, "Minister") < 0 && wahusika_tafuta(wh, "Commune Delegate") >= 0);
+
+    // kila taifa kati ya 232: mti halali, wakubwa wapo kabla ya wadogo
+    n64 i = 0;
+    n64 kidogo = 999;
+    n64 kikubwa = 0;
+    wakati (i < 232) {
+        n8* cheo = "Republic of T";
+        kama (i % 6 == 1) { cheo = "Kingdom of T"; }
+        kama (i % 6 == 2) { cheo = "Empire of T"; }
+        kama (i % 6 == 3) { cheo = "People's Republic of T"; }
+        kama (i % 6 == 4) { cheo = "Tribes of T"; }
+        kama (i % 6 == 5) { cheo = "T"; }
+        Dola* dx = dola_unda(i, cheo, 2000000 + i * 900000);
+        Wahusika* wx = wahusika_unda(dx, i, 2000000 + i * 900000);
+        kama (wx->idadi < kidogo) { kidogo = wx->idadi; }
+        kama (wx->idadi > kikubwa) { kikubwa = wx->idadi; }
+        n64 j = 0;
+        wakati (j < wx->idadi) {
+            MhusikaWaDola* m = wahusika_pata(wx, j);
+            kama (m->bosi >= j || m->mteuzi >= wx->idadi) { andika("SHINDWA: mti wa taifa %d, mtu %d\n", i, j, 0, 0, 0, 0); makosa = makosa + 1; j = wx->idadi; }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+    andika("ukubwa wa miti: %d .. %d\n", kidogo, kikubwa, 0, 0, 0, 0);
+    thibitisha("miti haizidi uwezo", kikubwa < WAHUSIKA_JUU && kidogo >= 15);
+    kama (makosa == 0) { andika("katiba: sawa\n", 0, 0, 0, 0, 0, 0); rudisha 0; }
+    rudisha 1;
+}

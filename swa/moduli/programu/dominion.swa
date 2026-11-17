@@ -462,8 +462,9 @@ w0 bofya_skrini(Mchezo* g, Hali* h, n64 skrini, n64 upana, n64 kimo, n64 px, n64
     kama (skrini == SKRINI_DIPLOMASIA) { bofya_diplomasia(g, h, upana, kimo, px, py); }
     kama (skrini == SKRINI_MKUTANO) {
         Dola* dola = skrini_siasa_dola(g, h->taifa);
-        Wahusika* watu = wahusika_wa_taifa(h->taifa, dola);
-        kama (watu != 0) { skrini_mkutano_chagua(skrini_mkutano_bofya(px, py, watu->idadi)); }
+        Wahusika* watu = skrini_mkutano_watu(g, h->taifa);
+        n64 kitendo = skrini_mkutano_bofya(upana, px, py);
+        kama (watu != 0 && dola != 0 && kitendo > 0 - 2) { skrini_mkutano_tekeleza(kitendo, dola, watu); }
     }
 }
 
@@ -667,6 +668,13 @@ w0 shughulikia(Mchezo* g, Hali* h, Dirisha* d) {
         kama (aina == DIRISHA_KITUFE && a == KITUFE_KUSHOTO) {
             kama (b == 1) { bonyeza(g, h, d, d->kielekezi_x, d->kielekezi_y); }
             sivyo { achia(h, d, d->kielekezi_x, d->kielekezi_y); }
+        }
+        kama (aina == DIRISHA_GURUDUMU && md_chini_ya(h, d->kielekezi_x, d->kielekezi_y) == SKRINI_MKUTANO) {
+            // gurudumu juu ya Mikutano husogeza mti wa dola
+            kama (a > 0) { skrini_mkutano_tembeza(3); }
+            kama (a < 0) { skrini_mkutano_tembeza(0 - 3); }
+            h->md[SKRINI_MKUTANO].chafu = 1;
+            h->haja = 1;
         }
         kama (aina == DIRISHA_GURUDUMU) {
             // gurudumu hukuza ramani tu kielekezi kikiwa juu yake

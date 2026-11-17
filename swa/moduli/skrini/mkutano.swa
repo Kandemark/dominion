@@ -2,31 +2,45 @@ husisha { moduli/skrini/siasa.swa }
 husisha { moduli/skrini/mipangilio.swa }
 husisha { moduli/akili/mazungumzo.swa }
 
-// mkutano.swa -- skrini ya mikutano: mchezaji huzungumza na watu wa dola
-// yake na na Mshauri (AI yenyewe).
+// mkutano.swa -- skrini ya mikutano: mchezaji na mti mzima wa dola yake.
 //
-// Kushoto: orodha ya watu -- Mshauri kwanza, kisha kila mwenye cheo. Kulia:
-// kadi ya aliyechaguliwa (cheo, chama, tabia, msimamo), viashiria vya dola
-// vinavyoguswa na mazungumzo, kauli ya mwisho ya mchezaji na jibu lake,
-// athari zilizopimwa, na sehemu ya kuandika. Enter hutuma.
+// Kushoto: mti wa dola kwa matawi (utendaji, bunge, mahakama, majeshi,
+// mikoa), Mshauri (AI yenyewe) na msaidizi binafsi juu. Kulia: kadi ya
+// aliyechaguliwa -- cheo, chama, tabia, msimamo, mkubwa wake na namna cheo
+// chake kinavyojazwa -- kisha vitendo vya katiba:
+//   Omba mkutano     msaidizi hupanga; mkubwa anaweza kukubali, kuchelewesha
+//                    au kukataa kufuatana na ngazi na msimamo wake
+//   Badilisha        mfute na umteue mwingine, ikiwa katiba inakupa mamlaka;
+//                    uteuzi wenye uhakiki hupigiwa kura barazani
+//   Shika cheo hiki  cheza kama mwenye cheo hiki (makamu, waziri, chifu...)
+// Chini: viashiria vya dola, maombi ya watu wanaotaka kukuona, mazungumzo
+// na sehemu ya kuandika. Mazungumzo yanahitaji mkutano uliokubaliwa.
 //
 // Ombi la AI huzuia hadi jibu lifike, kwa hiyo fremu ya "anafikiri" huchorwa
 // kwanza (hali 1) na programu ndiyo huita skrini_mkutano_tuma baadaye.
 
-n64 MKUTANO_ORODHA = 268;           // upana wa orodha ya watu
-n64 MKUTANO_SAFU = 42;
+n64 MKUTANO_ORODHA = 300;           // upana wa mti
+n64 MKUTANO_SAFU = 26;
+n64 MKUTANO_SAFU_JUU = 220;
 
 n64 mkutano_mteule = -1;            // -1 = Mshauri; >= 0 = mhusika
 n64 mkutano_taifa = -1;
+n64 mkutano_ofisi = 0;              // cheo anachoshika mchezaji
+n64 mkutano_tembea = 0;             // safu zilizosogezwa juu
+n64 mkutano_ruhusa = 1;             // mchezaji anaweza kuzungumza na mteule
 n64 mkutano_hali = 0;               // 0 tulivu, 1 inatuma, 2 jibu lipo, 3 hitilafu
 n64 mkutano_kosa = 0;
-n64 mkutano_ngazi_ya_mchezaji = 6;  // NGAZI_DOLA hadi mchezaji achague
 n64 mkutano_nafasi = 1;             // nafasi ya hifadhi ya kumbukumbu
 n64 mkutano_urefu = 0;
+n64 mkutano_idadi_ya_safu = 0;
+n64 mkutano_idadi_ya_maombi = 0;
 n8 mkutano_ingizo[400];
 n8 mkutano_kauli[400];
+n8 mkutano_ujumbe[240];
 n8* mkutano_jibu = 0;
 n64* mkutano_athari = 0;
+n64* mkutano_safu = 0;              // kwa kila safu: -1 Mshauri, >= 0 mhusika, -10 - tawi = kichwa
+n64* mkutano_maombi = 0;
 
 w0 mkutano_andaa() {
     kama (mkutano_jibu == 0) {
@@ -34,8 +48,11 @@ w0 mkutano_andaa() {
         mkutano_jibu[0] = 0;
         mkutano_athari = tenga(8 * ATHARI_IDADI);
         weka_sifuri(mkutano_athari, 8 * ATHARI_IDADI);
+        mkutano_safu = tenga(8 * MKUTANO_SAFU_JUU);
+        mkutano_maombi = tenga(8 * 3);
         mkutano_ingizo[0] = 0;
         mkutano_kauli[0] = 0;
+        mkutano_ujumbe[0] = 0;
     }
 }
 
@@ -70,7 +87,7 @@ n64 mkutano_herufi(n64 msimbo, n64 juu) {
 // (Enter yenye maandishi): programu ichore fremu kisha iite skrini_mkutano_tuma.
 n32 skrini_mkutano_kibodi(n64 msimbo, n64 juu) {
     mkutano_andaa();
-    kama (mkutano_hali == 1) { rudisha 0; }
+    kama (mkutano_hali == 1 || mkutano_ruhusa == 0) { rudisha 0; }
     kama (msimbo == 14) {
         kama (mkutano_urefu > 0) { mkutano_urefu = mkutano_urefu - 1; mkutano_ingizo[mkutano_urefu] = 0; }
         rudisha 0;
@@ -92,14 +109,67 @@ n32 skrini_mkutano_kibodi(n64 msimbo, n64 juu) {
     rudisha 0;
 }
 
-// Mtu aliyebofywa kwenye orodha: -1 Mshauri, >= 0 mhusika, -2 hakuna.
-n64 skrini_mkutano_bofya(n64 px, n64 py, n64 idadi) {
-    n64 x = SKRINI_UPANA_WA_PEMBENI + 25;
-    n64 y = SKRINI_UPAU_WA_JUU + 25 + 62 + 36;
-    kama (px < x || px >= x + MKUTANO_ORODHA || py < y) { rudisha 0 - 2; }
-    n64 safu = (py - y) / MKUTANO_SAFU;
-    kama (safu > idadi) { rudisha 0 - 2; }
-    rudisha safu - 1;
+// Sogeza mti juu au chini kwa safu.
+w0 skrini_mkutano_tembeza(n64 safu) {
+    mkutano_tembea = mkutano_tembea + safu;
+    kama (mkutano_tembea > mkutano_idadi_ya_safu - 6) { mkutano_tembea = mkutano_idadi_ya_safu - 6; }
+    kama (mkutano_tembea < 0) { mkutano_tembea = 0; }
+}
+
+// Jenga safu za mti: Mshauri, msaidizi, kisha kila tawi na watu wake.
+w0 mkutano_jenga_safu(Wahusika* w) {
+    n64 n = 0;
+    mkutano_safu[n] = 0 - 1;
+    n = n + 1;
+    kama (w->msaidizi >= 0) { mkutano_safu[n] = w->msaidizi; n = n + 1; }
+    n64 tawi = 0 - 1;
+    n64 i = 0;
+    wakati (i < w->idadi && n < MKUTANO_SAFU_JUU - 2) {
+        MhusikaWaDola* m = wahusika_pata(w, i);
+        kama (i != w->msaidizi) {
+            kama (m->tawi != tawi) { tawi = m->tawi; mkutano_safu[n] = 0 - 10 - tawi; n = n + 1; }
+            mkutano_safu[n] = i;
+            n = n + 1;
+        }
+        i = i + 1;
+    }
+    mkutano_idadi_ya_safu = n;
+}
+
+// Vipimo vya mpangilio (vinashirikiwa na kuchora na kubofya).
+n64 mkutano_x() { rudisha SKRINI_UPANA_WA_PEMBENI + 25; }
+n64 mkutano_y() { rudisha SKRINI_UPAU_WA_JUU + 25 + 62; }
+n64 mkutano_xr() { rudisha mkutano_x() + MKUTANO_ORODHA + 12; }
+n64 mkutano_y_vitufe() { rudisha mkutano_y() + 104; }
+n64 mkutano_y_viashiria() { rudisha mkutano_y() + 146; }
+n64 mkutano_y_maombi() { rudisha mkutano_y() + 190; }
+n64 mkutano_y_mazungumzo() { rudisha mkutano_y() + 252; }
+
+// Kitendo cha bofya: -2 hakuna; -1 Mshauri; 0.. mhusika wa mti;
+// 1000 omba mkutano, 1001 badilisha, 1002 shika cheo; 2000 + k ombi la k.
+n64 skrini_mkutano_bofya(n64 upana, n64 px, n64 py) {
+    mkutano_andaa();
+    n64 x = mkutano_x();
+    n64 y = mkutano_y();
+    kama (px >= x && px < x + MKUTANO_ORODHA && py >= y + 34) {
+        n64 safu = (py - y - 34) / MKUTANO_SAFU + mkutano_tembea;
+        kama (safu >= mkutano_idadi_ya_safu) { rudisha 0 - 2; }
+        n64 mtu = mkutano_safu[safu];
+        kama (mtu < 0 - 1) { rudisha 0 - 2; }       // kichwa cha tawi
+        rudisha mtu;
+    }
+    n64 xr = mkutano_xr();
+    n64 wr = upana - xr - 24;
+    kama (py >= mkutano_y_vitufe() && py < mkutano_y_vitufe() + 30 && px >= xr) {
+        n64 k = (px - xr) / 164;
+        kama (k < 3 && (px - xr) % 164 < 156) { rudisha 1000 + k; }
+    }
+    kama (py >= mkutano_y_maombi() && py < mkutano_y_maombi() + 52 && px >= xr) {
+        n64 wq = (wr - 24) / 3 + 12;
+        n64 q = (px - xr) / wq;
+        kama (q < mkutano_idadi_ya_maombi) { rudisha 2000 + q; }
+    }
+    rudisha 0 - 2;
 }
 
 w0 skrini_mkutano_chagua(n64 mtu) {
@@ -109,6 +179,64 @@ w0 skrini_mkutano_chagua(n64 mtu) {
     mkutano_hali = 0;
     mkutano_kauli[0] = 0;
     mkutano_jibu[0] = 0;
+    mkutano_ujumbe[0] = 0;
+}
+
+// Tekeleza kitendo cha bofya kwa dola na mti wa taifa.
+w0 skrini_mkutano_tekeleza(n64 kitendo, Dola* d, Wahusika* w) {
+    mkutano_andaa();
+    kama (kitendo < 1000) { skrini_mkutano_chagua(kitendo); rudisha; }
+    MhusikaWaDola* m = wahusika_pata(w, mkutano_mteule);
+    MhusikaWaDola* msaidizi = wahusika_pata(w, w->msaidizi);
+    n8* jina_la_msaidizi = ui("Your assistant");
+    kama (msaidizi != 0) { jina_la_msaidizi = msaidizi->jina; }
+    kama (kitendo >= 2000) {
+        n64 q = kitendo - 2000;
+        kama (q < mkutano_idadi_ya_maombi) {
+            n64 mtu = mkutano_maombi[q];
+            skrini_mkutano_chagua(mtu);
+            MhusikaWaDola* mwombaji = wahusika_pata(w, mtu);
+            kama (mwombaji != 0) {
+                mwombaji->mkutano = 1;
+                mfuatano_umbiza(mkutano_ujumbe, 240, ui("%s shows %s in."), jina_la_msaidizi, mwombaji->jina, 0, 0, 0, 0);
+            }
+        }
+        rudisha;
+    }
+    kama (m == 0) { nakili_mfuatano(mkutano_ujumbe, ui("The Adviser is always at your side.")); rudisha; }
+    kama (kitendo == 1000) {
+        n64 siku = 0;
+        n64 jibu = katiba_omba_mkutano(w, mkutano_ofisi, mkutano_mteule, &siku);
+        n8 siku_m[16];
+        sura_namba(siku_m, siku);
+        kama (jibu == 2) { mfuatano_umbiza(mkutano_ujumbe, 240, ui("%s: the office of %s has declined to receive you."), jina_la_msaidizi, m->jina, 0, 0, 0, 0); }
+        sivyo { kama (siku > 0) { mfuatano_umbiza(mkutano_ujumbe, 240, ui("%s: %s will receive you after %s days. The meeting is in your diary."), jina_la_msaidizi, m->jina, siku_m, 0, 0, 0); }
+        sivyo { mfuatano_umbiza(mkutano_ujumbe, 240, ui("%s: %s is on the way to see you."), jina_la_msaidizi, m->jina, 0, 0, 0, 0); } }
+    }
+    kama (kitendo == 1001) {
+        n8 aliyeondoka[40];
+        nakili_mfuatano(aliyeondoka, m->jina);
+        n64 ndiyo = 0;
+        n64 viti = 0;
+        n64 r = katiba_badilisha(w, d, mkutano_ofisi, mkutano_mteule, &ndiyo, &viti);
+        n8 a1[16];
+        n8 a2[16];
+        sura_namba(a1, ndiyo);
+        sura_namba(a2, viti - ndiyo);
+        kama (r == UTEUZI_HAKUNA_MAMLAKA) { nakili_mfuatano(mkutano_ujumbe, ui("The constitution gives your office no power over this post.")); }
+        kama (r == UTEUZI_UMEKATALIWA_NA_BARAZA) { mfuatano_umbiza(mkutano_ujumbe, 240, ui("The chamber rejected your nominee, %s to %s. %s remains in office."), a1, a2, aliyeondoka, 0, 0, 0); }
+        kama (r == UTEUZI_UMEFANIKIWA) {
+            kama (viti > 0) { mfuatano_umbiza(mkutano_ujumbe, 240, ui("%s is dismissed. The chamber confirmed %s, %s to %s."), aliyeondoka, m->jina, a1, a2, 0, 0); }
+            sivyo { mfuatano_umbiza(mkutano_ujumbe, 240, ui("%s is dismissed. %s takes the post."), aliyeondoka, m->jina, 0, 0, 0, 0); }
+            mkutano_hali = 0;
+            mkutano_kauli[0] = 0;
+        }
+    }
+    kama (kitendo == 1002) {
+        kama (mkutano_mteule == w->msaidizi) { nakili_mfuatano(mkutano_ujumbe, ui("Your assistant's desk is not an office of state.")); rudisha; }
+        mkutano_ofisi = mkutano_mteule;
+        mfuatano_umbiza(mkutano_ujumbe, 240, ui("You now hold the office of %s."), m->cheo, 0, 0, 0, 0, 0);
+    }
 }
 
 // Tarehe ya mchezo kama maandishi.
@@ -177,6 +305,22 @@ n8* skrini_mkutano_kosa_jina(n64 kosa) {
     rudisha ui("Could not reach the adviser's server.");
 }
 
+// Mti wa taifa kwa mchezo.
+Wahusika* skrini_mkutano_watu(Mchezo* g, n64 taifa) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
+    Dola* d = skrini_siasa_dola(g, taifa);
+    kama (tn == 0 || d == 0) { rudisha 0; }
+    rudisha wahusika_wa_taifa(taifa, d, tn->idadi_ya_watu);
+}
+
+// Cheo anachoshika mchezaji, kama maandishi.
+n8* skrini_mkutano_cheo_cha_mchezaji(Wahusika* w) {
+    MhusikaWaDola* mimi = wahusika_pata(w, mkutano_ofisi);
+    kama (mimi == 0) { rudisha ui("Head of state"); }
+    rudisha mimi->cheo;
+}
+
 // Tuma kauli iliyosubiri kwa AI (huzuia hadi jibu lifike).
 w0 skrini_mkutano_tuma(Mchezo* g, n64 taifa) {
     mkutano_andaa();
@@ -184,47 +328,188 @@ w0 skrini_mkutano_tuma(Mchezo* g, n64 taifa) {
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
     Dola* d = skrini_siasa_dola(g, taifa);
-    kama (tn == 0 || d == 0) { mkutano_hali = 3; mkutano_kosa = 0 - 2; rudisha; }
-    Wahusika* w = wahusika_wa_taifa(taifa, d);
+    Wahusika* w = skrini_mkutano_watu(g, taifa);
+    kama (tn == 0 || d == 0 || w == 0) { mkutano_hali = 3; mkutano_kosa = 0 - 2; rudisha; }
     MhusikaWaDola* m = wahusika_pata(w, mkutano_mteule);
     n8 tarehe[96];
     skrini_mkutano_tarehe(g, tarehe, 96);
     n8 njia[128];
     kumbukumbu_njia(njia, 128, mkutano_nafasi);
-    n64 r = mazungumzo_sema(mipangilio_akili_pata(), d, tn->jina, tarehe, m, ngazi_jina(mkutano_ngazi_ya_mchezaji), maneno_lugha_jina(maneno_lugha), njia, mkutano_kauli, mkutano_jibu, 8192, mkutano_athari);
+    n64 r = mazungumzo_sema(mipangilio_akili_pata(), d, tn->jina, tarehe, m, skrini_mkutano_cheo_cha_mchezaji(w), maneno_lugha_jina(maneno_lugha), njia, mkutano_kauli, mkutano_jibu, 8192, mkutano_athari);
     kama (r < 0) { mkutano_hali = 3; mkutano_kosa = r; }
     sivyo { mkutano_hali = 2; }
 }
 
+// Mti wa dola: Mshauri, msaidizi, kisha matawi; anayeshikwa na mchezaji
+// huwekewa alama.
 w0 skrini_mkutano_orodha_chora(Wahusika* w, n64 x, n64 y, n64 h) {
-    sura_paneli(x, y, MKUTANO_ORODHA, h, ui("PEOPLE"));
-    n64 i = 0 - 1;
-    wakati (i < w->idadi && y + 36 + (i + 2) * MKUTANO_SAFU <= y + h) {
-        n64 ry = y + 36 + (i + 1) * MKUTANO_SAFU;
-        kama (i == mkutano_mteule) {
-            turubai_brashi(sura_t, SURA_LAFUDHI, 26);
-            turubai_mviringo(sura_t, x + 6, ry, MKUTANO_ORODHA - 12, MKUTANO_SAFU - 4, 6);
-        }
-        kama (i < 0) {
-            turubai_brashi(sura_t, SURA_LAFUDHI, 255);
-            turubai_duara(sura_t, x + 22, ry + 19, 5);
-            sura_rangi(SURA_MAANDISHI);
-            sura_lebo_kati(ui("The Adviser"), x + 38, ry + 3, 13);
+    sura_paneli(x, y, MKUTANO_ORODHA, h, ui("GOVERNMENT"));
+    n8 idadi[16];
+    sura_namba(idadi, w->idadi);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo_kulia(idadi, x + MKUTANO_ORODHA - 16, y + 12, 12);
+    n64 mstari = 0;
+    n64 s = mkutano_tembea;
+    wakati (s < mkutano_idadi_ya_safu && y + 34 + (mstari + 1) * MKUTANO_SAFU <= y + h - 4) {
+        n64 ry = y + 34 + mstari * MKUTANO_SAFU;
+        n64 mtu = mkutano_safu[s];
+        kama (mtu < 0 - 1) {
             sura_rangi(SURA_HAFIFU);
-            sura_lebo(ui("Your private counsel"), x + 38, ry + 20, 11);
+            sura_lebo_kati(tawi_jina(0 - 10 - mtu), x + 14, ry + 8, 10);
         } sivyo {
-            MhusikaWaDola* m = wahusika_pata(w, i);
-            n64 rangi = SURA_HAFIFU;
-            kama (m->msimamo >= 15) { rangi = SURA_CHANYA; }
-            kama (m->msimamo <= 0 - 15) { rangi = SURA_HASI; }
-            turubai_brashi(sura_t, rangi, 255);
-            turubai_duara(sura_t, x + 22, ry + 19, 4);
-            sura_rangi(SURA_MAANDISHI);
-            sura_lebo_kati(m->jina, x + 38, ry + 3, 13);
-            sura_rangi(SURA_HAFIFU);
-            sura_lebo(m->cheo, x + 38, ry + 20, 11);
+            kama (mtu == mkutano_mteule) {
+                turubai_brashi(sura_t, SURA_LAFUDHI, 28);
+                turubai_mviringo(sura_t, x + 6, ry, MKUTANO_ORODHA - 12, MKUTANO_SAFU - 2, 5);
+            }
+            kama (mtu < 0) {
+                turubai_brashi(sura_t, SURA_LAFUDHI, 255);
+                turubai_duara(sura_t, x + 20, ry + 12, 4);
+                sura_rangi(SURA_MAANDISHI);
+                sura_lebo_kati(ui("The Adviser"), x + 32, ry + 4, 12);
+            } sivyo {
+                MhusikaWaDola* m = wahusika_pata(w, mtu);
+                n64 ndani = wahusika_kina(w, mtu);
+                kama (ndani > 3) { ndani = 3; }
+                n64 xi = x + 14 + ndani * 10;
+                n64 rangi = SURA_HAFIFU;
+                kama (m->msimamo >= 15) { rangi = SURA_CHANYA; }
+                kama (m->msimamo <= 0 - 15) { rangi = SURA_HASI; }
+                turubai_brashi(sura_t, rangi, 255);
+                turubai_duara(sura_t, xi + 4, ry + 12, 3);
+                // cheo ndicho kinachotambulisha mtu kwenye mti; jina liko kwenye kadi
+                kama (mtu == mkutano_ofisi) { sura_rangi(SURA_LAFUDHI); }
+                sivyo { sura_rangi(SURA_MAANDISHI); }
+                turubai_kata(sura_t, x, ry, MKUTANO_ORODHA - 10, MKUTANO_SAFU);
+                sura_lebo(m->cheo, xi + 14, ry + 4, 12);
+                turubai_kata_yote(sura_t);
+                kama (mtu == mkutano_ofisi) {
+                    turubai_brashi(sura_t, SURA_LAFUDHI, 255);
+                    turubai_mviringo(sura_t, x + 3, ry + 3, 3, MKUTANO_SAFU - 8, 1);
+                }
+            }
         }
-        i = i + 1;
+        mstari = mstari + 1;
+        s = s + 1;
+    }
+    // kuna zaidi chini: kivuli chembamba
+    kama (s < mkutano_idadi_ya_safu) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo_kulia("...", x + MKUTANO_ORODHA - 16, y + h - 20, 12);
+    }
+}
+
+// Kitufe cha kitendo; `hai` = 0 hukionyesha kimefifia.
+w0 skrini_mkutano_kitufe(n8* lebo, n64 x, n64 y, n32 hai) {
+    n64 uwazi = 255;
+    kama (hai == 0) { uwazi = 90; }
+    turubai_brashi(sura_t, SURA_PANELI_JUU, uwazi);
+    turubai_mviringo(sura_t, x, y, 156, 30, 7);
+    turubai_brashi(sura_t, SURA_MAANDISHI, uwazi);
+    n64 wl = maandishi_upana(sura_kati, lebo, 12);
+    maandishi_chora(sura_t, sura_kati, lebo, x + (156 - wl) / 2, y + 7, 12);
+}
+
+// Kadi ya aliyechaguliwa: utambulisho, msimamo, mkubwa wake, na katiba ya cheo.
+w0 skrini_mkutano_kadi_chora(Dola* d, Wahusika* w, MhusikaWaDola* m, n64 xr, n64 y, n64 wr) {
+    n8 chombo[200];
+    sura_paneli(xr, y, wr, 96, 0);
+    kama (m == 0) {
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_nene(ui("The Adviser"), xr + 16, y + 10, 18);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(ui("Weighs the consequences of what you intend before you act."), xr + 16, y + 38, 12);
+        sura_lebo(ui("Speaks only to you."), xr + 16, y + 58, 12);
+        rudisha;
+    }
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(m->jina, xr + 16, y + 8, 18);
+    n8* chama = ui("No party");
+    kama (m->chama != 0) { chama = m->chama; }
+    n8 umri[16];
+    sura_namba(umri, m->umri);
+    mfuatano_umbiza(chombo, 200, "%s  ·  %s  ·  %s, %s, %s", m->cheo, chama, umri, tabia_jina(m->tabia_1), tabia_jina(m->tabia_2), 0);
+    sura_rangi(SURA_HAFIFU);
+    turubai_kata(sura_t, xr, y, wr - 150, 96);
+    sura_lebo(chombo, xr + 16, y + 35, 12);
+    // mkubwa wake
+    MhusikaWaDola* bosi = wahusika_pata(w, m->bosi);
+    kama (bosi != 0) { mfuatano_umbiza(chombo, 200, ui("Reports to the %s, %s"), bosi->cheo, bosi->jina, 0, 0, 0, 0); }
+    sivyo { nakili_mfuatano(chombo, ui("Answers to no superior")); }
+    sura_lebo(chombo, xr + 16, y + 54, 12);
+    // katiba ya cheo: namna kinavyojazwa, mteuzi, uhakiki
+    MhusikaWaDola* mteuzi = wahusika_pata(w, m->mteuzi);
+    n8* hakiki = "";
+    n8* baraza = "";
+    kama (m->uhakiki >= 0 && m->uhakiki < d->mabaraza) { hakiki = ui(", confirmed by the "); baraza = d->baraza_jina[m->uhakiki]; }
+    kama (m->ujazaji == UJAZAJI_KUTEULIWA && mteuzi != 0) { mfuatano_umbiza(chombo, 200, ui("Appointed by the %s%s%s"), mteuzi->cheo, hakiki, baraza, 0, 0, 0); }
+    sivyo { nakili_mfuatano(chombo, ujazaji_jina(m->ujazaji)); }
+    sura_lebo(chombo, xr + 16, y + 73, 12);
+    turubai_kata_yote(sura_t);
+    n8 ms[16];
+    sura_namba(ms, m->msimamo);
+    mfuatano_umbiza(chombo, 200, "%s (%s)", msimamo_jina(m->msimamo), ms, 0, 0, 0, 0);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kulia(chombo, xr + wr - 16, y + 12, 13);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo_kulia(ui("attitude to you"), xr + wr - 16, y + 32, 11);
+}
+
+// Maombi ya wanaotaka kumwona mchezaji zamu hii.
+w0 skrini_mkutano_maombi_chora(Mchezo* g, Wahusika* w, n64 xr, n64 y, n64 wr) {
+    mkutano_idadi_ya_maombi = katiba_maombi_yanayoingia(w, mkutano_ofisi, g->zamu_ya_sasa, mkutano_maombi, 3);
+    n64 wq = (wr - 24) / 3;
+    n64 q = 0;
+    wakati (q < mkutano_idadi_ya_maombi) {
+        MhusikaWaDola* m = wahusika_pata(w, mkutano_maombi[q]);
+        n64 xq = xr + q * (wq + 12);
+        sura_paneli(xq, y, wq, 52, 0);
+        turubai_kata(sura_t, xq, y, wq - 8, 52);
+        sura_rangi(SURA_LAFUDHI);
+        sura_lebo_kati(ui("ASKS TO SEE YOU"), xq + 12, y + 6, 9);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kati(m->cheo, xq + 12, y + 19, 12);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(katiba_sababu_ya_ombi(m, g->zamu_ya_sasa), xq + 12, y + 35, 11);
+        turubai_kata_yote(sura_t);
+        q = q + 1;
+    }
+}
+
+w0 skrini_mkutano_mazungumzo_chora(MhusikaWaDola* m, n64 xr, n64 ym, n64 wr, n64 hm) {
+    sura_paneli(xr, ym, wr, hm, ui("CONVERSATION"));
+    n64 yy = ym + 34;
+    n64 y_mwisho = ym + hm - 30;
+    kama (mkutano_ujumbe[0] != 0) {
+        sura_rangi(SURA_LAFUDHI);
+        yy = skrini_mkutano_aya(mkutano_ujumbe, xr + 16, yy, wr - 32, 12, y_mwisho);
+        yy = yy + 6;
+    }
+    kama (mkutano_kauli[0] == 0) {
+        sura_rangi(SURA_HAFIFU);
+        kama (mkutano_ruhusa) { sura_lebo(ui("Say what you intend, ask a question, or give an order. Press Enter to send."), xr + 16, yy, 12); }
+        sivyo { sura_lebo(ui("This official is above you. Ask your assistant to request a meeting first."), xr + 16, yy, 12); }
+        rudisha;
+    }
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo_kati(ui("YOU"), xr + 16, yy, 10);
+    sura_rangi(SURA_MAANDISHI);
+    yy = skrini_mkutano_aya(mkutano_kauli, xr + 16, yy + 16, wr - 32, 13, y_mwisho);
+    yy = yy + 8;
+    n8* nani = ui("THE ADVISER");
+    kama (m != 0) { nani = m->jina; }
+    sura_rangi(SURA_LAFUDHI);
+    sura_lebo_kati(nani, xr + 16, yy, 10);
+    kama (mkutano_hali == 1) { sura_rangi(SURA_HAFIFU); sura_lebo(ui("is considering your words..."), xr + 16, yy + 16, 13); }
+    kama (mkutano_hali == 3) { sura_rangi(SURA_HASI); sura_lebo(skrini_mkutano_kosa_jina(mkutano_kosa), xr + 16, yy + 16, 13); }
+    kama (mkutano_hali == 2) {
+        sura_rangi(SURA_MAANDISHI);
+        skrini_mkutano_aya(mkutano_jibu, xr + 16, yy + 16, wr - 32, 13, y_mwisho);
+        n64 xa = xr + 16;
+        xa = skrini_mkutano_athari_chora(ui("Attitude"), mkutano_athari[ATHARI_MSIMAMO], xa, ym + hm - 24);
+        xa = skrini_mkutano_athari_chora(ui("Stability"), mkutano_athari[ATHARI_UTULIVU], xa, ym + hm - 24);
+        xa = skrini_mkutano_athari_chora(ui("Legitimacy"), mkutano_athari[ATHARI_UHALALI], xa, ym + hm - 24);
+        xa = skrini_mkutano_athari_chora(ui("Treasury"), mkutano_athari[ATHARI_HAZINA], xa, ym + hm - 24);
+        kama (xa == xr + 16) { sura_rangi(SURA_HAFIFU); sura_lebo(ui("No measurable consequence."), xa, ym + hm - 24, 12); }
     }
 }
 
@@ -238,107 +523,73 @@ w0 skrini_mkutano_chora(Mchezo* g, Turubai* t, n64 taifa) {
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
     Dola* d = skrini_siasa_dola(g, taifa);
-    kama (tn == 0 || d == 0) { rudisha; }
-    kama (taifa != mkutano_taifa) { mkutano_taifa = taifa; mkutano_mteule = 0 - 1; mkutano_hali = 0; mkutano_kauli[0] = 0; mkutano_jibu[0] = 0; }
-    Wahusika* w = wahusika_wa_taifa(taifa, d);
+    Wahusika* w = skrini_mkutano_watu(g, taifa);
+    kama (tn == 0 || d == 0 || w == 0) { rudisha; }
+    kama (taifa != mkutano_taifa) {
+        mkutano_taifa = taifa;
+        mkutano_mteule = 0 - 1;
+        mkutano_ofisi = 0;
+        mkutano_tembea = 0;
+        mkutano_hali = 0;
+        mkutano_kauli[0] = 0;
+        mkutano_jibu[0] = 0;
+        mkutano_ujumbe[0] = 0;
+    }
     kama (mkutano_mteule >= w->idadi) { mkutano_mteule = 0 - 1; }
+    kama (mkutano_ofisi >= w->idadi) { mkutano_ofisi = 0; }
+    mkutano_jenga_safu(w);
     MhusikaWaDola* m = wahusika_pata(w, mkutano_mteule);
+    MhusikaWaDola* mimi = wahusika_pata(w, mkutano_ofisi);
+    // ruhusa ya kuzungumza: Mshauri, msaidizi, walio chini au sawa, na waliokubali mkutano
+    mkutano_ruhusa = 1;
+    kama (m != 0 && mimi != 0 && mkutano_mteule != w->msaidizi && mkutano_mteule != mkutano_ofisi) {
+        kama (m->ngazi > mimi->ngazi && m->mkutano != 1) { mkutano_ruhusa = 0; }
+    }
 
-    n64 x = SKRINI_UPANA_WA_PEMBENI + 25;
-    n64 y = SKRINI_UPAU_WA_JUU + 25;
+    n64 x = mkutano_x();
+    n64 y = mkutano_y();
     n64 wote = t->upana - x - 24;
-    n8 kichwa[96];
-    mfuatano_umbiza(kichwa, 96, ui("You hold the office of %s"), ngazi_jina(mkutano_ngazi_ya_mchezaji), 0, 0, 0, 0, 0);
+    n8 kichwa[160];
+    mfuatano_umbiza(kichwa, 160, ui("You hold the office of %s  ·  %s"), skrini_mkutano_cheo_cha_mchezaji(w), dola_aina_jina(d->aina), 0, 0, 0, 0);
     turubai_brashi(t, tn->rangi, 255);
-    turubai_mviringo(t, x, y + 6, 24, 16, 4);
-    sura_kichwa_ukurasa(tn->jina, kichwa, x + 36, y - 5);
-    y = y + 62;
+    turubai_mviringo(t, x, y - 56, 24, 16, 4);
+    sura_kichwa_ukurasa(tn->jina, kichwa, x + 36, y - 67);
     n64 h = t->kimo - y - 16;
     skrini_mkutano_orodha_chora(w, x, y, h);
 
-    // kulia: kadi ya mtu, viashiria, mazungumzo, ingizo
-    n64 xr = x + MKUTANO_ORODHA + 12;
+    n64 xr = mkutano_xr();
     n64 wr = wote - MKUTANO_ORODHA - 12;
-    n8 chombo[160];
-    sura_paneli(xr, y, wr, 96, 0);
-    kama (m == 0) {
-        sura_rangi(SURA_MAANDISHI);
-        sura_lebo_nene(ui("The Adviser"), xr + 16, y + 10, 18);
-        sura_rangi(SURA_HAFIFU);
-        sura_lebo(ui("Weighs the consequences of what you intend before you act."), xr + 16, y + 38, 12);
-        sura_lebo(ui("Speaks only to you."), xr + 16, y + 58, 12);
-    } sivyo {
-        sura_rangi(SURA_MAANDISHI);
-        sura_lebo_nene(m->jina, xr + 16, y + 10, 18);
-        n8* chama = ui("No party");
-        kama (m->chama != 0) { chama = m->chama; }
-        mfuatano_umbiza(chombo, 160, "%s  ·  %s", m->cheo, chama, 0, 0, 0, 0);
-        sura_rangi(SURA_HAFIFU);
-        sura_lebo(chombo, xr + 16, y + 38, 12);
-        n8 umri[16];
-        sura_namba(umri, m->umri);
-        mfuatano_umbiza(chombo, 160, ui("Aged %s  ·  %s, %s  ·  %s"), umri, tabia_jina(m->tabia_1), tabia_jina(m->tabia_2), itikadi_jina(m->itikadi), 0, 0);
-        sura_lebo(chombo, xr + 16, y + 58, 12);
-        n8 ms[16];
-        sura_namba(ms, m->msimamo);
-        mfuatano_umbiza(chombo, 160, "%s (%s)", msimamo_jina(m->msimamo), ms, 0, 0, 0, 0);
-        sura_rangi(SURA_MAANDISHI);
-        sura_lebo_kulia(chombo, xr + wr - 16, y + 14, 13);
-        sura_rangi(SURA_HAFIFU);
-        sura_lebo_kulia(ui("attitude to you"), xr + wr - 16, y + 34, 11);
-    }
-    n64 yk = y + 108;
+    skrini_mkutano_kadi_chora(d, w, m, xr, y, wr);
+    // vitendo vya katiba
+    n64 yb = mkutano_y_vitufe();
+    n32 ni_mtu = m != 0;
+    skrini_mkutano_kitufe(ui("Request meeting"), xr, yb, ni_mtu);
+    skrini_mkutano_kitufe(ui("Dismiss and replace"), xr + 164, yb, ni_mtu && katiba_anaweza_kuteua(w, mkutano_ofisi, mkutano_mteule));
+    skrini_mkutano_kitufe(ui("Take this office"), xr + 328, yb, ni_mtu && mkutano_mteule != mkutano_ofisi && mkutano_mteule != w->msaidizi);
+    // viashiria vya dola
+    n64 yk = mkutano_y_viashiria();
     n64 wk = (wr - 24) / 3;
     skrini_mkutano_kiashiria(ui("STABILITY"), d->utulivu, xr, yk, wk, SURA_CHANYA);
     skrini_mkutano_kiashiria(ui("LEGITIMACY"), d->uhalali, xr + wk + 12, yk, wk, SURA_BAHARI);
     skrini_mkutano_kiashiria(ui("TREASURY"), d->hazina, xr + 2 * (wk + 12), yk, wk, SURA_LAFUDHI);
+    skrini_mkutano_maombi_chora(g, w, xr, mkutano_y_maombi(), wr);
 
-    // mazungumzo
-    n64 ym = yk + 44;
+    n64 ym = mkutano_y_mazungumzo();
     n64 h_ingizo = 44;
-    n64 hm = y + h - ym - h_ingizo - 12;
-    sura_paneli(xr, ym, wr, hm, ui("CONVERSATION"));
-    n64 yy = ym + 36;
-    n64 y_mwisho = ym + hm - 34;
-    kama (mkutano_kauli[0] == 0) {
-        sura_rangi(SURA_HAFIFU);
-        sura_lebo(ui("Say what you intend, ask a question, or give an order. Press Enter to send."), xr + 16, yy, 12);
-    } sivyo {
-        sura_rangi(SURA_HAFIFU);
-        sura_lebo_kati(ui("YOU"), xr + 16, yy, 10);
-        sura_rangi(SURA_MAANDISHI);
-        yy = skrini_mkutano_aya(mkutano_kauli, xr + 16, yy + 16, wr - 32, 13, y_mwisho);
-        yy = yy + 8;
-        n8* nani = ui("THE ADVISER");
-        kama (m != 0) { nani = m->jina; }
-        sura_rangi(SURA_LAFUDHI);
-        sura_lebo_kati(nani, xr + 16, yy, 10);
-        kama (mkutano_hali == 1) { sura_rangi(SURA_HAFIFU); sura_lebo(ui("is considering your words..."), xr + 16, yy + 16, 13); }
-        kama (mkutano_hali == 3) { sura_rangi(SURA_HASI); sura_lebo(skrini_mkutano_kosa_jina(mkutano_kosa), xr + 16, yy + 16, 13); }
-        kama (mkutano_hali == 2) {
-            sura_rangi(SURA_MAANDISHI);
-            skrini_mkutano_aya(mkutano_jibu, xr + 16, yy + 16, wr - 32, 13, y_mwisho);
-            // athari zilizopimwa na AI
-            n64 xa = xr + 16;
-            xa = skrini_mkutano_athari_chora(ui("Attitude"), mkutano_athari[ATHARI_MSIMAMO], xa, ym + hm - 26);
-            xa = skrini_mkutano_athari_chora(ui("Stability"), mkutano_athari[ATHARI_UTULIVU], xa, ym + hm - 26);
-            xa = skrini_mkutano_athari_chora(ui("Legitimacy"), mkutano_athari[ATHARI_UHALALI], xa, ym + hm - 26);
-            xa = skrini_mkutano_athari_chora(ui("Treasury"), mkutano_athari[ATHARI_HAZINA], xa, ym + hm - 26);
-            kama (xa == xr + 16) { sura_rangi(SURA_HAFIFU); sura_lebo(ui("No measurable consequence."), xa, ym + hm - 26, 12); }
-        }
-    }
+    n64 hm = y + h - ym - h_ingizo - 10;
+    kama (hm < 90) { hm = 90; }
+    skrini_mkutano_mazungumzo_chora(m, xr, ym, wr, hm);
     // ingizo
-    n64 yi = y + h - h_ingizo;
+    n64 yi = ym + hm + 10;
     turubai_brashi(t, SURA_PANELI_JUU, 255);
     turubai_mviringo(t, xr, yi, wr, h_ingizo, 8);
-    turubai_brashi(t, SURA_LAFUDHI, 120);
-    turubai_mpaka(t, xr, yi, wr, h_ingizo, 8);
+    kama (mkutano_ruhusa) { turubai_brashi(t, SURA_LAFUDHI, 120); turubai_mpaka(t, xr, yi, wr, h_ingizo, 8); }
     kama (mkutano_urefu == 0) {
         sura_rangi(SURA_HAFIFU);
-        sura_lebo(ui("Type here..."), xr + 16, yi + 13, 13);
+        kama (mkutano_ruhusa) { sura_lebo(ui("Type here..."), xr + 16, yi + 13, 13); }
+        sivyo { sura_lebo(ui("No meeting has been granted."), xr + 16, yi + 13, 13); }
     } sivyo {
         sura_rangi(SURA_MAANDISHI);
-        // onyesha mwisho wa maandishi yakizidi upana
         n64 mwanzo = 0;
         wakati (maandishi_upana(sura_kawaida, &mkutano_ingizo[mwanzo], 13) > wr - 40) { mwanzo = mwanzo + 1; }
         sura_lebo(&mkutano_ingizo[mwanzo], xr + 16, yi + 13, 13);
