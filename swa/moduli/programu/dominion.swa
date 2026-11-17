@@ -10,6 +10,8 @@ husisha { moduli/skrini/mipangilio.swa }
 husisha { moduli/skrini/kuwasha.swa }
 husisha { moduli/skrini/mkutano.swa }
 husisha { moduli/skrini/dashibodi.swa }
+husisha { moduli/skrini/kalenda.swa }
+husisha { moduli/skrini/kikasha.swa }
 husisha { moduli/onyesho/wayland/dirisha.swa }
 
 // dominion.swa -- programu ya mchezo: dirisha la Wayland, mchezo halisi,
@@ -62,6 +64,8 @@ n64 SKRINI_RAMANI = 7;
 n64 SKRINI_MIPANGILIO = 8;
 n64 SKRINI_MKUTANO = 9;
 n64 SKRINI_DUNIA_YOTE = 10;
+n64 SKRINI_KIKASHA = 11;
+n64 SKRINI_KALENDA = 12;
 
 // Skrini zote zisizo ramani: kila moja huchora taifa lililochaguliwa.
 w0 chora_skrini_ya_taifa(Mchezo* g, Turubai* t, n64 skrini, n64 taifa) {
@@ -74,12 +78,14 @@ w0 chora_skrini_ya_taifa(Mchezo* g, Turubai* t, n64 skrini, n64 taifa) {
     kama (skrini == SKRINI_MIPANGILIO) { skrini_mipangilio_chora(g, t); rudisha; }
     kama (skrini == SKRINI_MKUTANO) { skrini_mkutano_chora(g, t, taifa); rudisha; }
     kama (skrini == SKRINI_DUNIA_YOTE) { skrini_muhtasari_chora(g, t); rudisha; }
+    kama (skrini == SKRINI_KIKASHA) { skrini_kikasha_chora(g, t, taifa); rudisha; }
+    kama (skrini == SKRINI_KALENDA) { skrini_kalenda_chora(g, t, taifa); rudisha; }
     skrini_dashibodi_chora(g, t, taifa);
 }
 
 // ---------- hali ya programu ----------
 
-n64 MD_IDADI = 11;              // dirisha moja kwa kila skrini (faharisi = SKRINI_*)
+n64 MD_IDADI = 13;              // dirisha moja kwa kila skrini (faharisi = SKRINI_*)
 n64 MD_KICHWA = 38;             // kimo cha kichwa cha dirisha
 n64 MD_MPITO = 14;              // fremu za animesheni ya kufunguka
 n64 MD_KONA = 18;               // eneo la kona ya kubadili ukubwa
@@ -126,6 +132,7 @@ muundo Hali {
     Turubai* msingi;        // ramani na fremu ya mchezo, tayari kunakiliwa
     n64 shift;              // Shift imebonyezwa
     n64 skrini_nzima;       // 1 = skrini nzima (F11 hubadili)
+    n64 fungua_baadaye;     // dirisha la kufungua baada ya bofya (au -1)
 }
 
 w0 chafua_msingi(Hali* h) {
@@ -224,6 +231,8 @@ n8* md_jina_kubwa(n64 id) {
     kama (id == SKRINI_MIPANGILIO) { rudisha ui("SETTINGS"); }
     kama (id == SKRINI_MKUTANO) { rudisha ui("GOVERNMENT"); }
     kama (id == SKRINI_DUNIA_YOTE) { rudisha ui("WORLD"); }
+    kama (id == SKRINI_KIKASHA) { rudisha ui("INBOX"); }
+    kama (id == SKRINI_KALENDA) { rudisha ui("CALENDAR"); }
     rudisha ui("OVERVIEW");
 }
 
@@ -237,6 +246,8 @@ n8* md_jina(n64 id) {
     kama (id == SKRINI_MIPANGILIO) { rudisha ui("Settings"); }
     kama (id == SKRINI_MKUTANO) { rudisha ui("Meetings"); }
     kama (id == SKRINI_DUNIA_YOTE) { rudisha ui("World"); }
+    kama (id == SKRINI_KIKASHA) { rudisha ui("Inbox"); }
+    kama (id == SKRINI_KALENDA) { rudisha ui("Calendar"); }
     rudisha ui("Overview");
 }
 
@@ -297,7 +308,7 @@ w0 md_fungua(Hali* h, Dirisha* d, n64 id) {
             m->h = 620;
             kama (id == SKRINI_MIPANGILIO) { m->w = 660; m->h = 700; }
             // dashibodi hujaza eneo la ramani
-            kama (id == SKRINI_MUHTASARI) { m->w = d->upana; m->h = d->kimo; }
+            kama (id == SKRINI_MUHTASARI || id == SKRINI_KALENDA || id == SKRINI_KIKASHA) { m->w = d->upana; m->h = d->kimo; }
             m->x = ramani_x() + 20 + h->n_z * 28;
             m->y = SKRINI_UPAU_WA_JUU + 14 + h->n_z * 28;
         }
@@ -754,12 +765,34 @@ w0 bofya_skrini(Mchezo* g, Hali* h, n64 skrini, n64 upana, n64 kimo, n64 px, n64
         }
     }
     kama (skrini == SKRINI_DIPLOMASIA) { bofya_diplomasia(g, h, upana, kimo, px, py); }
+    kama (skrini == SKRINI_KALENDA) { skrini_kalenda_bofya(upana, kimo, tarehe_siku_ya_zamu(g->zamu_ya_sasa), px, py); }
+    kama (skrini == SKRINI_KIKASHA) { bofya_kikasha(g, h, upana, kimo, px, py); }
     kama (skrini == SKRINI_MKUTANO) {
         Dola* dola = skrini_siasa_dola(g, h->taifa);
         Wahusika* watu = skrini_mkutano_watu(g, h->taifa);
         n64 kitendo = skrini_mkutano_bofya(upana, px, py);
         kama (watu != 0 && dola != 0 && kitendo > 0 - 2) { skrini_mkutano_tekeleza(kitendo, dola, watu); }
     }
+}
+
+// Kitendo cha kikasha: kumwona mtumaji sasa, kumpangia, au kufungua kalenda.
+w0 bofya_kikasha(Mchezo* g, Hali* h, n64 upana, n64 kimo, n64 px, n64 py) {
+    n64 kitendo = skrini_kikasha_bofya(upana, kimo, px, py);
+    kama (kitendo == KIKASHA_KITENDO_HAKUNA) { rudisha; }
+    chafua_msingi(h);                                   // beji ya urambazaji
+    Ujumbe* u = kikasha_pata(kikasha_teule);
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    Wahusika* watu = skrini_mkutano_watu(g, tm->faharisi_ya_taifa_la_mchezaji);
+    kama (u == 0 || watu == 0) { rudisha; }
+    kama (kitendo == KIKASHA_KITENDO_ONANA) {
+        skrini_mkutano_fungua_na(u->mtumaji, watu);
+        h->fungua_baadaye = SKRINI_MKUTANO;
+    }
+    kama (kitendo == KIKASHA_KITENDO_PANGA) {
+        skrini_mkutano_panga(u->mtumaji, 2, watu);
+        chafua_madirisha(h);
+    }
+    kama (kitendo == KIKASHA_KITENDO_KALENDA) { h->fungua_baadaye = SKRINI_KALENDA; }
 }
 
 w0 bofya_diplomasia(Mchezo* g, Hali* h, n64 upana, n64 kimo, n64 px, n64 py) {
@@ -822,6 +855,12 @@ w0 bonyeza(Mchezo* g, Hali* h, Dirisha* d, n64 px, n64 py) {
         SKRINI_UPAU_WA_JUU = juu;
         m->chafu = 1;
         h->haja = 1;
+        kama (h->fungua_baadaye >= 0) {
+            n64 ijayo = h->fungua_baadaye;
+            h->fungua_baadaye = 0 - 1;
+            md_fungua(h, d, ijayo);
+            h->md[ijayo].chafu = 1;
+        }
         rudisha;
     }
     kama (py < SKRINI_UPAU_WA_JUU) {
@@ -916,9 +955,20 @@ w0 achia(Hali* h, Dirisha* d, n64 px, n64 py) {
 }
 
 // Zamu inayofuata: uigaji husonga, ramani na madirisha huchorwa upya.
+// Ujumbe wa zamu ya sasa kwa taifa la mchezaji, na beji ya kikasha.
+w0 sasisha_kikasha(Mchezo* g) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 taifa = tm->faharisi_ya_taifa_la_mchezaji;
+    Dola* dola = skrini_siasa_dola(g, taifa);
+    Wahusika* watu = skrini_mkutano_watu(g, taifa);
+    kama (dola != 0 && watu != 0) { kikasha_zamu(dola, watu, mkutano_ofisi, g->zamu_ya_sasa); }
+    skrini_nav_beji_kikasha = kikasha_visivyosomwa();
+}
+
 w0 zamu_inayofuata(Mchezo* g, Hali* h) {
     mchezo_sasisha(g);
     mchezo_maliza_zamu(g);
+    sasisha_kikasha(g);
     chafua_msingi(h);
     chafua_madirisha(h);
 }
@@ -1031,6 +1081,10 @@ w0 chora_msingi(Mchezo* g, Hali* h, Dirisha* d) {
 
 // Fremu moja: msingi, kisha madirisha kwa mpangilio, kisha kadi ya taifa.
 w0 chora_fremu(Mchezo* g, Hali* h, Dirisha* d, Turubai* t) {
+    kama (skrini_nav_beji_kikasha != kikasha_visivyosomwa()) {
+        skrini_nav_beji_kikasha = kikasha_visivyosomwa();
+        h->haja_msingi = 1;
+    }
     kama (h->haja_msingi || h->msingi == 0) { chora_msingi(g, h, d); }
     n64 i = 0;
     wakati (i < h->n_z) {
@@ -1190,6 +1244,8 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     h->buruta = 0 - 1;
     h->elea_taifa = 0 - 1;
     h->bandika_taifa = 0 - 1;
+    h->fungua_baadaye = 0 - 1;
+    sasisha_kikasha(g);
     kama (dirishani == 0 && fremu_upeo == 0 && bila_upana == 0) { h->skrini_nzima = 1; }
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     Atlasi* a = mchezo_pata_atlasi(g);

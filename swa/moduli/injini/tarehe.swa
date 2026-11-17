@@ -1,0 +1,132 @@
+husisha { moduli/onyesho/maneno.swa }
+
+// tarehe.swa -- kalenda ya mchezo: kila zamu ni wiki moja.
+//
+// Siku 0 ni Jumatatu, 4 Januari 1954; zamu 1 huanza siku hiyo, zamu 2 wiki
+// moja baadaye, na kadhalika. Tarehe ni hesabu safi kutoka namba ya siku,
+// hivyo hakuna hali ya kuhifadhi: zamu ndiyo inayoamua tarehe.
+
+n64 TAREHE_MWAKA_WA_MWANZO = 1954;
+n64 TAREHE_SIKU_ZA_WIKI = 7;
+
+n32 tarehe_mwaka_mrefu(n64 mwaka) {
+    kama (mwaka % 400 == 0) { rudisha 1; }
+    kama (mwaka % 100 == 0) { rudisha 0; }
+    rudisha mwaka % 4 == 0;
+}
+
+n64 tarehe_siku_za_mwezi(n64 mwaka, n64 mwezi) {
+    kama (mwezi == 2) {
+        kama (tarehe_mwaka_mrefu(mwaka)) { rudisha 29; }
+        rudisha 28;
+    }
+    kama (mwezi == 4 || mwezi == 6 || mwezi == 9 || mwezi == 11) { rudisha 30; }
+    rudisha 31;
+}
+
+// Siku ya kwanza ya zamu (siku 0 = Jumatatu 4 Januari 1954).
+n64 tarehe_siku_ya_zamu(n64 zamu) {
+    kama (zamu < 1) { rudisha 0; }
+    rudisha (zamu - 1) * TAREHE_SIKU_ZA_WIKI;
+}
+
+// Namba ya siku ya tarehe (mwaka, mwezi 1..12, siku 1..31); inaweza kuwa hasi
+// kwa tarehe kabla ya 4 Januari 1954.
+n64 tarehe_siku_ya(n64 mwaka, n64 mwezi, n64 siku) {
+    n64 n = 0;
+    n64 y = TAREHE_MWAKA_WA_MWANZO;
+    wakati (y < mwaka) {
+        n64 urefu = 365;
+        kama (tarehe_mwaka_mrefu(y)) { urefu = 366; }
+        n = n + urefu;
+        y = y + 1;
+    }
+    n64 m = 1;
+    wakati (m < mwezi) { n = n + tarehe_siku_za_mwezi(mwaka, m); m = m + 1; }
+    rudisha n + siku - 4;
+}
+
+// Tarehe ya siku `n`: huandika mwaka, mwezi na siku ya mwezi.
+w0 tarehe_ya_siku(n64 n, n64* mwaka, n64* mwezi, n64* siku) {
+    n64 y = TAREHE_MWAKA_WA_MWANZO;
+    n64 baki = n + 3;                   // siku tangu 1 Januari 1954
+    wakati (baki < 0) {
+        y = y - 1;
+        n64 urefu = 365;
+        kama (tarehe_mwaka_mrefu(y)) { urefu = 366; }
+        baki = baki + urefu;
+    }
+    n32 bado = 1;
+    wakati (bado) {
+        n64 urefu = 365;
+        kama (tarehe_mwaka_mrefu(y)) { urefu = 366; }
+        kama (baki < urefu) { bado = 0; }
+        sivyo { baki = baki - urefu; y = y + 1; }
+    }
+    n64 m = 1;
+    wakati (baki >= tarehe_siku_za_mwezi(y, m)) {
+        baki = baki - tarehe_siku_za_mwezi(y, m);
+        m = m + 1;
+    }
+    mwaka[0] = y;
+    mwezi[0] = m;
+    siku[0] = baki + 1;
+}
+
+// Siku ya wiki: 0 Jumatatu .. 6 Jumapili.
+n64 tarehe_siku_ya_wiki(n64 n) {
+    n64 w = n % 7;
+    kama (w < 0) { w = w + 7; }
+    rudisha w;
+}
+
+n8* tarehe_jina_la_siku_fupi(n64 w) {
+    kama (w == 1) { rudisha ui("TUE"); }
+    kama (w == 2) { rudisha ui("WED"); }
+    kama (w == 3) { rudisha ui("THU"); }
+    kama (w == 4) { rudisha ui("FRI"); }
+    kama (w == 5) { rudisha ui("SAT"); }
+    kama (w == 6) { rudisha ui("SUN"); }
+    rudisha ui("MON");
+}
+
+n8* tarehe_jina_la_mwezi(n64 m) {
+    kama (m == 2) { rudisha ui("February"); }
+    kama (m == 3) { rudisha ui("March"); }
+    kama (m == 4) { rudisha ui("April"); }
+    kama (m == 5) { rudisha ui("May"); }
+    kama (m == 6) { rudisha ui("June"); }
+    kama (m == 7) { rudisha ui("July"); }
+    kama (m == 8) { rudisha ui("August"); }
+    kama (m == 9) { rudisha ui("September"); }
+    kama (m == 10) { rudisha ui("October"); }
+    kama (m == 11) { rudisha ui("November"); }
+    kama (m == 12) { rudisha ui("December"); }
+    rudisha ui("January");
+}
+
+// "4 January 1954"
+w0 tarehe_maandishi(n64 n, n8* nje, n64 uwezo) {
+    n64 y = 0;
+    n64 m = 0;
+    n64 d = 0;
+    tarehe_ya_siku(n, &y, &m, &d);
+    mfuatano_umbiza(nje, uwezo, "%d %s %d", d, tarehe_jina_la_mwezi(m), y, 0, 0, 0);
+}
+
+// "MON 04/01/1954"
+w0 tarehe_maandishi_mafupi(n64 n, n8* nje, n64 uwezo) {
+    n64 y = 0;
+    n64 m = 0;
+    n64 d = 0;
+    tarehe_ya_siku(n, &y, &m, &d);
+    n8 sd[4];
+    n8 sm[4];
+    sd[0] = 48 + d / 10;
+    sd[1] = 48 + d % 10;
+    sd[2] = 0;
+    sm[0] = 48 + m / 10;
+    sm[1] = 48 + m % 10;
+    sm[2] = 0;
+    mfuatano_umbiza(nje, uwezo, "%s %s/%s/%d", tarehe_jina_la_siku_fupi(tarehe_siku_ya_wiki(n)), sd, sm, y, 0, 0);
+}

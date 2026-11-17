@@ -1,0 +1,62 @@
+husisha { moduli/skrini/kalenda.swa }
+husisha { moduli/skrini/kikasha.swa }
+
+// jaribio_kalenda_kikasha.swa -- endesha zamu kadhaa (kikasha hujazwa kila
+// zamu), panga mkutano, kisha chora kalenda na kikasha kama ndani ya dirisha
+// na uandike fremu ghafi: <njia>.kalenda na <njia>.kikasha.
+//   jaribio_kalenda_kikasha <njia> [upana] [kimo]
+
+w0 andika_fremu(n8* njia, n8* kiambishi, Turubai* t) {
+    n8 jina[256];
+    mfuatano_umbiza(jina, 256, "%s%s", njia, kiambishi, 0, 0, 0, 0);
+    n64 fd = mfumo_fungua(jina, 577, 420);
+    mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
+    mfumo_funga(fd);
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) { andika("SHINDWA: mchezo_anzisha\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    n64 upana = 1680;
+    n64 kimo = 960;
+    kama (idadi_ya_hoja > 3) { upana = mfuatano_hadi_n64(hoja_za_mstari[2]); kimo = mfuatano_hadi_n64(hoja_za_mstari[3]); }
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 taifa = tm->faharisi_ya_taifa_la_mchezaji;
+    Dola* d = skrini_siasa_dola(g, taifa);
+    Wahusika* w = skrini_mkutano_watu(g, taifa);
+    n64 i = 0;
+    wakati (i < 6) {
+        kikasha_zamu(d, w, 0, g->zamu_ya_sasa);
+        mchezo_sasisha(g);
+        mchezo_maliza_zamu(g);
+        i = i + 1;
+    }
+    kikasha_zamu(d, w, 0, g->zamu_ya_sasa);
+    kama (kikasha_idadi < 6) { andika("SHINDWA: kikasha kina ujumbe %d tu\n", kikasha_idadi, 0, 0, 0, 0, 0); rudisha 1; }
+    // panga mkutano na waziri wa fedha siku mbili baadaye
+    mkutano_leo = tarehe_siku_ya_zamu(g->zamu_ya_sasa);
+    n64 fedha = wahusika_tafuta(w, "Minister of Finance");
+    skrini_mkutano_panga(fedha, 2, w);
+    kama (wahusika_pata(w, fedha)->mkutano != 3) { andika("SHINDWA: mkutano haukupangwa\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    Turubai* t = turubai_unda(upana, kimo);
+    SKRINI_UPANA_WA_PEMBENI = 0 - 9;
+    SKRINI_UPAU_WA_JUU = 0 - 13;
+    skrini_bila_fremu = 1;
+    // bofya siku ya mkutano kwenye kalenda: ratiba ionyeshe mkutano
+    skrini_kalenda_chora(g, t, taifa);
+    kalenda_teule = mkutano_leo + 2;
+    skrini_kalenda_chora(g, t, taifa);
+    kama (idadi_ya_hoja > 1) { andika_fremu(hoja_za_mstari[1], ".kalenda", t); }
+    // kikasha: bofya ujumbe wa pili kwenye orodha, kisha "Schedule"
+    n64 kabla = kikasha_visivyosomwa();
+    skrini_kikasha_chora(g, t, taifa);
+    n64 kitendo = skrini_kikasha_bofya(upana, kimo, kikasha_x() + 60, kikasha_y() + 48 + KIKASHA_SAFU + 10);
+    kama (kitendo != KIKASHA_KITENDO_CHAGUA || kikasha_visivyosomwa() >= kabla) { andika("SHINDWA: kuchagua ujumbe (%d)\n", kitendo, 0, 0, 0, 0, 0); rudisha 1; }
+    skrini_kikasha_chora(g, t, taifa);
+    kama (idadi_ya_hoja > 1) { andika_fremu(hoja_za_mstari[1], ".kikasha", t); }
+    andika("kalenda_kikasha: ujumbe %d, visivyosomwa %d\n", kikasha_idadi, kikasha_visivyosomwa(), 0, 0, 0, 0);
+    rudisha 0;
+}

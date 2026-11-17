@@ -310,7 +310,7 @@ w0 dashibodi_mikutano(Mchezo* g, Wahusika* w_, n64 x, n64 y, n64 w, n64 h) {
         n64 kp = KAZI_KATI;
         kama (m->ngazi >= 7) { kp = KAZI_JUU; }
         kama (m->ngazi <= 3) { kp = KAZI_CHINI; }
-        // hatua za mkutano: kuombwa (1/3), kupangwa (2/3), kufanyika (3/3)
+        // hatua za mkutano: kuombwa (1/3), kupangwa (2/3), tayari (3/3)
         chati_kadi_ya_kazi(x + 14 + k * (wk + DASHIBODI_PENGO), y + 48, wk, kp, m->cheo, katiba_sababu_ya_ombi(m, g->zamu_ya_sasa), 333, ui("Asked this turn"), ui("Waiting"), SURA_LAFUDHI, watu, 2);
         k = k + 1;
         i = i + 1;
@@ -324,9 +324,18 @@ w0 dashibodi_mikutano(Mchezo* g, Wahusika* w_, n64 x, n64 y, n64 w, n64 h) {
             watu[1] = m->jina;
             n8* hali_ya = ui("Accepted");
             n64 rangi = SURA_CHANYA;
-            n64 maendeleo = 666;
+            n64 maendeleo = 1000;
             kama (m->mkutano == 2) { hali_ya = ui("Declined"); rangi = SURA_HASI; maendeleo = 0; }
-            chati_kadi_ya_kazi(x + 14 + k * (wk + DASHIBODI_PENGO), y + 48, wk, KAZI_KATI, m->cheo, m->jina, maendeleo, ui("Requested by you"), hali_ya, rangi, watu, 2);
+            n8* tarehe_ya = ui("Requested by you");
+            kama (m->mkutano == 3) {
+                hali_ya = ui("Scheduled");
+                rangi = SURA_BAHARI;
+                maendeleo = 666;
+                tarehe_ya = tenga(48);
+                tarehe_maandishi_mafupi(m->mkutano_siku, tarehe_ya, 48);
+            }
+            kama (m->mkutano == 1) { hali_ya = ui("Ready"); maendeleo = 1000; }
+            chati_kadi_ya_kazi(x + 14 + k * (wk + DASHIBODI_PENGO), y + 48, wk, KAZI_KATI, m->cheo, m->jina, maendeleo, tarehe_ya, hali_ya, rangi, watu, 2);
             k = k + 1;
         }
         i = i + 1;

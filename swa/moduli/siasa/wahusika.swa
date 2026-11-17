@@ -81,7 +81,8 @@ muundo MhusikaWaDola {
     n64 umri;
     n64 msimamo;            // -100..100 kwa mchezaji
     n64 kizazi;             // huongezeka kila cheo kinapojazwa upya
-    n64 mkutano;            // 0 haujaombwa, 1 umekubaliwa, 2 umekataliwa
+    n64 mkutano;            // 0 haujaombwa, 1 umekubaliwa, 2 umekataliwa, 3 umepangwa
+    n64 mkutano_siku;       // siku ya mkutano uliopangwa (mkutano == 3)
 }
 
 n64 WAHUSIKA_JUU = 180;
