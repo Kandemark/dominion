@@ -17,9 +17,9 @@ kiambishi chake.
 4. Maandishi anayoyaona mchezaji hupitia `ui("...")`
    (`moduli/onyesho/maneno.swa`); msimbo na maoni ni Kiswahili.
 5. `hali`, `vunja` na `endelea` ni maneno muhimu ya Swa: hayatumiki kama majina.
-6. Mkusanyaji una kikomo cha vigeu 1024 vya ngazi ya juu kwa programu
-   nzima. Thamani za orodha ambazo msimbo hautaji kwa jina huandikwa kama
-   maoni (`//   BAJETI_JESHI = 0`) badala ya vigeu.
+6. Dominion inahitaji mkusanyaji wa Swa wenye kikomo cha vigeu vya ngazi
+   ya juu cha 65536 (lugha-swa/swa#406); kikomo cha zamani cha 1024
+   hakitoshi kwa programu nzima.
 
 ## Viambishi kwa saraka
 
@@ -43,6 +43,7 @@ kiambishi chake.
 | `moduli/siasa/katiba.swa` | `katiba_` | mamlaka ya kuteua, kufuta, uhakiki, mikutano |
 | `moduli/siasa/kalenda.swa` | `kalenda_` | shajara na matukio ya kudumu |
 | `moduli/siasa/kikasha.swa` | `kikasha_` | ujumbe wa kila zamu |
+| `moduli/siasa/nguvu.swa` | `nguvu_`, `hoja_`, `kazi_`, `jukumu_`, `HOJA_`, `KAZI_`, `JUKUMU_` | wajumbe wa mabaraza, hoja na kura, hongo, kazi za msaidizi, upinzani |
 | `moduli/siasa/` (kikundi, siasa, upinzani) | `siasa_` | mfumo wa siasa wa uigaji |
 | `moduli/akili/mshauri.swa` | `akili_` | mteja wa HTTP wa mshauri wa AI |
 | `moduli/akili/mazungumzo.swa` | `mazungumzo_`, `kumbukumbu_` | mazungumzo na kumbukumbu |
@@ -57,7 +58,11 @@ kiambishi chake.
 | `moduli/onyesho/bunge.swa` | `bunge_`, `BUNGE_` | michoro ya mabaraza |
 | `moduli/onyesho/dunia_halisi.swa` | `dunia_halisi_`, `dh_` | kupakia na kuchora dunia |
 | `moduli/onyesho/maneno.swa` | `maneno_`, `ui` | tafsiri ya kiolesura |
+| `moduli/onyesho/bofya.swa` | `bofya_` | maeneo ya kubofya yanayoandikishwa wakati wa kuchora |
 | `moduli/onyesho/wayland/` | `dirisha_`, `wayland_<sehemu>_` | mteja wa Wayland |
+| `moduli/skrini/jopo.swa` | `jopo_`, `kipimo_`, `KIPIMO_` | vipengele vya dashibodi vya kurasa za taifa |
+| `moduli/skrini/dola_ya_taifa.swa` | `skrini_siasa_dola`, `skrini_siasa_cheo` | dola ya kila taifa kwa kurasa zote |
+| `moduli/skrini/mkutano.swa` | `skrini_mkutano_`, `serikali_`, `mkutano_`, `SB_`, `NYUMBA_` | ukurasa wa serikali |
 | `moduli/skrini/dunia.swa` | `skrini_dunia_`, `habari_`, `dunia_bofya_`, `DUNIA_`, `HABARI_` | ukurasa wa World na habari za dunia |
 | `moduli/skrini/` | `skrini_<ukurasa>_`, na jina la ukurasa kwa kazi zake za ndani (`dashibodi_`, `mkutano_`, `kalenda_`, `kikasha_`, `mandhari_`, `kuwasha_`) | kurasa za mchezo |
 | `moduli/programu/dominion.swa` | majina ya programu (`bonyeza`, `chora_fremu`, `kadi_`, `fungua_ukurasa`) | dirisha, ingizo, kurasa |

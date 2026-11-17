@@ -9,11 +9,11 @@
 
 husisha { msingi/msingi_civ.swa }
 
-//   MAGENDO_SILAHA = 0
-//   MAGENDO_DAWA_ZA_KULEVYA = 1
-//   MAGENDO_BIDHAA = 2
-//   MAGENDO_BIASHARA_YA_BINADAMU = 3
-//   MAGENDO_BANDIA = 4
+n32 MAGENDO_SILAHA = 0;
+n32 MAGENDO_DAWA_ZA_KULEVYA = 1;
+n32 MAGENDO_BIDHAA = 2;
+n32 MAGENDO_BIASHARA_YA_BINADAMU = 3;
+n32 MAGENDO_BANDIA = 4;
 n32 MAGENDO_IDADI = 5;
 
 // SokoHaramuMazingira: hufunga viashiria vinne vya d64 vinavyopitishwa
