@@ -1,0 +1,410 @@
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+// mshauri.swa -- mshauri wa AI: usanidi wa mtoa huduma na mteja wa HTTP.
+//
+// Mchezaji huchagua mojawapo:
+//   0 hakuna       mshauri amezimwa
+//   1 wa ndani     modeli inayoendeshwa kwenye mashine hii (Ollama,
+//                  127.0.0.1:11434) -- hakuna ufunguo, hakuna mtandao
+//   2 maalum       seva yoyote inayozungumza itifaki ya "chat completions"
+//                  (anwani, bandari, modeli na ufunguo wake)
+//
+// Usanidi huhifadhiwa kwenye saves/akili kama mistari ya ufunguo=thamani:
+//   mtoa=1
+//   anwani=127.0.0.1
+//   bandari=11434
+//   modeli=llama3
+//   ufunguo=
+//   tokeni=400
+// Ufunguo hutumwa kama "Authorization: Bearer <ufunguo>".
+//
+// Mteja ni HTTP/1.1 ya wazi juu ya TCP kwa wito wa mfumo pekee. Hakuna TLS
+// bado, hivyo watoa huduma wa wingu (wanaohitaji https) hufikiwa kupitia
+// lango la ndani linalozungumza http; modeli ya ndani hufanya kazi moja
+// kwa moja.
+
+n64 AKILI_HAKUNA = 0;
+n64 AKILI_WA_NDANI = 1;
+n64 AKILI_MAALUM = 2;
+n64 AKILI_WATOA = 3;
+
+muundo AkiliUsanidi {
+    n64 mtoa;
+    n8* anwani;         // IPv4 ya nukta: "127.0.0.1"
+    n64 bandari;
+    n8* modeli;
+    n8* ufunguo;
+    n64 tokeni;         // kikomo cha urefu wa jibu (tokeni)
+}
+
+n64 AKILI_SYS_SOCKET = 41;
+n64 AKILI_SYS_CONNECT = 42;
+n64 AKILI_SYS_SETSOCKOPT = 54;
+
+AkiliUsanidi* akili_usanidi_chaguomsingi() {
+    AkiliUsanidi* u = tenga(ukubwa(AkiliUsanidi));
+    u->mtoa = AKILI_HAKUNA;
+    u->anwani = tenga(64);
+    u->modeli = tenga(128);
+    u->ufunguo = tenga(256);
+    nakili_mfuatano(u->anwani, "127.0.0.1");
+    u->bandari = 11434;
+    nakili_mfuatano(u->modeli, "llama3");
+    u->ufunguo[0] = 0;
+    u->tokeni = 400;
+    rudisha u;
+}
+
+// Nakili thamani ya mstari (baada ya '=') hadi mwisho wa mstari.
+w0 akili_nakili_thamani(n8* lengwa, n64 uwezo, n8* chanzo) {
+    n64 i = 0;
+    wakati (chanzo[i] != 0 && chanzo[i] != 10 && chanzo[i] != 13 && i < uwezo - 1) {
+        lengwa[i] = chanzo[i];
+        i = i + 1;
+    }
+    lengwa[i] = 0;
+}
+
+// Tumia mistari ya usanidi kutoka maandishi (yanayoishia sifuri).
+w0 akili_changanua_usanidi(AkiliUsanidi* u, n8* maandishi) {
+    n64 i = 0;
+    wakati (maandishi[i] != 0) {
+        n8* mstari = &maandishi[i];
+        kama (anza_kwa_mfuatano(mstari, "mtoa=")) {
+            u->mtoa = mfuatano_hadi_n64(&mstari[5]);
+            kama (u->mtoa < 0 || u->mtoa >= AKILI_WATOA) { u->mtoa = AKILI_HAKUNA; }
+        }
+        kama (anza_kwa_mfuatano(mstari, "anwani=")) { akili_nakili_thamani(u->anwani, 64, &mstari[7]); }
+        kama (anza_kwa_mfuatano(mstari, "bandari=")) { u->bandari = mfuatano_hadi_n64(&mstari[8]); }
+        kama (anza_kwa_mfuatano(mstari, "modeli=")) { akili_nakili_thamani(u->modeli, 128, &mstari[7]); }
+        kama (anza_kwa_mfuatano(mstari, "ufunguo=")) { akili_nakili_thamani(u->ufunguo, 256, &mstari[8]); }
+        kama (anza_kwa_mfuatano(mstari, "tokeni=")) {
+            u->tokeni = mfuatano_hadi_n64(&mstari[7]);
+            kama (u->tokeni < 16 || u->tokeni > 8192) { u->tokeni = 400; }
+        }
+        wakati (maandishi[i] != 0 && maandishi[i] != 10) { i = i + 1; }
+        kama (maandishi[i] == 10) { i = i + 1; }
+    }
+}
+
+AkiliUsanidi* akili_soma_usanidi(n8* njia) {
+    AkiliUsanidi* u = akili_usanidi_chaguomsingi();
+    n64 fd = mfumo_fungua(njia, 0, 0);
+    kama (fd < 0) { rudisha u; }
+    n8* bafa = tenga(2048);
+    n64 n = mfumo_soma(fd, bafa, 2047);
+    mfumo_funga(fd);
+    kama (n > 0) {
+        bafa[n] = 0;
+        akili_changanua_usanidi(u, bafa);
+    }
+    achilia bafa;
+    rudisha u;
+}
+
+// Andika usanidi kama mistari ya ufunguo=thamani. Hurudisha urefu.
+n64 akili_andika_usanidi(AkiliUsanidi* u, n8* bafa, n64 uwezo) {
+    rudisha mfuatano_umbiza(bafa, uwezo, "mtoa=%d\nanwani=%s\nbandari=%d\nmodeli=%s\nufunguo=%s\ntokeni=%d\n", u->mtoa, u->anwani, u->bandari, u->modeli, u->ufunguo, u->tokeni);
+}
+
+w0 akili_hifadhi_usanidi(AkiliUsanidi* u, n8* njia) {
+    mfumo_unda_saraka("saves", 493);
+    // ruhusa 0600: faili lina ufunguo wa mchezaji
+    n64 fd = mfumo_fungua(njia, 577, 384);
+    kama (fd < 0) { rudisha; }
+    n8* bafa = tenga(1024);
+    n64 n = akili_andika_usanidi(u, bafa, 1024);
+    mfumo_andika(fd, bafa, n);
+    mfumo_funga(fd);
+    achilia bafa;
+}
+
+// ---------- JSON ----------
+
+// Andika s kama maudhui ya mfuatano wa JSON (bila nukuu za nje).
+n64 akili_json_toroka(n8* lengwa, n64 uwezo, n8* s) {
+    n64 n = 0;
+    n64 i = 0;
+    wakati (s[i] != 0 && n < uwezo - 7) {
+        n64 c = s[i] & 255;
+        kama (c == 34 || c == 92) { lengwa[n] = 92; lengwa[n + 1] = c; n = n + 2; }
+        sivyo { kama (c == 10) { lengwa[n] = 92; lengwa[n + 1] = 110; n = n + 2; }
+        sivyo { kama (c == 13) { lengwa[n] = 92; lengwa[n + 1] = 114; n = n + 2; }
+        sivyo { kama (c == 9) { lengwa[n] = 92; lengwa[n + 1] = 116; n = n + 2; }
+        sivyo { kama (c >= 32) { lengwa[n] = c; n = n + 1; } } } } }
+        i = i + 1;
+    }
+    lengwa[n] = 0;
+    rudisha n;
+}
+
+n64 akili_heksa(n64 c) {
+    kama (c >= 48 && c <= 57) { rudisha c - 48; }
+    kama (c >= 97 && c <= 102) { rudisha c - 87; }
+    kama (c >= 65 && c <= 70) { rudisha c - 55; }
+    rudisha 0 - 1;
+}
+
+// Soma mfuatano wa JSON unaoanzia s (baada ya nukuu ya kufungua) hadi nukuu
+// ya kufunga, ukifungua toroka (\n, \", \uXXXX -> UTF-8). Hurudisha urefu.
+n64 akili_json_soma_mfuatano(n8* s, n8* lengwa, n64 uwezo) {
+    n64 n = 0;
+    n64 i = 0;
+    wakati (s[i] != 0 && s[i] != 34 && n < uwezo - 5) {
+        n64 c = s[i] & 255;
+        kama (c != 92) { lengwa[n] = c; n = n + 1; i = i + 1; }
+        sivyo {
+            n64 e = s[i + 1] & 255;
+            i = i + 2;
+            kama (e == 110) { lengwa[n] = 10; n = n + 1; }
+            kama (e == 116) { lengwa[n] = 32; n = n + 1; }
+            kama (e == 34 || e == 92 || e == 47) { lengwa[n] = e; n = n + 1; }
+            kama (e == 117) {
+                n64 cp = (akili_heksa(s[i] & 255) << 12) | (akili_heksa(s[i + 1] & 255) << 8) | (akili_heksa(s[i + 2] & 255) << 4) | akili_heksa(s[i + 3] & 255);
+                i = i + 4;
+                kama (cp < 128) { lengwa[n] = cp; n = n + 1; }
+                sivyo { kama (cp < 2048) { lengwa[n] = 192 | (cp >> 6); lengwa[n + 1] = 128 | (cp & 63); n = n + 2; }
+                sivyo { lengwa[n] = 224 | (cp >> 12); lengwa[n + 1] = 128 | ((cp >> 6) & 63); lengwa[n + 2] = 128 | (cp & 63); n = n + 3; } }
+            }
+        }
+    }
+    lengwa[n] = 0;
+    rudisha n;
+}
+
+// ---------- HTTP ----------
+
+// Swa haina toroka ya CR ndani ya mifuatano, kwa hiyo vichwa huandikwa kwa
+// LF pekee na kubadilishwa hapa kuwa CR LF, na mwisho wa vichwa hutafutwa
+// kwa baiti (13 10 13 10).
+
+// Nakili chanzo kwenda lengwa, kila LF ikiwa CR LF. Hurudisha urefu.
+n64 akili_crlf(n8* lengwa, n8* chanzo) {
+    n64 n = 0;
+    n64 i = 0;
+    wakati (chanzo[i] != 0) {
+        kama (chanzo[i] == 10) { lengwa[n] = 13; n = n + 1; }
+        lengwa[n] = chanzo[i];
+        n = n + 1;
+        i = i + 1;
+    }
+    lengwa[n] = 0;
+    rudisha n;
+}
+
+// Faharisi ya baiti ya kwanza ya mwili (baada ya CR LF CR LF), au -1.
+n64 akili_mwisho_wa_vichwa(n8* jibu, n64 n) {
+    n64 i = 0;
+    wakati (i + 3 < n) {
+        kama (jibu[i] == 13 && jibu[i + 1] == 10 && jibu[i + 2] == 13 && jibu[i + 3] == 10) { rudisha i + 4; }
+        i = i + 1;
+    }
+    rudisha 0 - 1;
+}
+
+// Msimbo wa hali wa jibu ("HTTP/1.1 200 ..." -> 200), au -1.
+n64 akili_http_hali(n8* jibu) {
+    kama (anza_kwa_mfuatano(jibu, "HTTP/1.") == 0) { rudisha 0 - 1; }
+    n64 i = 0;
+    wakati (jibu[i] != 0 && jibu[i] != 32) { i = i + 1; }
+    kama (jibu[i] == 0) { rudisha 0 - 1; }
+    rudisha mfuatano_hadi_n64(&jibu[i + 1]);
+}
+
+// Mwili wa jibu la HTTP ndani ya `jibu` (urefu n), ukiunganishwa mahali pale
+// pale ikiwa umetumwa kwa vipande ("chunked"). Hurudisha mwanzo wa mwili
+// (faharisi) na kuandika urefu wake kwenye *urefu; -1 bila vichwa kamili.
+n64 akili_http_mwili(n8* jibu, n64 n, n64* urefu) {
+    n64 mwanzo = akili_mwisho_wa_vichwa(jibu, n);
+    kama (mwanzo < 0) { rudisha 0 - 1; }
+    // vichwa: tafuta "chunked" kabla ya mwili (herufi ndogo au kubwa ya kwanza)
+    n8 hifadhi = jibu[mwanzo];
+    jibu[mwanzo] = 0;
+    n32 vipande = tafuta_mfuatano(jibu, "chunked") >= 0;
+    jibu[mwanzo] = hifadhi;
+    kama (vipande == 0) { urefu[0] = n - mwanzo; rudisha mwanzo; }
+    n64 soma = mwanzo;
+    n64 andika = mwanzo;
+    n32 mwisho = 0;
+    wakati (mwisho == 0 && soma < n) {
+        n64 ukubwa = 0;
+        n64 h = akili_heksa(jibu[soma] & 255);
+        wakati (soma < n && h >= 0) {
+            ukubwa = ukubwa * 16 + h;
+            soma = soma + 1;
+            h = akili_heksa(jibu[soma] & 255);
+        }
+        wakati (soma < n && jibu[soma] != 10) { soma = soma + 1; }
+        soma = soma + 1;
+        kama (ukubwa == 0 || soma + ukubwa > n) { mwisho = 1; }
+        sivyo {
+            nakili(&jibu[andika], &jibu[soma], ukubwa);
+            andika = andika + ukubwa;
+            soma = soma + ukubwa + 2;
+        }
+    }
+    jibu[andika] = 0;
+    urefu[0] = andika - mwanzo;
+    rudisha mwanzo;
+}
+
+// "a.b.c.d" -> baiti nne. Hurudisha 1 ikiwa halali.
+n32 akili_changanua_ipv4(n8* s, n8* nje) {
+    n64 sehemu = 0;
+    n64 thamani = 0;
+    n64 tarakimu = 0;
+    n64 i = 0;
+    wakati (s[i] != 0) {
+        kama (s[i] >= 48 && s[i] <= 57) { thamani = thamani * 10 + s[i] - 48; tarakimu = tarakimu + 1; }
+        sivyo {
+            kama (s[i] != 46 || tarakimu == 0 || thamani > 255 || sehemu >= 3) { rudisha 0; }
+            nje[sehemu] = thamani;
+            sehemu = sehemu + 1;
+            thamani = 0;
+            tarakimu = 0;
+        }
+        i = i + 1;
+    }
+    kama (sehemu != 3 || tarakimu == 0 || thamani > 255) { rudisha 0; }
+    nje[3] = thamani;
+    rudisha 1;
+}
+
+// Fungua muunganisho wa TCP wenye kikomo cha muda (sekunde). fd au hasi.
+n64 akili_unganisha(n8* anwani, n64 bandari, n64 sekunde) {
+    n8 sa[16];
+    weka_sifuri(sa, 16);
+    sa[0] = 2;                              // AF_INET
+    sa[2] = (bandari >> 8) & 255;           // bandari kwa mpangilio wa mtandao
+    sa[3] = bandari & 255;
+    kama (akili_changanua_ipv4(anwani, &sa[4]) == 0) { rudisha 0 - 2; }
+    n64 fd = wito_wa_mfumo(AKILI_SYS_SOCKET, 2, 1, 0, 0, 0, 0);
+    kama (fd < 0) { rudisha fd; }
+    n64 muda[2];
+    muda[0] = sekunde;
+    muda[1] = 0;
+    wito_wa_mfumo(AKILI_SYS_SETSOCKOPT, fd, 1, 20, muda, 16, 0);     // SO_RCVTIMEO
+    wito_wa_mfumo(AKILI_SYS_SETSOCKOPT, fd, 1, 21, muda, 16, 0);     // SO_SNDTIMEO
+    n64 r = wito_wa_mfumo(AKILI_SYS_CONNECT, fd, sa, 16, 0, 0, 0);
+    kama (r < 0) { mfumo_funga(fd); rudisha r; }
+    rudisha fd;
+}
+
+// Tuma ombi na usome jibu lote hadi seva ifunge. Hurudisha urefu wa jibu
+// (limeishia sifuri), au hasi kwa hitilafu ya muunganisho.
+n64 akili_http_ombi(AkiliUsanidi* u, n8* ombi, n64 urefu_wa_ombi, n8* jibu, n64 uwezo, n64 sekunde) {
+    n64 fd = akili_unganisha(u->anwani, u->bandari, sekunde);
+    kama (fd < 0) { rudisha fd; }
+    n64 imetumwa = 0;
+    wakati (imetumwa < urefu_wa_ombi) {
+        n64 w = mfumo_andika(fd, &ombi[imetumwa], urefu_wa_ombi - imetumwa);
+        kama (w <= 0) { mfumo_funga(fd); rudisha 0 - 3; }
+        imetumwa = imetumwa + w;
+    }
+    n64 n = 0;
+    n32 mwisho = 0;
+    wakati (mwisho == 0 && n < uwezo - 1) {
+        n64 r = mfumo_soma(fd, &jibu[n], uwezo - 1 - n);
+        kama (r <= 0) { mwisho = 1; }
+        sivyo { n = n + r; }
+    }
+    mfumo_funga(fd);
+    jibu[n] = 0;
+    rudisha n;
+}
+
+// Kichwa cha idhini, au tupu bila ufunguo.
+w0 akili_kichwa_cha_idhini(AkiliUsanidi* u, n8* nje, n64 uwezo) {
+    nje[0] = 0;
+    kama (u->ufunguo[0] != 0) { mfuatano_umbiza(nje, uwezo, "Authorization: Bearer %s\n", u->ufunguo, 0, 0, 0, 0, 0); }
+}
+
+// Je, seva inafikika na inajibu? 1 ndiyo, 0 hapana. (GET /v1/models)
+n32 akili_jaribu(AkiliUsanidi* u) {
+    kama (u->mtoa == AKILI_HAKUNA) { rudisha 0; }
+    n8 idhini[320];
+    akili_kichwa_cha_idhini(u, idhini, 320);
+    n8* vichwa = tenga(1024);
+    mfuatano_umbiza(vichwa, 1024, "GET /v1/models HTTP/1.1\nHost: %s\n%sConnection: close\n\n", u->anwani, idhini, 0, 0, 0, 0);
+    n8* ombi = tenga(2048);
+    n64 n = akili_crlf(ombi, vichwa);
+    achilia vichwa;
+    n8* jibu = tenga(8192);
+    n64 r = akili_http_ombi(u, ombi, n, jibu, 8192, 3);
+    n32 sawa = 0;
+    kama (r > 0 && akili_http_hali(jibu) == 200) { sawa = 1; }
+    achilia ombi;
+    achilia jibu;
+    rudisha sawa;
+}
+
+// Jenga mwili wa ombi la "chat completions". Hurudisha urefu.
+n64 akili_jenga_swali(AkiliUsanidi* u, n8* maelekezo, n8* swali, n8* mwili, n64 uwezo) {
+    n8* m1 = tenga(uwezo);
+    n8* m2 = tenga(uwezo);
+    n8* m3 = tenga(256);
+    akili_json_toroka(m1, uwezo / 2, maelekezo);
+    akili_json_toroka(m2, uwezo / 2, swali);
+    akili_json_toroka(m3, 256, u->modeli);
+    // Modeli za ndani zenye "kufikiri" hutumia dakika kwa jibu moja kwenye CPU:
+    // kwa mtoa wa ndani kufikiri huzimwa, na jibu lina kikomo cha tokeni.
+    n8* fikra = "";
+    kama (u->mtoa == AKILI_WA_NDANI) { fikra = "\"reasoning_effort\":\"none\","; }
+    n64 n = mfuatano_umbiza(mwili, uwezo, "{\"model\":\"%s\",\"stream\":false,%s\"max_tokens\":%d,\"messages\":[{\"role\":\"system\",\"content\":\"%s\"},{\"role\":\"user\",\"content\":\"%s\"}]}", m3, fikra, u->tokeni, m1, m2, 0);
+    achilia m1;
+    achilia m2;
+    achilia m3;
+    rudisha n;
+}
+
+// Toa jibu la mshauri kutoka jibu kamili la HTTP (urefu n). Hurudisha urefu
+// wa maandishi, au hasi: -10 hali si 200, -11 hakuna maudhui.
+n64 akili_toa_jibu(n8* jibu, n64 n, n8* nje, n64 uwezo) {
+    kama (akili_http_hali(jibu) != 200) { rudisha 0 - 10; }
+    n64 urefu = 0;
+    n64 mwanzo = akili_http_mwili(jibu, n, &urefu);
+    kama (mwanzo < 0) { rudisha 0 - 11; }
+    // jibu la msaidizi: "role":"assistant" ... "content":"..."
+    n8* mwili = &jibu[mwanzo];
+    n32 r = tafuta_mfuatano(mwili, "\"assistant\"");
+    kama (r < 0) { r = 0; }
+    n32 c = tafuta_mfuatano(&mwili[r], "\"content\"");
+    kama (c < 0) {
+        // baadhi ya seva huweka content kabla ya role
+        r = 0;
+        c = tafuta_mfuatano(mwili, "\"content\"");
+        kama (c < 0) { rudisha 0 - 11; }
+    }
+    n64 i = r + c + 9;
+    wakati (mwili[i] != 0 && mwili[i] != 34) { i = i + 1; }
+    kama (mwili[i] == 0) { rudisha 0 - 11; }
+    rudisha akili_json_soma_mfuatano(&mwili[i + 1], nje, uwezo);
+}
+
+// Muulize mshauri. `maelekezo` ni hali ya mchezo na wajibu wa mshauri;
+// `swali` ni la mchezaji. Hurudisha urefu wa jibu, au hasi kwa hitilafu.
+// Huzuia hadi jibu lifike (kikomo: sekunde 120).
+n64 akili_uliza(AkiliUsanidi* u, n8* maelekezo, n8* swali, n8* nje, n64 uwezo) {
+    kama (u->mtoa == AKILI_HAKUNA) { rudisha 0 - 1; }
+    n64 uwezo_wa_mwili = 16384;
+    n8* mwili = tenga(uwezo_wa_mwili);
+    n64 nm = akili_jenga_swali(u, maelekezo, swali, mwili, uwezo_wa_mwili);
+    n8 idhini[320];
+    akili_kichwa_cha_idhini(u, idhini, 320);
+    n8 vichwa[1024];
+    mfuatano_umbiza(vichwa, 1024, "POST /v1/chat/completions HTTP/1.1\nHost: %s\nContent-Type: application/json\n%sContent-Length: %d\nConnection: close\n\n", u->anwani, idhini, nm, 0, 0, 0);
+    n8* ombi = tenga(uwezo_wa_mwili + 2048);
+    n64 nk = akili_crlf(ombi, vichwa);
+    nakili(&ombi[nk], mwili, nm);
+    n64 uwezo_wa_jibu = 262144;
+    n8* jibu = tenga(uwezo_wa_jibu);
+    n64 n = akili_http_ombi(u, ombi, nk + nm, jibu, uwezo_wa_jibu, 120);
+    n64 matokeo = n;
+    kama (n > 0) { matokeo = akili_toa_jibu(jibu, n, nje, uwezo); }
+    kama (n == 0) { matokeo = 0 - 4; }
+    achilia mwili;
+    achilia ombi;
+    achilia jibu;
+    rudisha matokeo;
+}

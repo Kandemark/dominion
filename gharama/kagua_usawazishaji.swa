@@ -1,0 +1,162 @@
+husisha { msingi/maktaba/faili.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+// kagua_usawazishaji.swa -- inagundua nakala za maktaba ya msingi
+// (vendored) ndani ya Dominion zilizopitwa na wakati dhidi ya
+// lugha-swa/swa halisi.
+//
+// Kwa nini: faili za swa/msingi/maktaba/*.swa ni NAKALA za faili
+// husika kwenye hazina ya lugha (lugha-swa/swa). Rekebisho la stdlib
+// upstream halijirudishi kiotomatiki kwenye nakala hizi -- kikao hiki
+// pekee kimepata nakala tatu tofauti zilizopitwa na wakati (kumbukumbu.swa
+// #190 kisha #188, ramani.swa #187, hesabu.swa #183) kabla ya kubainika
+// kwa mkono, mara nyingi ikichelewesha kazi nyingine. Chombo hiki
+// kinasoma orodha ya gharama/vendored-manifest.txt na kulinganisha kila
+// nakala BAITI KWA BAITI dhidi ya chanzo chake halisi.
+//
+// MUHIMU KUHUSU HERUFI KUBWA/NDOGO: nakala za Dominion ni herufi
+// ndogo (n32/d64/n.k., baada ya uhamiaji wa kikao hiki) lakini chanzo
+// cha lugha-swa/swa (msingi/maktaba/*.swa yenyewe) BADO ni herufi
+// kubwa KWA MAKUSUDI -- faili hizi zinakusanywa MOJA KWA MOJA na
+// mbegu.bin (mzizi wa bootstrap uliogandishwa, angalia jinsi
+// gharama/jaribu-mnyororo.sh inavyounganisha kumbukumbu.swa/
+// mfuatano.swa moja kwa moja kwenye ujenzi wa msuluhishi), na mbegu.bin
+// haifahamu herufi ndogo za aina za msingi (upanuzi wa lugha-swa/swa#225
+// ulihusu TU mchanganuzi wa kamili uliojiandika mwenyewe, si mbegu.bin
+// iliyogandishwa) -- kwa hiyo msingi/maktaba/*.swa LAZIMA ibaki herufi
+// kubwa milele, isipokuwa mbegu.bin yenyewe itakapofanywa upya siku
+// moja. Hii ni tofauti ya KUDUMU, si mdudu wa muda -- ulinganisho hapa
+// chini UNAPUUZA herufi kubwa/ndogo kwa makusudi (ASCII A-Z <-> a-z
+// tu, sio Unicode) ili TOFAUTI iendelee kumaanisha "yaliyomo
+// yamebadilika" (rekebisho lililokosekana, kipengele kipya), si "jina
+// la aina limeandikwa tofauti".
+//
+// Matumizi (LAZIMA kutoka saraka ya swa/, kwa sababu husisha
+// linatatuliwa kwa njia ya jamaa na saraka hiyo -- angalia jinsi
+// msuluhishi.tatua() inavyotafuta msingi/<jina> na msingi/maktaba/<jina>):
+//   cd swa
+//   ../gharama/../gharama/msuluhishi ../gharama/kagua_usawazishaji.swa > /tmp/zima.swa
+//   (au: PATH_YA_MSULUHISHI ../gharama/kagua_usawazishaji.swa > /tmp/zima.swa)
+//   PATH_YA_STAGE1 --exe /tmp/zima.swa > /tmp/kagua
+//   /tmp/kagua <njia-ya-hazina-ya-lugha-swa>
+//   (mfano: /tmp/kagua ~/Projects/compilers/swa)
+//
+// Kutoka: 0 = zote SAWA, N > 0 = idadi ya faili zenye TOFAUTI/hitilafu.
+
+n32 BAFA_UWEZO = 65536;
+n8 bafa_a[65536];
+n8 bafa_b[65536];
+n8 mstari[512];
+n8 dominion_njia[256];
+n8 upstream_rel[256];
+n8 upstream_kamili[512];
+
+// Geuza baiti moja A-Z (65-90) kwenda a-z (97-122) -- ASCII tu, si
+// Unicode. Baiti nyingine yoyote inarudishwa bila kubadilika.
+n32 herufi_ndogo(n32 c) {
+    kama (c >= 65 && c <= 90) { rudisha c + 32; }
+    rudisha c;
+}
+
+// Gawanya mstari (kutoka faili_soma_mstari, unaoweza kuwa na '\n'
+// mwishoni) kwa tabo (baiti 9) kuwa sehemu mbili: a (kabla ya tabo)
+// na b (baada ya tabo, bila '\n'/'\r' mwishoni). Hurudisha 0 kama
+// hakuna tabo (mstari batili -- unarukwa na anayeita).
+n32 gawanya_tabo(n8* mstari, n8* a, n8* b) {
+    n32 i = 0;
+    n32 j = 0;
+    wakati (mstari[i] != 0 && mstari[i] != 9) {
+        a[j] = mstari[i];
+        i = i + 1;
+        j = j + 1;
+    }
+    a[j] = 0;
+    kama (mstari[i] != 9) { rudisha 0; }
+    i = i + 1;
+    j = 0;
+    wakati (mstari[i] != 0 && mstari[i] != 10 && mstari[i] != 13) {
+        b[j] = mstari[i];
+        i = i + 1;
+        j = j + 1;
+    }
+    b[j] = 0;
+    rudisha 1;
+}
+
+n32 anza(n32 argc, n8** argv) {
+    kama (argc < 2) {
+        andika_kosa("matumizi: kagua_usawazishaji <njia-ya-hazina-lugha-swa>\n");
+        rudisha 1;
+    }
+    n8* mzizi_lugha = argv[1];
+
+    n8* f = faili_fungua("../gharama/vendored-manifest.txt", "r");
+    kama (f == 0) {
+        andika_kosa("KOSA: haiwezi kufungua gharama/vendored-manifest.txt (endesha kutoka saraka ya swa/)\n");
+        rudisha 1;
+    }
+
+    n32 jumla_faili = 0;
+    n32 jumla_tofauti = 0;
+
+    wakati (1) {
+        n32 r = faili_soma_mstari(f, mstari, 512);
+        kama (r < 0) { acha; }
+        kama (r == 0) { endelea; }
+        kama (mstari[0] == 35) { endelea; }  // '#' -- mstari wa maoni
+        kama (gawanya_tabo(mstari, dominion_njia, upstream_rel) == 0) { endelea; }
+        kama (urefu_wa_mfuatano(dominion_njia) == 0) { endelea; }
+
+        unganisha_mfuatano(upstream_kamili, mzizi_lugha, "/");
+        n32 ul = urefu_wa_mfuatano(upstream_kamili);
+        n32 k = 0;
+        wakati (upstream_rel[k] != 0) {
+            upstream_kamili[ul + k] = upstream_rel[k];
+            k = k + 1;
+        }
+        upstream_kamili[ul + k] = 0;
+
+        jumla_faili = jumla_faili + 1;
+
+        n64 na = faili_soma_yote(dominion_njia, bafa_a, BAFA_UWEZO);
+        kama (na < 0) {
+            andika_kosa("HITILAFU %s (haiwezi kusoma nakala ya Dominion)\n", dominion_njia);
+            jumla_tofauti = jumla_tofauti + 1;
+            endelea;
+        }
+
+        n64 nb = faili_soma_yote(upstream_kamili, bafa_b, BAFA_UWEZO);
+        kama (nb < 0) {
+            andika_kosa("HITILAFU %s (haiwezi kusoma chanzo: %s)\n", dominion_njia, upstream_kamili, 0,0,0,0);
+            jumla_tofauti = jumla_tofauti + 1;
+            endelea;
+        }
+
+        // Ulinganisho unapuuza herufi kubwa/ndogo (angalia maelezo
+        // juu ya faili hili) -- urefu bado lazima ufanane KAMILI
+        // (kubadilisha herufi hakubadilishi idadi ya baiti kamwe kwa
+        // ASCII), tofauti ni kwenye ulinganisho wa baiti moja moja tu.
+        n32 sawa = 1;
+        kama (na != nb) { sawa = 0; }
+        sivyo {
+            n64 i = 0;
+            wakati (i < na) {
+                kama (herufi_ndogo(bafa_a[i]) != herufi_ndogo(bafa_b[i])) { sawa = 0; acha; }
+                i = i + 1;
+            }
+        }
+
+        kama (sawa) {
+            andika("SAWA %s\n", dominion_njia, 0,0,0,0,0);
+        } sivyo {
+            andika("TOFAUTI %s (baiti %d dhidi ya %d)\n", dominion_njia, na, nb, 0,0,0);
+            jumla_tofauti = jumla_tofauti + 1;
+        }
+    }
+
+    faili_funga(f);
+
+    n32 sawa_idadi = jumla_faili - jumla_tofauti;
+    andika_kosa("\nkagua_usawazishaji: %d/%d faili sawa\n", sawa_idadi, jumla_faili, 0,0,0,0);
+    rudisha jumla_tofauti;
+}

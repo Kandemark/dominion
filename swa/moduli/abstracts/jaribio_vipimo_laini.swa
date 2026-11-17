@@ -1,0 +1,70 @@
+husisha { moduli/abstracts/vipimo_laini.swa }
+
+// jaribio_vipimo_laini.swa -- jaribio la mkono dhidi ya
+// VipimoLainiMsimamizi (vipimo_laini.swa, tafsiri ya
+// abstracts/soft_metrics.c) PEKEE, bila kupitia mchezo.swa (angalia
+// lugha-swa/swa#295 -- idadi ya kazi ya mchezo.swa tayari imevuka
+// 1128). Linathibitisha THAMANI HALISI, si tu kumalizika bila
+// kuanguka.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    VipimoLainiMsimamizi* sm = vipimo_laini_msimamizi_unda();
+    // lugha-swa/swa#296: kulinganisha muundo* na 0 MOJA KWA MOJA
+    // kama hoja ya wito kunakataliwa kwa uwongo -- kwanza igawe
+    // kwenye kigezo cha n32.
+    n32 sm_sio_tupu = (sm != 0);
+    jaribio_thibitisha(sm_sio_tupu, "msimamizi_unda si tupu");
+    jaribio_thibitisha(sm->furaha.furaha_msingi == 0.5, "furaha_msingi chaguomsingi 0.5");
+    jaribio_thibitisha(sm->uhalali.uhalali == 0.7, "uhalali chaguomsingi 0.7");
+    jaribio_thibitisha(sm->fahari.fahari == 0.5, "fahari chaguomsingi 0.5");
+
+    d64 jumla0 = vipimo_laini_furaha_jumla(&sm->furaha);
+    // msingi 0.5 + uthabiti(0.5*0.3=0.15) + uaminifu(0.5*0.2=0.1) + 0 = 0.75
+    jaribio_thibitisha(jumla0 > 0.74 && jumla0 < 0.76, "furaha_jumla awali ~0.75");
+
+    n32 hali0 = vipimo_laini_furaha_hali(&sm->furaha);
+    jaribio_thibitisha(hali0 == VIPIMO_LAINI_HALI_FURAHA, "hali awali ni FURAHA (>=0.7)");
+
+    // Ongeza mabadiliko 12 (zaidi ya kikomo cha 10) kuthibitisha
+    // mzunguko wa kusukuma kushoto unafanya kazi.
+    n32 i = 0;
+    wakati (i < 12) {
+        d64 v = i;
+        vipimo_laini_furaha_ongeza_mabadiliko(&sm->furaha, v * 0.01);
+        i = i + 1;
+    }
+    jaribio_thibitisha(sm->furaha.idadi_ya_mabadiliko == 10, "idadi_ya_mabadiliko imebanwa kwa 10");
+    // baada ya kusukuma, la kwanza lililobaki ni thamani ya i=2 (0.02)
+    d64 kwanza = vipimo_laini_pata_badiliko(&sm->furaha, 0);
+    jaribio_thibitisha(kwanza > 0.019 && kwanza < 0.021, "badiliko la kwanza baada ya kusukuma ni 0.02");
+    d64 mwisho = vipimo_laini_pata_badiliko(&sm->furaha, 9);
+    jaribio_thibitisha(mwisho > 0.109 && mwisho < 0.111, "badiliko la mwisho ni 0.11 (i=11)");
+
+    d64 uhalali_alama = vipimo_laini_uhalali_kokotoa(&sm->uhalali);
+    // 0.6*0.4 + (1-0.3)*0.3 + 0.5*0.3 = 0.24+0.21+0.15 = 0.6
+    jaribio_thibitisha(uhalali_alama > 0.59 && uhalali_alama < 0.61, "uhalali_kokotoa ~0.6");
+
+    d64 furaha_kabla = sm->furaha.furaha_msingi;
+    vipimo_laini_sasisha_kutoka_uchumi(sm, 0.8, 0.1);
+    jaribio_thibitisha(sm->furaha.furaha_msingi != furaha_kabla, "sasisha_kutoka_uchumi inabadilisha furaha_msingi");
+    jaribio_thibitisha(sm->uhalali.idhini_ya_serikali > 0.5, "pato_kwa_mtu kubwa (0.8) linaongeza idhini_ya_serikali");
+
+    vipimo_laini_sasisha_kutoka_matukio(sm, 5);
+    jaribio_thibitisha(1 == 1, "sasisha_kutoka_matukio haivunjiki (no-op)");
+
+    vipimo_laini_msimamizi_uharibu(sm);
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

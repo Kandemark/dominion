@@ -1,0 +1,52 @@
+husisha { moduli/mhusika/mhusika.swa }
+
+// jaribio_mhusika.swa -- jaribio la mkono dhidi ya Mhusika
+// (mhusika.swa, tafsiri ya character.c) PEKEE, bila kupitia
+// mchezo.swa (angalia lugha-swa/swa#292). Linathibitisha THAMANI
+// HALISI.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    Mhusika* c = mhusika_unda("Juma");
+    n32 c_sio_tupu = (c != 0);
+    jaribio_thibitisha(c_sio_tupu, "mhusika_unda inarudisha kielekezi");
+    jaribio_thibitisha(linganisha_mfuatano(c->jina, "Juma") == 0, "jina limewekwa sahihi");
+    jaribio_thibitisha(c->mali_binafsi > 49.9 && c->mali_binafsi < 50.1, "mali_binafsi huanza 50.0 kabla ya asili kuwekwa");
+    jaribio_thibitisha(c->sifa > 9.9 && c->sifa < 10.1, "sifa huanza 10.0");
+    jaribio_thibitisha(c->ana_mpenzi == 0, "haana mpenzi mwanzoni");
+
+    mhusika_weka_asili(c, MHUSIKA_ASILI_MFANYABIASHARA);
+    jaribio_thibitisha(c->asili == MHUSIKA_ASILI_MFANYABIASHARA, "asili imewekwa sahihi");
+    // mhusika_mali_ya_awali(MFANYABIASHARA) = 200.0
+    jaribio_thibitisha(c->mali_binafsi > 199.9 && c->mali_binafsi < 200.1, "mali_binafsi imesasishwa kwa mujibu wa asili ya mfanyabiashara");
+
+    n32 ujuzi_biashara = mhusika_ujuzi_wa_awali(MHUSIKA_ASILI_MFANYABIASHARA, MHUSIKA_UJUZI_BIASHARA);
+    jaribio_thibitisha(c->ujuzi_0 == ujuzi_biashara, "ujuzi_0 (biashara) umewekwa kwa mujibu wa jedwali la asili");
+
+    // Mkulima anapaswa kuwa na mali ndogo zaidi kuliko mfanyabiashara.
+    d64 mali_mkulima = mhusika_mali_ya_awali(MHUSIKA_ASILI_MKULIMA);
+    d64 mali_mfanyabiashara = mhusika_mali_ya_awali(MHUSIKA_ASILI_MFANYABIASHARA);
+    jaribio_thibitisha(mali_mkulima < mali_mfanyabiashara, "mkulima ana mali ya awali ndogo zaidi kuliko mfanyabiashara");
+
+    // Asili isiyo sahihi (>= IDADI) haipaswi kubadilisha chochote.
+    n32 asili_kabla = c->asili;
+    mhusika_weka_asili(c, MHUSIKA_ASILI_IDADI);
+    jaribio_thibitisha(c->asili == asili_kabla, "asili batili (>= IDADI) haibadilishi mhusika");
+
+    n8* kichwa = mhusika_kichwa_cha_kudumu(c);
+    n32 kichwa_sio_tupu = (kichwa != 0);
+    jaribio_thibitisha(kichwa_sio_tupu, "mhusika_kichwa_cha_kudumu inarudisha mfuatano");
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

@@ -1,0 +1,217 @@
+husisha { moduli/onyesho/fonti.swa }
+
+// jaribio_fonti.swa -- jaribio la mkono la fonti.swa (fonti ya bitmap
+// 8x16 + mchoro_andika_mstari) dhidi ya bafa ya tenga() YA KAWAIDA
+// (si dumb buffer halisi ya DRM -- angalia jaribio_drm.swa kwa
+// uthibitisho wa kernel halisi, na jaribio_mchoro.swa kwa maelezo
+// kamili ya kwa nini mazingira haya hayawezi kufikia /dev/dri/cardN
+// moja kwa moja).
+//
+// MTINDO: thamani TARAJIWA za biti za glyph ('0', 'A', 'e' yenye
+// alama) zimeandikwa HAPA KWA MKONO, zikiwa NAKALA ya moja kwa moja
+// ya data iliyopachikwa ndani ya fonti.swa (ONYESHO_FONTI_DATA) wakati
+// wa kuandika faili hili -- hii ni uthibitisho KWAMBA jedwali la fonti
+// SI takataka (angalau herufi hizi tatu zinalingana na mchoro
+// unaotambulika kwa jicho), kitu ambacho jaribio_hud.swa (linalolinganisha
+// dhidi ya jedwali lenyewe badala ya nakala iliyoandikwa kwa mkono)
+// halithibitishi peke yake.
+
+n32 jf_yalioshindwa = 0;
+
+w0 jf_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jf_yalioshindwa = jf_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+// ---------- Tarajiwa (expected) kwa kila glyph, kwa safu (row 0-15) ----------
+// Nakala ya moja kwa moja ya ONYESHO_FONTI_DATA kwa '0' (ASCII 48,
+// faharisi 16), 'A' (ASCII 65, faharisi 33), na 'e' yenye alama ya
+// aigu / e-acute (U+00E9, faharisi 112) -- angalia fonti.swa.
+n32 jf_tarajiwa_0(n32 safu) {
+    kama (safu == 5) { rudisha 8; }
+    kama (safu == 6) { rudisha 62; }
+    kama (safu == 7) { rudisha 35; }
+    kama (safu == 8) { rudisha 99; }
+    kama (safu == 9) { rudisha 71; }
+    kama (safu == 10) { rudisha 77; }
+    kama (safu == 11) { rudisha 73; }
+    kama (safu == 12) { rudisha 89; }
+    kama (safu == 13) { rudisha 113; }
+    kama (safu == 14) { rudisha 113; }
+    kama (safu == 15) { rudisha 35; }
+    rudisha 0;
+}
+
+n32 jf_tarajiwa_A(n32 safu) {
+    kama (safu == 6) { rudisha 12; }
+    kama (safu == 7) { rudisha 28; }
+    kama (safu == 8) { rudisha 28; }
+    kama (safu == 9) { rudisha 22; }
+    kama (safu == 10) { rudisha 50; }
+    kama (safu == 11) { rudisha 50; }
+    kama (safu == 12) { rudisha 63; }
+    kama (safu == 13) { rudisha 63; }
+    kama (safu == 14) { rudisha 97; }
+    kama (safu == 15) { rudisha 65; }
+    rudisha 0;
+}
+
+n32 jf_tarajiwa_eacute(n32 safu) {
+    kama (safu == 5) { rudisha 6; }
+    kama (safu == 6) { rudisha 4; }
+    kama (safu == 9) { rudisha 62; }
+    kama (safu == 10) { rudisha 33; }
+    kama (safu == 11) { rudisha 97; }
+    kama (safu == 12) { rudisha 127; }
+    kama (safu == 13) { rudisha 96; }
+    kama (safu == 14) { rudisha 96; }
+    kama (safu == 15) { rudisha 32; }
+    rudisha 0;
+}
+
+// jf_linganisha_glyph: soma glyph HALISI iliyochorwa kwenye (gx,gy)
+// kwenye fb (pikseli moja moja, andika_herufi_kwenye_chombo kwa andika_herufi_kwenye_chombo), ilinganishe
+// na baiti tarajiwa ya kila safu (bitwise, si tu "si sifuri").
+// Inarudisha 1 kama ZOTE zinalingana, 0 vinginevyo.
+n32 jf_linganisha_glyph_0(n8* fb, n64 pitch, n64 gx, n64 gy, n64 nyeupe) {
+    n32 safu = 0;
+    wakati (safu < 16) {
+        n32 baiti_tarajiwa = jf_tarajiwa_0(safu);
+        n32 safu_wima = 0;
+        wakati (safu_wima < 8) {
+            n32 biti_tarajiwa = (baiti_tarajiwa >> (7 - safu_wima)) & 1;
+            n64 pikseli = mchoro_pata_pikseli(fb, pitch, gx + safu_wima, gy + safu);
+            n32 imewashwa = (pikseli == nyeupe);
+            kama (biti_tarajiwa == 1 && imewashwa == 0) { rudisha 0; }
+            kama (biti_tarajiwa == 0 && pikseli != 0) { rudisha 0; }
+            safu_wima = safu_wima + 1;
+        }
+        safu = safu + 1;
+    }
+    rudisha 1;
+}
+
+n32 jf_linganisha_glyph_A(n8* fb, n64 pitch, n64 gx, n64 gy, n64 nyeupe) {
+    n32 safu = 0;
+    wakati (safu < 16) {
+        n32 baiti_tarajiwa = jf_tarajiwa_A(safu);
+        n32 safu_wima = 0;
+        wakati (safu_wima < 8) {
+            n32 biti_tarajiwa = (baiti_tarajiwa >> (7 - safu_wima)) & 1;
+            n64 pikseli = mchoro_pata_pikseli(fb, pitch, gx + safu_wima, gy + safu);
+            n32 imewashwa = (pikseli == nyeupe);
+            kama (biti_tarajiwa == 1 && imewashwa == 0) { rudisha 0; }
+            kama (biti_tarajiwa == 0 && pikseli != 0) { rudisha 0; }
+            safu_wima = safu_wima + 1;
+        }
+        safu = safu + 1;
+    }
+    rudisha 1;
+}
+
+n32 jf_linganisha_glyph_eacute(n8* fb, n64 pitch, n64 gx, n64 gy, n64 nyeupe) {
+    n32 safu = 0;
+    wakati (safu < 16) {
+        n32 baiti_tarajiwa = jf_tarajiwa_eacute(safu);
+        n32 safu_wima = 0;
+        wakati (safu_wima < 8) {
+            n32 biti_tarajiwa = (baiti_tarajiwa >> (7 - safu_wima)) & 1;
+            n64 pikseli = mchoro_pata_pikseli(fb, pitch, gx + safu_wima, gy + safu);
+            n32 imewashwa = (pikseli == nyeupe);
+            kama (biti_tarajiwa == 1 && imewashwa == 0) { rudisha 0; }
+            kama (biti_tarajiwa == 0 && pikseli != 0) { rudisha 0; }
+            safu_wima = safu_wima + 1;
+        }
+        safu = safu + 1;
+    }
+    rudisha 1;
+}
+
+n32 anza() {
+    onyesho_fonti_pakia();
+
+    n64 nyeupe = 4294967295;
+    n64 canvas_w = 16;
+    n64 canvas_h = 16;
+    n64 pitch = canvas_w * 4;
+
+    // ---------- '0' pekee ----------
+    n8* fb0 = tenga(pitch * canvas_h);
+    weka_sifuri(fb0, pitch * canvas_h);
+    n8 txt0[2];
+    txt0[0] = 48; txt0[1] = 0;  // "0"
+    MchoroMaandishiHoja h0;
+    h0.fb = fb0; h0.pitch = pitch; h0.canvas_w = canvas_w; h0.canvas_h = canvas_h;
+    h0.x = 0; h0.y = 0; h0.maandishi = txt0; h0.rangi = nyeupe;
+    mchoro_andika_mstari(&h0);
+    n32 sawa0 = jf_linganisha_glyph_0(fb0, pitch, 0, 0, nyeupe);
+    jf_thibitisha(sawa0, "glyph ya '0' inachorwa biti kwa biti sahihi");
+
+    // ---------- 'A' pekee ----------
+    n8* fbA = tenga(pitch * canvas_h);
+    weka_sifuri(fbA, pitch * canvas_h);
+    n8 txtA[2];
+    txtA[0] = 65; txtA[1] = 0;  // "A"
+    MchoroMaandishiHoja hA;
+    hA.fb = fbA; hA.pitch = pitch; hA.canvas_w = canvas_w; hA.canvas_h = canvas_h;
+    hA.x = 0; hA.y = 0; hA.maandishi = txtA; hA.rangi = nyeupe;
+    mchoro_andika_mstari(&hA);
+    n32 sawaA = jf_linganisha_glyph_A(fbA, pitch, 0, 0, nyeupe);
+    jf_thibitisha(sawaA, "glyph ya 'A' inachorwa biti kwa biti sahihi");
+
+    // ---------- 'e' yenye alama (UTF-8 baiti-mbili: 0xC3 0xA9) pekee ----------
+    n8* fbE = tenga(pitch * canvas_h);
+    weka_sifuri(fbE, pitch * canvas_h);
+    n8 txtE[3];
+    txtE[0] = 195; txtE[1] = 169; txtE[2] = 0;  // UTF-8 ya U+00E9 ('e')
+    MchoroMaandishiHoja hE;
+    hE.fb = fbE; hE.pitch = pitch; hE.canvas_w = canvas_w; hE.canvas_h = canvas_h;
+    hE.x = 0; hE.y = 0; hE.maandishi = txtE; hE.rangi = nyeupe;
+    mchoro_andika_mstari(&hE);
+    n32 sawaE = jf_linganisha_glyph_eacute(fbE, pitch, 0, 0, nyeupe);
+    jf_thibitisha(sawaE, "glyph ya 'e' yenye alama (UTF-8 0xC3 0xA9) inachorwa sahihi");
+
+    // ---------- Mfuatano wa UTF-8 + ASCII: "eA" (herufi 'e' yenye ----------
+    // alama ikifuatiwa na 'A') -- huthibitisha kuwa baada ya kusoma
+    // mfuatano wa baiti-mbili wa UTF-8, kielekezi cha kuchora
+    // kinasogea KWA GLYPH MOJA TU (baiti 8), si herufi mbili za nafasi
+    // (ambayo ingetokea kama bytes_consumed isingezingatiwa sahihi).
+    n64 canvas_w2 = 24;
+    n64 pitch2 = canvas_w2 * 4;
+    n8* fb2 = tenga(pitch2 * canvas_h);
+    weka_sifuri(fb2, pitch2 * canvas_h);
+    n8 txt2[4];
+    txt2[0] = 195; txt2[1] = 169; txt2[2] = 65; txt2[3] = 0;  // "e(acute) A"
+    MchoroMaandishiHoja h2;
+    h2.fb = fb2; h2.pitch = pitch2; h2.canvas_w = canvas_w2; h2.canvas_h = canvas_h;
+    h2.x = 0; h2.y = 0; h2.maandishi = txt2; h2.rangi = nyeupe;
+    mchoro_andika_mstari(&h2);
+    n32 eacute_sawa_kwenye_0 = jf_linganisha_glyph_eacute(fb2, pitch2, 0, 0, nyeupe);
+    n32 a_sawa_kwenye_8 = jf_linganisha_glyph_A(fb2, pitch2, 8, 0, nyeupe);
+    jf_thibitisha(eacute_sawa_kwenye_0, "mfuatano 'e-alama A': glyph ya kwanza (e-alama) sahihi kwenye x=0");
+    jf_thibitisha(a_sawa_kwenye_8, "mfuatano 'e-alama A': 'A' imesogea glyph MOJA tu (x=8), si mbili");
+
+    // ---------- Baiti ya UTF-8 isiyoungwa mkono (mwendelezo peke yake, ----------
+    // 0x80) ikifuatiwa na 'A' -- lazima irukwe salama (haichori
+    // takataka, haikwami kwenye kitanzi) na 'A' inayofuata ichorwe
+    // kwenye nafasi inayofuata (x=8), si kuanguka.
+    n8* fb3 = tenga(pitch2 * canvas_h);
+    weka_sifuri(fb3, pitch2 * canvas_h);
+    n8 txt3[3];
+    txt3[0] = 128; txt3[1] = 65; txt3[2] = 0;  // 0x80 (haijaungwa mkono) + 'A'
+    MchoroMaandishiHoja h3;
+    h3.fb = fb3; h3.pitch = pitch2; h3.canvas_w = canvas_w2; h3.canvas_h = canvas_h;
+    h3.x = 0; h3.y = 0; h3.maandishi = txt3; h3.rangi = nyeupe;
+    mchoro_andika_mstari(&h3);
+    n32 a_sawa_baada_ya_baiti_mbaya = jf_linganisha_glyph_A(fb3, pitch2, 8, 0, nyeupe);
+    jf_thibitisha(a_sawa_baada_ya_baiti_mbaya, "baiti ya UTF-8 isiyoungwa mkono inarukwa salama, 'A' inachorwa kwenye x=8");
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", jf_yalioshindwa, 0, 0, 0, 0, 0);
+    kama (jf_yalioshindwa > 0) { rudisha 1; }
+    andika("DONE\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

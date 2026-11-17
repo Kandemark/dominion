@@ -1,47 +1,11 @@
-# Build artifacts
+# Michezo iliyojengwa na hifadhi
+swa/dominion
+swa/saves/
 build/
-*.o
-*.obj
-*.exe
-*.dll
-*.so
-*.dylib
-*.a
-*.lib
 
-# CMake
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
-Makefile
-*.cmake
+# Hifadhi ya ramani (data kubwa ya kuzalisha dunia, nje ya hazina)
+hifadhi_ya_ramani/
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Temporary files
-*.tmp
-*.log
-*.bak
-*.orig
-
-# OS
-Thumbs.db
-desktop.ini
-
-# Generated data files (built by tools/generate_*.py)
-data/*.bin
-data/*.earth
-data/flags/
-
-# Runtime user data
-saves/
-
-# Python cache
-tools/__pycache__/
-/tmp/

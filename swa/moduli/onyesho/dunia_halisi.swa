@@ -1,0 +1,897 @@
+husisha { msingi/maktaba/faili.swa }
+husisha { moduli/onyesho/atlasi_miji.swa }
+
+// dunia_halisi.swa -- dunia iliyokubaliwa ya Dominion (faili moja: rasilimali/dunia.bin)
+// ikichorwa ndani ya mchezo kwa ukuzaji wowote: bahari na nchi kavu, kivuli cha milima,
+// maziwa na barafu, mataifa (kanda za rangi ndani ya mipaka), mikoa, mito, barabara za
+// ngazi tatu, reli, maeneo ya miji, makazi 64,000 (jiji kuu, jiji, mji, kijiji), bandari,
+// viwanja vya ndege na majina ya jiografia.
+//
+// Muundo wa faili (endian ndogo): "DUNIA001", u32 W, u32 H, u32 n, kisha jedwali la
+// sehemu [u32 kitambulisho, u32 mwanzo, u32 urefu]. Tabaka za gridi (1 ardhi, 3 mataifa,
+// 4 mikoa) ni RLE kwa kila mstari; tabaka za vekta (6 mito, 7 barabara, 8 reli) ni
+// minyororo ya nukta (y*8, x*8); 9 makazi; 10 maandishi; 5 jedwali la mataifa.
+//
+// Vipimo vya kuchora: (x0, y0) ni kona ya juu-kushoto kwa pikseli za dunia * 256;
+// kipimo ni pikseli za dunia kwa pikseli moja ya skrini * 256 (85 = ukuzaji mara 3).
+
+muundo DuniaHalisi {
+    n8* data;
+    n64 urefu;
+    n64 upana;              // pikseli za dunia (4096)
+    n64 kimo;               // (2048)
+    n64* sehemu;            // mwanzo wa kila sehemu (1..11)
+    n8* ardhi;              // 0 bahari, 1 ardhi, 2 ziwa, 3 barafu (upana * kimo)
+    n8* wamiliki;           // u16 kwa pikseli (0xFFFF = hakuna)
+    n8* mikoa;              // u8 kwa pikseli (0xFF = hakuna)
+    n64 mataifa;
+    n64* rangi;             // 0xRRGGBB
+    n64* jina;              // mwanzo wa jina (urefu u8 + baiti) ndani ya data
+    n64* mji_y;
+    n64* mji_x;
+    n64* mji_jina;
+    n64 idadi_mito;
+    n64* mito;              // mwanzo wa kila mnyororo (baada ya u16 ya mtiririko)
+    n64* mito_nguvu;
+    n64 idadi_barabara;
+    n64* barabara;          // mwanzo wa kila mnyororo (baada ya u8 ya ngazi)
+    n64* barabara_ngazi;
+    n64 idadi_reli;
+    n64* reli;
+    n64 idadi_makazi;
+    n64* makazi;            // mwanzo wa kila rekodi
+    n64 idadi_maandishi;
+    n64* maandishi;
+    n64* sanduku;           // [y0,x0,y1,x1] *8 kwa kila mnyororo: mito, kisha barabara, kisha reli
+    n8* migogoro;           // u8 kwa pikseli: 0 hakuna, k+1 = mgogoro k
+    n64 idadi_migogoro;
+    n64* mg_p;              // mataifa mawili yanayodai
+    n64* mg_q;
+    n64* mg_y;              // kitovu (pikseli za dunia)
+    n64* mg_x;
+}
+
+n64 dh_u8(n8* d, n64 o) { rudisha d[o] & 255; }
+n64 dh_u16(n8* d, n64 o) { rudisha (d[o] & 255) | ((d[o + 1] & 255) << 8); }
+n64 dh_u32(n8* d, n64 o) {
+    rudisha (d[o] & 255) | ((d[o + 1] & 255) << 8) | ((d[o + 2] & 255) << 16) | ((d[o + 3] & 255) << 24);
+}
+n64 dh_i16(n8* d, n64 o) {
+    n64 v = dh_u16(d, o);
+    kama (v >= 32768) { v = v - 65536; }
+    rudisha v;
+}
+
+// Nakili jina (u8 urefu + baiti) kuwa mfuatano unaoishia na 0, kwenye bafa ya pamoja.
+n8* dh_bafa_jina = 0;
+n8* dh_jina(n8* d, n64 o) {
+    kama (dh_bafa_jina == 0) { dh_bafa_jina = tenga(512); }
+    n64 n = dh_u8(d, o);
+    n64 i = 0;
+    wakati (i < n) {
+        dh_bafa_jina[i] = d[o + 1 + i];
+        i = i + 1;
+    }
+    dh_bafa_jina[n] = 0;
+    rudisha dh_bafa_jina;
+}
+
+// Fungua RLE ya mstari kwa mstari kwenda gridi kamili (baiti 1 au 2 kwa thamani).
+w0 dh_rle(DuniaHalisi* d, n64 mwanzo, n8* lengo, n64 baiti) {
+    n8* p = d->data;
+    n64 mistari = dh_u32(p, mwanzo);
+    n64 y = 0;
+    wakati (y < mistari) {
+        n64 o = mwanzo + dh_u32(p, mwanzo + 4 + 4 * y);
+        n64 n = dh_u16(p, o);
+        o = o + 2;
+        n64 x = 0;
+        n64 k = 0;
+        wakati (k < n) {
+            n64 v = 0;
+            kama (baiti == 2) { v = dh_u16(p, o); o = o + 2; }
+            sivyo { v = dh_u8(p, o); o = o + 1; }
+            n64 urefu = dh_u16(p, o);
+            o = o + 2;
+            n64 i = 0;
+            n64 msingi = (y * d->upana + x) * baiti;
+            wakati (i < urefu) {
+                kama (baiti == 2) {
+                    lengo[msingi + 2 * i] = v & 255;
+                    lengo[msingi + 2 * i + 1] = (v >> 8) & 255;
+                } sivyo {
+                    lengo[msingi + i] = v;
+                }
+                i = i + 1;
+            }
+            x = x + urefu;
+            k = k + 1;
+        }
+        y = y + 1;
+    }
+}
+
+// Sanduku la mnyororo (y*8, x*8) unaoanzia kwenye 'o' (u16 n kwanza).
+w0 dh_sanduku_la(DuniaHalisi* d, n64 o, n64* s) {
+    n8* p = d->data;
+    n64 n = dh_u16(p, o);
+    n64 y0 = 1 << 30;
+    n64 x0 = 1 << 30;
+    n64 y1 = 0;
+    n64 x1 = 0;
+    n64 i = 0;
+    wakati (i < n) {
+        n64 y = dh_u16(p, o + 2 + 4 * i);
+        n64 x = dh_u16(p, o + 4 + 4 * i);
+        kama (y < y0) { y0 = y; }
+        kama (y > y1) { y1 = y; }
+        kama (x < x0) { x0 = x; }
+        kama (x > x1) { x1 = x; }
+        i = i + 1;
+    }
+    s[0] = y0;
+    s[1] = x0;
+    s[2] = y1;
+    s[3] = x1;
+}
+
+DuniaHalisi* dunia_halisi_pakia(n8* njia) {
+    n64 uwezo = 64 * 1024 * 1024;
+    n8* data = tenga(uwezo);
+    n64 n = faili_soma_yote(njia, data, uwezo);
+    kama (n < 32) {
+        achilia data;
+        rudisha 0;
+    }
+    kama (data[0] != 68 || data[1] != 85 || data[5] != 48) {    // "DU...0"
+        achilia data;
+        rudisha 0;
+    }
+    DuniaHalisi* d = tenga(ukubwa(DuniaHalisi));
+    d->data = data;
+    d->urefu = n;
+    d->upana = dh_u32(data, 8);
+    d->kimo = dh_u32(data, 12);
+    n64 ns = dh_u32(data, 16);
+    d->sehemu = tenga(8 * 16);
+    weka_sifuri(d->sehemu, 8 * 16);
+    n64 i = 0;
+    wakati (i < ns) {
+        n64 k = dh_u32(data, 20 + 12 * i);
+        kama (k < 16) { d->sehemu[k] = dh_u32(data, 24 + 12 * i); }
+        i = i + 1;
+    }
+    n64 px = d->upana * d->kimo;
+    d->ardhi = tenga(px);
+    d->wamiliki = tenga(2 * px);
+    d->mikoa = tenga(px);
+    dh_rle(d, d->sehemu[1], d->ardhi, 1);
+    dh_rle(d, d->sehemu[3], d->wamiliki, 2);
+    dh_rle(d, d->sehemu[4], d->mikoa, 1);
+    // jedwali la mataifa
+    n64 o = d->sehemu[5];
+    d->mataifa = dh_u16(data, o);
+    o = o + 2;
+    d->rangi = tenga(8 * d->mataifa);
+    d->jina = tenga(8 * d->mataifa);
+    d->mji_y = tenga(8 * d->mataifa);
+    d->mji_x = tenga(8 * d->mataifa);
+    d->mji_jina = tenga(8 * d->mataifa);
+    i = 0;
+    wakati (i < d->mataifa) {
+        d->jina[i] = o;
+        o = o + 1 + dh_u8(data, o);           // jina
+        o = o + 1 + dh_u8(data, o);           // jina la asili
+        o = o + 1 + dh_u8(data, o);           // jina la Kiingereza
+        d->rangi[i] = (dh_u8(data, o) << 16) | (dh_u8(data, o + 1) << 8) | dh_u8(data, o + 2);
+        d->mji_y[i] = dh_u16(data, o + 3);
+        d->mji_x[i] = dh_u16(data, o + 5);
+        o = o + 8;
+        d->mji_jina[i] = o;
+        o = o + 1 + dh_u8(data, o);
+        i = i + 1;
+    }
+    // mito
+    o = d->sehemu[6];
+    d->idadi_mito = dh_u32(data, o);
+    o = o + 4;
+    d->mito = tenga(8 * d->idadi_mito);
+    d->mito_nguvu = tenga(8 * d->idadi_mito);
+    // barabara na reli
+    n64 ob = d->sehemu[7];
+    d->idadi_barabara = dh_u32(data, ob);
+    ob = ob + 4;
+    d->barabara = tenga(8 * d->idadi_barabara);
+    d->barabara_ngazi = tenga(8 * d->idadi_barabara);
+    n64 orl = d->sehemu[8];
+    d->idadi_reli = dh_u32(data, orl);
+    orl = orl + 4;
+    d->reli = tenga(8 * d->idadi_reli);
+    d->sanduku = tenga(8 * 4 * (d->idadi_mito + d->idadi_barabara + d->idadi_reli));
+    i = 0;
+    wakati (i < d->idadi_mito) {
+        d->mito_nguvu[i] = dh_u16(data, o);
+        d->mito[i] = o + 2;
+        dh_sanduku_la(d, o + 2, d->sanduku + 4 * i);
+        o = o + 4 + 4 * dh_u16(data, o + 2);
+        i = i + 1;
+    }
+    i = 0;
+    wakati (i < d->idadi_barabara) {
+        d->barabara_ngazi[i] = dh_u8(data, ob);
+        d->barabara[i] = ob + 1;
+        dh_sanduku_la(d, ob + 1, d->sanduku + 4 * (d->idadi_mito + i));
+        ob = ob + 3 + 4 * dh_u16(data, ob + 1);
+        i = i + 1;
+    }
+    i = 0;
+    wakati (i < d->idadi_reli) {
+        d->reli[i] = orl;
+        dh_sanduku_la(d, orl, d->sanduku + 4 * (d->idadi_mito + d->idadi_barabara + i));
+        orl = orl + 2 + 4 * dh_u16(data, orl);
+        i = i + 1;
+    }
+    // makazi
+    o = d->sehemu[9];
+    d->idadi_makazi = dh_u32(data, o);
+    o = o + 4;
+    d->makazi = tenga(8 * d->idadi_makazi);
+    i = 0;
+    wakati (i < d->idadi_makazi) {
+        d->makazi[i] = o;
+        o = o + 12;
+        o = o + 1 + dh_u8(data, o);
+        i = i + 1;
+    }
+    // migogoro: RLE ndani ya sanduku la kila mgogoro, kwenda gridi ya dunia
+    d->migogoro = tenga(px);
+    weka_sifuri(d->migogoro, px);
+    o = d->sehemu[11];
+    d->idadi_migogoro = dh_u16(data, o);
+    o = o + 2;
+    d->mg_p = tenga(8 * (d->idadi_migogoro + 1));
+    d->mg_q = tenga(8 * (d->idadi_migogoro + 1));
+    d->mg_y = tenga(8 * (d->idadi_migogoro + 1));
+    d->mg_x = tenga(8 * (d->idadi_migogoro + 1));
+    i = 0;
+    wakati (i < d->idadi_migogoro) {
+        d->mg_p[i] = dh_u16(data, o);
+        d->mg_q[i] = dh_u16(data, o + 2);
+        n64 by0 = dh_u16(data, o + 4);
+        n64 bx0 = dh_u16(data, o + 6);
+        n64 bh = dh_u16(data, o + 8);
+        n64 bw = dh_u16(data, o + 10);
+        d->mg_y[i] = by0 + bh / 2;
+        d->mg_x[i] = bx0 + bw / 2;
+        n64 mw = o + 12;
+        n64 mistari = dh_u32(data, mw);
+        n64 jy = 0;
+        wakati (jy < mistari) {
+            n64 q = mw + dh_u32(data, mw + 4 + 4 * jy);
+            n64 nv = dh_u16(data, q);
+            q = q + 2;
+            n64 jx = 0;
+            n64 kk = 0;
+            wakati (kk < nv) {
+                n64 v = dh_u8(data, q);
+                n64 ur = dh_u16(data, q + 1);
+                q = q + 3;
+                kama (v != 0) {
+                    n64 ii = 0;
+                    wakati (ii < ur) {
+                        n64 gx = (bx0 + jx + ii) % d->upana;
+                        d->migogoro[(by0 + jy) * d->upana + gx] = i + 1;
+                        ii = ii + 1;
+                    }
+                }
+                jx = jx + ur;
+                kk = kk + 1;
+            }
+            jy = jy + 1;
+        }
+        // ruka mwisho wa RLE: mwanzo wa mstari wa mwisho + urefu wake
+        n64 mwisho = mw + 4 + 4 * mistari;
+        kama (mistari > 0) {
+            n64 q = mw + dh_u32(data, mw + 4 + 4 * (mistari - 1));
+            mwisho = q + 2 + 3 * dh_u16(data, q);
+        }
+        o = mwisho;
+        i = i + 1;
+    }
+    // maandishi
+    o = d->sehemu[10];
+    d->idadi_maandishi = dh_u32(data, o);
+    o = o + 4;
+    d->maandishi = tenga(8 * d->idadi_maandishi);
+    i = 0;
+    wakati (i < d->idadi_maandishi) {
+        d->maandishi[i] = o;
+        o = o + 11;
+        o = o + 1 + dh_u8(data, o);
+        o = o + 2 + 4 * dh_u16(data, o);
+        i = i + 1;
+    }
+    rudisha d;
+}
+
+// ---- msingi: kila pikseli ya skrini husoma gridi ya dunia ----
+n64 DH_RANGI_BAHARI = 12374236;     // 0xBCD0DC
+n64 DH_RANGI_NCHI = 15329767;       // 0xE9E9E7
+n64 DH_RANGI_BARAFU = 16448765;     // 0xFAFCFD
+n64 DH_RANGI_MSTARI = 2828834;      // 0x2B2A22
+n64 DH_RANGI_MPAKA = 3419944;       // 0x342F28
+
+n64* dh_wamiliki_skrini = 0;
+n64* dh_mgogoro_skrini = 0;
+
+// Kupinda kwa kuratibu za dunia (vizio 1/256 vya pikseli ya dunia): hufanya pwani na
+// mipaka ya gridi kuwa mistari asilia badala ya ngazi, na hupindisha barabara/mito
+// kidogo. Ni kazi ya mahali tu, hivyo kila ukuzaji na kila fremu hupata umbo lile lile.
+n64 dh_pinda(n64 x, n64 y, n64 mbegu, n64 ukubwa) {
+    rudisha ((atlasi_tabaka(x, y, mbegu, 3) - 32768) * ukubwa) / 32768;
+}
+
+w0 dunia_halisi_chora_msingi(DuniaHalisi* d, Turubai* t, n64 x0, n64 y0, n64 kipimo) {
+    n64 w = t->upana;
+    n64 h = t->kimo;
+    n64 n = w * h;
+    kama (dh_wamiliki_skrini != 0) { achilia dh_wamiliki_skrini; }
+    dh_wamiliki_skrini = tenga(8 * n);
+    kama (dh_mgogoro_skrini != 0) { achilia dh_mgogoro_skrini; }
+    dh_mgogoro_skrini = tenga(8 * n);
+    n64* aina = tenga(8 * n);
+    n64* mkoa = tenga(8 * n);
+    n64* pwani = tenga(8 * n);
+    n64* mpaka = tenga(8 * n);
+    n64* mkoa_m = tenga(8 * n);
+    n64 mbali = 1 << 30;
+    n64 j = 0;
+    wakati (j < h) {
+        n64 i = 0;
+        wakati (i < w) {
+            n64 ux = x0 + i * kipimo;
+            n64 uy = y0 + j * kipimo;
+            n64 gy = (uy + dh_pinda(ux, uy, 11, 190)) >> 8;
+            kama (gy < 0) { gy = 0; }
+            kama (gy >= d->kimo) { gy = d->kimo - 1; }
+            n64 gx = ((ux + dh_pinda(ux, uy, 12, 190)) >> 8) % d->upana;
+            kama (gx < 0) { gx = gx + d->upana; }
+            n64 g = gy * d->upana + gx;
+            n64 k = j * w + i;
+            n64 a = d->ardhi[g] & 255;
+            aina[k] = a;
+            n64 m = dh_u16(d->wamiliki, 2 * g);
+            kama (m == 65535 || a == 0 || a == 2) { m = 0 - 1; }
+            dh_wamiliki_skrini[k] = m;
+            mkoa[k] = d->mikoa[g] & 255;
+            dh_mgogoro_skrini[k] = d->migogoro[g] & 255;
+            kama (m < 0) { dh_mgogoro_skrini[k] = 0; }
+            kama (a == 1 || a == 3) { pwani[k] = mbali; } sivyo { pwani[k] = 0; }
+            i = i + 1;
+        }
+        j = j + 1;
+    }
+    // vyanzo vya mpaka wa taifa na wa mkoa
+    j = 0;
+    wakati (j < h) {
+        n64 i = 0;
+        wakati (i < w) {
+            n64 k = j * w + i;
+            n64 m = dh_wamiliki_skrini[k];
+            mpaka[k] = mbali;
+            mkoa_m[k] = 0;
+            kama (m >= 0) {
+                kama ((i > 0 && dh_wamiliki_skrini[k - 1] >= 0 && dh_wamiliki_skrini[k - 1] != m)
+                    || (i < w - 1 && dh_wamiliki_skrini[k + 1] >= 0 && dh_wamiliki_skrini[k + 1] != m)
+                    || (j > 0 && dh_wamiliki_skrini[k - w] >= 0 && dh_wamiliki_skrini[k - w] != m)
+                    || (j < h - 1 && dh_wamiliki_skrini[k + w] >= 0 && dh_wamiliki_skrini[k + w] != m)) {
+                    mpaka[k] = 0;
+                }
+                kama ((i > 0 && dh_wamiliki_skrini[k - 1] == m && mkoa[k - 1] != mkoa[k])
+                    || (j > 0 && dh_wamiliki_skrini[k - w] == m && mkoa[k - w] != mkoa[k])) {
+                    mkoa_m[k] = 1;
+                }
+            }
+            i = i + 1;
+        }
+        j = j + 1;
+    }
+    atlasi_umbali(pwani, w, h);
+    atlasi_umbali(mpaka, w, h);
+    // ukanda wa rangi: pikseli ~4.5 za dunia, kwa vizio vya umbali (256 kwa pikseli)
+    n64 ukanda = 294912 / kipimo;
+    kama (ukanda < 1536) { ukanda = 1536; }
+    kama (ukanda > 7000) { ukanda = 7000; }
+    n64 unene_mpaka = (256 * 256) / (2 * kipimo);         // nusu ya ukuzaji, pikseli*256
+    kama (unene_mpaka < 200) { unene_mpaka = 200; }
+    n64 kivuli_o = d->sehemu[2];
+    n64 kw = d->upana / 2;
+    j = 0;
+    wakati (j < h) {
+        n64 gy = (y0 + j * kipimo) >> 8;
+        kama (gy < 0) { gy = 0; }
+        kama (gy >= d->kimo) { gy = d->kimo - 1; }
+        n64 i = 0;
+        wakati (i < w) {
+            n64 k = j * w + i;
+            n64 a = aina[k];
+            n64 rangi = DH_RANGI_BAHARI;
+            kama (a == 1 || a == 3) {
+                n64 gx = ((x0 + i * kipimo) >> 8) % d->upana;
+                kama (gx < 0) { gx = gx + d->upana; }
+                n64 kv = dh_u8(d->data, kivuli_o + (gy / 2) * kw + gx / 2);
+                // kivuli: 128 = tambarare; giza kidogo upande wa mbali na mwanga
+                n64 nchi = DH_RANGI_NCHI;
+                kama (a == 3) { nchi = DH_RANGI_BARAFU; }
+                kama (kv < 128) { rangi = atlasi_changanya_rangi(nchi, 7105644, ((128 - kv) * 90) / 128); }
+                sivyo { rangi = atlasi_changanya_rangi(nchi, 16777215, ((kv - 128) * 120) / 128); }
+                n64 m = dh_wamiliki_skrini[k];
+                kama (m >= 0 && m < d->mataifa) {
+                    n64 ukingo = pwani[k];
+                    kama (mpaka[k] < ukingo) { ukingo = mpaka[k]; }
+                    rangi = atlasi_changanya_rangi(rangi, d->rangi[m], 18);
+                    kama (ukingo < ukanda) {
+                        n64 f = ((ukanda - ukingo) * 256) / (ukanda / 3 + 1);
+                        kama (f > 256) { f = 256; }
+                        rangi = atlasi_changanya_rangi(rangi, d->rangi[m], (f * 150) >> 8);
+                    }
+                    kama (mkoa_m[k] == 1 && ((i + j) / 3) % 3 != 0) { rangi = atlasi_changanya_rangi(rangi, 7891036, 120); }
+                    n64 mg = dh_mgogoro_skrini[k];
+                    kama (mg > 0) {
+                        // mistari ya rangi mbili za wadai, na ukingo wa nukta nyekundu-kahawia
+                        n64 rp = d->rangi[d->mg_p[mg - 1]];
+                        kama (((i + j) / 7) % 2 == 1) { rp = d->rangi[d->mg_q[mg - 1]]; }
+                        rangi = atlasi_changanya_rangi(rangi, rp, 165);
+                        kama ((i > 0 && dh_mgogoro_skrini[k - 1] != mg) || (j > 0 && dh_mgogoro_skrini[k - w] != mg)
+                            || (i < w - 1 && dh_mgogoro_skrini[k + 1] != mg) || (j < h - 1 && dh_mgogoro_skrini[k + w] != mg)) {
+                            kama (((i + j) / 4) % 3 != 0) { rangi = atlasi_changanya_rangi(rangi, 7351592, 220); }
+                        }
+                    }
+                    kama (mpaka[k] < unene_mpaka) { rangi = atlasi_changanya_rangi(rangi, DH_RANGI_MPAKA, 225); }
+                }
+                kama (pwani[k] < 300) { rangi = DH_RANGI_MSTARI; }
+            }
+            sivyo {
+                // rafu ya pwani: bahari hafifu karibu na nchi kavu
+                kama (a == 2) { rangi = DH_RANGI_BAHARI; }
+            }
+            weka_u32(t->pikseli, j * t->hatua + i * 4, rangi);
+            i = i + 1;
+        }
+        j = j + 1;
+    }
+    achilia mkoa_m;
+    achilia mpaka;
+    achilia pwani;
+    achilia mkoa;
+    achilia aina;
+}
+
+// ---- vekta: minyororo hulainishwa (Chaikin, mara 2) kisha kuchorwa kwa kingo laini ----
+n64* dh_px = 0;
+n64* dh_py = 0;
+n64* dh_qx = 0;
+n64* dh_qy = 0;
+
+w0 dh_chora_mnyororo(DuniaHalisi* d, Turubai* t, n64 o, n64 x0, n64 y0, n64 kipimo, n64 unene, n64 pinda, n64 kipimo_cha_pinda) {
+    n8* p = d->data;
+    n64 n = dh_u16(p, o);
+    kama (n < 2) { rudisha; }
+    kama (n > 4000) { n = 4000; }
+    kama (dh_px == 0) {
+        dh_px = tenga(8 * 20000);
+        dh_py = tenga(8 * 20000);
+        dh_qx = tenga(8 * 20000);
+        dh_qy = tenga(8 * 20000);
+    }
+    // skrini * 256: (dunia*8*32 - x0) * 256 / kipimo
+    n64 i = 0;
+    wakati (i < n) {
+        n64 gy = dh_u16(p, o + 2 + 4 * i) * 32;
+        n64 gx = dh_u16(p, o + 4 + 4 * i) * 32;
+        n64 py0 = gy;
+        gy = gy + dh_pinda(gx / kipimo_cha_pinda, py0 / kipimo_cha_pinda, 21, pinda);
+        gx = gx + dh_pinda(gx / kipimo_cha_pinda, py0 / kipimo_cha_pinda, 22, pinda);
+        dh_px[i] = ((gx + 128 - x0) * 256) / kipimo;
+        dh_py[i] = ((gy + 128 - y0) * 256) / kipimo;
+        i = i + 1;
+    }
+    n64 r = 0;
+    wakati (r < 2) {
+        n64 m = 0;
+        dh_qx[m] = dh_px[0];
+        dh_qy[m] = dh_py[0];
+        m = m + 1;
+        i = 0;
+        wakati (i < n - 1) {
+            dh_qx[m] = (3 * dh_px[i] + dh_px[i + 1]) / 4;
+            dh_qy[m] = (3 * dh_py[i] + dh_py[i + 1]) / 4;
+            dh_qx[m + 1] = (dh_px[i] + 3 * dh_px[i + 1]) / 4;
+            dh_qy[m + 1] = (dh_py[i] + 3 * dh_py[i + 1]) / 4;
+            m = m + 2;
+            i = i + 1;
+        }
+        dh_qx[m] = dh_px[n - 1];
+        dh_qy[m] = dh_py[n - 1];
+        m = m + 1;
+        i = 0;
+        wakati (i < m) {
+            dh_px[i] = dh_qx[i];
+            dh_py[i] = dh_qy[i];
+            i = i + 1;
+        }
+        n = m;
+        r = r + 1;
+    }
+    i = 0;
+    wakati (i < n - 1) {
+        turubai_mstari256(t, dh_px[i], dh_py[i], dh_px[i + 1], dh_py[i + 1], unene);
+        i = i + 1;
+    }
+}
+
+n32 dh_sanduku_linaonekana(DuniaHalisi* d, n64 s, Turubai* t, n64 x0, n64 y0, n64 kipimo) {
+    // sanduku kwa (dunia*8); skrini: (dunia*8*32 - x0)/kipimo
+    n64 sx0 = ((d->sanduku[4 * s + 1] * 32 - x0) * 1) / kipimo;
+    n64 sx1 = ((d->sanduku[4 * s + 3] * 32 - x0) * 1) / kipimo;
+    n64 sy0 = ((d->sanduku[4 * s] * 32 - y0) * 1) / kipimo;
+    n64 sy1 = ((d->sanduku[4 * s + 2] * 32 - y0) * 1) / kipimo;
+    kama (sx1 < 0 - 4 || sy1 < 0 - 4 || sx0 > t->upana + 4 || sy0 > t->kimo + 4) { rudisha 0; }
+    rudisha 1;
+}
+
+w0 dunia_halisi_chora_vekta(DuniaHalisi* d, Turubai* t, n64 x0, n64 y0, n64 kipimo) {
+    turubai_kata_yote(t);
+    n64 z = 256 / kipimo;                         // ukuzaji (namba kamili, chini 0)
+    // mito: kizingiti hupungua kadiri ukuzaji unavyoongezeka
+    n64 kizingiti = 9 * 256 - z * 300;            // log2(mtiririko)*256
+    kama (kizingiti < 5 * 256) { kizingiti = 5 * 256; }
+    turubai_brashi(t, 8693180, 235);              // 0x84A5BC
+    n64 i = 0;
+    wakati (i < d->idadi_mito) {
+        n64 nguvu = d->mito_nguvu[i];
+        kama (nguvu >= kizingiti && dh_sanduku_linaonekana(d, i, t, x0, y0, kipimo)) {
+            n64 unene = 170 + ((nguvu - kizingiti) * 75) / 256;
+            kama (unene > 200 + z * 160) { unene = 200 + z * 160; }
+            dh_chora_mnyororo(d, t, d->mito[i], x0, y0, kipimo, unene, 400, 7);   // mito: mizunguko mipana
+        }
+        i = i + 1;
+    }
+    // barabara: ndogo (ukuzaji >= 4), za kawaida (>= 2), kuu (zote); kisha reli
+    n64 ng = 2;
+    wakati (ng >= 0) {
+        n64 rangi = 10393746;                      // 0x9E9892 ndogo
+        n64 unene = 220;
+        n64 ruhusu = 0;
+        kama (ng == 2 && z >= 4) { ruhusu = 1; }
+        kama (ng == 1) { rangi = 12094064; unene = 120 + z * 50; kama (z >= 2) { ruhusu = 1; } }   // 0xB88E70
+        kama (ng == 0) { rangi = 13131858; unene = 200 + z * 80; ruhusu = 1; }                       // 0xC86052
+        kama (ruhusu) {
+            turubai_brashi(t, rangi, 235);
+            i = 0;
+            wakati (i < d->idadi_barabara) {
+                kama (d->barabara_ngazi[i] == ng && dh_sanduku_linaonekana(d, d->idadi_mito + i, t, x0, y0, kipimo)) {
+                    dh_chora_mnyororo(d, t, d->barabara[i], x0, y0, kipimo, unene, 130, 3);
+                }
+                i = i + 1;
+            }
+        }
+        ng = ng - 1;
+    }
+    kama (z >= 3) {
+        turubai_brashi(t, 5393224, 170);           // 0x524B48
+        i = 0;
+        wakati (i < d->idadi_reli) {
+            kama (dh_sanduku_linaonekana(d, d->idadi_mito + d->idadi_barabara + i, t, x0, y0, kipimo)) {
+                dh_chora_mnyororo(d, t, d->reli[i], x0, y0, kipimo, 150, 90, 4);
+            }
+            i = i + 1;
+        }
+    }
+}
+
+// ---- alama ndogo za vekta (hakuna fonti ya alama inayohitajika) ----
+// nanga ya bandari: shina, kiganja na tao la chini (vipande vya mstari)
+w0 dh_alama_bandari(Turubai* t, n64 x, n64 y) {
+    turubai_brashi(t, 3951244, 255);               // 0x3C4A8C buluu ya bahari
+    n64 u = 300;
+    turubai_mstari256(t, x * 256, (y - 5) * 256, x * 256, (y + 4) * 256, u);
+    turubai_mstari256(t, (x - 3) * 256, (y - 2) * 256, (x + 3) * 256, (y - 2) * 256, u);
+    turubai_mstari256(t, (x - 4) * 256, (y + 1) * 256, (x - 2) * 256, (y + 4) * 256, u);
+    turubai_mstari256(t, (x - 2) * 256, (y + 4) * 256, (x + 2) * 256, (y + 4) * 256, u);
+    turubai_mstari256(t, (x + 2) * 256, (y + 4) * 256, (x + 4) * 256, (y + 1) * 256, u);
+    turubai_duara256(t, x * 256, (y - 6) * 256, 380);
+}
+// ndege ya uwanja: fuselage, mabawa, mkia
+w0 dh_alama_uwanja(Turubai* t, n64 x, n64 y) {
+    turubai_brashi(t, 2631710, 255);
+    turubai_mstari256(t, x * 256, (y - 6) * 256, x * 256, (y + 5) * 256, 420);
+    turubai_mstari256(t, (x - 6) * 256, (y - 0) * 256, (x + 6) * 256, (y - 0) * 256, 380);
+    turubai_mstari256(t, (x - 3) * 256, (y + 5) * 256, (x + 3) * 256, (y + 5) * 256, 300);
+}
+
+// Jina la mto kando ya njia yake: herufi hupangwa moja moja kwa urefu wa njia
+// (sehemu ya katikati iliyonyooka vya kutosha), juu kidogo ya mto.
+n64* dh_lx = 0;
+n64* dh_ly = 0;
+n64* dh_ls = 0;
+n64 dh_kwanza = 0;
+n64 dh_mwisho = 0;
+n32 dh_jina_la_mto(DuniaHalisi* d, Turubai* t, Fonti* f, n8* jina, n64 o, n64 x0, n64 y0, n64 kipimo, n64 ukubwa) {
+    n8* p = d->data;
+    n64 n = dh_u16(p, o);
+    kama (n < 4) { rudisha 0; }
+    kama (n > 3000) { n = 3000; }
+    kama (dh_lx == 0) { dh_lx = tenga(8 * 3001); dh_ly = tenga(8 * 3001); dh_ls = tenga(8 * 3001); }
+    n64 i = 0;
+    n64 ndani = 0;
+    wakati (i < n) {
+        n64 gy = dh_u16(p, o + 2 + 4 * i) * 32;
+        n64 gx = dh_u16(p, o + 4 + 4 * i) * 32;
+        n64 py0 = gy;
+        gy = gy + dh_pinda(gx / 7, py0 / 7, 21, 400);
+        gx = gx + dh_pinda(gx / 7, py0 / 7, 22, 400);
+        dh_lx[i] = (gx + 128 - x0) / kipimo;
+        dh_ly[i] = (gy + 128 - y0) / kipimo;
+        kama (dh_lx[i] > 20 && dh_ly[i] > 20 && dh_lx[i] < t->upana - 20 && dh_ly[i] < t->kimo - 20) {
+            kama (ndani == 0) { dh_kwanza = i; }
+            dh_mwisho = i;
+            ndani = ndani + 1;
+        }
+        kama (i == 0) { dh_ls[i] = 0; }
+        sivyo {
+            n64 ddx = dh_lx[i] - dh_lx[i - 1];
+            n64 ddy = dh_ly[i] - dh_ly[i - 1];
+            dh_ls[i] = dh_ls[i - 1] + turubai_kipeuo(ddx * ddx + ddy * ddy);
+        }
+        i = i + 1;
+    }
+    kama (ndani < 6) { rudisha 0; }
+    n64 upana = maandishi_upana(f, jina, ukubwa) + urefu_wa_mfuatano(jina) * 2;
+    // sehemu inayoonekana tu ya mto
+    n64 sa = dh_ls[dh_kwanza];
+    n64 jumla = dh_ls[dh_mwisho] - sa;
+    kama (jumla < (upana * 3) / 2) { rudisha 0; }
+    // chagua mwanzo: katikati, ikiwa sehemu imenyooka (umbali wa moja kwa moja >= 85%)
+    n64 jaribu = 0;
+    wakati (jaribu < 5) {
+        n64 s0 = sa + (jumla * (2 + jaribu)) / 9 - upana / 2;
+        kama (jaribu == 0) { s0 = sa + jumla / 2 - upana / 2; }
+        kama (s0 < sa) { s0 = sa; }
+        n64 a = 0;
+        wakati (a < n - 1 && dh_ls[a + 1] < s0) { a = a + 1; }
+        n64 b = a;
+        wakati (b < n - 1 && dh_ls[b] < s0 + upana) { b = b + 1; }
+        n64 ddx = dh_lx[b] - dh_lx[a];
+        n64 ddy = dh_ly[b] - dh_ly[a];
+        n64 moja = turubai_kipeuo(ddx * ddx + ddy * ddy);
+        n64 xa = dh_lx[a];
+        n64 xb = dh_lx[b];
+        kama (xa > xb) { xa = dh_lx[b]; xb = dh_lx[a]; }
+        n64 ya = dh_ly[a];
+        n64 yb = dh_ly[b];
+        kama (ya > yb) { ya = dh_ly[b]; yb = dh_ly[a]; }
+        kama (moja * 100 >= upana * 85 && atlasi_sanduku_huru(t, xa - 2, ya - ukubwa - 6, xb + 2, yb + 4)) {
+            // mwelekeo wa kusoma: kushoto kwenda kulia
+            n64 mbele = 1;
+            kama (dh_lx[b] < dh_lx[a]) { mbele = 0; }
+            n8* herufi = tenga(8);
+            n64 kalamu = 0;
+            n64 k = 0;
+            wakati (jina[k] != 0) {
+                n64 c = jina[k] & 255;
+                n64 ur = 1;
+                kama (c >= 240) { ur = 4; } sivyo { kama (c >= 224) { ur = 3; } sivyo { kama (c >= 192) { ur = 2; } } }
+                n64 q = 0;
+                wakati (q < ur && jina[k + q] != 0) { herufi[q] = jina[k + q]; q = q + 1; }
+                herufi[q] = 0;
+                n64 hw = maandishi_upana(f, herufi, ukubwa);
+                n64 sp = s0 + kalamu + hw / 2;
+                kama (mbele == 0) { sp = s0 + upana - kalamu - hw / 2; }
+                n64 e = a;
+                wakati (e < n - 1 && dh_ls[e + 1] < sp) { e = e + 1; }
+                n64 urf = dh_ls[e + 1] - dh_ls[e];
+                kama (urf < 1) { urf = 1; }
+                n64 lx = dh_lx[e] + ((dh_lx[e + 1] - dh_lx[e]) * (sp - dh_ls[e])) / urf;
+                n64 ly = dh_ly[e] + ((dh_ly[e + 1] - dh_ly[e]) * (sp - dh_ls[e])) / urf;
+                atlasi_maandishi(t, f, herufi, lx - hw / 2, ly - ukubwa - 3, ukubwa, 5143444, 255);
+                kalamu = kalamu + hw + 2;
+                k = k + q;
+            }
+            achilia herufi;
+            atlasi_shika_sanduku(xa - 2, ya - ukubwa - 6, xb + 2, yb + 4);
+            rudisha 1;
+        }
+        jaribu = jaribu + 1;
+    }
+    rudisha 0;
+}
+
+// ---- makazi na majina ----
+w0 dunia_halisi_chora_majina(DuniaHalisi* d, Turubai* t, n64 x0, n64 y0, n64 kipimo,
+                             Fonti* nene, Fonti* kawaida, Fonti* serifu) {
+    atlasi_masanduku_anza();
+    n64 z = 256 / kipimo;
+    n8* p = d->data;
+    // maeneo ya miji kwanza (chini ya nukta): duara la machungwa kwa ukubwa wa watu
+    n64 i = 0;
+    wakati (i < d->idadi_makazi) {
+        n64 o = d->makazi[i];
+        n64 ngazi = dh_u8(p, o + 8);
+        kama (ngazi <= 1) {
+            n64 sx = ((dh_u16(p, o + 2) * 32 + 128 - x0) * 256) / kipimo;
+            n64 sy = ((dh_u16(p, o) * 32 + 128 - y0) * 256) / kipimo;
+            kama (sx > 0 - 8000 && sy > 0 - 8000 && sx < (t->upana + 30) * 256 && sy < (t->kimo + 30) * 256) {
+                n64 watu = dh_u32(p, o + 4);
+                // nusu kipenyo (pikseli za dunia *256) ~ 0.9 * sqrt(watu / 1e5)
+                n64 r = (230 * turubai_kipeuo(watu / 100)) / 32;
+                n64 rs = (r * 256) / kipimo;
+                kama (rs > 500) {
+                    turubai_brashi(t, 14845016, 210);   // 0xE28458
+                    turubai_duara256(t, sx, sy, rs);
+                }
+            }
+        }
+        i = i + 1;
+    }
+    // majina ya mataifa (kwenye mji mkuu, juu kidogo) -- herufi kubwa zenye nafasi
+    i = 0;
+    wakati (i < d->mataifa) {
+        n64 sx = ((d->mji_x[i] * 256 + 128 - x0)) / kipimo;
+        n64 sy = ((d->mji_y[i] * 256 + 128 - y0)) / kipimo;
+        kama (sx > 0 && sy > 0 && sx < t->upana && sy < t->kimo) {
+            n8* jina = atlasi_herufi_kubwa(dh_jina(p, d->jina[i]));
+            n64 ukubwa = 13 + z * 2;
+            kama (ukubwa > 24) { ukubwa = 24; }
+            n64 upana = atlasi_maandishi_mapana(t, serifu, jina, 0, 0, ukubwa, ukubwa / 3, 0, 0);
+            n64 x = sx - upana / 2;
+            n64 y = sy - ukubwa * 3;
+            kama (atlasi_sanduku_huru(t, x, y, x + upana, y + ukubwa + 4)) {
+                atlasi_maandishi_mapana(t, serifu, jina, x, y, ukubwa, ukubwa / 3, 1, 4602422);
+                atlasi_shika_sanduku(x - 6, y - 2, x + upana + 6, y + ukubwa + 6);
+            }
+            achilia jina;
+        }
+        i = i + 1;
+    }
+    // makazi kwa ngazi: jiji kuu, jiji, mji (ukuzaji >= 2), kijiji (ukuzaji >= 4)
+    n64 ng = 0;
+    wakati (ng <= 3) {
+        n64 ruhusu = 1;
+        kama (ng == 1 && z < 1) { ruhusu = 0; }             // dunia nzima: miji mikuu na majiji makuu tu
+        kama (ng == 2 && z < 2) { ruhusu = 0; }
+        kama (ng == 3 && z < 4) { ruhusu = 0; }
+        kama (ruhusu) {
+            i = 0;
+            wakati (i < d->idadi_makazi) {
+                n64 o = d->makazi[i];
+                kama (dh_u8(p, o + 8) == ng) {
+                    n64 sx = ((dh_u16(p, o + 2) * 32 + 128 - x0)) / kipimo;
+                    n64 sy = ((dh_u16(p, o) * 32 + 128 - y0)) / kipimo;
+                    n64 bendera = dh_u8(p, o + 9);
+                    n64 ga = d->ardhi[((dh_u16(p, o) / 8) % d->kimo) * d->upana + (dh_u16(p, o + 2) / 8) % d->upana] & 255;
+                    n32 onyesha = sx > 6 && sy > 6 && sx < t->upana - 6 && sy < t->kimo - 6 && ga != 0 && ga != 2;
+                    kama (z < 1 && (bendera & 1) == 0 && dh_u32(p, o + 4) < 1500000) { onyesha = 0; }
+                    kama (onyesha) {
+                        n64 r = 2;
+                        n64 ukubwa = 10;
+                        Fonti* f = kawaida;
+                        n64 rangi = 5526582;            // 0x545446
+                        kama (ng == 2) { r = 2; ukubwa = 11; rangi = 3815470; }
+                        kama (ng == 1) { r = 3; ukubwa = 12; f = nene; rangi = 3157534; }
+                        kama (ng == 0 || (bendera & 1) != 0) { r = 4; ukubwa = 14; f = nene; rangi = 2631710; }
+                        kama (atlasi_sanduku_huru(t, sx - r - 1, sy - r - 1, sx + r + 1, sy + r + 1)) {
+                            atlasi_shika_sanduku(sx - r - 1, sy - r - 1, sx + r + 1, sy + r + 1);
+                            kama (ng <= 1 || (bendera & 1) != 0) {
+                                turubai_brashi(t, 7877160, 255);       // ukingo 0x783228
+                                turubai_duara256(t, sx * 256, sy * 256, (r + 1) * 256);
+                                turubai_brashi(t, 14051394, 255);      // 0xD66842
+                                turubai_duara256(t, sx * 256, sy * 256, r * 256);
+                            } sivyo {
+                                turubai_brashi(t, 3947574, 255);       // 0x3C3C36
+                                turubai_duara256(t, sx * 256, sy * 256, r * 256);
+                            }
+                            kama (z >= 2 && (bendera & 2) != 0) { dh_alama_bandari(t, sx - r - 7, sy + r + 6); }
+                            kama (z >= 2 && (bendera & 4) != 0) { dh_alama_uwanja(t, sx + r + 2, sy - r - 8); }
+                            n8* jina = dh_jina(p, o + 12);
+                            n64 upana = maandishi_upana(f, jina, ukubwa);
+                            n64 x = sx + r + 4;
+                            n64 y = sy - ukubwa / 2 - 2;
+                            kama (atlasi_sanduku_huru(t, x, y, x + upana, y + ukubwa + 2)) {
+                                atlasi_maandishi(t, f, jina, x, y, ukubwa, rangi, 255);
+                                atlasi_shika_sanduku(x - 2, y, x + upana + 2, y + ukubwa + 2);
+                            } sivyo {
+                                x = sx - r - 4 - upana;
+                                kama (atlasi_sanduku_huru(t, x, y, x + upana, y + ukubwa + 2)) {
+                                    atlasi_maandishi(t, f, jina, x, y, ukubwa, rangi, 255);
+                                    atlasi_shika_sanduku(x - 2, y, x + upana + 2, y + ukubwa + 2);
+                                }
+                            }
+                        }
+                    }
+                }
+                i = i + 1;
+            }
+        }
+        ng = ng + 1;
+    }
+    // jiografia: milima, majangwa, misitu ... (herufi kubwa za kahawia); maji kwa italiki
+    i = 0;
+    wakati (i < d->idadi_maandishi) {
+        n64 o = d->maandishi[i];
+        n64 aina = dh_u8(p, o);
+        n64 sx = ((dh_u16(p, o + 9) * 32 + 128 - x0)) / kipimo;
+        n64 sy = ((dh_u16(p, o + 7) * 32 + 128 - y0)) / kipimo;
+        kama (aina != 9 && sx > 10 && sy > 10 && sx < t->upana - 10 && sy < t->kimo - 10) {
+            n8* jina = dh_jina(p, o + 11);
+            kama (aina <= 5) {
+                n8* kubwa = atlasi_herufi_kubwa(jina);
+                n64 ukubwa = 11 + z;
+                n64 upana = atlasi_maandishi_mapana(t, serifu, kubwa, 0, 0, ukubwa, ukubwa / 3, 0, 0);
+                n64 x = sx - upana / 2;
+                kama (atlasi_sanduku_huru(t, x, sy, x + upana, sy + ukubwa + 2)) {
+                    atlasi_maandishi_mapana(t, serifu, kubwa, x, sy, ukubwa, ukubwa / 3, 1, 6838338);   // 0x685842
+                    atlasi_shika_sanduku(x, sy, x + upana, sy + ukubwa + 2);
+                }
+                achilia kubwa;
+            } sivyo {
+                n64 ukubwa = 12 + z;
+                kama (aina == 7) { ukubwa = 16 + z; }
+                n64 upana = maandishi_upana(serifu, jina, ukubwa);
+                n64 x = sx - upana / 2;
+                kama (atlasi_sanduku_huru(t, x, sy, x + upana, sy + ukubwa + 2)) {
+                    atlasi_maandishi(t, serifu, jina, x, sy, ukubwa, 5143444, 255);                       // 0x4E7B94
+                    atlasi_shika_sanduku(x, sy, x + upana, sy + ukubwa + 2);
+                }
+            }
+        }
+        i = i + 1;
+    }
+}
+
+// Majina ya mito (kwa njia zao) na ya migogoro -- baada ya mengine yote.
+w0 dunia_halisi_chora_mito_majina(DuniaHalisi* d, Turubai* t, n64 x0, n64 y0, n64 kipimo, Fonti* serifu) {
+    n8* p = d->data;
+    n64 z = 256 / kipimo;
+    n64 ukubwa = 11 + z;
+    kama (ukubwa > 15) { ukubwa = 15; }
+    n64 i = 0;
+    wakati (i < d->idadi_maandishi) {
+        n64 o = d->maandishi[i];
+        kama (dh_u8(p, o) == 9) {
+            n64 mtiririko = dh_u32(p, o + 3);
+            // dunia nzima: mito mikubwa tu
+            kama (z >= 1 || mtiririko > 20000) {
+                n64 jo = o + 11;
+                n64 njia = jo + 1 + dh_u8(p, jo);
+                n8* jina = dh_jina(p, jo);
+                dh_jina_la_mto(d, t, serifu, jina, njia, x0, y0, kipimo, ukubwa);
+            }
+        }
+        i = i + 1;
+    }
+    kama (z >= 1) {
+        i = 0;
+        wakati (i < d->idadi_migogoro) {
+            n64 sx = (d->mg_x[i] * 256 + 128 - x0) / kipimo;
+            n64 sy = (d->mg_y[i] * 256 + 128 - y0) / kipimo;
+            kama (sx > 40 && sy > 20 && sx < t->upana - 40 && sy < t->kimo - 20) {
+                n8* tt = "Disputed Territory";
+                n64 upana = maandishi_upana(serifu, tt, 12);
+                kama (atlasi_sanduku_huru(t, sx - upana / 2, sy - 8, sx + upana / 2, sy + 8)) {
+                    atlasi_maandishi(t, serifu, tt, sx - upana / 2, sy - 8, 12, 7876648, 255);
+                    atlasi_shika_sanduku(sx - upana / 2, sy - 8, sx + upana / 2, sy + 8);
+                }
+            }
+            i = i + 1;
+        }
+    }
+}
+
+w0 dunia_halisi_chora(DuniaHalisi* d, Turubai* t, n64 x0, n64 y0, n64 kipimo,
+                      Fonti* nene, Fonti* kawaida, Fonti* serifu) {
+    dunia_halisi_chora_msingi(d, t, x0, y0, kipimo);
+    dunia_halisi_chora_vekta(d, t, x0, y0, kipimo);
+    dunia_halisi_chora_majina(d, t, x0, y0, kipimo, nene, kawaida, serifu);
+    dunia_halisi_chora_mito_majina(d, t, x0, y0, kipimo, serifu);
+}

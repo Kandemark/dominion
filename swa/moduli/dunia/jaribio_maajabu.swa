@@ -1,0 +1,63 @@
+husisha { moduli/dunia/maajabu.swa }
+
+// jaribio_maajabu.swa -- jaribio la mkono dhidi ya DuniaAjabuMsimamizi
+// (maajabu.swa, tafsiri ya wonders.c) PEKEE, bila kupitia mchezo.swa
+// (angalia lugha-swa/swa#292). Linathibitisha THAMANI HALISI.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    DuniaAjabuMsimamizi* m = dunia_maajabu_msimamizi_unda();
+    n32 m_sio_tupu = (m != 0);
+    jaribio_thibitisha(m_sio_tupu, "dunia_maajabu_msimamizi_unda inarudisha kielekezi");
+
+    DuniaAjabu* piramidi = dunia_maajabu_pata(m, DUNIA_MAAJABU_PIRAMIDI);
+    jaribio_thibitisha(linganisha_mfuatano(piramidi->jina, "Piramidi") == 0, "piramidi ina jina sahihi");
+    jaribio_thibitisha(piramidi->gharama_ya_uzalishaji > 199.9 && piramidi->gharama_ya_uzalishaji < 200.1, "piramidi ina gharama sahihi");
+    jaribio_thibitisha(piramidi->imejengwa == 0, "piramidi haijajengwa mwanzoni");
+
+    DuniaAjabu* koloso = dunia_maajabu_pata(m, DUNIA_MAAJABU_KOLOSO);
+    jaribio_thibitisha(koloso->inahitaji_pwani == 1, "koloso inahitaji pwani");
+
+    // Haiwezi kujengwa bila teknolojia sahihi.
+    n32 inaweza_bila_tek = dunia_maajabu_yanaweza_kujengwa(m, DUNIA_MAAJABU_PIRAMIDI, "ukulima", 0);
+    jaribio_thibitisha(inaweza_bila_tek == 0, "haiwezi kujengwa bila teknolojia sahihi");
+
+    n32 inaweza_na_tek = dunia_maajabu_yanaweza_kujengwa(m, DUNIA_MAAJABU_PIRAMIDI, "ufundi_wa_mawe", 0);
+    jaribio_thibitisha(inaweza_na_tek == 1, "inaweza kujengwa na teknolojia sahihi");
+
+    // Koloso inahitaji pwani -- bila pwani haiwezi.
+    n32 koloso_bila_pwani = dunia_maajabu_yanaweza_kujengwa(m, DUNIA_MAAJABU_KOLOSO, "kazi_za_shaba", 0);
+    jaribio_thibitisha(koloso_bila_pwani == 0, "koloso haiwezi kujengwa bila pwani");
+    n32 koloso_na_pwani = dunia_maajabu_yanaweza_kujengwa(m, DUNIA_MAAJABU_KOLOSO, "kazi_za_shaba", 1);
+    jaribio_thibitisha(koloso_na_pwani == 1, "koloso inaweza kujengwa na pwani");
+
+    // Jenga piramidi kwa "taifa_a" na uthibitishe athari za jumla.
+    dunia_maajabu_weka_limejengwa(m, DUNIA_MAAJABU_PIRAMIDI, "taifa_a");
+    jaribio_thibitisha(piramidi->imejengwa == 1, "piramidi imejengwa baada ya weka_limejengwa");
+    jaribio_thibitisha(linganisha_mfuatano(piramidi->mjenzi_id, "taifa_a") == 0, "mjenzi_id umewekwa sahihi");
+
+    DuniaAjabuAthari athari = dunia_maajabu_hesabu_athari_za_jumla(m, "taifa_a");
+    jaribio_thibitisha(athari.kizidishi_cha_uzalishaji > 0.149 && athari.kizidishi_cha_uzalishaji < 0.151, "athari za uzalishaji zinajumlishwa kutoka piramidi pekee");
+    jaribio_thibitisha(athari.kizidishi_cha_sayansi > (0.0 - 0.001) && athari.kizidishi_cha_sayansi < 0.001, "hakuna athari za sayansi kutoka piramidi (maktaba haijajengwa)");
+
+    // Taifa tofauti halipaswi kupata athari za piramidi ya taifa_a.
+    DuniaAjabuAthari athari_tofauti = dunia_maajabu_hesabu_athari_za_jumla(m, "taifa_b");
+    jaribio_thibitisha(athari_tofauti.kizidishi_cha_uzalishaji > (0.0 - 0.001) && athari_tofauti.kizidishi_cha_uzalishaji < 0.001, "taifa jingine halipati athari za ajabu ya taifa_a");
+
+    // Haiwezi kujengwa mara ya pili (tayari imejengwa).
+    n32 inaweza_tena = dunia_maajabu_yanaweza_kujengwa(m, DUNIA_MAAJABU_PIRAMIDI, "ufundi_wa_mawe", 0);
+    jaribio_thibitisha(inaweza_tena == 0, "haiwezi kujengwa tena ikiwa tayari imejengwa");
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

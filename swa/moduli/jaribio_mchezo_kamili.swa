@@ -1,0 +1,357 @@
+husisha { moduli/mchezo.swa }
+
+// jaribio_mchezo_kamili.swa -- jaribio la mwisho-hadi-mwisho (end-to-end)
+// la KWANZA la mradi huu dhidi ya Mchezo KAMILI (mifumo 47 iliyounganishwa,
+// 40 ya mawimbi yaliyopita + 5 ya wimbi la kumi (vipimo_laini,
+// kitengo_chini, uandishi, historia_db, soko_fedha) + 2 ya wimbi la
+// kumi na moja (mageuko_lugha, siasa) -- angalia mchezo.swa).
+//
+// TOFAUTI na jaribio_mchezo.swa (lililopo tayari): jaribio HILI huita
+// mchezo_unda() + mchezo_anzisha() HALISI (si Mchezo kwa mkono) na
+// kuendesha mizunguko KADHAA HALISI ya mchezo_sasisha(g), kisha
+// kuthibitisha THAMANI HALISI za shamba zinazobadilika kote kwenye
+// mifumo mingi -- kigezo cha mradi huu: "haikuanguka" si sawa na "ni
+// sahihi", lazima tuone nambari halisi zikisogea.
+//
+// Hii ilikuwa IMEZUIWA MARA MBILI kabla ya leo:
+//   - lugha-swa/swa#292 (bit-pattern collision baada ya ~440 kazi kwenye
+//     kitengo kimoja cha utafsiri) -- ilithibitika kurekebishwa 2026-10-01.
+//   - lugha-swa/swa#295 (ulinganishi kwenye hoja za wito ulichafua
+//     usajili wa hoja zilizofuata + majedwali matatu ya ndani ya
+//     mkusanyaji yaliyoachwa kimya badala ya kusimamisha) -- imerekebishwa
+//     2026-10-03 (PR #297). Jaribio hili ndilo uthibitisho wa kwanza
+//     kamili kuwa mchezo MZIMA (mifumo 45, kazi 1000+) sasa unafanya
+//     kazi pamoja kuwa programu MOJA yenye matokeo ya kuaminika.
+//     (Baadaye, kikao hicho hicho: mifumo 2 za ziada -- mageuko_lugha,
+//     siasa -- ziliongezwa, hivyo jumla ya sasa ni 47.)
+//
+// MUUNDO WA FAILI: kazi imegawanywa katika vipande vidogo (jk_snapshot,
+// jk_seed_ziada, jk_linganisha_na_ripoti) badala ya kuwa yote ndani ya
+// anza() moja -- sawa na somo lililojifunzwa na mchezo_sasisha_mifumo_huru
+// mwenyewe: kuunganisha mifumo mingi kwenye kazi MOJA kunagonga kikomo
+// cha mkusanyaji cha "vigezo vya ndani 64 kwa kila kazi" haraka sana
+// (imethibitishwa kwa vitendo wakati wa kuandika jaribio hili -- jaribio
+// la kwanza la kukusanya moja kubwa lilishindwa kwa KOSA hiyo hiyo).
+//
+// MTINDO WA UTHIBITISHO: baadhi ya makosa hapa chini yanapitisha
+// ULINGANISHI MOJA KWA MOJA kama hoja ya wito (mfano
+// `jk_thibitisha(baada != kabla->uwanja, ...)` -- hili ndilo muundo
+// HASA uliokuwa ukivunjwa na #295 (angalia maelezo ya mchezo.swa) --
+// kuyatumia hapa kimakusudi ni uthibitisho wa ziada kuwa #295
+// imerekebishwa KWELI, si tu kwamba thamani za ALU/FPU ni sahihi.
+// Ukaguzi wa kielekezi dhidi ya 0 (muundo*) daima hupitishwa kwa
+// kigezo cha n32 kilichotengwa KABLA -- lugha-swa/swa#296, mdudu
+// TOFAUTI kabisa na usiohusiana na #295, bado wazi -- angalia
+// mchezo.swa kwa maelezo kamili.
+
+n32 jk_yalioshindwa = 0;
+
+w0 jk_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jk_yalioshindwa = jk_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+// jk_dbg_d64: chapisha d64 kwa usahihi wa desimali 3 (kuzidisha kwa
+// 1000, kuonyesha kama n64) -- %f haiungwi mkono na andika (angalia
+// jaribio_mchezo.swa kwa muundo uleule).
+w0 jk_dbg_d64(n8* jina, d64 v) {
+    n64 v_x1000 = v * 1000.0;
+    andika("  [dbg] %s*1000 = %d\n", jina, v_x1000, 0, 0, 0, 0);
+}
+
+// JkKabla: picha BAPA (hakuna vielekezi, hakuna safu -- inapita kanuni
+// za mradi za muundo) ya thamani muhimu kote kwenye mifumo mingi,
+// iliyochukuliwa KABLA ya mizunguko ya mchezo_sasisha ili kuthibitisha
+// mabadiliko HALISI baada yake.
+muundo JkKabla {
+    n64 idadi_watu;
+    d64 pato;
+    d64 mshahara;
+    d64 kodi;
+    d64 riba;
+    d64 chakula;
+    d64 miundombinu;
+    d64 viwanda;
+    d64 nishati_bei;
+    d64 msongamano;
+    d64 ufanisi;
+    d64 sarafu;
+    d64 usd;
+    d64 furaha;
+    d64 elimu;
+    d64 mvutano;
+    d64 maendeleo;
+    d64 utata_lugha;
+    d64 uhalali;
+};
+
+// jk_snapshot: jaza JkKabla na thamani za SASA za mifumo mingi (inatumika
+// mara mbili -- kabla na baada ya mizunguko).
+w0 jk_snapshot(Mchezo* g, JkKabla* out) {
+    IdadiYaWatuMsimamizi* pm = mchezo_pata_idadi_ya_watu(g);
+    out->idadi_watu = pm->demografia.idadi_jumla;
+
+    UchumiMkuuMfumo* mkuu = mchezo_pata_uchumi_mkuu(g);
+    out->pato = mkuu->ripoti_ya_mwisho.pato_la_taifa;
+
+    NguvukaziMfumo* nguvukazi = mchezo_pata_nguvukazi(g);
+    out->mshahara = nguvukazi->mshahara_wa_wastani_wa_taifa;
+
+    KodiMfumo* kodi = mchezo_pata_kodi(g);
+    out->kodi = kodi->mapato_jumla;
+
+    BenkiMfumo* benki = mchezo_pata_benki(g);
+    out->riba = benki->kiwango_cha_msingi_cha_riba;
+
+    KilimoMfumo* kilimo = mchezo_pata_kilimo(g);
+    out->chakula = kilimo->uzalishaji_wa_chakula;
+
+    MiundombinuMfumo* miundombinu = mchezo_pata_miundombinu(g);
+    out->miundombinu = miundombinu->ubora_wa_jumla;
+
+    ViwandaMfumo* viwanda = mchezo_pata_viwanda(g);
+    out->viwanda = viwanda->pato_jumla_la_viwanda;
+
+    NishatiMfumo* nishati = mchezo_pata_nishati(g);
+    out->nishati_bei = nishati->bei_ya_nishati;
+
+    ArdhiMfumo* ardhi = mchezo_pata_ardhi(g);
+    out->msongamano = ardhi->msongamano_wa_watu;
+
+    UtawalaSerikali* serikali = mchezo_pata_serikali(g);
+    out->ufanisi = serikali->ufanisi;
+
+    Sarafu* sarafu = mchezo_pata_sarafu(g);
+    out->sarafu = sarafu->kiwango_cha_ubadilishaji;
+
+    SokoFedhaInjini* soko_fedha = mchezo_pata_soko_fedha(g);
+    SokoFedhaSarafu* usd = soko_fedha_pata_sarafu(soko_fedha, "USD");
+    out->usd = usd->kiwango_cha_sasa;
+
+    VipimoLainiMsimamizi* vipimo = mchezo_pata_vipimo_laini(g);
+    out->furaha = vipimo->furaha.furaha_msingi;
+
+    UhaiMfumo* uhai = mchezo_pata_uhai(g);
+    out->elimu = uhai->kiwango_cha_elimu;
+
+    DuniaMipakaHai* mipaka = mchezo_pata_mipaka_hai(g);
+    out->mvutano = dunia_mpaka_hai_pata_mvutano(mipaka, "A", "B");
+
+    KitengoChiniMsimamizi* kitengo_m = mchezo_pata_kitengo_chini(g);
+    KitengoChini* kitengo = kitengo_chini_msimamizi_pata(kitengo_m, 0);
+    out->maendeleo = kitengo->maendeleo;
+
+    UtamaduniMageukoMfumo* mageuko_m = mchezo_pata_mageuko_lugha(g);
+    UtamaduniMageukoLugha* lugha0 = utamaduni_mageuko_mfumo_pata(mageuko_m, 0);
+    out->utata_lugha = lugha0->utata;
+
+    SiasaMfumo* siasa = mchezo_pata_siasa(g);
+    out->uhalali = siasa->uhalali;
+}
+
+// jk_seed_ziada: mbegu za ziada kwa mifumo ambayo mchezo_anzisha huiacha
+// TUPU kimakusudi (si kosa -- angalia maelezo ya wigo kwenye mchezo.swa):
+// mipaka_hai (kipande kimoja cha mpaka kinachobishaniwa), kitengo_chini
+// (kitengo kimoja cha mkoa), historia_db (tukio moja la mkono).
+w0 jk_seed_ziada(Mchezo* g) {
+    DuniaMipakaHai* mipaka = mchezo_pata_mipaka_hai(g);
+    DuniaMpakaHoja hoja;
+    hoja.eneo_a = "A";
+    hoja.eneo_b = "B";
+    hoja.mwanzo_x = 0.0;
+    hoja.mwanzo_y = 0.0;
+    hoja.mwisho_x = 1.0;
+    hoja.mwisho_y = 1.0;
+    hoja.aina = DUNIA_MPAKA_UNAOBISHANIWA;
+    dunia_mpaka_hai_unda_kipande(mipaka, &hoja);
+
+    KitengoChiniMsimamizi* kitengo_m = mchezo_pata_kitengo_chini(g);
+    KitengoChini* kitengo = kitengo_chini_unda("mkoa_1", "Mkoa wa Kwanza", 0);
+    kitengo_chini_msimamizi_ongeza(kitengo_m, kitengo);
+
+    // viwanda huanza bila kiwanda chochote (idadi_ya_viwanda=0, kama
+    // mipaka_hai/kitengo_chini/eneo) -- kiwanda kimoja kinaongezwa ili
+    // pato_jumla_la_viwanda liwe na kitu cha kuhesabu badala ya kubaki
+    // 0.0 kimya milele.
+    ViwandaMfumo* viwanda_s = mchezo_pata_viwanda(g);
+    viwanda_ongeza_kiwanda(viwanda_s, "Nguo", 100);
+
+    HistoriaDB* jarida = mchezo_pata_historia_db(g);
+    n32 idadi_matukio_kabla = jarida->idadi_ya_matukio;
+    n8* jk_data_tupu = 0;
+    historia_db_andika(jarida, HISTORIA_TUKIO_KUMBUKUMBU_YA_JUMLA, "jaribio_kamili", jk_data_tupu, 0);
+    n32 idadi_matukio_baada = jarida->idadi_ya_matukio;
+    jk_thibitisha(idadi_matukio_kabla == 0, "historia_db huanza bila matukio");
+    jk_thibitisha(idadi_matukio_baada == 1, "historia_db_andika inaongeza tukio moja kweli");
+
+    // mageuko_lugha huanza TUPU (hakuna lugha ya awali, sawa na
+    // itikadi/dini/uandishi) -- lugha moja inaongezwa hapa ili
+    // utata wake uwe na kitu cha kubadilika badala ya kubaki 0
+    // kimya milele (hakuna lugha = kitanzi cha mfumo_badilika
+    // hakifanyi lolote).
+    UtamaduniMageukoMfumo* mageuko_m = mchezo_pata_mageuko_lugha(g);
+    n8* jk_hakuna_mzazi = 0;
+    UtamaduniMageukoLugha* lugha_ya_jaribio = utamaduni_mageuko_unda("lug_jk", "Lugha ya Jaribio", jk_hakuna_mzazi);
+    lugha_ya_jaribio->wazungumzaji = 3.0;
+    utamaduni_mageuko_mfumo_ongeza(mageuko_m, lugha_ya_jaribio);
+}
+
+// jk_thibitisha_uwepo: mifumo yote 45 lazima ziwe SI-SIFURI mara tu
+// baada ya mchezo_anzisha -- si tu "haikuanguka".
+w0 jk_thibitisha_uwepo(Mchezo* g) {
+    n32 ns_msingi =
+        (mchezo_pata_muda(g) != 0) && (mchezo_pata_idadi_ya_watu(g) != 0) &&
+        (mchezo_pata_serikali(g) != 0) && (mchezo_pata_ramani(g) != 0) &&
+        (mchezo_pata_makazi(g) != 0) && (mchezo_pata_akili(g) != 0) &&
+        (mchezo_pata_diplomasia(g) != 0) && (mchezo_pata_taifa(g) != 0);
+    jk_thibitisha(ns_msingi, "mifumo 7 ya msingi + taifa zote zipo baada ya anzisha");
+
+    n32 ns_uchumi1 =
+        (mchezo_pata_uchumi_mkuu(g) != 0) && (mchezo_pata_nguvukazi(g) != 0) &&
+        (mchezo_pata_sera(g) != 0) && (mchezo_pata_kodi(g) != 0) &&
+        (mchezo_pata_bajeti(g) != 0) && (mchezo_pata_bidhaa(g) != 0) &&
+        (mchezo_pata_benki(g) != 0) && (mchezo_pata_kilimo(g) != 0) &&
+        (mchezo_pata_uchimbaji(g) != 0) && (mchezo_pata_miundombinu(g) != 0);
+    jk_thibitisha(ns_uchumi1, "mifumo 10 ya kwanza ya nguzo ya uchumi zipo");
+
+    n32 ns_uchumi2 =
+        (mchezo_pata_viwanda(g) != 0) && (mchezo_pata_nishati(g) != 0) &&
+        (mchezo_pata_uchumi_makazi(g) != 0) && (mchezo_pata_ardhi(g) != 0) &&
+        (mchezo_pata_mtaji(g) != 0) && (mchezo_pata_biashara_ndani(g) != 0) &&
+        (mchezo_pata_biashara_nje(g) != 0) && (mchezo_pata_uvumbuzi(g) != 0) &&
+        (mchezo_pata_soko_haramu(g) != 0) && (mchezo_pata_vita(g) != 0);
+    jk_thibitisha(ns_uchumi2, "mifumo 10 ya pili ya nguzo ya uchumi zipo");
+
+    n32 ns_tano =
+        (mchezo_pata_utamaduni_kitambulisho(g) != 0) && (mchezo_pata_utamaduni_kuenea(g) != 0) &&
+        (mchezo_pata_utamaduni_itikadi(g) != 0) && (mchezo_pata_utamaduni_uigaji(g) != 0) &&
+        (mchezo_pata_utamaduni_dini(g) != 0) && (mchezo_pata_matukio(g) != 0) &&
+        (mchezo_pata_wakala(g) != 0) && (mchezo_pata_okestra(g) != 0) &&
+        (mchezo_pata_saa_kuu(g) != 0) && (mchezo_pata_uhifadhi(g) != 0) &&
+        (mchezo_pata_utendaji(g) != 0);
+    jk_thibitisha(ns_tano, "mifumo 11 ya wimbi la tano (utamaduni/injini) zipo");
+
+    n32 ns_sita_nane =
+        (mchezo_pata_jeshi_vitengo(g) != 0) && (mchezo_pata_mapigano(g) != 0) &&
+        (mchezo_pata_ushindi(g) != 0) && (mchezo_pata_kikundi(g) != 0) &&
+        (mchezo_pata_teknolojia(g) != 0) && (mchezo_pata_maarifa(g) != 0) &&
+        (mchezo_pata_mipaka_hai(g) != 0) && (mchezo_pata_majanga(g) != 0) &&
+        (mchezo_pata_eneo(g) != 0) && (mchezo_pata_uhai(g) != 0) &&
+        (mchezo_pata_sarafu(g) != 0) && (mchezo_pata_maajabu(g) != 0) &&
+        (mchezo_pata_jamii(g) != 0) && (mchezo_pata_desturi(g) != 0) &&
+        (mchezo_pata_mwingiliano(g) != 0) && (mchezo_pata_mhusika(g) != 0) &&
+        (mchezo_pata_upinzani(g) != 0) && (mchezo_pata_mashirika(g) != 0);
+    jk_thibitisha(ns_sita_nane, "mifumo 18 ya mawimbi 6/7/8/9 zipo");
+
+    n32 ns_kumi =
+        (mchezo_pata_vipimo_laini(g) != 0) && (mchezo_pata_kitengo_chini(g) != 0) &&
+        (mchezo_pata_uandishi(g) != 0) && (mchezo_pata_historia_db(g) != 0) &&
+        (mchezo_pata_soko_fedha(g) != 0);
+    jk_thibitisha(ns_kumi, "mifumo 5 MAPYA ya wimbi la kumi zipo (vipimo_laini/kitengo_chini/uandishi/historia_db/soko_fedha)");
+
+    n32 ns_kumi_na_moja =
+        (mchezo_pata_mageuko_lugha(g) != 0) && (mchezo_pata_siasa(g) != 0);
+    jk_thibitisha(ns_kumi_na_moja, "mifumo 2 MAPYA ya wimbi la kumi na moja zipo (mageuko_lugha/siasa)");
+}
+
+// jk_linganisha_na_ripoti: chukua picha ya SASA, linganisha na kabla,
+// chapisha thamani halisi, na thibitisha mabadiliko yanayotarajiwa.
+w0 jk_linganisha_na_ripoti(Mchezo* g, JkKabla* kabla, n32 idadi_ya_mizunguko) {
+    JkKabla sasa_v;
+    jk_snapshot(g, &sasa_v);
+    JkKabla* sasa = &sasa_v;
+
+    andika("\n-- thamani halisi kabla/baada ya mizunguko %d --\n", idadi_ya_mizunguko, 0,0,0,0,0);
+    jk_dbg_d64("pato_la_taifa (kabla)", kabla->pato);
+    jk_dbg_d64("pato_la_taifa (baada)", sasa->pato);
+    jk_dbg_d64("mvutano_mpaka (kabla)", kabla->mvutano);
+    jk_dbg_d64("mvutano_mpaka (baada)", sasa->mvutano);
+    jk_dbg_d64("maendeleo_kitengo (kabla)", kabla->maendeleo);
+    jk_dbg_d64("maendeleo_kitengo (baada)", sasa->maendeleo);
+    andika("  [dbg] idadi_ya_watu (kabla)=%d (baada)=%d\n", kabla->idadi_watu, sasa->idadi_watu, 0,0,0,0);
+    jk_dbg_d64("utata_lugha (kabla)", kabla->utata_lugha);
+    jk_dbg_d64("utata_lugha (baada)", sasa->utata_lugha);
+    jk_dbg_d64("uhalali (kabla)", kabla->uhalali);
+    jk_dbg_d64("uhalali (baada)", sasa->uhalali);
+
+    // Uthibitisho -- mingi hapa chini inapitisha ulinganishi MOJA KWA
+    // MOJA kama hoja ya wito (angalia maelezo ya mtindo juu ya faili).
+    jk_thibitisha(sasa->idadi_watu != kabla->idadi_watu, "idadi_ya_watu imebadilika baada ya mizunguko");
+    jk_thibitisha(sasa->pato != kabla->pato, "pato_la_taifa (uchumi_mkuu) limebadilika");
+    jk_thibitisha(sasa->pato > 0.0, "pato_la_taifa ni chanya baada ya mizunguko");
+    jk_thibitisha(sasa->mshahara != kabla->mshahara, "mshahara_wa_wastani (nguvukazi) umebadilika");
+    jk_thibitisha(sasa->kodi != kabla->kodi, "mapato_jumla (kodi) yamebadilika");
+    jk_thibitisha(sasa->riba != kabla->riba, "kiwango_cha_msingi_cha_riba (benki) kimebadilika");
+    jk_thibitisha(sasa->chakula != kabla->chakula, "uzalishaji_wa_chakula (kilimo) umebadilika");
+    jk_thibitisha(sasa->miundombinu != kabla->miundombinu, "ubora_wa_jumla (miundombinu) umebadilika");
+    jk_thibitisha(sasa->viwanda != kabla->viwanda, "pato_jumla_la_viwanda (viwanda) limebadilika");
+    jk_thibitisha(sasa->nishati_bei != kabla->nishati_bei, "bei_ya_nishati imebadilika");
+    jk_thibitisha(sasa->msongamano != kabla->msongamano, "msongamano_wa_watu (ardhi) umebadilika");
+    jk_thibitisha(sasa->ufanisi != kabla->ufanisi, "ufanisi (serikali) umebadilika");
+    jk_thibitisha(sasa->sarafu != kabla->sarafu, "kiwango_cha_ubadilishaji (sarafu ya taifa) kimebadilika");
+    jk_thibitisha(sasa->usd != kabla->usd, "kiwango_cha_sasa cha USD (soko_fedha) kimebadilika");
+    jk_thibitisha(sasa->furaha != kabla->furaha, "furaha_msingi (vipimo_laini) imebadilika");
+    jk_thibitisha(sasa->elimu > kabla->elimu, "kiwango_cha_elimu (uhai) kimeongezeka (drift ya kudumu +0.001*dt)");
+    jk_thibitisha(sasa->mvutano > kabla->mvutano, "mvutano wa mpaka (mipaka_hai) umeongezeka ndani ya Mchezo HALISI");
+    jk_thibitisha(sasa->maendeleo != kabla->maendeleo, "maendeleo (kitengo_chini) yamebadilika");
+    jk_thibitisha(sasa->utata_lugha != kabla->utata_lugha, "utata (mageuko_lugha) umebadilika");
+    jk_thibitisha(sasa->uhalali != kabla->uhalali, "uhalali (siasa) umebadilika");
+    n32 uhalali_ndani_ya_mipaka = (sasa->uhalali >= 0.0 && sasa->uhalali <= 1.0);
+    jk_thibitisha(uhalali_ndani_ya_mipaka, "uhalali (siasa) unabaki ndani ya [0,1]");
+}
+
+n32 anza() {
+    Mchezo* g = mchezo_unda();
+    n32 g_sio_tupu = (g != 0);
+    jk_thibitisha(g_sio_tupu, "mchezo_unda inarudisha kielekezi");
+
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    n32 anzisha_ni_sawa = (r.hitilafu == CIV_SAWA);
+    jk_thibitisha(anzisha_ni_sawa, "mchezo_anzisha HALISI inarudi CIV_SAWA (mifumo 47)");
+    jk_thibitisha(g->inafanya_kazi == 1, "mchezo_anzisha inaweka inafanya_kazi=1");
+    jk_thibitisha(g->zamu_ya_sasa == 1, "mchezo_anzisha inaweka zamu_ya_sasa=1");
+
+    jk_thibitisha_uwepo(g);
+    jk_seed_ziada(g);
+
+    JkKabla kabla_v;
+    jk_snapshot(g, &kabla_v);
+    JkKabla* kabla = &kabla_v;
+
+    n32 idadi_ya_mizunguko = 12;
+    n32 i = 0;
+    wakati (i < idadi_ya_mizunguko) {
+        mchezo_sasisha(g);
+        i = i + 1;
+    }
+    // Zamu mbili za ziada (injini_saa_kuu/wakala ni za-kila-zamu, si
+    // za-kila-dt -- angalia maelezo kwenye mchezo.swa).
+    mchezo_maliza_zamu(g);
+    mchezo_maliza_zamu(g);
+
+    n64 idadi_sasisho = g->utendaji.idadi_ya_sasisho;
+    n32 idadi_sasisho_sawa = (idadi_sasisho == idadi_ya_mizunguko);
+    jk_thibitisha(idadi_sasisho_sawa, "idadi_ya_sasisho == idadi ya mizunguko iliyoendeshwa");
+    jk_thibitisha(g->zamu_ya_sasa == 3, "zamu_ya_sasa == 3 baada ya mchezo_maliza_zamu mara mbili");
+
+    jk_linganisha_na_ripoti(g, kabla, idadi_ya_mizunguko);
+
+    // Uharibifu kamili -- mifumo 47 yote (ikiwa 7 mpya katika wimbi 10+11) lazima ziharibike
+    // bila kuanguka. Hakuna thamani ya kurudi ya kuangalia baada ya
+    // uharibifu -- ikianguka, jaribio zima linashindwa kwa sauti
+    // (segfault), ambalo ni ukaguzi wa kutosha (mtindo uleule wa
+    // jaribio_mchezo.swa).
+    mchezo_uharibu(g);
+    andika("mchezo_uharibu(g) imekamilika bila kuanguka (mifumo 47)\n", 0,0,0,0,0,0);
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", jk_yalioshindwa, 0, 0, 0, 0, 0);
+    kama (jk_yalioshindwa > 0) { rudisha 1; }
+    andika("DONE\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

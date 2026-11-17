@@ -1,0 +1,298 @@
+husisha { moduli/onyesho/fonti.swa }
+
+// chati.swa -- injini ya TASWIRA YA TAKWIMU (data visualization):
+// chati za PAU (bar chart) na za MSTARI (line chart), zikichorwa juu
+// ya mchoro.swa (maumbo/rangi) na fonti.swa (maandishi ya lebo)
+// ZILIZOPO TAYARI, bila kuandika upya mantiki ya chini ya uchoraji
+// wala ya fonti. Hii ni Awamu C ya mradi wa "injini ya 2D yenye
+// nguvu + injini ya taswira ya takwimu" -- Awamu A ilileta maumbo
+// (duara/mviringo/pembetatu/mstatili_mpaka, commit 8de967c) na Awamu
+// B ililetea rangi/upauzi/gradient (mchoro_changanya_rangi,
+// mchoro_weka_pikseli_alpha, mchoro_piga_mstatili_gradient,
+// mchoro_rangi_ya_faharisi, commit 95c84bb). Faili hili ndilo
+// linalounganisha yote hayo kuwa chati HALISI zinazosomeka.
+//
+// KUHUSU LEBO ZA MAANDISHI: hud.swa ina kifuniko
+// onyesho_hud_chora_mstari_tayari, LAKINI kinapachika canvas_w/
+// canvas_h kwa KUDUMU kwenye ONYESHO_HUD_UPANA/ONYESHO_HUD_KIMO
+// (vigezo vya skrini ya HUD pekee) -- si sahihi kwa chati yenye
+// canvas_w/canvas_h YAKE MWENYEWE (zinazopitishwa na mwito, tofauti
+// na skrini ya HUD). Kwa hiyo chati.swa inaita moja kwa moja
+// mchoro_andika_mstari(MchoroMaandishiHoja*) -- KAZI HIYO HIYO
+// YA MSINGI inayotumika na onyesho_hud_chora_mstari_tayari yenyewe
+// (fonti.swa) -- ikijaza canvas_w/canvas_h kutoka kwenye hoja ya
+// chati husika. Mantiki ya fonti/uchoraji wa herufi HAIJAANDIKWA
+// UPYA popote hapa, inatumika tena HASA kama ilivyo.
+
+n64 CHATI_RANGI_MAANDISHI = 4294967295;  // nyeupe, XRGB8888
+n64 CHATI_RANGI_MHIMILI = 8421504;       // kijivu -- 0x808080
+
+// ChatiPauHoja -- zaidi ya vigezo 6, fungwa kwenye muundo (kanuni ya
+// usanifu ya mradi). Eneo la chati ni mstatili (x,y,w,h) kwenye
+// framebuffer uliopewa; `majina`/`thamani` ni safu zenye urefu
+// `idadi` (jina moja na thamani moja kwa kila pau).
+muundo ChatiPauHoja {
+    n8* fb;
+    n64 pitch;
+    n64 canvas_w;
+    n64 canvas_h;
+    n64 x;
+    n64 y;
+    n64 w;
+    n64 h;
+    n8** majina;      // safu ya majina (n8* kila moja), lebo chini ya kila pau
+    d64* thamani;     // safu ya d64, thamani ya kila pau
+    n32 idadi;        // idadi ya pau
+};
+
+// chati_pau -- chati ya PAU (bar chart), eneo likigawanywa sawasawa
+// kati ya pau zote (80% ya kila nafasi ni pau, 20% ni pengo kati ya
+// pau), kimo cha kila pau kikiwa sawia na uwiano wake dhidi ya
+// thamani ya JUU zaidi (auto-scale). Pau huchorwa zikianzia CHINI ya
+// eneo (y+h) zikipanda juu, rangi ya kila pau ikitoka kwenye paleti
+// ya mchoro_rangi_ya_faharisi (Awamu B) kulingana na faharisi yake.
+w0 chati_pau(ChatiPauHoja* hoja) {
+    kama (hoja->idadi == 0) { rudisha; }
+
+    // 1. thamani ya JUU zaidi -- kama zote ni 0 (au hasi), tumia 1.0
+    //    kuepuka kugawanya kwa sifuri.
+    d64 juu = hoja->thamani[0];
+    n32 i = 1;
+    wakati (i < hoja->idadi) {
+        kama (hoja->thamani[i] > juu) { juu = hoja->thamani[i]; }
+        i = i + 1;
+    }
+    kama (juu <= 0.0) { juu = 1.0; }
+
+    // 2. eneo la upana limegawanywa sawasawa kati ya pau zote --
+    //    80% ya kila nafasi ni upana wa pau yenyewe, 20% ni pengo.
+    n64 upana_nafasi = hoja->w / hoja->idadi;
+    n64 upana_pau = (upana_nafasi * 80) / 100;
+    kama (upana_pau < 1) { upana_pau = 1; }
+
+    i = 0;
+    wakati (i < hoja->idadi) {
+        d64 v = hoja->thamani[i];
+        kama (v < 0.0) { v = 0.0; }
+
+        // kimo cha pau hii -- uwiano wake dhidi ya thamani ya juu
+        // zaidi, ukizidishwa na kimo chote cha eneo la chati.
+        n64 kimo_pau = (v / juu) * hoja->h;
+        kama (kimo_pau > hoja->h) { kimo_pau = hoja->h; }
+
+        n64 pau_x = hoja->x + (i * upana_nafasi);
+        n64 pau_y = (hoja->y + hoja->h) - kimo_pau;
+        n64 rangi = mchoro_rangi_ya_faharisi(i);
+        mchoro_piga_mstatili(hoja->fb, hoja->pitch, hoja->canvas_w, hoja->canvas_h, pau_x, pau_y, upana_pau, kimo_pau, rangi);
+
+        // 3. lebo chini ya pau -- tumia tena mchoro_andika_mstari
+        //    (fonti.swa) moja kwa moja, bila kuandika upya mantiki
+        //    ya fonti.
+        kama (hoja->majina != 0) {
+            MchoroMaandishiHoja ch;
+            ch.fb = hoja->fb;
+            ch.pitch = hoja->pitch;
+            ch.canvas_w = hoja->canvas_w;
+            ch.canvas_h = hoja->canvas_h;
+            ch.x = pau_x;
+            ch.y = hoja->y + hoja->h + 4;
+            ch.maandishi = hoja->majina[i];
+            ch.rangi = CHATI_RANGI_MAANDISHI;
+            mchoro_andika_mstari(&ch);
+        }
+
+        i = i + 1;
+    }
+}
+
+// ChatiMstariHoja -- zaidi ya vigezo 6, fungwa kwenye muundo. `sampuli`
+// ni safu ya d64 yenye urefu `idadi` (mfano: GDP kwa kila zamu).
+muundo ChatiMstariHoja {
+    n8* fb;
+    n64 pitch;
+    n64 canvas_w;
+    n64 canvas_h;
+    n64 x;
+    n64 y;
+    n64 w;
+    n64 h;
+    d64* sampuli;     // safu ya d64, mfuatano wa namba
+    n32 idadi;        // idadi ya sampuli
+};
+
+// chati_mstari -- chati ya MSTARI (line chart): mhimili wa chini na
+// wa kushoto, kisha mstari unaounganisha sampuli zinazofuatana (auto-
+// scale wima kati ya thamani ya juu na ya chini zaidi), na duara
+// dogo (alama ya data) kwenye kila pointi. Thamani KUBWA = y NDOGO
+// kwenye skrini (y inapindika). Kama idadi < 2, hakuna mstari
+// unaowezekana kuchorwa -- rudi mapema bila hitilafu.
+w0 chati_mstari(ChatiMstariHoja* hoja) {
+    kama (hoja->idadi < 2) { rudisha; }
+
+    // 1. mihimili -- chini (x-axis) na kushoto (y-axis) ya eneo la
+    //    chati, kwa mchoro_chora_mstari iliyopo tayari (Awamu A).
+    mchoro_chora_mstari(hoja->fb, hoja->pitch, hoja->canvas_w, hoja->canvas_h, hoja->x, hoja->y + hoja->h, hoja->x + hoja->w, hoja->y + hoja->h, CHATI_RANGI_MHIMILI);
+    mchoro_chora_mstari(hoja->fb, hoja->pitch, hoja->canvas_w, hoja->canvas_h, hoja->x, hoja->y, hoja->x, hoja->y + hoja->h, CHATI_RANGI_MHIMILI);
+
+    // 2. thamani ya JUU na ya CHINI zaidi kati ya sampuli zote
+    //    (auto-scale wima).
+    d64 juu = hoja->sampuli[0];
+    d64 chini = hoja->sampuli[0];
+    n32 i = 1;
+    wakati (i < hoja->idadi) {
+        kama (hoja->sampuli[i] > juu) { juu = hoja->sampuli[i]; }
+        kama (hoja->sampuli[i] < chini) { chini = hoja->sampuli[i]; }
+        i = i + 1;
+    }
+    d64 wigo = juu - chini;
+    kama (wigo <= 0.0) { wigo = 1.0; }  // sampuli zote sawa -- epuka /0
+
+    n64 rangi_data = mchoro_rangi_ya_faharisi(0);
+    n64 x_uliopita = 0;
+    n64 y_uliopita = 0;
+
+    i = 0;
+    wakati (i < hoja->idadi) {
+        n64 x_i = hoja->x + ((i * hoja->w) / (hoja->idadi - 1));
+
+        // kipimo 0.0 (=chini, pointi ya CHINI zaidi) .. 1.0 (=juu,
+        // pointi ya JUU zaidi) -- kisha y_i inapindika: kipimo=1.0
+        // (thamani kubwa) -> y_i karibu na hoja->y (juu ya skrini).
+        d64 kipimo = (hoja->sampuli[i] - chini) / wigo;
+        n64 y_i = (hoja->y + hoja->h) - (kipimo * hoja->h);
+
+        kama (i > 0) {
+            mchoro_chora_mstari(hoja->fb, hoja->pitch, hoja->canvas_w, hoja->canvas_h, x_uliopita, y_uliopita, x_i, y_i, rangi_data);
+        }
+        // alama ya data (point marker) -- duara dogo kwenye kila pointi.
+        mchoro_duara(hoja->fb, hoja->pitch, hoja->canvas_w, hoja->canvas_h, x_i, y_i, 3, rangi_data);
+
+        x_uliopita = x_i;
+        y_uliopita = y_i;
+        i = i + 1;
+    }
+}
+
+// chati_mstari_eleza -- MAELEZO (label) kwenye pointi MAALUM ya chati
+// ya mstari iliyopo tayari. Hii SI kazi mpya ya uchoraji wa mstari --
+// ni nyongeza ya kuandika `maneno` karibu na pointi moja, baada ya
+// chati_mstari kuwa imeshachora mstari/pointi zote. Nafasi ya pointi
+// (x_i, y_i) HUKOKOTOLEWA KWA MUUNDO HUO HUO HASA uliotumika ndani ya
+// chati_mstari hapo juu (auto-scale wima kati ya juu/chini ya
+// sampuli zote) -- fomula HAIJAVUMBULIWA upya hapa.
+w0 chati_mstari_eleza(ChatiMstariHoja* hoja, n32 faharisi_ya_pointi, n8* maneno) {
+    kama (hoja == 0 || maneno == 0) { rudisha; }
+    kama (hoja->idadi < 2) { rudisha; }
+    kama (faharisi_ya_pointi < 0 || faharisi_ya_pointi >= hoja->idadi) { rudisha; }
+
+    // juu na chini zaidi kati ya sampuli ZOTE -- HASA kama ndani ya
+    // chati_mstari.
+    d64 juu = hoja->sampuli[0];
+    d64 chini = hoja->sampuli[0];
+    n32 i = 1;
+    wakati (i < hoja->idadi) {
+        kama (hoja->sampuli[i] > juu) { juu = hoja->sampuli[i]; }
+        kama (hoja->sampuli[i] < chini) { chini = hoja->sampuli[i]; }
+        i = i + 1;
+    }
+    d64 wigo = juu - chini;
+    kama (wigo <= 0.0) { wigo = 1.0; }
+
+    // nafasi ya pointi `faharisi_ya_pointi` -- HASA kama x_i/y_i
+    // ndani ya chati_mstari.
+    n64 x_i = hoja->x + ((faharisi_ya_pointi * hoja->w) / (hoja->idadi - 1));
+    d64 kipimo = (hoja->sampuli[faharisi_ya_pointi] - chini) / wigo;
+    n64 y_i = (hoja->y + hoja->h) - (kipimo * hoja->h);
+
+    // andika `maneno` juu kidogo ya pointi (nafasi ya pengo 8px ili
+    // kutoonana na duara dogo la alama ya data) -- tumia tena
+    // mchoro_andika_mstari (fonti.swa) moja kwa moja.
+    MchoroMaandishiHoja ch;
+    ch.fb = hoja->fb;
+    ch.pitch = hoja->pitch;
+    ch.canvas_w = hoja->canvas_w;
+    ch.canvas_h = hoja->canvas_h;
+    ch.x = x_i;
+    ch.y = y_i - 8;
+    ch.maandishi = maneno;
+    ch.rangi = CHATI_RANGI_MAANDISHI;
+    mchoro_andika_mstari(&ch);
+}
+
+// ChatiBungeHoja -- chati ya "hemicycle" (bunge): dots zinazopanga
+// nusu-duara MOJA (radius moja -- toleo la KWANZA, si matao mengi ya
+// kweli ya mabunge halisi), kila dot ikiwakilisha KITI kimoja,
+// rangi ikilingana na kundi/chama chake. Zaidi ya vigezo 6, fungwa
+// kwenye muundo (kanuni ya usanifu ya mradi).
+muundo ChatiBungeHoja {
+    n8* fb;
+    n64 pitch;
+    n64 canvas_w;
+    n64 canvas_h;
+    n64 cx;        // kituo cha nusu-duara
+    n64 cy;        // chini ya nusu-duara (dots zinapanda juu kutoka hapa)
+    n64 radius;
+    n64* idadi_kwa_chama;  // safu ya n64, idadi ya "viti" kwa kila kundi
+    n32 idadi_ya_vyama;
+};
+
+// Radius ya kila dot (kiti) kwenye chati ya bunge -- ndogo, 4px.
+n64 CHATI_BUNGE_RADIUS_DOT = 4;
+
+// chati_bunge -- huchora viti vyote kwenye nusu-duara MOJA (pembe
+// kutoka 180 [kushoto] hadi 0 [kulia] digrii, juu ya `cy`), kiti
+// kimoja baada ya kingine kikizunguka kutoka chama cha 0 hadi cha
+// mwisho (mpangilio: vitu vya kwanza `idadi_kwa_chama[0]` ni chama 0,
+// vinavyofuata `idadi_kwa_chama[1]` ni chama 1, n.k.). Rangi ya kila
+// dot hutoka kwenye mchoro_rangi_ya_faharisi (Awamu B) kulingana na
+// chama chake.
+w0 chati_bunge(ChatiBungeHoja* hoja) {
+    kama (hoja == 0 || hoja->idadi_kwa_chama == 0 || hoja->idadi_ya_vyama == 0) { rudisha; }
+
+    // 1. jumla ya viti -- jumlisha idadi_kwa_chama[0..idadi_ya_vyama-1].
+    n64 jumla = 0;
+    n32 c = 0;
+    wakati (c < hoja->idadi_ya_vyama) {
+        jumla = jumla + hoja->idadi_kwa_chama[c];
+        c = c + 1;
+    }
+    kama (jumla == 0) { rudisha; }
+
+    // 2. jumla_m1 -- epuka kugawanya kwa sifuri kama kiti kimoja pekee.
+    n64 jumla_m1 = jumla - 1;
+    kama (jumla_m1 < 1) { jumla_m1 = 1; }
+    d64 jumla_m1_d = jumla_m1;
+    d64 pi = civ_pi();
+    d64 radius_d = hoja->radius;
+
+    // 3. panga dots -- kiti kimoja baada ya kingine, kihesabu `kiti`
+    //    kikiendelea KIMATAIFA (0..jumla-1) likivuka mipaka ya kila
+    //    chama, ili pembe ipande kutoka 180 (kiti=0) hadi 0 (kiti=
+    //    jumla-1) HASA kama ilivyoagizwa.
+    n64 kiti = 0;
+    n32 chama = 0;
+    wakati (chama < hoja->idadi_ya_vyama) {
+        n64 rangi = mchoro_rangi_ya_faharisi(chama);
+        n64 j = 0;
+        wakati (j < hoja->idadi_kwa_chama[chama]) {
+            d64 kiti_d = kiti;
+            d64 pembe = pi - (kiti_d / jumla_m1_d) * pi;
+
+            // nafasi -- kioo HASA cha mtindo wa onyesho_dunia_duara_chora
+            // (ramani_onyesho.swa Awamu G2): kokotoa katika d64 kisha
+            // kata (truncate) kwenda n64 KABLA ya kujumlisha na cx/cy.
+            d64 x_off = radius_d * civ_cos(pembe);
+            d64 y_off = radius_d * civ_sin(pembe);
+            n64 x_off_i = x_off;
+            n64 y_off_i = y_off;
+            n64 px = hoja->cx + x_off_i;
+            n64 py = hoja->cy - y_off_i;
+
+            mchoro_duara(hoja->fb, hoja->pitch, hoja->canvas_w, hoja->canvas_h, px, py, CHATI_BUNGE_RADIUS_DOT, rangi);
+
+            kiti = kiti + 1;
+            j = j + 1;
+        }
+        chama = chama + 1;
+    }
+}

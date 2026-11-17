@@ -1,0 +1,49 @@
+husisha { moduli/skrini/siasa.swa }
+
+// jaribio_siasa.swa -- chora skrini ya siasa ya taifa kutoka mchezo halisi na
+// uandike fremu ghafi (BGRA 1600x900) kwenye njia iliyopewa.
+//   jaribio_siasa <njia> [taifa]      taifa -1 (chaguo-msingi) = la mchezaji
+// Pia hutafuta taifa la kwanza lenye mabaraza 0, 3 na 4 na kuandika fremu
+// zake kwenye <njia>.0, <njia>.3, <njia>.4.
+
+w0 andika_fremu(n8* njia, n8* kiambishi, Turubai* t) {
+    n8 jina[256];
+    mfuatano_umbiza(jina, 256, "%s%s", njia, kiambishi, 0, 0, 0, 0);
+    n64 fd = mfumo_fungua(jina, 577, 420);
+    mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
+    mfumo_funga(fd);
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) { andika("SHINDWA: mchezo_anzisha\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 taifa = tm->faharisi_ya_taifa_la_mchezaji;
+    kama (idadi_ya_hoja > 2) { taifa = mfuatano_hadi_n64(hoja_za_mstari[2]); }
+    Turubai* t = turubai_unda(1600, 900);
+    skrini_siasa_chora(g, t, taifa);
+    kama (idadi_ya_hoja > 1) { andika_fremu(hoja_za_mstari[1], "", t); }
+    // kila taifa lazima liwe na dola halali; hesabu kwa idadi ya mabaraza
+    n64 kwa_idadi[5];
+    n64 la_kwanza[5];
+    n64 i = 0;
+    wakati (i < 5) { kwa_idadi[i] = 0; la_kwanza[i] = 0 - 1; i = i + 1; }
+    i = 0;
+    wakati (i < tm->idadi) {
+        Dola* d = skrini_siasa_dola(g, i);
+        kama (d == 0 || d->mabaraza < 0 || d->mabaraza > 4) { andika("SHINDWA: dola ya taifa %d\n", i, 0, 0, 0, 0, 0); rudisha 1; }
+        kwa_idadi[d->mabaraza] = kwa_idadi[d->mabaraza] + 1;
+        kama (la_kwanza[d->mabaraza] < 0) { la_kwanza[d->mabaraza] = i; }
+        i = i + 1;
+    }
+    kama (idadi_ya_hoja > 1) {
+        kama (la_kwanza[0] >= 0) { skrini_siasa_chora(g, t, la_kwanza[0]); andika_fremu(hoja_za_mstari[1], ".0", t); }
+        kama (la_kwanza[3] >= 0) { skrini_siasa_chora(g, t, la_kwanza[3]); andika_fremu(hoja_za_mstari[1], ".3", t); }
+        kama (la_kwanza[4] >= 0) { skrini_siasa_chora(g, t, la_kwanza[4]); andika_fremu(hoja_za_mstari[1], ".4", t); }
+    }
+    andika("mataifa %d; mabaraza 0:%d 1:%d 2:%d 3:%d 4:%d\n", tm->idadi, kwa_idadi[0], kwa_idadi[1], kwa_idadi[2], kwa_idadi[3], kwa_idadi[4]);
+    rudisha 0;
+}

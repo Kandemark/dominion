@@ -1,0 +1,88 @@
+husisha { moduli/mchezo.swa }
+
+// jaribio_lugha_dominion.swa -- jaribio la i18n (lugha_dominion.swa):
+// hubadilisha lugha hai ya Mchezo HALISI (mchezo_weka_lugha) na
+// kuthibitisha d_tafsiri() + jina la taifa lililoundwa na
+// dunia_taifa_kwanza_kifalme() HALISI linabadilika sw -> en -> fr,
+// kisha kurudi kwa fallback (lugha isiyosajiliwa -> sw).
+
+n32 jl_yalioshindwa = 0;
+
+w0 jl_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0,0,0,0,0);
+        jl_yalioshindwa = jl_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0,0,0,0,0);
+    }
+}
+
+n32 jl_sawa(n8* a, n8* b) {
+    rudisha linganisha_mfuatano(a, b) == 0;
+}
+
+n32 anza() {
+    Mchezo* g = mchezo_unda();
+    n32 g_ipo = (g != 0);
+    jl_thibitisha(g_ipo, "mchezo_unda inarudisha kielekezi");
+
+    // ---- 1. Lugha ya chaguo-msingi ni Kiswahili (hakuna mabadiliko) ----
+    n8* t1_sw = d_tafsiri("t1");
+    andika("sw: %s\n", t1_sw, 0,0,0,0,0);
+    jl_thibitisha(jl_sawa(t1_sw, "Utawala wa Kifalme"), "t1 sw == Utawala wa Kifalme (default)");
+
+    n8* m3_sw = d_tafsiri("m3");
+    jl_thibitisha(jl_sawa(m3_sw, "Jamii mpya imeibuka: %s\n"), "m3 sw == literal ya awali (hakuna badiliko)");
+
+    // ---- 2. Kuhamia Kiingereza: d_tafsiri() NA taifa HALISI ----
+    mchezo_weka_lugha(g, "en");
+    n8* t1_en = d_tafsiri("t1");
+    andika("en: %s\n", t1_en, 0,0,0,0,0);
+    jl_thibitisha(jl_sawa(t1_en, "Royal Monarchy"), "t1 en == Royal Monarchy");
+
+    n8* m1_en = d_tafsiri("m1");
+    andika("en: %s", m1_en, 0,0,0,0,0);
+    jl_thibitisha(jl_sawa(m1_en, "[GAME] Started on turn %d\n"), "m1 en == [GAME] Started on turn %d");
+
+    TaifaNchi* t_en = tenga(ukubwa(TaifaNchi));
+    dunia_taifa_kwanza_kifalme(t_en);
+    andika("taifa (en): %s\n", t_en->jina, 0,0,0,0,0);
+    jl_thibitisha(jl_sawa(t_en->jina, "Royal Monarchy"), "dunia_taifa_kwanza_kifalme() HALISI -> jina la en");
+
+    // ---- 3. Kuhamia Kifaransa ----
+    mchezo_weka_lugha(g, "fr");
+    n8* t1_fr = d_tafsiri("t1");
+    andika("fr: %s\n", t1_fr, 0,0,0,0,0);
+    jl_thibitisha(jl_sawa(t1_fr, "Monarchie Royale"), "t1 fr == Monarchie Royale");
+
+    n8* m7_fr = d_tafsiri("m7");
+    andika("fr: %s", m7_fr, 0,0,0,0,0);
+    jl_thibitisha(jl_sawa(m7_fr, "[SOUVERAIN] %s REBELLE ! Loyauté : %d\n"), "m7 fr ina lafudhi sahihi (UTF-8)");
+
+    TaifaNchi* t_fr = tenga(ukubwa(TaifaNchi));
+    dunia_taifa_kwanza_kibiashara(t_fr);
+    andika("taifa (fr): %s\n", t_fr->jina, 0,0,0,0,0);
+    jl_thibitisha(jl_sawa(t_fr->jina, "Union Commerciale"), "dunia_taifa_kwanza_kibiashara() HALISI -> jina la fr");
+
+    // ---- 4. Kurudi kwa Kiswahili moja kwa moja ----
+    mchezo_weka_lugha(g, "sw");
+    n8* t1_sw2 = d_tafsiri("t1");
+    jl_thibitisha(jl_sawa(t1_sw2, "Utawala wa Kifalme"), "t1 sw (baada ya en/fr) == Utawala wa Kifalme");
+
+    // ---- 5. Fallback: lugha isiyosajiliwa kabisa (de) -> inarudi sw ----
+    mchezo_weka_lugha(g, "de");
+    n8* t1_de = d_tafsiri("t1");
+    andika("de (fallback): %s\n", t1_de, 0,0,0,0,0);
+    jl_thibitisha(jl_sawa(t1_de, "Utawala wa Kifalme"), "t1 de (haijasajiliwa) -> fallback kwa sw, si funguo ghafi");
+
+    // ---- 6. Funguo isiyosajiliwa kabisa -> inarudi funguo lenyewe ----
+    mchezo_weka_lugha(g, "en");
+    n8* haipo = d_tafsiri("haipo_kabisa_xyz");
+    jl_thibitisha(jl_sawa(haipo, "haipo_kabisa_xyz"), "funguo isiyosajiliwa inarudi yenyewe (si kuanguka)");
+
+    mchezo_uharibu(g);
+    jl_thibitisha(1, "mchezo_uharibu(g) imekamilika bila kuanguka");
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", jl_yalioshindwa, 0,0,0,0,0);
+    rudisha jl_yalioshindwa;
+}

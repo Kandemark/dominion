@@ -1,0 +1,194 @@
+husisha { moduli/onyesho/vipengele.swa }
+
+// mandhari.swa -- mandhari ya mapinduzi nyuma ya skrini ya kupakia: umati
+// wenye bendera juu mbele ya jengo la bunge, anga la jioni lenye moshi.
+//
+// Ni mchoro wa vivuli unaochorwa kwa msimbo, si picha: anga la mteremko,
+// mng'ao wa moto kwenye upeo, jengo lenye kuba, kisha safu nne za watu
+// zinazozidi kuwa kubwa na nyeusi kadiri zinavyokaribia, na bendera
+// zinazopepea juu yao. Kila kitu hutoka kwenye mbegu moja, hivyo mandhari
+// ni ileile kila mara. Huchorwa mara moja kwa kila ukubwa wa dirisha na
+// kuhifadhiwa; fremu zinazofuata hunakili tu.
+
+Turubai* mandhari_akiba = 0;
+
+n64 mandhari_nasibu(n64 i, n64 mbegu) {
+    n64 n = (i * 2654435761 + mbegu * 40503 + 12345) & 4294967295;
+    n = ((n ^ (n >> 15)) * 2246822519) & 4294967295;
+    n = ((n ^ (n >> 13)) * 3266489917) & 4294967295;
+    rudisha (n ^ (n >> 16)) & 4294967295;
+}
+
+n64 mandhari_rgb(n64 r, n64 g, n64 b) { rudisha (r << 16) | (g << 8) | b; }
+
+// Bendera inayopepea kulia kutoka (x, y): vipande wima vinavyopanda na
+// kushuka kwa wimbi; nusu ya chini ina rangi ya pili.
+w0 mandhari_bendera(Turubai* t, n64 x, n64 y, n64 w, n64 h, n64 rangi_juu, n64 rangi_chini, n64 awamu) {
+    d64 pi = pi_hesabu();
+    n64 i = 0;
+    wakati (i < w) {
+        d64 u = i;
+        d64 wd = w;
+        d64 aw = awamu;
+        d64 pembe = (u / wd) * pi * 2.6 + aw / 100.0;
+        d64 wimbi = sin_hesabu(pembe);
+        d64 hd = h;
+        n64 dy = wimbi * hd * 0.13 * (u / wd);
+        // kivuli cha mikunjo: upande unaoinama huwa mweusi zaidi
+        d64 mk = cos_hesabu(pembe);
+        n64 kivuli = 40 - mk * 34.0;
+        n64 hh = h - (i * h) / (w * 9);
+        turubai_brashi(t, rangi_juu, 235);
+        turubai_jaza(t, x + i, y + dy, 2, hh / 2);
+        turubai_brashi(t, rangi_chini, 235);
+        turubai_jaza(t, x + i, y + dy + hh / 2, 2, hh - hh / 2);
+        turubai_brashi(t, 0, kivuli);
+        turubai_jaza(t, x + i, y + dy, 2, hh);
+        i = i + 2;
+    }
+}
+
+// Safu moja ya umati: vichwa na mabega kwenye mstari wa y, baadhi wakiwa
+// wameinua ngumi. `upana_mtu` huamua ukubwa; chini ya safu hujazwa.
+w0 mandhari_umati(Turubai* t, n64 y, n64 upana_mtu, n64 rangi, n64 mbegu) {
+    turubai_brashi(t, rangi, 255);
+    turubai_jaza(t, 0, y + (upana_mtu * 6) / 10, t->upana, t->kimo);
+    n64 x = 0 - upana_mtu;
+    n64 i = 0;
+    wakati (x < t->upana + upana_mtu) {
+        n64 n = mandhari_nasibu(i, mbegu);
+        n64 py = y - (n % (upana_mtu / 2 + 1)) + upana_mtu / 4;
+        n64 kichwa = (upana_mtu * (30 + (n >> 8) % 8)) / 100;
+        turubai_brashi(t, rangi, 255);
+        turubai_duara(t, x, py, kichwa);
+        turubai_mviringo(t, x - (upana_mtu * 46) / 100, py + (kichwa * 8) / 10, (upana_mtu * 92) / 100, upana_mtu * 2, upana_mtu / 4);
+        // mmoja kati ya wanne ameinua ngumi
+        kama ((n >> 12) % 4 == 0) {
+            n64 mkono = (upana_mtu * (9 + (n >> 16) % 5)) / 10;
+            n64 nx = x + (upana_mtu * 3) / 10 + ((n >> 20) % 7) - 3;
+            turubai_mstari(t, x + (upana_mtu * 3) / 10, py + kichwa, nx, py - mkono, (upana_mtu * 256 * 20) / 100);
+            turubai_duara(t, nx, py - mkono, (upana_mtu * 14) / 100 + 1);
+        }
+        x = x + (upana_mtu * (62 + (n >> 4) % 36)) / 100;
+        i = i + 1;
+    }
+}
+
+// Bendera za safu moja: nguzo zinazoinuka kutoka kwa umati.
+w0 mandhari_bendera_za_safu(Turubai* t, n64 y, n64 idadi, n64 kimo_cha_nguzo, n64 upana_bendera, n64 rangi_nguzo, n64 mbegu) {
+    n64 i = 0;
+    wakati (i < idadi) {
+        n64 n = mandhari_nasibu(i, mbegu);
+        n64 x = (t->upana * (2 * i + 1)) / (2 * idadi) + (n % 90) - 45;
+        n64 juu = y - kimo_cha_nguzo - ((n >> 8) % (kimo_cha_nguzo / 3 + 1));
+        n64 fw = upana_bendera + ((n >> 12) % (upana_bendera / 3 + 1));
+        n64 fh = (fw * 62) / 100;
+        n64 inamisha = ((n >> 20) % 31) - 15;
+        turubai_brashi(t, rangi_nguzo, 255);
+        turubai_mstari(t, x - inamisha, y + 30, x, juu, 3 * 256);
+        n64 aina = (n >> 16) % 5;
+        n64 juu_r = mandhari_rgb(168, 30, 38);          // nyekundu
+        n64 chini_r = mandhari_rgb(168, 30, 38);
+        kama (aina == 1) { chini_r = mandhari_rgb(214, 204, 184); }                 // nyekundu / pembe
+        kama (aina == 2) { juu_r = mandhari_rgb(32, 132, 124); chini_r = mandhari_rgb(32, 132, 124); }   // zumaridi
+        kama (aina == 3) { juu_r = mandhari_rgb(214, 204, 184); chini_r = mandhari_rgb(32, 132, 124); }  // pembe / zumaridi
+        kama (aina == 4) { juu_r = mandhari_rgb(198, 148, 52); chini_r = mandhari_rgb(168, 30, 38); }    // dhahabu / nyekundu
+        mandhari_bendera(t, x + 1, juu + 2, fw, fh, juu_r, chini_r, (n >> 4) % 600);
+        i = i + 1;
+    }
+}
+
+// Jengo la bunge: mabawa, ukumbi wa nguzo na kuba, kama kivuli kwenye upeo.
+w0 mandhari_jengo(Turubai* t, n64 cx, n64 msingi, n64 w) {
+    n64 rangi = mandhari_rgb(20, 14, 20);
+    n64 h = w / 5;
+    turubai_brashi(t, rangi, 255);
+    turubai_jaza(t, cx - w / 2, msingi - (h * 6) / 10, w, (h * 6) / 10 + 4);        // mabawa
+    turubai_jaza(t, cx - w / 5, msingi - h, (w * 2) / 5, h + 4);                    // ukumbi
+    // paa la pembetatu juu ya ukumbi
+    n64 i = 0;
+    n64 nusu = w / 5 + 8;
+    wakati (i < h / 4) {
+        n64 upana = (nusu * (h / 4 - i)) / (h / 4);
+        turubai_jaza(t, cx - upana, msingi - h - i, 2 * upana, 1);
+        i = i + 1;
+    }
+    // kuba: ngoma, nusu-duara na mnara mdogo
+    n64 rk = w / 11;
+    turubai_jaza(t, cx - rk, msingi - h - h / 4 - rk / 2, 2 * rk, rk / 2 + 2);
+    turubai_duara(t, cx, msingi - h - h / 4 - rk / 2, rk);
+    turubai_jaza(t, cx - 3, msingi - h - h / 4 - rk / 2 - rk - rk / 2, 6, rk / 2 + 4);
+    // nguzo: mwanga hafifu kati yake
+    turubai_brashi(t, mandhari_rgb(96, 44, 30), 70);
+    n64 k = 0;
+    wakati (k < 9) {
+        n64 nx = cx - w / 5 + 10 + (k * ((w * 2) / 5 - 20)) / 9;
+        turubai_jaza(t, nx + 5, msingi - (h * 82) / 100, ((w * 2) / 5 - 20) / 9 - 10, (h * 70) / 100);
+        k = k + 1;
+    }
+}
+
+w0 mandhari_chora_mapinduzi(Turubai* t) {
+    n64 w = t->upana;
+    n64 h = t->kimo;
+    n64 upeo = (h * 60) / 100;
+    // anga: usiku juu, makaa kwenye upeo
+    turubai_brashi(t, mandhari_rgb(7, 9, 20), 255);
+    turubai_mteremko(t, 0, 0, w, upeo, mandhari_rgb(92, 34, 24));
+    turubai_brashi(t, mandhari_rgb(40, 16, 14), 255);
+    turubai_jaza(t, 0, upeo, w, h - upeo);
+    // mng'ao wa moto nyuma ya jengo: miduara mingi myembamba hutoa mteremko laini
+    n64 g = 0;
+    wakati (g < 44) {
+        turubai_brashi(t, mandhari_rgb(255, 128 + g, 52 + g), 4);
+        turubai_duara(t, w / 2, upeo, (w * (40 - (g * 38) / 44)) / 100);
+        g = g + 1;
+    }
+    // moshi unaopanda pembeni
+    n64 i = 0;
+    wakati (i < 14) {
+        n64 n = mandhari_nasibu(i, 77);
+        n64 sx = (w * (n % 100)) / 100;
+        n64 sy = upeo - (h * (6 + (n >> 8) % 34)) / 100;
+        n64 sr = (w * (5 + (n >> 16) % 7)) / 100;
+        turubai_brashi(t, mandhari_rgb(30, 22, 30), 5);
+        n64 pete = 0;
+        wakati (pete < 5) {
+            turubai_duara(t, sx, sy, (sr * (5 - pete)) / 5);
+            pete = pete + 1;
+        }
+        i = i + 1;
+    }
+    mandhari_jengo(t, w / 2, upeo + 6, (w * 36) / 100);
+    // umati: safu nne, za mbali kwanza
+    mandhari_umati(t, upeo + (h * 3) / 100, w / 110, mandhari_rgb(30, 18, 22), 11);
+    mandhari_bendera_za_safu(t, upeo + (h * 3) / 100, 12, (h * 8) / 100, w / 46, mandhari_rgb(26, 16, 20), 21);
+    mandhari_umati(t, upeo + (h * 9) / 100, w / 62, mandhari_rgb(22, 13, 18), 12);
+    mandhari_bendera_za_safu(t, upeo + (h * 9) / 100, 7, (h * 15) / 100, w / 27, mandhari_rgb(18, 11, 15), 22);
+    mandhari_umati(t, upeo + (h * 19) / 100, w / 34, mandhari_rgb(13, 8, 12), 13);
+    mandhari_bendera_za_safu(t, upeo + (h * 19) / 100, 4, (h * 25) / 100, w / 16, mandhari_rgb(10, 6, 9), 23);
+    mandhari_umati(t, upeo + (h * 33) / 100, w / 19, mandhari_rgb(5, 4, 7), 14);
+}
+
+// Mandhari ya mapinduzi kwenye turubai t, ikifunikwa kwa pazia jeusi la
+// `pazia` (0..255) ili maandishi ya mbele yasomeke.
+w0 mandhari_mapinduzi(Turubai* t, n64 pazia) {
+    kama (mandhari_akiba != 0 && (mandhari_akiba->upana != t->upana || mandhari_akiba->kimo != t->kimo)) {
+        achilia mandhari_akiba->pikseli;
+        achilia mandhari_akiba;
+        mandhari_akiba = 0;
+    }
+    kama (mandhari_akiba == 0) {
+        mandhari_akiba = turubai_unda(t->upana, t->kimo);
+        mandhari_chora_mapinduzi(mandhari_akiba);
+    }
+    n64 j = 0;
+    wakati (j < t->kimo) {
+        nakili(&t->pikseli[j * t->hatua], &mandhari_akiba->pikseli[j * mandhari_akiba->hatua], t->upana * 4);
+        j = j + 1;
+    }
+    kama (pazia > 0) {
+        turubai_brashi(t, 395279, pazia);
+        turubai_jaza(t, 0, 0, t->upana, t->kimo);
+    }
+}

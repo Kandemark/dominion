@@ -1,0 +1,153 @@
+husisha { moduli/injini/tarehe.swa }
+husisha { moduli/siasa/katiba.swa }
+
+// kalenda.swa -- shajara ya dola: matukio ya kila siku.
+//
+// Matukio ya kudumu hutokana na katiba (hayahifadhiwi, hutolewa kwa siku
+// yoyote):
+//   Jumatatu       kikao cha baraza la mawaziri (dola yenye mawaziri)
+//   Jumanne, Alhamisi  vikao vya baraza la kutunga sheria (kila baraza)
+//   Ijumaa         taarifa kwa wanahabari (dola yenye msemaji)
+//   Jumatatu ya kwanza ya mwezi  baraza la dola / kongamano la chama
+// Mikutano iliyopangwa na msaidizi huhifadhiwa kwenye shajara (`kalenda_*`)
+// kwa siku na saa yake.
+
+n64 TUKIO_BARAZA_LA_MAWAZIRI = 0;
+n64 TUKIO_BUNGE = 1;
+n64 TUKIO_WANAHABARI = 2;
+n64 TUKIO_BARAZA_LA_DOLA = 3;
+n64 TUKIO_MKUTANO = 4;
+
+n64 KALENDA_UWEZO = 256;
+n64 kalenda_idadi = 0;
+n64* kalenda_siku = 0;
+n64* kalenda_saa = 0;
+n64* kalenda_mtu = 0;
+
+w0 kalenda_andaa() {
+    kama (kalenda_siku == 0) {
+        kalenda_siku = tenga(8 * KALENDA_UWEZO);
+        kalenda_saa = tenga(8 * KALENDA_UWEZO);
+        kalenda_mtu = tenga(8 * KALENDA_UWEZO);
+    }
+}
+
+// Panga mkutano na mhusika `mtu` siku `siku`. Saa ni ya kwanza iliyo wazi
+// kati ya 10:00 na 16:00 siku hiyo.
+w0 kalenda_panga(n64 siku, n64 mtu) {
+    kalenda_andaa();
+    kama (kalenda_idadi >= KALENDA_UWEZO) { rudisha; }
+    n64 saa = 10;
+    n64 i = 0;
+    wakati (i < kalenda_idadi) {
+        kama (kalenda_siku[i] == siku && kalenda_saa[i] >= saa) { saa = kalenda_saa[i] + 1; }
+        i = i + 1;
+    }
+    kama (saa > 16) { saa = 16; }
+    kalenda_siku[kalenda_idadi] = siku;
+    kalenda_saa[kalenda_idadi] = saa;
+    kalenda_mtu[kalenda_idadi] = mtu;
+    kalenda_idadi = kalenda_idadi + 1;
+}
+
+// Tukio moja la siku: aina, saa ya kuanza, saa ya kumaliza, kichwa, na
+// mhusika (au -1).
+muundo TukioLaSiku {
+    n64 aina;
+    n64 kuanza;
+    n64 kumaliza;
+    n8* kichwa;
+    n64 mtu;
+}
+
+n64 TUKIO_JUU = 12;
+
+w0 kalenda_weka(TukioLaSiku* t, n64* n, n64 aina, n64 kuanza, n64 kumaliza, n8* kichwa, n64 mtu) {
+    kama (n[0] >= TUKIO_JUU) { rudisha; }
+    TukioLaSiku* e = &t[n[0]];
+    e->aina = aina;
+    e->kuanza = kuanza;
+    e->kumaliza = kumaliza;
+    e->kichwa = kichwa;
+    e->mtu = mtu;
+    n[0] = n[0] + 1;
+}
+
+// Matukio ya siku `siku` kwa dola `d` na mti wake `w`, yakipangwa kwa saa.
+// Huandika hadi TUKIO_JUU kwenye `nje`; hurudisha idadi.
+n64 kalenda_matukio_ya_siku(Dola* d, Wahusika* w, n64 siku, TukioLaSiku* nje) {
+    n64 n = 0;
+    n64 wiki = tarehe_siku_ya_wiki(siku);
+    n64 y = 0;
+    n64 m = 0;
+    n64 dd = 0;
+    tarehe_ya_siku(siku, &y, &m, &dd);
+    kama (d->aina != DOLA_BILA_SERIKALI) {
+        kama (wiki == 0 && dd <= 7) {
+            n8* jina = ui("Council of State");
+            kama (d->aina == DOLA_CHAMA_KIMOJA) { jina = ui("Party Congress"); }
+            kalenda_weka(nje, &n, TUKIO_BARAZA_LA_DOLA, 8, 9, jina, 0);
+        }
+        kama (wiki == 0 && wahusika_tafuta(w, "Minister of Finance") >= 0) {
+            kalenda_weka(nje, &n, TUKIO_BARAZA_LA_MAWAZIRI, 9, 11, ui("Cabinet meeting"), wahusika_tafuta(w, "Minister of Finance"));
+        }
+        kama (wiki == 4 && wahusika_tafuta(w, "Press Secretary") >= 0) {
+            kalenda_weka(nje, &n, TUKIO_WANAHABARI, 11, 12, ui("Press briefing"), wahusika_tafuta(w, "Press Secretary"));
+        }
+    }
+    kama ((wiki == 1 || wiki == 3) && d->mabaraza > 0) {
+        n64 b = 0;
+        wakati (b < d->mabaraza) {
+            n8* kichwa = tenga(96);
+            mfuatano_umbiza(kichwa, 96, ui("Sitting of the %s"), d->baraza_jina[b], 0, 0, 0, 0, 0);
+            n64 spika = wahusika_tafuta(w, wahusika_cheo_cha_baraza(ui("Speaker of the %s"), d->baraza_jina[b]));
+            kalenda_weka(nje, &n, TUKIO_BUNGE, 14 + b, 16 + b, kichwa, spika);
+            b = b + 1;
+        }
+    }
+    kalenda_andaa();
+    n64 i = 0;
+    wakati (i < kalenda_idadi) {
+        kama (kalenda_siku[i] == siku) {
+            MhusikaWaDola* mtu = wahusika_pata(w, kalenda_mtu[i]);
+            n8* kichwa = ui("Meeting");
+            kama (mtu != 0) {
+                kichwa = tenga(120);
+                mfuatano_umbiza(kichwa, 120, ui("Meeting: %s"), mtu->cheo, 0, 0, 0, 0, 0);
+            }
+            kalenda_weka(nje, &n, TUKIO_MKUTANO, kalenda_saa[i], kalenda_saa[i] + 1, kichwa, kalenda_mtu[i]);
+        }
+        i = i + 1;
+    }
+    // panga kwa saa ya kuanza
+    n64 a = 1;
+    wakati (a < n) {
+        TukioLaSiku hifadhi = nje[a];
+        n64 b2 = a - 1;
+        wakati (b2 >= 0 && nje[b2].kuanza > hifadhi.kuanza) { nje[b2 + 1] = nje[b2]; b2 = b2 - 1; }
+        nje[b2 + 1] = hifadhi;
+        a = a + 1;
+    }
+    rudisha n;
+}
+
+// Rangi ya aina ya tukio.
+n64 kalenda_rangi(n64 aina) {
+    kama (aina == TUKIO_BARAZA_LA_MAWAZIRI) { rudisha 4891647; }       // buluu
+    kama (aina == TUKIO_BUNGE) { rudisha 11032472; }                   // zambarau
+    kama (aina == TUKIO_WANAHABARI) { rudisha 4054148; }               // kijani
+    kama (aina == TUKIO_BARAZA_LA_DOLA) { rudisha 16734815; }          // nyekundu
+    rudisha 16765471;                                                  // njano: mikutano
+}
+
+// Mikutano iliyopangwa iliyo kati ya siku `kuanza` na `kumaliza` (pamoja).
+n64 kalenda_mikutano_kati(n64 kuanza, n64 kumaliza) {
+    kalenda_andaa();
+    n64 n = 0;
+    n64 i = 0;
+    wakati (i < kalenda_idadi) {
+        kama (kalenda_siku[i] >= kuanza && kalenda_siku[i] <= kumaliza) { n = n + 1; }
+        i = i + 1;
+    }
+    rudisha n;
+}

@@ -1,0 +1,72 @@
+husisha { msingi/msingi_civ.swa }
+
+// uhuishaji.swa -- MSINGI wa uhuishaji (animation) kwa thamani za
+// d64, Awamu H ya mradi wa "Ramani Halisi + Uhuishaji + Dirisha la
+// Kisasa" (Awamu A-D, F, G1, G2, G3 zote zimekamilika -- angalia
+// ramani_onyesho.swa/mzunguko.swa/chati.swa/takwimu_historia.swa).
+//
+// HAINA uhusiano na dirisha (hilo ni Awamu I, nje ya wigo wa faili
+// hili) -- ni injini ya hisabati YA KUJITEGEMEA: thamani moja ya d64
+// (`sasa`) inayosogea TARATIBU kuelekea thamani lengwa (`lengwa`)
+// badala ya kuruka ghafla, kwa kutumia "exponential smoothing" ya
+// kiwango kimoja. Dirisha litaita uhuishaji_weka_lengwa kila wakati
+// thamani halisi (mfano idadi ya watu, GDP, nafasi ya kamera)
+// inabadilika, kisha uhuishaji_sasisha kila fremu na `dt` (muda
+// uliopita) -- `sasa` ndiyo itakayochorwa, ikikaribia `lengwa` kwa
+// kasi inayotegemea `kasi` na `dt`.
+//
+// kipimo = finya_d64(kasi * dt, 0.0, 1.0) -- TUMIA finya_d64
+// ILIYOPO (msingi_civ.swa:77), hakuna clamp mpya iliyoandikwa hapa.
+// Clamp hii ni MUHIMU: bila yake, kasi kubwa (au dt kubwa baada ya
+// kusimamishwa kwa dirisha) ingetoa kipimo > 1.0, ambalo
+// lingesababisha `sasa` kuruka MBALI ZAIDI YA `lengwa` (overshoot) --
+// angalia jaribio_uhuishaji.swa kwa uthibitisho HASA wa hili (kasi=
+// 100.0, kipimo_bila_finya=10.0, lakini kipimo_na_finya=1.0 --
+// `sasa` inafika HASA kwenye `lengwa`, si zaidi yake).
+
+muundo MchoroThamaniHuishwa {
+    d64 sasa;
+    d64 lengwa;
+    d64 kasi;    // kasi ya kuhuisha (0.0-1.0 kwa kila "dt"=1.0, juu zaidi = haraka zaidi)
+};
+
+MchoroThamaniHuishwa* uhuishaji_unda(d64 thamani_ya_awali, d64 kasi) {
+    MchoroThamaniHuishwa* h = tenga(ukubwa(MchoroThamaniHuishwa));
+    h->sasa = thamani_ya_awali;
+    h->lengwa = thamani_ya_awali;
+    h->kasi = kasi;
+    rudisha h;
+}
+
+// uhuishaji_weka_lengwa -- badilisha lengwa TU. `sasa` HAIBADILIKI
+// papo hapo; itasogea taratibu kuelekea lengwa mpya kupitia wito
+// unaofuata wa uhuishaji_sasisha.
+w0 uhuishaji_weka_lengwa(MchoroThamaniHuishwa* h, d64 lengwa_mpya) {
+    kama (h == 0) { rudisha; }
+    h->lengwa = lengwa_mpya;
+}
+
+// uhuishaji_sasisha -- songesha `sasa` kuelekea `lengwa` kwa hatua
+// moja ya "exponential smoothing". `dt` ni muda uliopita tangu
+// wito wa mwisho (kipimo cha 1.0 = fremu moja "ya kawaida").
+w0 uhuishaji_sasisha(MchoroThamaniHuishwa* h, d64 dt) {
+    kama (h == 0) { rudisha; }
+    d64 kipimo = finya_d64(h->kasi * dt, 0.0, 1.0);
+    h->sasa = h->sasa + (h->lengwa - h->sasa) * kipimo;
+}
+
+// uhuishaji_imekamilika -- 1 kama |lengwa - sasa| < uvumilivu
+// (karibu sana na lengwa, uhuishaji unaweza kuchukuliwa kuwa
+// umekamilika), vinginevyo 0.
+n32 uhuishaji_imekamilika(MchoroThamaniHuishwa* h, d64 uvumilivu) {
+    kama (h == 0) { rudisha 0; }
+    d64 tofauti = h->lengwa - h->sasa;
+    kama (tofauti < 0.0) { tofauti = 0.0 - tofauti; }
+    kama (tofauti < uvumilivu) { rudisha 1; }
+    rudisha 0;
+}
+
+w0 uhuishaji_uharibu(MchoroThamaniHuishwa* h) {
+    kama (h == 0) { rudisha; }
+    achilia h;
+}

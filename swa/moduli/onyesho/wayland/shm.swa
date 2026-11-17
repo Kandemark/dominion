@@ -1,0 +1,76 @@
+husisha { moduli/onyesho/baiti_ghafi.swa }
+
+// shm.swa -- bafa ya kumbukumbu ya pamoja (shared memory) inayohitajika
+// na wl_shm.create_pool: memfd_create (syscall 319, imethibitishwa
+// dhidi ya /usr/include/asm/unistd_64.h ya mfumo huu) + ftruncate
+// (syscall 77) kuipa ukubwa.
+//
+// Kiambishi: wayland_shm_ (eneo JIPYA -- angalia ../../../KANUNI-MAJINA.md).
+//
+// MUHIMU SANA -- HITILAFU YA MKUSANYAJI ILIYOGUNDULIWA (SI ya Dominion,
+// ya lugha-swa/swa yenyewe, `wito_wa_mfumo`): wito wenye hoja 6 KAMILI
+// za "a" (yaani jumla ya hoja 7: num+a1..a6, ambapo a4 NA a5 ni
+// TOFAUTI kimthamani) HUHARIBU a5 -- thamani YA KWELI ya a5 KAMWE
+// haifiki kwenye syscall (imethibitishwa kwa strace ya moja kwa moja:
+// wito_wa_mfumo(9, 100,200,300,400,500,600) ulizalisha
+// mmap(0x64,200,300,400,**400**,600) -- a5(500) ilipotea KABISA, r8
+// ya kweli (nafasi ya 5 ya syscall ya Linux) ilibaki na thamani YA a4
+// (400) badala ya a5 (500); a1/a2/a3/a4/a6 ZOTE zilikuwa sahihi).
+//
+// Hii huathiri HASA mmap(addr,len,prot,flags,fd,offset) pale fd na
+// flags zina thamani TOFAUTI (ndiyo HASA kesi yetu: wl_shm inahitaji
+// MAP_SHARED + fd HALISI ya memfd) -- mmap() ya memfd ikatafsiriwa na
+// kernel kama ikitumia fd=flags(=1=stdout!) badala ya fd halisi,
+// ikitoa EACCES (fd=1 ni bomba/tty, SI faili ya kawaida). Haikuonekana
+// AWALI kwenye drm.swa (onyesho_mmap_na_offset, DRM dumb buffer) wala
+// kwenye arena allocator (kumbukumbu.swa, MAP_ANONYMOUS) kwa sababu:
+// (1) DRM ilielezwa kama "EACCES kwa sababu DRM master" (maelezo
+// yanayowezekana KWELI LAKINI pia yanaweza kuwa hii hii hitilafu
+// imefichwa na maelezo mengine yanayoonekana sahihi -- haijathibitishwa
+// kwa uhakika upande wowote); (2) MAP_ANONYMOUS humfanya kernel apuuze
+// kabisa thamani ya fd, kwa hiyo fd "iliyoharibika" (ikawa na thamani
+// ya bendera) haikuwa na athari yoyote inayoonekana.
+//
+// SULUHISHO (epuko, SI urekebishaji wa mkusanyaji -- hilo ni nje ya
+// wigo wa Dominion): HATUTUMII mmap() ya memfd KABISA kwenye mchakato
+// wetu wenyewe. Badala yake: tunachora kwenye bafa ya KAWAIDA (tenga(),
+// MAP_ANONYMOUS, SALAMA kwa sababu ya (2) hapo juu), kisha tunatumia
+// write(2) (mfumo_andika, hoja 3 TU -- a4/a5/a6 zote ni 0, HAZIATHIRIWI
+// na hitilafu hii kwa sababu a4==a5==0 hazitofautiani) kunakili baiti
+// hizo MOJA KWA MOJA ndani ya memfd. compositor (upande wa pili)
+// atafanya mmap() YAKE MWENYEWE (code isiyo na hitilafu hii) na
+// ataona data ile ile -- write() na mmap(MAP_SHARED) kwenye memfd
+// HIYO HIYO zinashiriki kurasa (pages) zile zile za page cache, kwa
+// hiyo matokeo ni SAWA KABISA na kama tungefanya mmap+memcpy wenyewe.
+
+n64 WAYLAND_SHM_SYS_MEMFD_CREATE = 319;
+n64 WAYLAND_SHM_SYS_FTRUNCATE = 77;
+
+n64 wayland_shm_memfd_create(n8* jina, n64 bendera) {
+    rudisha wito_wa_mfumo(WAYLAND_SHM_SYS_MEMFD_CREATE, jina, bendera, 0, 0, 0, 0);
+}
+
+n64 wayland_shm_ftruncate(n64 fd, n64 ukubwa) {
+    rudisha wito_wa_mfumo(WAYLAND_SHM_SYS_FTRUNCATE, fd, ukubwa, 0, 0, 0, 0);
+}
+
+// wayland_shm_unda -- unda memfd + ftruncate kwa ukubwa uliotolewa.
+// Hurudisha fd (>= 0) au namba hasi ikiwa imeshindwa. HAIFANYI mmap
+// (angalia maelezo ya juu ya faili hii kwa sababu).
+n64 wayland_shm_unda(n64 ukubwa) {
+    n64 fd = wayland_shm_memfd_create("dominion-shm", 0);
+    kama (fd < 0) { rudisha fd; }
+
+    n64 rc = wayland_shm_ftruncate(fd, ukubwa);
+    kama (rc < 0) { rudisha rc; }
+
+    rudisha fd;
+}
+
+// wayland_shm_jaza -- andika baiti za `bafa_chanzo` (urefu `ukubwa`,
+// iliyotengwa kwa tenga() ya KAWAIDA, SI mmap ya memfd) ndani ya
+// memfd `fd` kuanzia offset 0, kwa write(2) ya moja kwa moja (SALAMA
+// dhidi ya hitilafu iliyoelezwa juu -- hoja 3 tu za maana).
+n64 wayland_shm_jaza(n64 fd, n8* bafa_chanzo, n64 ukubwa) {
+    rudisha mfumo_andika(fd, bafa_chanzo, ukubwa);
+}

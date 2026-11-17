@@ -1,0 +1,172 @@
+husisha { moduli/onyesho/chati.swa }
+
+// jaribio_chati.swa -- huthibitisha chati.swa (chati_pau/chati_mstari,
+// Awamu C ya "injini ya 2D yenye nguvu + injini ya taswira ya
+// takwimu") dhidi ya data YA KUJULIKANA, kwa kusoma pikseli HALISI
+// kwenye framebuffer -- si tu "haikuanguka".
+
+n32 anza() {
+    n64 canvas_w = 300;
+    n64 canvas_h = 200;
+    n64 pitch = canvas_w * 4;
+
+    // ===== 1. chati_pau =====
+    n8* fb1 = tenga(pitch * canvas_h);
+    weka_sifuri(fb1, pitch * canvas_h);
+
+    n8* majina[3];
+    majina[0] = "A";
+    majina[1] = "B";
+    majina[2] = "C";
+
+    d64 thamani[3];
+    thamani[0] = 50.0;
+    thamani[1] = 100.0;   // "B" ni ya JUU zaidi
+    thamani[2] = 25.0;
+
+    ChatiPauHoja hp;
+    hp.fb = fb1;
+    hp.pitch = pitch;
+    hp.canvas_w = canvas_w;
+    hp.canvas_h = canvas_h;
+    hp.x = 10;
+    hp.y = 10;
+    hp.w = 200;
+    hp.h = 150;
+    hp.majina = majina;
+    hp.thamani = thamani;
+    hp.idadi = 3;
+
+    chati_pau(&hp);
+
+    // eneo la upana limegawanywa sawasawa: upana_nafasi=200/3=66,
+    // upana_pau=(66*80)/100=52 -- kokotoa HASA jinsi chati_pau
+    // inavyofanya, ili kujua safu wima ya KATIKATI ya kila pau.
+    n64 upana_nafasi = hp.w / hp.idadi;
+    n64 upana_pau = (upana_nafasi * 80) / 100;
+    n64 katikati_a = hp.x + (0 * upana_nafasi) + (upana_pau / 2);
+    n64 katikati_b = hp.x + (1 * upana_nafasi) + (upana_pau / 2);
+    n64 katikati_c = hp.x + (2 * upana_nafasi) + (upana_pau / 2);
+
+    // hesabu idadi ya pikseli zenye rangi (!= 0, rangi ya nyuma)
+    // kwenye safu wima ya katikati ya kila pau, kati ya y na y+h.
+    n64 kundi_a = 0;
+    n64 kundi_b = 0;
+    n64 kundi_c = 0;
+    n64 yy = hp.y;
+    wakati (yy < hp.y + hp.h) {
+        kama (mchoro_pata_pikseli(fb1, pitch, katikati_a, yy) != 0) { kundi_a = kundi_a + 1; }
+        kama (mchoro_pata_pikseli(fb1, pitch, katikati_b, yy) != 0) { kundi_b = kundi_b + 1; }
+        kama (mchoro_pata_pikseli(fb1, pitch, katikati_c, yy) != 0) { kundi_c = kundi_c + 1; }
+        yy = yy + 1;
+    }
+
+    andika("chati_pau: pikseli A=%d B=%d C=%d\n", kundi_a, kundi_b, kundi_c, 0, 0, 0);
+
+    kama (kundi_b <= kundi_a) { andika_kosa("FAIL: chati_pau -- B (thamani 100) haina kimo kirefu zaidi ya A (thamani 50): B=%d A=%d\n", kundi_b, kundi_a, 0, 0, 0, 0); rudisha 1; }
+    kama (kundi_a <= kundi_c) { andika_kosa("FAIL: chati_pau -- A (thamani 50) haina kimo kirefu zaidi ya C (thamani 25): A=%d C=%d\n", kundi_a, kundi_c, 0, 0, 0, 0); rudisha 1; }
+
+    // thamani HASA zinazotarajiwa (kimo cha pau = (thamani/juu)*h, 150*50/100=75, 150*100/100=150, 150*25/100=37)
+    kama (kundi_a != 75) { andika_kosa("FAIL: chati_pau -- A ina pikseli %d (ilitarajiwa 75)\n", kundi_a, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (kundi_b != 150) { andika_kosa("FAIL: chati_pau -- B ina pikseli %d (ilitarajiwa 150)\n", kundi_b, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (kundi_c != 37) { andika_kosa("FAIL: chati_pau -- C ina pikseli %d (ilitarajiwa 37)\n", kundi_c, 0, 0, 0, 0, 0); rudisha 1; }
+
+    // eneo la NJE ya chati (kona ya mbali ya bafa) LAZIMA libaki
+    // rangi ya nyuma (haijaguswa) -- hakuna uchoraji nje ya mipaka.
+    n64 kona = mchoro_pata_pikseli(fb1, pitch, canvas_w - 1, canvas_h - 1);
+    kama (kona != 0) { andika_kosa("FAIL: chati_pau -- kona ya mbali ya bafa imeguswa (=%d, ilitarajiwa 0)\n", kona, 0, 0, 0, 0, 0); rudisha 1; }
+
+    // ===== 2. chati_mstari =====
+    n8* fb2 = tenga(pitch * canvas_h);
+    weka_sifuri(fb2, pitch * canvas_h);
+
+    d64 sampuli[5];
+    sampuli[0] = 10.0;
+    sampuli[1] = 50.0;
+    sampuli[2] = 20.0;
+    sampuli[3] = 80.0;   // thamani ya JUU zaidi -- pointi ya 4 (faharisi 3)
+    sampuli[4] = 40.0;
+
+    ChatiMstariHoja hm;
+    hm.fb = fb2;
+    hm.pitch = pitch;
+    hm.canvas_w = canvas_w;
+    hm.canvas_h = canvas_h;
+    hm.x = 10;
+    hm.y = 10;
+    hm.w = 250;
+    hm.h = 150;
+    hm.sampuli = sampuli;
+    hm.idadi = 5;
+
+    chati_mstari(&hm);
+
+    // kokotoa kwa mkono nafasi ya pointi ya faharisi=3 (thamani=80,
+    // ya JUU zaidi -- kipimo=1.0 HASA): x_i = x + (i*w)/(idadi-1),
+    // y_i = (y+h) - (kipimo*h) = y (juu kabisa ya eneo la chati).
+    n64 x_juu = hm.x + ((3 * hm.w) / (hm.idadi - 1));
+    n64 y_juu = hm.y;  // kipimo=1.0 -- y_i LAZIMA iwe HASA y ya juu ya eneo
+
+    // tafuta pikseli yenye rangi KARIBU na (x_juu, y_juu) -- duara
+    // (radius 3) inachora eneo dogo kuzunguka hiyo, si pikseli moja
+    // tu HASA (mzunguko wa integer wa midpoint circle).
+    n32 imepatikana = 0;
+    n64 dy = 0 - 3;
+    wakati (dy <= 3) {
+        n64 dx = 0 - 3;
+        wakati (dx <= 3) {
+            n64 px = x_juu + dx;
+            n64 py = y_juu + dy;
+            kama (px >= 0 && px < canvas_w && py >= 0 && py < canvas_h) {
+                kama (mchoro_pata_pikseli(fb2, pitch, px, py) != 0) { imepatikana = 1; }
+            }
+            dx = dx + 1;
+        }
+        dy = dy + 1;
+    }
+    kama (imepatikana == 0) { andika_kosa("FAIL: chati_mstari -- hakuna pikseli karibu na pointi ya juu zaidi (%d,%d)\n", x_juu, y_juu, 0, 0, 0, 0); rudisha 1; }
+
+    // thibitisha pointi hiyo iko KARIBU na SEHEMU YA JUU ya eneo la
+    // chati (y ndogo) -- si katikati wala chini.
+    kama (y_juu > hm.y + 5) { andika_kosa("FAIL: chati_mstari -- pointi ya thamani ya juu zaidi si karibu na juu ya chati (y_juu=%d, hm.y=%d)\n", y_juu, hm.y, 0, 0, 0, 0); rudisha 1; }
+
+    // ===== 3. chati_mstari na idadi=0/idadi=1 HAIANGUKI =====
+    n8* fb3 = tenga(pitch * canvas_h);
+    weka_sifuri(fb3, pitch * canvas_h);
+
+    d64 sampuli_moja[1];
+    sampuli_moja[0] = 42.0;
+
+    ChatiMstariHoja hm0;
+    hm0.fb = fb3;
+    hm0.pitch = pitch;
+    hm0.canvas_w = canvas_w;
+    hm0.canvas_h = canvas_h;
+    hm0.x = 10;
+    hm0.y = 10;
+    hm0.w = 250;
+    hm0.h = 150;
+    hm0.sampuli = sampuli_moja;
+    hm0.idadi = 0;
+    chati_mstari(&hm0);   // idadi=0 -- lazima irudi bila kuchora/bila hitilafu
+
+    hm0.idadi = 1;
+    chati_mstari(&hm0);   // idadi=1 -- lazima irudi bila kuchora/bila hitilafu
+
+    // fb3 lazima ibaki NZIMA sifuri -- hakuna kilichochorwa
+    n32 yyy = 0;
+    wakati (yyy < canvas_h) {
+        n64 xxx = 0;
+        wakati (xxx < canvas_w) {
+            kama (mchoro_pata_pikseli(fb3, pitch, xxx, yyy) != 0) {
+                andika_kosa("FAIL: chati_mstari(idadi<2) ilichora kitu kwenye (%d,%d)\n", xxx, yyy, 0, 0, 0, 0);
+                rudisha 1;
+            }
+            xxx = xxx + 8;
+        }
+        yyy = yyy + 8;
+    }
+
+    andika("PASS chati.swa (chati_pau/chati_mstari -- pikseli halisi zote sahihi)\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

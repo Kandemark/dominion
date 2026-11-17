@@ -1,0 +1,151 @@
+// i18n ya Dominion juu ya lugha.swa. d_tafsiri(ufunguo): kazi PEKEE
+// ya kuitwa badala ya literal. GLOBAL moja (D_LUGHA_HAI_ADDR); Mchezo
+// ndiye mmiliki (field lugha_addr, mchezo.swa). WIGO: kikomo cha 1MB
+// cha chanzo cha kamili KILIONDOLEWA (lugha-swa/swa#301, bafa_chanzo/
+// bafa_kuu/bafa_ukaguzi sasa 16MB) -- m1..m16 zilikuwa sehemu (15/31)
+// ya ujumbe kutokana na kikomo hicho; m17..m37 ziliongezwa baada ya
+// kikomo kuondolewa, zikikamilisha ujumbe WOTE uliobaki (andika()/
+// andika_kosa() zenye mfuatano halisi, nje ya majaribio). m4
+// imeachwa kimakusudi (haijatumika tangu awali). t1..t8 (mataifa)
+// ni yote tangu mwanzo.
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/ramani.swa }
+husisha { msingi/maktaba/lugha.swa }
+
+n64 D_LUGHA_HAI_ADDR = 0;
+
+LughaMfumo* d_lugha_hai() {
+    rudisha D_LUGHA_HAI_ADDR;
+}
+
+w0 d_sajili(LughaMfumo* l, n8* ufunguo, n8* sw, n8* en, n8* fr) {
+    lugha_sajili(l, ufunguo, "sw", sw);
+    lugha_sajili(l, ufunguo, "en", en);
+    lugha_sajili(l, ufunguo, "fr", fr);
+}
+
+w0 d_sajili_zote(LughaMfumo* l) {
+    d_sajili(l, "t1", "Utawala wa Kifalme", "Royal Monarchy", "Monarchie Royale");
+    d_sajili(l, "t2", "Muungano wa Kibiashara", "Trade Union", "Union Commerciale");
+    d_sajili(l, "t3", "Dola ya Kidini", "Religious State", "État Religieux");
+    d_sajili(l, "t4", "Shirikisho la Kidemokrasia", "Democratic Federation", "Fédération Démocratique");
+    d_sajili(l, "t5", "Muungano wa Kiteknolojia", "Technological Union", "Union Technologique");
+    d_sajili(l, "t6", "Jeshi la Kihamaji", "Nomadic Army", "Armée Nomade");
+    d_sajili(l, "t7", "Ushirika wa Kilimo", "Agricultural Cooperative", "Coopérative Agricole");
+    d_sajili(l, "t8", "Walinzi wa Pori", "Wilderness Guardians", "Gardiens Sauvages");
+
+    d_sajili(l, "m1", "[MCHEZO] Umeanzishwa kwenye zamu %d\n",
+        "[GAME] Started on turn %d\n", "[JEU] Démarré au tour %d\n");
+    d_sajili(l, "m2", "[MCHEZO] Zamu imekamilika, zamu mpya: %d\n",
+        "[GAME] Turn complete, new turn: %d\n", "[JEU] Tour fini, tour %d\n");
+    d_sajili(l, "m3", "Jamii mpya imeibuka: %s\n",
+        "A new society has emerged: %s\n", "Une société a émergé : %s\n");
+    d_sajili(l, "m5", "MLIPUKO WA UGONJWA umetokea!\n",
+        "A DISEASE OUTBREAK has occurred!\n", "UNE ÉPIDÉMIE s'est déclarée !\n");
+    d_sajili(l, "m6", "Mlipuko wa ugonjwa umeisha.\n",
+        "The disease outbreak has ended.\n", "L'épidémie a pris fin.\n");
+    d_sajili(l, "m7", "[SOVEREIGN] %s AMEASI! Uaminifu: %d\n",
+        "[SOVEREIGN] %s REBELLED! Loyalty: %d\n", "[SOUVERAIN] %s REBELLE ! Loyauté : %d\n");
+    d_sajili(l, "m8", "KITENGO KIMEPANDISHWA CHEO: %s kimefikia Ngazi %d!\n",
+        "UNIT PROMOTED: %s, Level %d!\n", "UNITÉ PROMUE : %s, Niveau %d !\n");
+    d_sajili(l, "m9", "Pendekezo la muungano kati ya %s na %s: LIMEKUBALIWA\n",
+        "Union proposal %s-%s: ACCEPTED\n", "Union %s-%s : ACCEPTÉE\n");
+    d_sajili(l, "m10", "Pendekezo la muungano kati ya %s na %s: LIMEKATALIWA\n",
+        "Union proposal %s-%s: REJECTED\n", "Union %s-%s : REJETÉE\n");
+    d_sajili(l, "m11", "Dini %s imeenea kwenda %s (ufikiaji mpya: %d)\n",
+        "Religion %s spread to %s (reach: %d)\n", "Religion %s étendue à %s (portée : %d)\n");
+    d_sajili(l, "m12", "Ukaguzi umegundua rushwa kwenye nodi %s\n",
+        "Audit found corruption at node %s\n", "Corruption détectée au nœud %s\n");
+    d_sajili(l, "m13", "[AI] %s alianzisha makazi mapya kwenye (%d,%d) (Ufaafu: %d%%)\n",
+        "[AI] %s settled at (%d,%d) (Suitability: %d%%)\n",
+        "[IA] %s s'est installé à (%d,%d) (Aptitude : %d%%)\n");
+    d_sajili(l, "m14", "\n--- RIPOTI YA AFYA YA JAMII ---\n",
+        "\n--- SOCIETAL HEALTH REPORT ---\n", "\n--- RAPPORT DE SANTÉ SOCIÉTALE ---\n");
+    d_sajili(l, "m15", "Utambulisho wa Taifa: %s\n",
+        "Nation Identity: %s\n", "Identité de la Nation : %s\n");
+    d_sajili(l, "m16", "Cheo cha Serikali: %s\n",
+        "Government Position: %s\n", "Poste Gouvernemental : %s\n");
+
+    d_sajili(l, "m17", "Chaguo limechaguliwa: %s\n",
+        "Choice selected: %s\n", "Choix sélectionné : %s\n");
+    d_sajili(l, "m18", "Cheo '%s' kimeunganishwa na jukumu la kazi '%s' kwenye serikali %s\n",
+        "Rank '%s' linked to job role '%s' in government %s\n",
+        "Le rang '%s' a été lié au rôle '%s' dans le gouvernement %s\n");
+    d_sajili(l, "m19", "Kiongozi ameweka ukandamizaji wa kiwango %d kwa %s\n",
+        "Leader imposed suppression level %d on %s\n",
+        "Le dirigeant a imposé une répression de niveau %d contre %s\n");
+    d_sajili(l, "m20", "%s ameondolewa kwenye maisha ya kisiasa.\n",
+        "%s has been removed from political life.\n",
+        "%s a été écarté de la vie politique.\n");
+    d_sajili(l, "m21", "Amefanya kazi za hisani. Umaarufu umeongezeka.\n",
+        "Performed charitable work. Popularity has increased.\n",
+        "A accompli des oeuvres caritatives. La popularité a augmenté.\n");
+    d_sajili(l, "m22", "Amesambaza propaganda. Msimamo mkali unapanda.\n",
+        "Spread propaganda. Radicalism is rising.\n",
+        "A diffusé de la propagande. Le radicalisme augmente.\n");
+    d_sajili(l, "m23", "MAPINDUZI YAMEANZA!\n",
+        "THE REVOLUTION HAS BEGUN!\n", "LA RÉVOLUTION A COMMENCÉ !\n");
+    d_sajili(l, "m24", "Mapinduzi yameshindwa kwa uungwaji mkono mdogo.\n",
+        "The revolution failed due to low support.\n",
+        "La révolution a échoué par manque de soutien.\n");
+    d_sajili(l, "m25", "Jamii imezaliwa katika %s ikiwa na wakazi.\n",
+        "A society was born in %s with inhabitants.\n",
+        "Une société est née à %s avec des habitants.\n");
+    d_sajili(l, "m26", "\n--- MKUTANO MKUU ---\n",
+        "\n--- GENERAL ASSEMBLY ---\n", "\n--- ASSEMBLÉE GÉNÉRALE ---\n");
+    d_sajili(l, "m27", "Jamii inakusanyika chini ya bendera yako. Maisha yao yanategemea uongozi.\n",
+        "The society gathers under your banner. Their lives depend on leadership.\n",
+        "La société se rassemble sous votre bannière. Leur vie dépend du leadership.\n");
+    d_sajili(l, "m28", "Umechaguliwa kuwa KIONGOZI!\n",
+        "You have been elected LEADER!\n", "Vous avez été élu DIRIGEANT !\n");
+    d_sajili(l, "m29", "Jamii imemchagua mwingine. Maisha yanaendelea kama mwanachama.\n",
+        "The society chose someone else. Life goes on as a member.\n",
+        "La société a choisi quelqu'un d'autre. La vie continue en tant que membre.\n");
+    d_sajili(l, "m30", "Jamii mpya imeibuka kwa kuchanganya: %s\n",
+        "A new society has emerged by blending: %s\n",
+        "Une nouvelle société a émergé par fusion : %s\n");
+    d_sajili(l, "m31", "[HEGEMONY] Kipande (%d,%d) kimebadilika kwenda %s\n",
+        "[HEGEMONY] Tile (%d,%d) has shifted to %s\n",
+        "[HÉGÉMONIE] La case (%d,%d) est passée à %s\n");
+    d_sajili(l, "m32", "Kuunganisha masoko ya %s na %s kuwa kundi moja la biashara.\n",
+        "Merging the markets of %s and %s into a single trade bloc.\n",
+        "Fusion des marchés de %s et %s en un seul bloc commercial.\n");
+    d_sajili(l, "m33", "Sarafu mpya ya pamoja '%s' imeanzishwa kati ya %s na %s.\n",
+        "New joint currency '%s' established between %s and %s.\n",
+        "Une nouvelle monnaie commune '%s' a été établie entre %s et %s.\n");
+    d_sajili(l, "m34", "[TAIFA] Mataifa %d yameundwa kutoka data ya mipaka\n",
+        "[NATION] %d nations created from boundary data\n",
+        "[NATION] %d nations créées à partir des données de frontières\n");
+    d_sajili(l, "m35", "Malalamiko yameongezwa: %s\n",
+        "Grievance added: %s\n", "Grief ajouté : %s\n");
+    d_sajili(l, "m36", "    (tatizo) GETCONNECTOR pass1 rc=%d kwa conn_id=%d\n",
+        "    (problem) GETCONNECTOR pass1 rc=%d for conn_id=%d\n",
+        "    (problème) GETCONNECTOR pass1 rc=%d pour conn_id=%d\n");
+    d_sajili(l, "m37", "    (tatizo) GETCONNECTOR pass2 rc=%d kwa conn_id=%d n_modes=%d\n",
+        "    (problem) GETCONNECTOR pass2 rc=%d for conn_id=%d n_modes=%d\n",
+        "    (problème) GETCONNECTOR pass2 rc=%d pour conn_id=%d n_modes=%d\n");
+}
+
+LughaMfumo* d_lugha_unda() {
+    LughaMfumo* l = lugha_unda(512);
+    d_sajili_zote(l);
+    D_LUGHA_HAI_ADDR = l;
+    rudisha l;
+}
+
+w0 d_lugha_funga(LughaMfumo* l) {
+    kama (l != 0) {
+        lugha_huru(l);
+    }
+    D_LUGHA_HAI_ADDR = 0;
+}
+
+// jiunde mwenyewe ikiwa hakuna LughaMfumo bado (jaribio la moduli).
+n8* d_tafsiri(n8* ufunguo) {
+    LughaMfumo* l = d_lugha_hai();
+    kama (l == 0) {
+        l = d_lugha_unda();
+    }
+    rudisha lugha_tafsiri(l, ufunguo);
+}

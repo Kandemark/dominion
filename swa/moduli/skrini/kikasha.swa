@@ -1,0 +1,213 @@
+husisha { moduli/skrini/mkutano.swa }
+husisha { moduli/onyesho/chati_kadi.swa }
+
+// kikasha.swa -- skrini ya kikasha: orodha ya ujumbe kushoto (mpya juu),
+// ujumbe uliochaguliwa kulia pamoja na mtumaji wake na vitendo.
+//
+// Vitendo: ombi la mkutano -- "Meet now" (mtumaji anaingia sasa) au
+// "Schedule" (msaidizi humpangia siku mbili baadaye); shajara -- "Open
+// calendar"; tahadhari -- "Discuss" (mazungumzo na mtumaji). Programu ndiyo
+// hufungua dirisha linalohusika.
+
+n64 KIKASHA_SAFU = 70;
+n64 KIKASHA_ORODHA = 460;
+
+n64 kikasha_teule = -1;                 // faharisi ya ujumbe uliochaguliwa
+
+n64 kikasha_x() { rudisha SKRINI_UPANA_WA_PEMBENI + 25; }
+n64 kikasha_y() { rudisha SKRINI_UPAU_WA_JUU + 22 + 64; }
+
+// Vitendo vya bofya (kwa programu).
+n64 KIKASHA_KITENDO_HAKUNA = 0;
+n64 KIKASHA_KITENDO_CHAGUA = 1;
+n64 KIKASHA_KITENDO_ONANA = 2;
+n64 KIKASHA_KITENDO_PANGA = 3;
+n64 KIKASHA_KITENDO_KALENDA = 4;
+
+// Faharisi ya ujumbe kwenye safu `safu` ya orodha (mpya juu).
+n64 kikasha_kwa_safu(n64 safu) { rudisha kikasha_idadi - 1 - safu; }
+
+// y ya vitufe vya kitendo kwenye kidirisha cha kusoma.
+n64 kikasha_y_vitufe(n64 kimo) { rudisha kimo - 16 - 60; }
+
+n64 skrini_kikasha_bofya(n64 upana, n64 kimo, n64 px, n64 py) {
+    n64 x = kikasha_x();
+    n64 y = kikasha_y();
+    kama (px >= x && px < x + KIKASHA_ORODHA && py >= y + 48) {
+        n64 safu = (py - y - 48) / KIKASHA_SAFU;
+        n64 i = kikasha_kwa_safu(safu);
+        kama (i >= 0) {
+            kikasha_teule = i;
+            Ujumbe* u = kikasha_pata(i);
+            u->umesomwa = 1;
+            rudisha KIKASHA_KITENDO_CHAGUA;
+        }
+        rudisha KIKASHA_KITENDO_HAKUNA;
+    }
+    Ujumbe* u = kikasha_pata(kikasha_teule);
+    kama (u == 0) { rudisha KIKASHA_KITENDO_HAKUNA; }
+    n64 xr = x + KIKASHA_ORODHA + 14;
+    n64 yb = kikasha_y_vitufe(kimo);
+    kama (py >= yb && py < yb + 36 && px >= xr + 18) {
+        n64 k = (px - xr - 18) / 172;
+        kama ((px - xr - 18) % 172 >= 160) { rudisha KIKASHA_KITENDO_HAKUNA; }
+        kama (u->aina == UJUMBE_OMBI && k == 0) { rudisha KIKASHA_KITENDO_ONANA; }
+        kama (u->aina == UJUMBE_OMBI && k == 1) { rudisha KIKASHA_KITENDO_PANGA; }
+        kama (u->aina == UJUMBE_SHAJARA && k == 0) { rudisha KIKASHA_KITENDO_KALENDA; }
+        kama (u->aina == UJUMBE_TAHADHARI && k == 0) { rudisha KIKASHA_KITENDO_ONANA; }
+    }
+    rudisha KIKASHA_KITENDO_HAKUNA;
+}
+
+n8* kikasha_aina_jina(n64 aina) {
+    kama (aina == UJUMBE_SHAJARA) { rudisha ui("Diary"); }
+    kama (aina == UJUMBE_TAHADHARI) { rudisha ui("Warning"); }
+    rudisha ui("Request");
+}
+
+n64 kikasha_aina_rangi(n64 aina) {
+    kama (aina == UJUMBE_SHAJARA) { rudisha SURA_BAHARI; }
+    kama (aina == UJUMBE_TAHADHARI) { rudisha SURA_HASI; }
+    rudisha SURA_LAFUDHI;
+}
+
+// Duara la herufi za mwanzo za jina.
+w0 kikasha_avatar(n8* jina, n64 cx, n64 cy, n64 r, n64 rangi) {
+    turubai_brashi(sura_t, rangi, 255);
+    turubai_duara(sura_t, cx, cy, r);
+    n8 h[4];
+    h[0] = jina[0];
+    h[1] = 0;
+    n64 i = 0;
+    wakati (jina[i] != 0 && jina[i] != 32) { i = i + 1; }
+    kama (jina[i] == 32) { h[1] = jina[i + 1]; h[2] = 0; }
+    n64 wh = maandishi_upana(sura_nene, h, 12);
+    turubai_brashi(sura_t, SURA_MAANDISHI, 255);
+    maandishi_chora(sura_t, sura_nene, h, cx - wh / 2, cy - 8, 12);
+}
+
+w0 kikasha_kitufe(n8* lebo, n64 x, n64 y, n32 kikuu) {
+    kama (kikuu) { turubai_brashi(sura_t, SURA_LAFUDHI, 255); }
+    sivyo { turubai_brashi(sura_t, SURA_PANELI_JUU, 255); }
+    turubai_mviringo(sura_t, x, y, 160, 36, 6);
+    kama (kikuu) { turubai_brashi(sura_t, CHATI_GIZA, 255); }
+    sivyo { turubai_brashi(sura_t, SURA_MAANDISHI, 255); }
+    n64 wl = maandishi_upana(sura_nene, lebo, 13);
+    maandishi_chora(sura_t, sura_nene, lebo, x + (160 - wl) / 2, y + 9, 13);
+}
+
+w0 skrini_kikasha_chora(Mchezo* g, Turubai* t, n64 taifa) {
+    sura_anzisha(t);
+    turubai_brashi(t, SURA_USULI, 255);
+    turubai_jaza(t, 0, 0, t->upana, t->kimo);
+    skrini_upau_wa_juu(g, t);
+    skrini_urambazaji(t, 11);
+    Dola* d = skrini_siasa_dola(g, taifa);
+    Wahusika* w = skrini_mkutano_watu(g, taifa);
+    kama (d == 0 || w == 0) { rudisha; }
+    kama (kikasha_teule < 0 && kikasha_idadi > 0) {
+        kikasha_teule = kikasha_idadi - 1;
+        Ujumbe* kwanza = kikasha_pata(kikasha_teule);
+        kwanza->umesomwa = 1;
+    }
+    n64 x = kikasha_x();
+    n64 y = SKRINI_UPAU_WA_JUU + 22;
+    n64 w_wote = t->upana - x - 24;
+    n8 chini[96];
+    mfuatano_umbiza(chini, 96, ui("%d messages, %d unread"), kikasha_idadi, kikasha_visivyosomwa(), 0, 0, 0, 0);
+    skrini_kichwa_fm(g, t, ui("Inbox"), chini, x, y - 4);
+    y = kikasha_y();
+    n64 h = t->kimo - y - 16;
+
+    // orodha
+    chati_kadi(x, y, KIKASHA_ORODHA, h, ui("Messages"), 0);
+    n64 safu = 0;
+    wakati (safu < kikasha_idadi && y + 48 + (safu + 1) * KIKASHA_SAFU <= y + h) {
+        n64 i = kikasha_kwa_safu(safu);
+        Ujumbe* u = kikasha_pata(i);
+        MhusikaWaDola* m = wahusika_pata(w, u->mtumaji);
+        n64 ry = y + 48 + safu * KIKASHA_SAFU;
+        kama (i == kikasha_teule) {
+            turubai_brashi(t, SURA_PANELI_JUU, 255);
+            turubai_mviringo(t, x + 6, ry, KIKASHA_ORODHA - 12, KIKASHA_SAFU - 4, 8);
+            turubai_brashi(t, SURA_BAHARI, 255);
+            turubai_jaza(t, x + 6, ry + 12, 3, KIKASHA_SAFU - 28);
+        } sivyo {
+            turubai_brashi(t, 16777215, 12);
+            turubai_jaza(t, x + 18, ry + KIKASHA_SAFU - 3, KIKASHA_ORODHA - 36, 1);
+        }
+        n8* jina = ui("Unknown");
+        kama (m != 0) { jina = m->jina; }
+        kikasha_avatar(jina, x + 36, ry + 30, 16, 3754873);
+        n8 tarehe[48];
+        tarehe_maandishi_mafupi(u->siku, tarehe, 48);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo_kulia(tarehe, x + KIKASHA_ORODHA - 18, ry + 10, 10);
+        turubai_kata(t, x, ry, KIKASHA_ORODHA - 110, KIKASHA_SAFU);
+        kama (u->umesomwa) { sura_rangi(SURA_HAFIFU); sura_lebo(jina, x + 62, ry + 8, 12); }
+        sivyo { sura_rangi(SURA_MAANDISHI); sura_lebo_kati(jina, x + 62, ry + 8, 12); }
+        turubai_kata_yote(t);
+        turubai_kata(t, x, ry, KIKASHA_ORODHA - 24, KIKASHA_SAFU);
+        sura_rangi(SURA_MAANDISHI);
+        kama (u->umesomwa) { sura_lebo(u->kichwa, x + 62, ry + 26, 13); }
+        sivyo { sura_lebo_nene(u->kichwa, x + 62, ry + 26, 13); }
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(u->mwili, x + 62, ry + 45, 11);
+        turubai_kata_yote(t);
+        kama (u->umesomwa == 0) {
+            turubai_brashi(t, SURA_BAHARI, 255);
+            turubai_duara(t, x + KIKASHA_ORODHA - 24, ry + 33, 4);
+        }
+        safu = safu + 1;
+    }
+    kama (kikasha_idadi == 0) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(ui("No messages yet. Press Continue to begin the week."), x + 18, y + 56, 12);
+    }
+
+    // ujumbe uliochaguliwa
+    n64 xr = x + KIKASHA_ORODHA + 14;
+    n64 wr = w_wote - KIKASHA_ORODHA - 14;
+    chati_kadi(xr, y, wr, h, 0, 0);
+    Ujumbe* u = kikasha_pata(kikasha_teule);
+    kama (u == 0) { rudisha; }
+    MhusikaWaDola* m = wahusika_pata(w, u->mtumaji);
+    chati_lebo(xr + 24, y + 22, kikasha_aina_jina(u->aina), kikasha_aina_rangi(u->aina));
+    n8 tarehe_ya_ujumbe[64];
+    tarehe_maandishi(u->siku, tarehe_ya_ujumbe, 64);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo_kulia(tarehe_ya_ujumbe, xr + wr - 24, y + 24, 12);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(u->kichwa, xr + 24, y + 54, 22);
+    kama (m != 0) {
+        kikasha_avatar(m->jina, xr + 44, y + 120, 20, 3754873);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kati(m->jina, xr + 76, y + 104, 14);
+        n8* chama = ui("No party");
+        kama (m->chama != 0) { chama = m->chama; }
+        n8 mstari[160];
+        mfuatano_umbiza(mstari, 160, "%s  ·  %s  ·  %s", m->cheo, chama, msimamo_jina(m->msimamo), 0, 0, 0);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(mstari, xr + 76, y + 124, 12);
+    }
+    turubai_brashi(t, 16777215, 16);
+    turubai_jaza(t, xr + 24, y + 156, wr - 48, 1);
+    sura_rangi(SURA_MAANDISHI);
+    skrini_mkutano_aya(u->mwili, xr + 24, y + 176, wr - 48, 14, kikasha_y_vitufe(t->kimo) - 20);
+    // vitendo
+    n64 yb = kikasha_y_vitufe(t->kimo);
+    kama (u->aina == UJUMBE_OMBI) {
+        kikasha_kitufe(ui("Meet now"), xr + 18, yb, 1);
+        kikasha_kitufe(ui("Schedule"), xr + 18 + 172, yb, 0);
+        kama (m != 0 && m->mkutano == 3) {
+            n8 siku_m[48];
+            tarehe_maandishi(m->mkutano_siku, siku_m, 48);
+            n8 m2[96];
+            mfuatano_umbiza(m2, 96, ui("Scheduled for %s"), siku_m, 0, 0, 0, 0, 0);
+            sura_rangi(SURA_CHANYA);
+            sura_lebo(m2, xr + 18 + 2 * 172 + 8, yb + 9, 13);
+        }
+    }
+    kama (u->aina == UJUMBE_SHAJARA) { kikasha_kitufe(ui("Open calendar"), xr + 18, yb, 1); }
+    kama (u->aina == UJUMBE_TAHADHARI) { kikasha_kitufe(ui("Discuss"), xr + 18, yb, 1); }
+}

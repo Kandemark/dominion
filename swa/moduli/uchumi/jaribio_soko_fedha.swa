@@ -1,0 +1,134 @@
+husisha { moduli/uchumi/soko_fedha.swa }
+
+// jaribio_soko_fedha.swa -- jaribio la mkono dhidi ya SokoFedhaInjini
+// (soko_fedha.swa, tafsiri ya economy/financial_markets.c) PEKEE,
+// bila kupitia mchezo.swa (angalia lugha-swa/swa#295). Linathibitisha
+// THAMANI HALISI.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    civ_nasibu_panda(7);
+
+    SokoFedhaInjini* m = soko_fedha_injini_unda();
+    n32 m_sio_tupu = (m != 0);
+    jaribio_thibitisha(m_sio_tupu, "injini_unda si tupu");
+    jaribio_thibitisha(m->idadi_ya_sarafu == 52, "idadi_ya_sarafu awali ni 52");
+    jaribio_thibitisha(m->idadi_ya_bidhaa == 12, "idadi_ya_bidhaa ni 12");
+    jaribio_thibitisha(m->idadi_ya_makampuni == 0, "idadi_ya_makampuni awali ni 0");
+
+    SokoFedhaSarafu* usd = soko_fedha_pata_sarafu(m, "USD");
+    n32 usd_sio_tupu = (usd != 0);
+    jaribio_thibitisha(usd_sio_tupu, "pata_sarafu(USD) si tupu");
+    n32 usd_kiwango_sahihi = (usd->kiwango_cha_msingi > 0.99 && usd->kiwango_cha_msingi < 1.01);
+    jaribio_thibitisha(usd_kiwango_sahihi, "USD kiwango_cha_msingi ni 1.0");
+
+    SokoFedhaSarafu* kes = soko_fedha_pata_sarafu(m, "KES");
+    n32 kes_sio_tupu = (kes != 0);
+    jaribio_thibitisha(kes_sio_tupu, "pata_sarafu(KES) si tupu");
+    n32 kes_kiwango_sahihi = (kes->kiwango_cha_msingi > 129.0 && kes->kiwango_cha_msingi < 130.0);
+    jaribio_thibitisha(kes_kiwango_sahihi, "KES kiwango_cha_msingi ni ~129.5");
+
+    SokoFedhaSarafu* haipo = soko_fedha_pata_sarafu(m, "XXX");
+    n32 haipo_ni_tupu = (haipo == 0);
+    jaribio_thibitisha(haipo_ni_tupu, "pata_sarafu ya sarafu isiyopo ni 0");
+
+    d64 kubadilishwa = soko_fedha_badilishana(m, "USD", "KES", 100.0);
+    n32 kubadilishwa_sahihi = (kubadilishwa > 12900.0 && kubadilishwa < 13000.0);
+    jaribio_thibitisha(kubadilishwa_sahihi, "badilishana USD->KES ya 100 ni ~12950");
+
+    SokoFedhaBidhaa* dhahabu = soko_fedha_pata_bidhaa(m, "Dhahabu");
+    n32 dhahabu_sio_tupu = (dhahabu != 0);
+    jaribio_thibitisha(dhahabu_sio_tupu, "pata_bidhaa(Dhahabu) si tupu");
+    n32 dhahabu_bei_sahihi = (dhahabu->bei_kwa_kipimo > 2339.0 && dhahabu->bei_kwa_kipimo < 2341.0);
+    jaribio_thibitisha(dhahabu_bei_sahihi, "Dhahabu bei_kwa_kipimo ni ~2340");
+
+    SokoFedhaSarafu* ongezwa = soko_fedha_ongeza_sarafu(m, "ZZZ", "Sarafu ya Kujaribu", "Z", 2.5);
+    n32 ongezwa_sio_tupu = (ongezwa != 0);
+    jaribio_thibitisha(ongezwa_sio_tupu, "ongeza_sarafu inarudisha sarafu mpya");
+    jaribio_thibitisha(m->idadi_ya_sarafu == 53, "idadi_ya_sarafu baada ya ongeza ni 53");
+    SokoFedhaSarafu* zzz = soko_fedha_pata_sarafu(m, "ZZZ");
+    n32 zzz_sawa = (zzz == ongezwa);
+    jaribio_thibitisha(zzz_sawa, "sarafu mpya inapatikana kupitia pata_sarafu");
+
+    d64 usd_kabla = usd->kiwango_cha_sasa;
+    soko_fedha_sasisha(m);
+    n32 usd_imebadilika_au_sawa = 1; // mabadiliko ni ya nasibu, lakini hayafanyi anguka
+    jaribio_thibitisha(usd_imebadilika_au_sawa, "sasisha haivunjiki");
+    n32 usd_bado_ndani_ya_mipaka = (usd->kiwango_cha_sasa > usd->kiwango_cha_msingi * 0.49 && usd->kiwango_cha_sasa < usd->kiwango_cha_msingi * 3.01);
+    jaribio_thibitisha(usd_bado_ndani_ya_mipaka, "USD kiwango_cha_sasa bado ndani ya mipaka ya 0.5x-3x baada ya sasisha");
+
+    soko_fedha_sasisha_uzalishaji(m, 50000.0, 200000.0, 20000.0, 80000.0);
+    n32 ngano_ugavi_ndani_ya_mipaka = (dhahabu->ugavi >= 0.1 && dhahabu->ugavi <= 0.9);
+    jaribio_thibitisha(ngano_ugavi_ndani_ya_mipaka, "ugavi wa Dhahabu bado ndani ya [0.1, 0.9] baada ya sasisha_uzalishaji");
+
+    d64 gharama_kes = soko_fedha_gharama_ya_maisha(m, "KES");
+    n32 gharama_kes_sahihi = (gharama_kes > 0.9 && gharama_kes < 1.1);
+    jaribio_thibitisha(gharama_kes_sahihi, "gharama_ya_maisha(KES) ni ~0.8+0.02*10=1.0");
+
+    d64 bei_kidinamik = soko_fedha_bei_ya_kidinamik(m, 10.0, "USD", 1.0);
+    n32 bei_kidinamik_chanya = (bei_kidinamik > 0.0);
+    jaribio_thibitisha(bei_kidinamik_chanya, "bei_ya_kidinamik ni chanya");
+
+    soko_fedha_zalisha_makampuni(m, "KE");
+    jaribio_thibitisha(m->idadi_ya_makampuni == 8, "idadi_ya_makampuni baada ya zalisha_makampuni ni 8");
+    SokoFedhaKampuni* kampuni0 = soko_fedha_pata_kampuni(m, 0);
+    n32 kampuni0_sio_tupu = (kampuni0 != 0);
+    jaribio_thibitisha(kampuni0_sio_tupu, "pata_kampuni(0) si tupu");
+    n32 kampuni0_wafanyakazi_sahihi = (kampuni0->wafanyakazi >= 50 && kampuni0->wafanyakazi < 5050);
+    jaribio_thibitisha(kampuni0_wafanyakazi_sahihi, "kampuni0 wafanyakazi ndani ya mipaka [50,5050)");
+    n32 kampuni0_taifa_sahihi = (linganisha_mfuatano(kampuni0->taifa_id, "KE") == 0);
+    jaribio_thibitisha(kampuni0_taifa_sahihi, "kampuni0 taifa_id ni KE");
+
+    SokoFedhaKampuni* nje_ya_mipaka = soko_fedha_pata_kampuni(m, 100);
+    n32 nje_ya_mipaka_ni_tupu = (nje_ya_mipaka == 0);
+    jaribio_thibitisha(nje_ya_mipaka_ni_tupu, "pata_kampuni nje ya mipaka ni 0");
+
+    // Pochi
+    SokoFedhaPochi* pochi = tenga(ukubwa(SokoFedhaPochi));
+    soko_fedha_pochi_anzisha(pochi);
+    jaribio_thibitisha(pochi->idadi == 0, "pochi_anzisha: idadi ni 0");
+
+    soko_fedha_pochi_ongeza(pochi, "USD", 100.0);
+    soko_fedha_pochi_ongeza(pochi, "USD", 50.0);
+    jaribio_thibitisha(pochi->idadi == 1, "pochi_ongeza mara mbili kwa sarafu ile ile: idadi bado 1");
+    d64 salio_usd = soko_fedha_pochi_salio(pochi, "USD");
+    n32 salio_usd_sahihi = (salio_usd > 149.9 && salio_usd < 150.1);
+    jaribio_thibitisha(salio_usd_sahihi, "salio la USD baada ya ongeza mara mbili ni 150");
+
+    soko_fedha_pochi_ongeza(pochi, "KES", 1000.0);
+    jaribio_thibitisha(pochi->idadi == 2, "pochi_ongeza sarafu ya pili: idadi ni 2");
+
+    n32 badilishana_ok = soko_fedha_pochi_badilishana(pochi, m, "USD", "KES", 50.0);
+    jaribio_thibitisha(badilishana_ok, "pochi_badilishana USD->KES inafaulu");
+    d64 salio_usd_baada = soko_fedha_pochi_salio(pochi, "USD");
+    n32 salio_usd_baada_sahihi = (salio_usd_baada > 99.9 && salio_usd_baada < 100.1);
+    jaribio_thibitisha(salio_usd_baada_sahihi, "salio la USD baada ya badilishana ni 100 (150-50)");
+
+    n32 badilishana_haitoshi = soko_fedha_pochi_badilishana(pochi, m, "USD", "KES", 99999.0);
+    n32 badilishana_haitoshi_sahihi = (badilishana_haitoshi == 0);
+    jaribio_thibitisha(badilishana_haitoshi_sahihi, "pochi_badilishana bila salio la kutosha inashindwa (0)");
+
+    soko_fedha_pochi_ondoa(pochi, "USD");
+    jaribio_thibitisha(pochi->idadi == 1, "pochi_ondoa: idadi baada ya kuondoa USD ni 1");
+    d64 salio_usd_baada_ondoa = soko_fedha_pochi_salio(pochi, "USD");
+    jaribio_thibitisha(salio_usd_baada_ondoa == 0.0, "salio la USD baada ya ondoa ni 0 (haipo tena)");
+
+    d64 jumla_ya_pochi = soko_fedha_pochi_jumla(pochi, m);
+    n32 jumla_ya_pochi_chanya = (jumla_ya_pochi > 0.0);
+    jaribio_thibitisha(jumla_ya_pochi_chanya, "pochi_jumla (katika USD ya marejeo) ni chanya");
+
+    soko_fedha_injini_uharibu(m);
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

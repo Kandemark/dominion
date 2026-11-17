@@ -1,0 +1,41 @@
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/onyesho/dunia_halisi.swa }
+
+// jaribio_dunia_halisi.swa -- pakia rasilimali/dunia.bin na uchore kipande cha dunia.
+//   jaribio_dunia_halisi <towe.bgra> [upana kimo] [x y kwa pikseli za dunia] [ukuzaji*100]
+// Huchapisha idadi za tabaka; hurudisha 1 ikiwa faili halikupakia.
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    maandishi_anzisha();
+    Fonti* nene = maandishi_pakia("rasilimali/fonti/NotoSans-Bold.ttf");
+    Fonti* kawaida = maandishi_pakia("rasilimali/fonti/NotoSans-Regular.ttf");
+    Fonti* serifu = maandishi_pakia("rasilimali/fonti/NotoSerif-Italic.ttf");
+    kama (nene == 0 || kawaida == 0 || serifu == 0) {
+        andika_kosa("fonti hazikupatikana: endesha kutoka saraka ya swa/\n", 0, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    DuniaHalisi* d = dunia_halisi_pakia("rasilimali/dunia.bin");
+    kama (d == 0) {
+        andika_kosa("rasilimali/dunia.bin haikupakia\n", 0, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("dunia %dx%d mataifa %d mito %d barabara %d reli %d\n", d->upana, d->kimo, d->mataifa, d->idadi_mito, d->idadi_barabara, d->idadi_reli);
+    andika("makazi %d maandishi %d\n", d->idadi_makazi, d->idadi_maandishi, 0, 0, 0, 0);
+    n64 w = 1600;
+    n64 h = 1000;
+    n64 gx = 1850;
+    n64 gy = 380;
+    n64 ukuzaji = 300;
+    kama (idadi_ya_hoja > 3) { w = mfuatano_hadi_n64(hoja_za_mstari[2]); h = mfuatano_hadi_n64(hoja_za_mstari[3]); }
+    kama (idadi_ya_hoja > 5) { gx = mfuatano_hadi_n64(hoja_za_mstari[4]); gy = mfuatano_hadi_n64(hoja_za_mstari[5]); }
+    kama (idadi_ya_hoja > 6) { ukuzaji = mfuatano_hadi_n64(hoja_za_mstari[6]); }
+    n64 kipimo = (256 * 100) / ukuzaji;
+    Turubai* t = turubai_unda(w, h);
+    dunia_halisi_chora(d, t, gx * 256, gy * 256, kipimo, nene, kawaida, serifu);
+    kama (idadi_ya_hoja > 1) {
+        n64 fd = mfumo_fungua(hoja_za_mstari[1], 577, 420);
+        mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
+        mfumo_funga(fd);
+    }
+    rudisha 0;
+}

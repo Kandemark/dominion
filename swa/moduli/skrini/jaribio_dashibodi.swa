@@ -1,0 +1,38 @@
+husisha { moduli/skrini/dashibodi.swa }
+
+// jaribio_dashibodi.swa -- chora muhtasari wa taifa la mchezaji baada ya
+// zamu kadhaa (ili historia ya pato iwepo) na uandike fremu ghafi (BGRA).
+//   jaribio_dashibodi <njia> [zamu] [upana] [kimo]
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) { andika("SHINDWA: mchezo_anzisha\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    n64 zamu = 18;
+    kama (idadi_ya_hoja > 2) { zamu = mfuatano_hadi_n64(hoja_za_mstari[2]); }
+    n64 upana = 1680;
+    n64 kimo = 1000;
+    kama (idadi_ya_hoja > 4) { upana = mfuatano_hadi_n64(hoja_za_mstari[3]); kimo = mfuatano_hadi_n64(hoja_za_mstari[4]); }
+    n64 i = 0;
+    wakati (i < zamu) {
+        mchezo_sasisha(g);
+        mchezo_maliza_zamu(g);
+        i = i + 1;
+    }
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    Turubai* t = turubai_unda(upana, kimo);
+    // kama ndani ya dirisha: bila fremu ya mchezo
+    SKRINI_UPANA_WA_PEMBENI = 0 - 9;
+    SKRINI_UPAU_WA_JUU = 0 - 13;
+    skrini_bila_fremu = 1;
+    skrini_dashibodi_chora(g, t, tm->faharisi_ya_taifa_la_mchezaji);
+    kama (idadi_ya_hoja > 1) {
+        n64 fd = mfumo_fungua(hoja_za_mstari[1], 577, 420);
+        mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
+        mfumo_funga(fd);
+    }
+    andika("dashibodi: zamu %d, %dx%d\n", g->zamu_ya_sasa, upana, kimo, 0, 0, 0);
+    rudisha 0;
+}

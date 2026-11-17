@@ -1,0 +1,50 @@
+husisha { moduli/onyesho/bunge.swa }
+
+// jaribio_bunge.swa -- chora miundo yote mitano ya bunge kwa vyama vinne
+// (viti 50 + 180 + 155 + 50 = 435) na uthibitishe kila mchoro una nukta 435.
+//   jaribio_bunge [njia ya dampo la BGRA 1600x900]
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    Turubai* t = turubai_unda(1600, 900);
+    sura_anzisha(t);
+    turubai_brashi(t, SURA_USULI, 255);
+    turubai_jaza(t, 0, 0, 1600, 900);
+    n64 viti[4];
+    n64 rangi[4];
+    n64 uwazi[4];
+    viti[0] = 50;  rangi[0] = SURA_BAHARI;  uwazi[0] = 255;
+    viti[1] = 180; rangi[1] = SURA_LAFUDHI; uwazi[1] = 255;
+    viti[2] = 155; rangi[2] = 11032472;     uwazi[2] = 255;
+    viti[3] = 50;  rangi[3] = SURA_HASI;    uwazi[3] = 255;
+    n64 makosa = 0;
+    n64 aina = 0;
+    wakati (aina < BUNGE_AINA_IDADI) {
+        n64 x = 40 + (aina % 3) * 520;
+        n64 y = 40 + (aina / 3) * 430;
+        sura_paneli(x, y, 480, 390, bunge_aina_jina(aina));
+        sura_bunge_aina(aina, x + 30, y + 50, 420, 310, 9, viti, rangi, uwazi, 4, 230);
+        kama (bunge_viti_vilivyochorwa != 435) {
+            andika("SHINDWA: muundo %d una viti %d, si 435\n", aina, bunge_viti_vilivyochorwa, 0, 0, 0, 0);
+            makosa = makosa + 1;
+        }
+        aina = aina + 1;
+    }
+    // chama kimoja, kiti kimoja: hakuna kugawanya kwa sifuri
+    n64 moja[1];
+    n64 r1[1];
+    n64 u1[1];
+    moja[0] = 1; r1[0] = SURA_LAFUDHI; u1[0] = 255;
+    aina = 0;
+    wakati (aina < BUNGE_AINA_IDADI) {
+        sura_bunge_aina(aina, 1100 + aina * 90, 560, 80, 80, 1, moja, r1, u1, 1, 1);
+        kama (bunge_viti_vilivyochorwa != 1) { andika("SHINDWA: kiti kimoja, muundo %d\n", aina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+        aina = aina + 1;
+    }
+    kama (idadi_ya_hoja > 1) {
+        n64 fd = mfumo_fungua(hoja_za_mstari[1], 577, 420);
+        mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
+        mfumo_funga(fd);
+    }
+    kama (makosa == 0) { andika("bunge: miundo %d, viti 435 kila mmoja\n", BUNGE_AINA_IDADI, 0, 0, 0, 0, 0); rudisha 0; }
+    rudisha 1;
+}

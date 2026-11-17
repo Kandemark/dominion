@@ -1,0 +1,54 @@
+husisha { moduli/skrini/kuwasha.swa }
+husisha { moduli/skrini/mipangilio.swa }
+
+// jaribio_kuwasha.swa -- chora skrini za kuwaka na ya mipangilio, na uandike
+// fremu ghafi (BGRA) nne: <njia>.studio, <njia>.mandhari, <njia>.kupakia,
+// <njia>.mipangilio.
+//   jaribio_kuwasha <njia> [lugha 0..2]
+
+w0 andika_fremu(n8* njia, n8* kiambishi, Turubai* t) {
+    n8 jina[256];
+    mfuatano_umbiza(jina, 256, "%s%s", njia, kiambishi, 0, 0, 0, 0);
+    n64 fd = mfumo_fungua(jina, 577, 420);
+    mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
+    mfumo_funga(fd);
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    kama (idadi_ya_hoja > 2) { maneno_weka_lugha(mfuatano_hadi_n64(hoja_za_mstari[2])); }
+    // kila neno la Kiingereza lazima libaki lenyewe; kila lugha nyingine irudishe tafsiri
+    n64 lugha_ya_awali = maneno_lugha;
+    maneno_weka_lugha(MANENO_KIINGEREZA);
+    kama (linganisha_mfuatano(ui("tab|GDP"), "GDP") != 0) { andika("SHINDWA: muktadha wa Kiingereza\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (linganisha_mfuatano(ui("Economy"), "Economy") != 0) { andika("SHINDWA: Kiingereza\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    maneno_weka_lugha(MANENO_KISWAHILI);
+    kama (linganisha_mfuatano(ui("Economy"), "Uchumi") != 0) { andika("SHINDWA: Kiswahili\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (linganisha_mfuatano(ui("tab|GDP"), "PATO") != 0) { andika("SHINDWA: muktadha wa Kiswahili\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (linganisha_mfuatano(ui("neno lisilokuwepo"), "neno lisilokuwepo") != 0) { andika("SHINDWA: kurudi kwenye Kiingereza\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    maneno_weka_lugha(MANENO_KIFARANSA);
+    kama (linganisha_mfuatano(ui("Map"), "Carte") != 0) { andika("SHINDWA: Kifaransa\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    maneno_weka_lugha(lugha_ya_awali);
+
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) { andika("SHINDWA: mchezo_anzisha\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
+    Turubai* t = turubai_unda(1600, 900);
+    kama (idadi_ya_hoja > 1) {
+        skrini_kuwasha_studio(t, 255);
+        andika_fremu(hoja_za_mstari[1], ".studio", t);
+        mandhari_mapinduzi(t, 0);
+        andika_fremu(hoja_za_mstari[1], ".mandhari", t);
+        skrini_kuwasha_kupakia(t, 640, ui("Drawing the borders"), 0, 0);
+        andika_fremu(hoja_za_mstari[1], ".kupakia", t);
+        skrini_mipangilio_chora(g, t);
+        andika_fremu(hoja_za_mstari[1], ".mipangilio", t);
+    }
+    kama (skrini_mipangilio_bofya(1600, skrini_mipangilio_x() + 40, skrini_mipangilio_y() + SKRINI_MIPANGILIO_SAFU + 5) != 1) {
+        andika("SHINDWA: bofya ya safu ya pili\n", 0, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("kuwasha: sawa\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

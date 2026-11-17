@@ -1,0 +1,78 @@
+husisha { moduli/mchezo.swa }
+
+// jaribio_lugha_dominion_mapya.swa -- jaribio la i18n kwa ujumbe MAPYA
+// (m17..m37) ulioongezwa baada ya kikomo cha 1MB cha chanzo cha kamili
+// kuondolewa (lugha-swa/swa#301, bafa_chanzo sasa 16MB). TOFAUTI na
+// jaribio_lugha_dominion.swa (lililopo tayari, linalothibitisha m1..m16
+// + t1..t8): jaribio HILI linathibitisha SAMPULI ya ujumbe MAPYA pekee,
+// kubadilisha lugha hai (sw -> en -> fr) na kulinganisha matokeo HALISI
+// ya d_tafsiri() dhidi ya tafsiri zilizotarajiwa -- uthibitisho kuwa
+// tafsiri mpya zinatumika KWELI (si tu zimehifadhiwa bila kutumika).
+
+n32 jlm_yalioshindwa = 0;
+
+w0 jlm_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0,0,0,0,0);
+        jlm_yalioshindwa = jlm_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0,0,0,0,0);
+    }
+}
+
+n32 jlm_sawa(n8* a, n8* b) {
+    rudisha linganisha_mfuatano(a, b) == 0;
+}
+
+n32 anza() {
+    Mchezo* g = mchezo_unda();
+    n32 g_ipo = (g != 0);
+    jlm_thibitisha(g_ipo, "mchezo_unda inarudisha kielekezi");
+
+    // ---- sw (chaguo-msingi) ----
+    n8* m23_sw = d_tafsiri("m23");
+    andika("sw m23: %s", m23_sw, 0,0,0,0,0);
+    jlm_thibitisha(jlm_sawa(m23_sw, "MAPINDUZI YAMEANZA!\n"), "m23 sw == MAPINDUZI YAMEANZA!");
+
+    n8* m30_sw = d_tafsiri("m30");
+    jlm_thibitisha(jlm_sawa(m30_sw, "Jamii mpya imeibuka kwa kuchanganya: %s\n"), "m30 sw == literal ya awali");
+
+    // ---- en ----
+    mchezo_weka_lugha(g, "en");
+    n8* m19_en = d_tafsiri("m19");
+    andika("en m19: %s", m19_en, 0,0,0,0,0);
+    jlm_thibitisha(jlm_sawa(m19_en, "Leader imposed suppression level %d on %s\n"), "m19 en == Leader imposed suppression level %d on %s");
+
+    n8* m23_en = d_tafsiri("m23");
+    andika("en m23: %s", m23_en, 0,0,0,0,0);
+    jlm_thibitisha(jlm_sawa(m23_en, "THE REVOLUTION HAS BEGUN!\n"), "m23 en == THE REVOLUTION HAS BEGUN!");
+
+    n8* m34_en = d_tafsiri("m34");
+    andika("en m34: %s", m34_en, 0,0,0,0,0);
+    jlm_thibitisha(jlm_sawa(m34_en, "[NATION] %d nations created from boundary data\n"), "m34 en == [NATION] %d nations created from boundary data");
+
+    // ---- fr (ukaguzi wa lafudhi za UTF-8) ----
+    mchezo_weka_lugha(g, "fr");
+    n8* m23_fr = d_tafsiri("m23");
+    andika("fr m23: %s", m23_fr, 0,0,0,0,0);
+    jlm_thibitisha(jlm_sawa(m23_fr, "LA RÉVOLUTION A COMMENCÉ !\n"), "m23 fr ina lafudhi sahihi (RÉVOLUTION)");
+
+    n8* m28_fr = d_tafsiri("m28");
+    andika("fr m28: %s", m28_fr, 0,0,0,0,0);
+    jlm_thibitisha(jlm_sawa(m28_fr, "Vous avez été élu DIRIGEANT !\n"), "m28 fr ina lafudhi sahihi (élu)");
+
+    n8* m33_fr = d_tafsiri("m33");
+    andika("fr m33: %s", m33_fr, 0,0,0,0,0);
+    jlm_thibitisha(jlm_sawa(m33_fr, "Une nouvelle monnaie commune '%s' a été établie entre %s et %s.\n"), "m33 fr ina lafudhi sahihi (établie)");
+
+    // ---- kurudi sw, thibitisha m36/m37 (drm.swa, stderr) pia ----
+    mchezo_weka_lugha(g, "sw");
+    n8* m36_sw = d_tafsiri("m36");
+    jlm_thibitisha(jlm_sawa(m36_sw, "    (tatizo) GETCONNECTOR pass1 rc=%d kwa conn_id=%d\n"), "m36 sw == literal ya awali (andika_kosa, drm.swa)");
+
+    mchezo_uharibu(g);
+    jlm_thibitisha(1, "mchezo_uharibu(g) imekamilika bila kuanguka");
+
+    andika("\n[muhtasari] yaliyoshindwa: %d\n", jlm_yalioshindwa, 0,0,0,0,0);
+    rudisha jlm_yalioshindwa;
+}

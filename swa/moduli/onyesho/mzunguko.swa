@@ -1,0 +1,249 @@
+husisha { msingi/msingi_civ.swa }
+husisha { moduli/kifaa/ingizo.swa }
+husisha { moduli/onyesho/hud.swa }
+
+// mzunguko.swa -- mzunguko wa KWANZA wa mwingiliano HALISI wa mchezo:
+// kibodi -> Mchezo -> skrini (awamu ya tatu ya grafiki, baada ya
+// hud.swa kuweza kuchora kutoka Mchezo* halisi na kifaa/ingizo.swa
+// kuweza kusoma matukio ghafi ya /dev/input/eventN).
+//
+// TATIZO LILILOTATULIWA HAPA: kifaa/ingizo.swa (kifaa_fungua/
+// kifaa_soma_tukio) INASOMA /dev/input/eventN MOJA KWA MOJA -- hakuna
+// njia ya kulisha matukio BANDIA ya kibodi kwenye mantiki hiyo.
+// Majaribio ya kiotomatiki (hakuna mtu wa kubonyeza kitufe) HAYAWEZI
+// kuthibitisha mzunguko mzima (soma tukio -> tenda -> chora upya)
+// dhidi ya kifaa halisi pekee. Suluhisho: mantiki ya mzunguko hapa
+// (mzunguko_hatua/mzunguko_endesha) HAIITI kifaa_soma_tukio moja kwa
+// moja -- inapokea CHANZO CHA TUKIO kama HOJA, kwa muundo wa
+// MzungukoChanzo (kielekezi cha kazi + muktadha wa n64, mtindo
+// ulioothibitishwa tayari kwenye injini/muda.swa -- InjiniMudaMsikiaji,
+// na vipimo-vya-lugha.md 4.3 -- angalia maoni ya MzungukoChanzo chini).
+// Hii inaruhusu MAJARIBIO kupitisha chanzo cha BANDIA (orodha ya
+// matukio yaliyoandikwa kwa mkono) na kuthibitisha mantiki NZIMA ya
+// mzunguko bila hitaji la kifaa halisi -- angalia
+// jaribio_mzunguko.swa. Mwisho HALISI wa hardware (kifaa_fungua +
+// kifaa_soma_tukio halisi) ni wrapper NYEMBAMBA tu chini ya faili
+// hili (mzunguko_chanzo_kifaa_soma + mzunguko_chanzo_weka_kifaa).
+//
+// RAMANI YA VITUFE -- hatua ya KWANZA tu, si kamili (kanuni ya mradi:
+// epuka muundo mgumu kabla ya uhitaji halisi):
+//   SPACE (scancode 57, KEY_SPACE ya Linux input-event-codes.h) --
+//     sukuma MCHEZO zamu MOJA mbele (mchezo_sasisha + mchezo_maliza_zamu)
+//     KISHA chora upya HUD kutoka Mchezo HIYO HASA kwenye fb/pitch
+//     iliyotolewa (onyesho_hud_chora_kutoka_mchezo, tayari ipo tangu
+//     awamu iliyopita).
+//   ESC (scancode 1, KEY_ESC) -- ashiria mzunguko USIMAME (rudisha -1
+//     kutoka mzunguko_hatua; mzunguko_endesha husitisha kitanzi chake).
+//   Kitufe kingine chochote -- puuzwa kimya (hakuna hitilafu -- ni
+//     KAWAIDA, si kila kitufe kinahitaji kitendo bado).
+//
+// MUHIMU: kitendo (SPACE/ESC) kinatokea TU wakati tukio ni EV_KEY
+// (aina==1) NA thamani==1 (bonyezwa) -- thamani==0 (kuachiliwa) na
+// thamani==2 (kurudia -- kibodi inatuma hii kila ~30ms kitufe
+// kikishikiliwa) HUPUUZWA KIMAKUSUDI. Bila hii, kushikilia SPACE
+// kungesababisha zamu NYINGI kwa haraka bila ombi la kweli la
+// mtumiaji kwa kila moja -- "hatua ya kwanza" ya ramani, si muundo
+// kamili wa "bonyeza mara moja = zamu moja" (hilo lingehitaji
+// kufuatilia hali ya "tayari imeshughulikiwa" kati ya bonyezo na
+// kuachiliwa, kazi ya baadaye).
+
+n64 MZUNGUKO_EV_KEY = 1;
+n64 MZUNGUKO_KEY_ESC = 1;
+n64 MZUNGUKO_KEY_SPACE = 57;
+n64 MZUNGUKO_KEY_TAB = 15;
+n64 MZUNGUKO_KEY_LEFT = 105;
+n64 MZUNGUKO_KEY_RIGHT = 106;
+
+// Hali ya uonyeshaji -- NYONGEZA: 0="orodha" (HUD ya muhtasari ya
+// zamani, mataifa yote + GDP), 1="undani" (taifa MOJA lililochaguliwa,
+// takwimu zaidi -- onyesho_hud_chora_taifa_kina, hud.swa). Globals
+// (kioo cha D_LUGHA_HAI_ADDR, lugha_dominion.swa) kwa sababu
+// mzunguko_hatua haipokei hoja ya ziada ya "hali" (haibadilishi saini
+// iliyopo -- kanuni ya mradi, ongeza kazi mpya badala ya kubadilisha
+// zilizopo).
+n32 MZUNGUKO_HALI_KINA = 0;
+n32 MZUNGUKO_TAIFA_LILILOCHAGULIWA = 0;
+n32 MZUNGUKO_IDADI_YA_MATAIFA = 8;
+
+// MzungukoChanzo -- chanzo cha tukio kinachobadilishwa: `soma_kazi`
+// ni ANWANI ya kazi (n64, vipimo-vya-lugha.md 4.3) yenye saini
+// `n64 (n64 muktadha, n8* nje)`:
+//   1  -- tukio limesomwa kikamilifu kwenye `nje` (lazima iwe na
+//         nafasi ya angalau KIFAA_UKUBWA_TUKIO, baiti 24)
+//   0  -- hakuna tukio KWA SASA (hali ya muda -- jaribu tena baadaye;
+//         sawa na EAGAIN ya kifaa halisi, SI mwisho wa chanzo)
+//   -1 -- hitilafu HALISI AU chanzo kimeisha kabisa (mfano: orodha ya
+//         majaribio imefikia mwisho) -- mzunguko LAZIMA usimame
+// `muktadha` ni thamani ya n64 inayopitishwa kwenye `soma_kazi` kama
+// hoja ya kwanza -- fd ya kifaa halisi, AU (kama n64 iliyobadilishwa
+// kutoka kielekezi) muundo wa muktadha wa jaribio unaoshikilia
+// orodha ya matukio yaliyowekwa mapema (angalia jaribio_mzunguko.swa).
+muundo MzungukoChanzo {
+    n64 soma_kazi;
+    n64 muktadha;
+};
+
+n64 mzunguko_chanzo_soma(MzungukoChanzo* chanzo, n8* nje) {
+    n64 kazi = chanzo->soma_kazi;
+    rudisha kazi(chanzo->muktadha, nje);
+}
+
+// mzunguko_chanzo_kifaa_soma -- wrapper yenye saini inayolingana HASA
+// na MzungukoChanzo.soma_kazi, inayoita kifaa_soma_tukio HALISI moja
+// kwa moja (fd ndiyo muktadha). Hii ndiyo njia pekee ya kuunganisha
+// mzunguko huu na kifaa halisi cha /dev/input/eventN -- angalia
+// mzunguko_chanzo_weka_kifaa.
+n64 mzunguko_chanzo_kifaa_soma(n64 fd, n8* nje) {
+    rudisha kifaa_soma_tukio(fd, nje);
+}
+
+w0 mzunguko_chanzo_weka_kifaa(MzungukoChanzo* chanzo, n64 fd) {
+    chanzo->soma_kazi = &mzunguko_chanzo_kifaa_soma;
+    chanzo->muktadha = fd;
+}
+
+// mzunguko_hatua -- HATUA MOJA ya mzunguko: soma TUKIO MOJA kutoka
+// `chanzo` na uchukue kitendo kinacholingana (kama lolote). Hurudisha:
+//   1  -- tukio limeshughulikiwa (au limepuuzwa kimakusudi), mzunguko
+//         UNAPASWA kuendelea
+//   0  -- hakuna tukio kwa sasa (jaribu tena -- mwitaji anaamua kama
+//         kusubiri au kujaribu mara moja)
+//   -1 -- ESC ilipokelewa AU chanzo kimeisha/kimeshindwa -- mzunguko
+//         LAZIMA usimame
+// SPACE (thamani==1) pekee ndiyo inayosukuma zamu MOJA mbele na
+// kuchora upya HUD -- angalia maelezo kamili juu ya faili.
+n64 mzunguko_hatua(Mchezo* g, MzungukoChanzo* chanzo, n8* fb, n64 pitch) {
+    n8 tukio[24];
+    n64 rc = mzunguko_chanzo_soma(chanzo, tukio);
+    kama (rc == 0) { rudisha 0; }
+    kama (rc < 0) { rudisha -1; }
+
+    n64 aina = kifaa_tukio_aina(tukio);
+    n64 kanuni = kifaa_tukio_kanuni(tukio);
+    n64 thamani = kifaa_tukio_thamani(tukio);
+
+    kama (aina != MZUNGUKO_EV_KEY || thamani != 1) {
+        rudisha 1;  // si EV_KEY kubonyezwa (achiliwa/kurudia/aina
+                     // nyingine) -- puuzwa kimakusudi, mzunguko
+                     // unaendelea
+    }
+
+    kama (kanuni == MZUNGUKO_KEY_ESC) {
+        rudisha -1;
+    }
+
+    kama (kanuni == MZUNGUKO_KEY_SPACE) {
+        mchezo_sasisha(g);
+        mchezo_maliza_zamu(g);
+        // onyesho_hud_chora (ndani ya onyesho_hud_chora_kutoka_mchezo)
+        // HUCHORA TU pikseli "zilizowashwa" za glyph mpya -- haifuti
+        // fb kabla ya kuanza (angalia hud.swa). Bila kusafisha fb HAPA
+        // kwanza, mabaki ya herufi za fremu ILIYOPITA (mfano glyph ya
+        // "2" ikiachwa nyuma ya glyph mpya ya "3") yangebaki -- pikseli
+        // zilizowashwa na fremu ya zamani lakini SI na fremu ya sasa
+        // zingedumu milele. Safisha ni sehemu YA MANTIKI YA MZUNGUKO
+        // (kila "frame" ni upya), si ya hud.swa yenyewe (ambayo
+        // inaweza kuitwa mara moja tu bila fremu zinazofuatana).
+        weka_sifuri(fb, pitch * ONYESHO_HUD_KIMO);
+        onyesho_hud_chora_kutoka_mchezo(g, fb, pitch);
+    }
+    // Vitufe vingine vyote -- puuzwa kimya, si hitilafu.
+    rudisha 1;
+}
+
+// mzunguko_endesha -- huendesha mzunguko_hatua kwa mfululizo hadi
+// ESC AU mwisho wa chanzo (-1), ukipuuza hali ya "hakuna tukio kwa
+// sasa" (0, inajaribu tena mara moja -- mzunguko wa kusoma bila
+// kuzuia, sawa na muundo wa kifaa_soma_tukio chenyewe). Hurudisha
+// idadi HASA ya zamu zilizotekelezwa (tofauti ya g->zamu_ya_sasa
+// kabla/baada), si tu "imekamilika".
+// mzunguko_chora_upya_kulingana_na_hali -- NYONGEZA: chagua kati ya
+// HUD ya orodha (ya zamani) na HUD ya undani (mpya) kulingana na
+// MZUNGUKO_HALI_KINA ya sasa, kisha safisha+chora (mantiki ileile ya
+// kusafisha fb kabla ya kuchora iliyopo tayari kwenye mzunguko_hatua).
+w0 mzunguko_chora_upya_kulingana_na_hali(Mchezo* g, n8* fb, n64 pitch) {
+    weka_sifuri(fb, pitch * ONYESHO_HUD_KIMO);
+    kama (MZUNGUKO_HALI_KINA == 1) {
+        onyesho_hud_chora_taifa_kina(g, MZUNGUKO_TAIFA_LILILOCHAGULIWA, fb, pitch);
+    } sivyo {
+        onyesho_hud_chora_kutoka_mchezo(g, fb, pitch);
+    }
+}
+
+// mzunguko_hatua_kina -- NYONGEZA (SI badiliko la mzunguko_hatua
+// iliyopo, ambayo inabaki vilevile kwa ulinganifu wa nyuma): hatua
+// MOJA ya mzunguko inayojua pia TAB (badilisha kati ya orodha/undani)
+// na LEFT/RIGHT (badilisha taifa lililochaguliwa, likizunguka 0-7,
+// IKIWA TU hali ya sasa ni "undani" -- LEFT/RIGHT kwenye "orodha"
+// hupuuzwa kimya). SPACE/ESC zinafanya KAZI SAWA KABISA na
+// mzunguko_hatua (zinasonga zamu / kusimamisha), tofauti pekee ni
+// kwamba uchoraji-upya unaofuata zamu mpya pia unaheshimu hali ya
+// uonyeshaji ya sasa (TAB/LEFT/RIGHT) badala ya kudhani "orodha"
+// kila mara.
+n64 mzunguko_hatua_kina(Mchezo* g, MzungukoChanzo* chanzo, n8* fb, n64 pitch) {
+    n8 tukio[24];
+    n64 rc = mzunguko_chanzo_soma(chanzo, tukio);
+    kama (rc == 0) { rudisha 0; }
+    kama (rc < 0) { rudisha -1; }
+
+    n64 aina = kifaa_tukio_aina(tukio);
+    n64 kanuni = kifaa_tukio_kanuni(tukio);
+    n64 thamani = kifaa_tukio_thamani(tukio);
+
+    kama (aina != MZUNGUKO_EV_KEY || thamani != 1) {
+        rudisha 1;
+    }
+
+    kama (kanuni == MZUNGUKO_KEY_ESC) {
+        rudisha -1;
+    }
+
+    kama (kanuni == MZUNGUKO_KEY_SPACE) {
+        mchezo_sasisha(g);
+        mchezo_maliza_zamu(g);
+        mzunguko_chora_upya_kulingana_na_hali(g, fb, pitch);
+        rudisha 1;
+    }
+
+    kama (kanuni == MZUNGUKO_KEY_TAB) {
+        kama (MZUNGUKO_HALI_KINA == 0) {
+            MZUNGUKO_HALI_KINA = 1;
+        } sivyo {
+            MZUNGUKO_HALI_KINA = 0;
+        }
+        mzunguko_chora_upya_kulingana_na_hali(g, fb, pitch);
+        rudisha 1;
+    }
+
+    kama (kanuni == MZUNGUKO_KEY_RIGHT && MZUNGUKO_HALI_KINA == 1) {
+        MZUNGUKO_TAIFA_LILILOCHAGULIWA = (MZUNGUKO_TAIFA_LILILOCHAGULIWA + 1) % MZUNGUKO_IDADI_YA_MATAIFA;
+        mzunguko_chora_upya_kulingana_na_hali(g, fb, pitch);
+        rudisha 1;
+    }
+
+    kama (kanuni == MZUNGUKO_KEY_LEFT && MZUNGUKO_HALI_KINA == 1) {
+        kama (MZUNGUKO_TAIFA_LILILOCHAGULIWA == 0) {
+            MZUNGUKO_TAIFA_LILILOCHAGULIWA = MZUNGUKO_IDADI_YA_MATAIFA - 1;
+        } sivyo {
+            MZUNGUKO_TAIFA_LILILOCHAGULIWA = MZUNGUKO_TAIFA_LILILOCHAGULIWA - 1;
+        }
+        mzunguko_chora_upya_kulingana_na_hali(g, fb, pitch);
+        rudisha 1;
+    }
+
+    // Kitufe kingine chochote (ikiwemo LEFT/RIGHT wakati "orodha" iko
+    // hai) -- puuzwa kimya, si hitilafu.
+    rudisha 1;
+}
+
+n64 mzunguko_endesha(Mchezo* g, MzungukoChanzo* chanzo, n8* fb, n64 pitch) {
+    n64 zamu_mwanzo = g->zamu_ya_sasa;
+    n32 inaendelea = 1;
+    wakati (inaendelea == 1) {
+        n64 rc = mzunguko_hatua(g, chanzo, fb, pitch);
+        kama (rc < 0) {
+            inaendelea = 0;
+        }
+    }
+    rudisha g->zamu_ya_sasa - zamu_mwanzo;
+}

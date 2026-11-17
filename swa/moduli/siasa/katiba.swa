@@ -1,0 +1,121 @@
+husisha { moduli/siasa/wahusika.swa }
+
+// katiba.swa -- mamlaka ya katiba juu ya mti wa dola: nani huteua nani, nani
+// hufuta nani, baraza gani huhakiki, na nani hukubali kukutana na nani.
+//
+// Sheria hutoka kwenye mti wenyewe (moduli/siasa/wahusika.swa): cheo cha
+// kuteuliwa kina mteuzi wake, na mteuzi huyo pekee ndiye anayeweza
+// kukijaza au kumfuta aliyekishika. Cheo cha kuchaguliwa, cha kurithi au
+// cha baraza hakiwezi kufutwa na mtu yeyote. Uteuzi wenye uhakiki
+// hupigiwa kura kwenye baraza lililotajwa na katiba.
+
+// Je, mwenye cheo `nani` anaweza kumfuta (na kumteua) mwenye cheo `lengwa`?
+n32 katiba_anaweza_kuteua(Wahusika* w, n64 nani, n64 lengwa) {
+    MhusikaWaDola* m = wahusika_pata(w, lengwa);
+    kama (m == 0 || nani < 0 || nani == lengwa) { rudisha 0; }
+    kama (lengwa == w->msaidizi) { rudisha 1; }             // msaidizi ni wa mchezaji mwenyewe
+    rudisha m->ujazaji == UJAZAJI_KUTEULIWA && m->mteuzi == nani;
+}
+
+// Kura ya uhakiki kwenye baraza b kwa mgombea wa chama `chama` (au -1):
+// vyama vya serikali humuunga mkono, upinzani mara chache, na chama chake
+// mwenyewe kikamilifu. Huandika kura za ndiyo; hurudisha 1 akipita.
+n32 katiba_kura_ya_uhakiki(Dola* d, n64 b, n64 chama, n64 mbegu, n64* ndiyo) {
+    n64 jumla = 0;
+    n64 c = 0;
+    wakati (c < d->vyama) {
+        n64 viti = d->viti[b * DOLA_VYAMA_JUU + c];
+        n64 asilimia = 12 + dola_nasibu(mbegu, 600 + c) % 30;                        // upinzani
+        kama (d->chama_serikalini[c]) { asilimia = 82 + dola_nasibu(mbegu, 600 + c) % 19; }
+        kama (c == chama) { asilimia = 100; }
+        jumla = jumla + (viti * asilimia) / 100;
+        c = c + 1;
+    }
+    ndiyo[0] = jumla;
+    rudisha jumla * 2 > d->baraza_viti[b];
+}
+
+// Matokeo ya kitendo cha uteuzi.
+n64 UTEUZI_UMEFANIKIWA = 0;
+n64 UTEUZI_HAKUNA_MAMLAKA = 1;
+n64 UTEUZI_UMEKATALIWA_NA_BARAZA = 2;
+
+// Mfute kazi mwenye cheo `lengwa` na umteue mtu mpya. Uteuzi wenye uhakiki
+// hupigiwa kura: ukikataliwa, aliyekuwepo hubaki. Huandika kura za ndiyo na
+// viti vya baraza (0, 0 pasipo uhakiki).
+n64 katiba_badilisha(Wahusika* w, Dola* d, n64 nani, n64 lengwa, n64* ndiyo, n64* viti) {
+    ndiyo[0] = 0;
+    viti[0] = 0;
+    kama (katiba_anaweza_kuteua(w, nani, lengwa) == 0) { rudisha UTEUZI_HAKUNA_MAMLAKA; }
+    MhusikaWaDola* m = wahusika_pata(w, lengwa);
+    n64 kizazi = m->kizazi + 1;
+    kama (m->uhakiki >= 0 && m->uhakiki < d->mabaraza) {
+        viti[0] = d->baraza_viti[m->uhakiki];
+        kama (katiba_kura_ya_uhakiki(d, m->uhakiki, m->faharisi_ya_chama, w->mbegu * 53 + lengwa * 11 + kizazi, ndiyo) == 0) {
+            m->kizazi = kizazi;         // mgombea huyu amekataliwa; anayefuata atakuwa mwingine
+            rudisha UTEUZI_UMEKATALIWA_NA_BARAZA;
+        }
+    }
+    m->kizazi = kizazi;
+    wahusika_zalisha_mtu(w, d, lengwa);
+    // aliyeteuliwa na mchezaji humshukuru
+    m->msimamo = 25 + dola_nasibu(w->mbegu + lengwa, 700 + kizazi) % 50;
+    rudisha UTEUZI_UMEFANIKIWA;
+}
+
+// Ombi la mkutano: 1 umekubaliwa, 2 umekataliwa. Walio chini ya mchezaji au
+// sawa naye huja wakiitwa. Mkubwa hukubali kufuatana na msimamo wake, umbali
+// wa ngazi, na kama ni wa chama kimoja. `siku` hupata siku za kusubiri.
+n64 katiba_omba_mkutano(Wahusika* w, n64 nani, n64 lengwa, n64* siku) {
+    siku[0] = 0;
+    MhusikaWaDola* m = wahusika_pata(w, lengwa);
+    MhusikaWaDola* mimi = wahusika_pata(w, nani);
+    kama (m == 0) { rudisha 2; }
+    n64 ngazi_yangu = 9;
+    n64 chama_changu = 0 - 1;
+    kama (mimi != 0) { ngazi_yangu = mimi->ngazi; chama_changu = mimi->faharisi_ya_chama; }
+    n64 pengo = m->ngazi - ngazi_yangu;
+    kama (pengo <= 0 || lengwa == w->msaidizi) { m->mkutano = 1; rudisha 1; }
+    n64 alama = m->msimamo + 30 - pengo * 14;
+    kama (chama_changu >= 0 && chama_changu == m->faharisi_ya_chama) { alama = alama + 20; }
+    kama (mimi != 0 && mimi->bosi == lengwa) { alama = alama + 25; }       // mkubwa wa moja kwa moja
+    kama (alama < 0 - 10) { m->mkutano = 2; rudisha 2; }
+    siku[0] = pengo * 2;
+    kama (alama < 20) { siku[0] = pengo * 5; }
+    m->mkutano = 1;
+    rudisha 1;
+}
+
+// Maombi yanayoingia: watu wa dola wanaoomba kuonana na mchezaji zamu hii.
+// Huandika hadi faharisi `uwezo` kwenye `nje`; hurudisha idadi. Walio karibu
+// na ngazi ya mchezaji huomba mara nyingi zaidi.
+n64 katiba_maombi_yanayoingia(Wahusika* w, n64 nani, n64 zamu, n64* nje, n64 uwezo) {
+    n64 n = 0;
+    n64 jaribio = 0;
+    MhusikaWaDola* mimi = wahusika_pata(w, nani);
+    n64 ngazi_yangu = 9;
+    kama (mimi != 0) { ngazi_yangu = mimi->ngazi; }
+    wakati (n < uwezo && jaribio < 40 && w->idadi > 1) {
+        n64 i = dola_nasibu(w->mbegu * 7 + zamu, 800 + jaribio) % w->idadi;
+        MhusikaWaDola* m = wahusika_pata(w, i);
+        n64 pengo = m->ngazi - ngazi_yangu;
+        kama (pengo < 0) { pengo = 0 - pengo; }
+        n32 yupo = 0;
+        n64 k = 0;
+        wakati (k < n) { kama (nje[k] == i) { yupo = 1; } k = k + 1; }
+        kama (i != nani && i != w->msaidizi && pengo <= 3 && yupo == 0) { nje[n] = i; n = n + 1; }
+        jaribio = jaribio + 1;
+    }
+    rudisha n;
+}
+
+// Sababu ya ombi la mhusika, kufuatana na tawi lake.
+n8* katiba_sababu_ya_ombi(MhusikaWaDola* m, n64 zamu) {
+    n64 k = dola_nasibu(zamu + m->umri, 900 + m->tawi) % 2;
+    kama (m->tawi == TAWI_BUNGE) { kama (k) { rudisha ui("wants your support for a bill"); } rudisha ui("brings a complaint from the chamber"); }
+    kama (m->tawi == TAWI_MAHAKAMA) { kama (k) { rudisha ui("warns of a case against the government"); } rudisha ui("asks for more judges"); }
+    kama (m->tawi == TAWI_JESHI) { kama (k) { rudisha ui("requests funds for the forces"); } rudisha ui("reports unrest in the ranks"); }
+    kama (m->tawi == TAWI_MIKOA) { kama (k) { rudisha ui("pleads for relief for the province"); } rudisha ui("reports a dispute over land"); }
+    kama (k) { rudisha ui("seeks a decision on the budget"); }
+    rudisha ui("asks for a private word");
+}

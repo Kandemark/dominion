@@ -1,0 +1,78 @@
+husisha { moduli/akili/mazungumzo.swa }
+
+// jaribio_mazungumzo.swa -- watu wa dola, maelekezo ya AI, mstari wa athari
+// na kumbukumbu, bila mtandao.
+//   jaribio_mazungumzo                          majaribio ya ndani
+//   jaribio_mazungumzo hai <bandari> <modeli> <kauli>   pia zungumza na seva
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    Dola* d = dola_unda(7, "Republic of Test", 9000000);
+    Wahusika* w = wahusika_unda(d, 7, 9000000);
+    thibitisha("watu wapo", w->idadi >= 40 && w->idadi <= WAHUSIKA_JUU);
+    n64 fedha = wahusika_tafuta(w, "Minister of Finance");
+    thibitisha("waziri wa fedha yupo", fedha >= 0);
+    MhusikaWaDola* waziri = wahusika_pata(w, fedha);
+    thibitisha("jina la mtu", urefu_wa_mfuatano(waziri->jina) >= 7);
+    thibitisha("tabia tofauti", waziri->tabia_1 != waziri->tabia_2);
+    thibitisha("chifu wa kijiji", wahusika_tafuta(w, "Village Chief") >= 0);
+    thibitisha("msaidizi", w->msaidizi >= 0);
+    thibitisha("akiba ya watu", wahusika_wa_taifa(7, d, 9000000) == wahusika_wa_taifa(7, d, 9000000));
+
+    // maelekezo: mhusika hubaki mwenyewe, mshauri ni AI yenyewe
+    n8* p = tenga(8192);
+    mazungumzo_maelekezo(p, 8192, d, "Test", "3 March 1954", waziri, "Head of state", "[1 March 1954] Player to X: hello", "English");
+    thibitisha("maelekezo: jina", tafuta_mfuatano(p, waziri->jina) >= 0);
+    thibitisha("maelekezo: cheo", tafuta_mfuatano(p, "Minister of Finance") >= 0);
+    thibitisha("maelekezo: si AI", tafuta_mfuatano(p, "never say you are an AI") >= 0);
+    thibitisha("maelekezo: kumbukumbu", tafuta_mfuatano(p, "Player to X: hello") >= 0);
+    thibitisha("maelekezo: athari", tafuta_mfuatano(p, "EFFECT: attitude=0") >= 0);
+    mazungumzo_maelekezo(p, 8192, d, "Test", "3 March 1954", 0, "Village chief", "", "English");
+    thibitisha("mshauri", tafuta_mfuatano(p, "You are the Adviser") >= 0 && tafuta_mfuatano(p, "Village chief") >= 0);
+
+    // mstari wa athari: husomwa, hubanwa, na huondolewa kwenye maandishi
+    n8 jibu[256];
+    nakili_mfuatano(jibu, "Borrowing will anger the guilds.\n\nEFFECT: attitude=-3 stability=+2 legitimacy=-99 treasury=4");
+    n64 athari[4];
+    thibitisha("athari ipo", mazungumzo_changanua_athari(jibu, athari) == 1);
+    thibitisha("athari namba", athari[0] == 0 - 3 && athari[1] == 2 && athari[2] == 0 - 5 && athari[3] == 4);
+    thibitisha("athari imeondolewa", linganisha_mfuatano(jibu, "Borrowing will anger the guilds.") == 0);
+    n64 msimamo_kabla = waziri->msimamo;
+    n64 utulivu_kabla = d->utulivu;
+    mazungumzo_tumia_athari(athari, waziri, d);
+    thibitisha("athari imetumika", waziri->msimamo == msimamo_kabla - 3 && d->utulivu == dola_rekebisha(utulivu_kabla, 2));
+    nakili_mfuatano(jibu, "No effect line here.");
+    thibitisha("bila athari", mazungumzo_changanua_athari(jibu, athari) == 0 && athari[0] == 0);
+
+    // kumbukumbu: ongeza kisha soma mwisho
+    n8 njia[128];
+    kumbukumbu_njia(njia, 128, 99);
+    n64 fd = mfumo_fungua(njia, 577, 420);
+    mfumo_funga(fd);
+    kumbukumbu_ongeza(njia, "3 March 1954", "Adviser", "Should we\nborrow?", "Yes, but quietly.");
+    kumbukumbu_ongeza(njia, "4 March 1954", "Adviser", "And taxes?", "Not this year.");
+    n8* k = tenga(2048);
+    n64 n = kumbukumbu_soma_mwisho(njia, k, 2048);
+    thibitisha("kumbukumbu ipo", n > 40 && tafuta_mfuatano(k, "Should we borrow?") >= 0 && tafuta_mfuatano(k, "Not this year.") >= 0);
+    n = kumbukumbu_soma_mwisho(njia, k, 60);
+    thibitisha("kumbukumbu mwisho", n < 60 && k[0] == 91);
+
+    kama (idadi_ya_hoja > 4 && linganisha_mfuatano(hoja_za_mstari[1], "hai") == 0) {
+        AkiliUsanidi* u = akili_usanidi_chaguomsingi();
+        u->mtoa = AKILI_WA_NDANI;
+        u->bandari = mfuatano_hadi_n64(hoja_za_mstari[2]);
+        nakili_mfuatano(u->modeli, hoja_za_mstari[3]);
+        n8* nje = tenga(8192);
+        n64 r = mazungumzo_sema(u, d, "Test", "3 March 1954", waziri, "Head of state", "English", njia, hoja_za_mstari[4], nje, 8192, athari);
+        andika("%s (%s), msimamo %d\n", waziri->jina, waziri->cheo, waziri->msimamo, 0, 0, 0);
+        kama (r >= 0) { andika("jibu: %s\nathari: msimamo %d utulivu %d uhalali %d hazina %d\n", nje, athari[0], athari[1], athari[2], athari[3], 0); }
+        sivyo { andika("hitilafu: %d\n", r, 0, 0, 0, 0, 0); }
+    }
+    kama (makosa == 0) { andika("mazungumzo: sawa\n", 0, 0, 0, 0, 0, 0); rudisha 0; }
+    rudisha 1;
+}

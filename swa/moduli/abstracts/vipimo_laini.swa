@@ -1,0 +1,260 @@
+// vipimo_laini.swa — tafsiri ya src/core/abstracts/soft_metrics.c (na
+// .h) kwenda Swa. Vipimo "laini" vya taifa: furaha, uhalali
+// (legitimacy), na fahari (prestige).
+//
+// Kiambishi: vipimo_laini_ — saraka ya chanzo (abstracts/) haikuwa
+// kwenye ramani ya ../../KANUNI-MAJINA.md (ramani ina saraka kuu tu
+// kama economy/governance/culture) -- imeongezwa kama ingizo jipya
+// huko kando na tafsiri hii.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - civ_happiness_metrics_t.recent_changes (civ_float_t*, safu
+//     inayokua kupitia CIV_REALLOC) -- chanzo cha C chenyewe
+//     hubakisha MABADILIKO 10 YA MWISHO TU (angalia
+//     civ_happiness_metrics_add_change: "Keep only last 10 changes"),
+//     kwa hiyo hali ya kweli ya uwanja huu ni safu YENYE KIKOMO CHA
+//     10 daima, si safu isiyo na kikomo -- imekuwa sehemu 10 zenye
+//     majina (badiliko_0..badiliko_9) + kazi za pata/weka za ndani
+//     zinazoficha hilo, mtindo uleule wa teknolojia.swa (mgao_0..11)
+//     na rushwa.swa (nodi_0..11) -- SI uamuzi wa kupunguza tabia,
+//     ni kuonyesha wazi tabia ya C iliyokuwepo tayari.
+//   - civ_prestige_system_t.international_relations (civ_float_t*)
+//     na relation_count: imethibitishwa kwa kutafuta mradi mzima wa
+//     C kuwa HAZITUMIKI KAMWE (hazina kazi ya "ongeza" popote kwenye
+//     soft_metrics.c, wala kwenye faili lingine lolote) -- uwanja
+//     uliokufa kwenye chanzo asili, hauletwa hapa kwa sababu hiyo
+//     hiyo (hakuna la kutafsiri, sawa na civ_org_remove_member
+//     iliyoachwa kwenye mashirika.swa).
+//   - civ_soft_metrics_update_from_economy inapokea `const void*
+//     economic_data` lakini HAITUMII kabisa (msimbo wa C una maoni
+//     "Simplified... In full implementation, would use proper
+//     struct" na hutumia PLACEHOLDER za moja kwa moja gdp_per_capita=
+//     0.6f, unemployment=0.3f kila wakati, bila kujali hoja
+//     iliyopitishwa) -- badala ya kuiga void* isiyotumika, kazi hii
+//     inapokea pato_kwa_mtu/ukosefu_wa_kazi moja kwa moja kama hoja
+//     za d64 (mtindo ulioothibitishwa kwenye moduli nyingine za
+//     mradi huu -- angalia sarafu.swa ikilishwa na matokeo HALISI ya
+//     uchumi_mkuu) -- mwitaji anayetaka tabia-sawa-na-C-ya-sasa
+//     anaweza kupitisha 0.6/0.3 wazi.
+//   - civ_soft_metrics_update_from_events: mwili wa kitanzi cha C ni
+//     TUPU KABISA (maoni "Placeholder", hakuna tendo lolote) --
+//     imeletwa hapa kama HAKUNA-TENDO (no-op) ya wazi inayolingana na
+//     tabia halisi ya C, si pengo la tafsiri hii.
+//   - civ_soft_metrics_to_dict (JSON) HAIKULETWA KWA MAKUSUDI --
+//     hakuna maktaba ya JSON wala uwezo wa d64->mfuatano kwenye Swa
+//     (mfuatano.swa ina nambari_kwa_mfuatano kwa n32/n64 pekee, si
+//     d64), sawa na uamuzi uliofanywa tayari kwenye
+//     idadi_ya_watu/idadi_ya_watu.swa ("to_dict/from_dict (JSON)
+//     hazikuletwa — hazina mantiki" ya kuigiza bila maktaba).
+
+husisha { msingi/msingi_civ.swa }
+
+// ---------- Hali ya moyo (badala ya civ_mood_t) ----------
+n32 VIPIMO_LAINI_HALI_UASI = 0;          // REBELLIOUS
+n32 VIPIMO_LAINI_HALI_TAABU = 1;         // UNHAPPY
+n32 VIPIMO_LAINI_HALI_KUTOSHELEZWA = 2;  // DISCONTENT
+n32 VIPIMO_LAINI_HALI_RIDHIKA = 3;       // CONTENT
+n32 VIPIMO_LAINI_HALI_FURAHA = 4;        // HAPPY
+n32 VIPIMO_LAINI_HALI_SHANGWE = 5;       // ECSTATIC
+
+muundo VipimoLainiFuraha {
+    d64 furaha_msingi;
+    d64 uthabiti;
+    d64 uaminifu;
+
+    // Angalia maelezo ya wigo juu ya faili -- kikomo cha 10 ni tabia
+    // HALISI ya chanzo cha C, si uamuzi wa tafsiri hii.
+    d64 badiliko_0; d64 badiliko_1; d64 badiliko_2; d64 badiliko_3;
+    d64 badiliko_4; d64 badiliko_5; d64 badiliko_6; d64 badiliko_7;
+    d64 badiliko_8; d64 badiliko_9;
+    n32 idadi_ya_mabadiliko;
+};
+
+muundo VipimoLainiUhalali {
+    d64 uhalali;
+    d64 uthabiti_wa_kisiasa;
+    d64 kiwango_cha_rushwa;
+    d64 idhini_ya_serikali;
+};
+
+muundo VipimoLainiFahari {
+    d64 fahari;
+    d64 ushawishi_wa_kitamaduni;
+    d64 mafanikio_ya_kiteknolojia;
+    d64 ujasiri_wa_kijeshi;
+};
+
+muundo VipimoLainiMsimamizi {
+    VipimoLainiFuraha furaha;
+    VipimoLainiUhalali uhalali;
+    VipimoLainiFahari fahari;
+};
+
+// ---------- pata/weka ya ndani kwa badiliko_N (angalia maelezo ya wigo) ----------
+d64 vipimo_laini_pata_badiliko(VipimoLainiFuraha* hm, n32 idx) {
+    kama (idx == 0) { rudisha hm->badiliko_0; }
+    kama (idx == 1) { rudisha hm->badiliko_1; }
+    kama (idx == 2) { rudisha hm->badiliko_2; }
+    kama (idx == 3) { rudisha hm->badiliko_3; }
+    kama (idx == 4) { rudisha hm->badiliko_4; }
+    kama (idx == 5) { rudisha hm->badiliko_5; }
+    kama (idx == 6) { rudisha hm->badiliko_6; }
+    kama (idx == 7) { rudisha hm->badiliko_7; }
+    kama (idx == 8) { rudisha hm->badiliko_8; }
+    rudisha hm->badiliko_9;
+}
+
+w0 vipimo_laini_weka_badiliko(VipimoLainiFuraha* hm, n32 idx, d64 v) {
+    kama (idx == 0) { hm->badiliko_0 = v; rudisha; }
+    kama (idx == 1) { hm->badiliko_1 = v; rudisha; }
+    kama (idx == 2) { hm->badiliko_2 = v; rudisha; }
+    kama (idx == 3) { hm->badiliko_3 = v; rudisha; }
+    kama (idx == 4) { hm->badiliko_4 = v; rudisha; }
+    kama (idx == 5) { hm->badiliko_5 = v; rudisha; }
+    kama (idx == 6) { hm->badiliko_6 = v; rudisha; }
+    kama (idx == 7) { hm->badiliko_7 = v; rudisha; }
+    kama (idx == 8) { hm->badiliko_8 = v; rudisha; }
+    hm->badiliko_9 = v;
+}
+
+VipimoLainiMsimamizi* vipimo_laini_msimamizi_unda() {
+    VipimoLainiMsimamizi* sm = tenga(ukubwa(VipimoLainiMsimamizi));
+    vipimo_laini_msimamizi_anzisha(sm);
+    rudisha sm;
+}
+
+w0 vipimo_laini_msimamizi_uharibu(VipimoLainiMsimamizi* sm) {
+    kama (sm == 0) { rudisha; }
+    achilia sm;
+}
+
+w0 vipimo_laini_msimamizi_anzisha(VipimoLainiMsimamizi* sm) {
+    kama (sm == 0) { rudisha; }
+
+    sm->furaha.furaha_msingi = 0.5;
+    sm->furaha.uthabiti = 0.5;
+    sm->furaha.uaminifu = 0.5;
+    sm->furaha.badiliko_0 = 0.0; sm->furaha.badiliko_1 = 0.0;
+    sm->furaha.badiliko_2 = 0.0; sm->furaha.badiliko_3 = 0.0;
+    sm->furaha.badiliko_4 = 0.0; sm->furaha.badiliko_5 = 0.0;
+    sm->furaha.badiliko_6 = 0.0; sm->furaha.badiliko_7 = 0.0;
+    sm->furaha.badiliko_8 = 0.0; sm->furaha.badiliko_9 = 0.0;
+    sm->furaha.idadi_ya_mabadiliko = 0;
+
+    sm->uhalali.uhalali = 0.7;
+    sm->uhalali.uthabiti_wa_kisiasa = 0.6;
+    sm->uhalali.kiwango_cha_rushwa = 0.3;
+    sm->uhalali.idhini_ya_serikali = 0.5;
+
+    sm->fahari.fahari = 0.5;
+    sm->fahari.ushawishi_wa_kitamaduni = 0.4;
+    sm->fahari.mafanikio_ya_kiteknolojia = 0.3;
+    sm->fahari.ujasiri_wa_kijeshi = 0.5;
+}
+
+// civ_happiness_metrics_get_overall: uzito wa mabadiliko 3 ya hivi
+// karibuni (0.5/0.3/0.2) juu ya mwisho wa orodha (badiliko_N-1 ndiyo
+// la hivi karibuni zaidi).
+d64 vipimo_laini_furaha_jumla(VipimoLainiFuraha* hm) {
+    kama (hm == 0) { rudisha 0.0; }
+
+    d64 msingi = hm->furaha_msingi;
+    d64 kipengele_uthabiti = hm->uthabiti * 0.3;
+    d64 kipengele_uaminifu = hm->uaminifu * 0.2;
+
+    d64 athari_ya_karibuni = 0.0;
+    kama (hm->idadi_ya_mabadiliko > 0) {
+        n32 idadi = hm->idadi_ya_mabadiliko;
+        kama (idadi > 3) { idadi = 3; }
+        n32 mwanzo = 0;
+        kama (hm->idadi_ya_mabadiliko > 3) {
+            mwanzo = hm->idadi_ya_mabadiliko - 3;
+        }
+
+        d64 uzito_0 = 0.5;
+        d64 uzito_1 = 0.3;
+        d64 uzito_2 = 0.2;
+
+        n32 i = 0;
+        wakati (i < idadi) {
+            d64 v = vipimo_laini_pata_badiliko(hm, mwanzo + i);
+            kama (i == 0) { athari_ya_karibuni = athari_ya_karibuni + v * uzito_0; }
+            kama (i == 1) { athari_ya_karibuni = athari_ya_karibuni + v * uzito_1; }
+            kama (i == 2) { athari_ya_karibuni = athari_ya_karibuni + v * uzito_2; }
+            i = i + 1;
+        }
+    }
+
+    d64 jumla = msingi + kipengele_uthabiti + kipengele_uaminifu + athari_ya_karibuni * 0.2;
+    rudisha finya_d64(jumla, 0.0, 1.0);
+}
+
+n32 vipimo_laini_furaha_hali(VipimoLainiFuraha* hm) {
+    kama (hm == 0) { rudisha VIPIMO_LAINI_HALI_RIDHIKA; }
+
+    d64 alama = vipimo_laini_furaha_jumla(hm);
+    kama (alama >= 0.9) { rudisha VIPIMO_LAINI_HALI_SHANGWE; }
+    kama (alama >= 0.7) { rudisha VIPIMO_LAINI_HALI_FURAHA; }
+    kama (alama >= 0.5) { rudisha VIPIMO_LAINI_HALI_RIDHIKA; }
+    kama (alama >= 0.3) { rudisha VIPIMO_LAINI_HALI_KUTOSHELEZWA; }
+    kama (alama >= 0.1) { rudisha VIPIMO_LAINI_HALI_TAABU; }
+    rudisha VIPIMO_LAINI_HALI_UASI;
+}
+
+// civ_happiness_metrics_add_change: safu ya C hukua kupitia realloc
+// hadi ifikie kikomo, kisha hupunguzwa kwa memmove ikizidi 10 -- hapa
+// (kikomo cha 10 tayari ni fasta) ni sawa na "sukuma kushoto mara
+// moja ikiwa imejaa, kisha weka mwishoni".
+w0 vipimo_laini_furaha_ongeza_mabadiliko(VipimoLainiFuraha* hm, d64 mabadiliko) {
+    kama (hm == 0) { rudisha; }
+
+    kama (hm->idadi_ya_mabadiliko < 10) {
+        vipimo_laini_weka_badiliko(hm, hm->idadi_ya_mabadiliko, mabadiliko);
+        hm->idadi_ya_mabadiliko = hm->idadi_ya_mabadiliko + 1;
+        rudisha;
+    }
+
+    n32 i = 0;
+    wakati (i < 9) {
+        d64 ijayo = vipimo_laini_pata_badiliko(hm, i + 1);
+        vipimo_laini_weka_badiliko(hm, i, ijayo);
+        i = i + 1;
+    }
+    vipimo_laini_weka_badiliko(hm, 9, mabadiliko);
+}
+
+d64 vipimo_laini_uhalali_kokotoa(VipimoLainiUhalali* ls) {
+    kama (ls == 0) { rudisha 0.0; }
+
+    d64 kipengele_uthabiti = ls->uthabiti_wa_kisiasa * 0.4;
+    d64 kipengele_rushwa = (1.0 - ls->kiwango_cha_rushwa) * 0.3;
+    d64 kipengele_idhini = ls->idhini_ya_serikali * 0.3;
+
+    rudisha finya_d64(kipengele_uthabiti + kipengele_rushwa + kipengele_idhini, 0.0, 1.0);
+}
+
+// civ_soft_metrics_update_from_economy: angalia maelezo ya wigo juu
+// ya faili -- hoja mbili hapa zinachukua nafasi ya `const void*
+// economic_data` isiyotumika ya C (ambayo ilikuwa ikitumia 0.6/0.3
+// kila wakati bila kujali hoja).
+w0 vipimo_laini_sasisha_kutoka_uchumi(VipimoLainiMsimamizi* sm, d64 pato_kwa_mtu, d64 ukosefu_wa_kazi) {
+    kama (sm == 0) { rudisha; }
+
+    d64 furaha_ya_kiuchumi = pato_kwa_mtu * 0.5 + (1.0 - ukosefu_wa_kazi) * 0.5;
+    d64 mabadiliko = (furaha_ya_kiuchumi - sm->furaha.furaha_msingi) * 0.1;
+    vipimo_laini_furaha_ongeza_mabadiliko(&sm->furaha, mabadiliko);
+    sm->furaha.furaha_msingi = finya_d64(sm->furaha.furaha_msingi + mabadiliko, 0.0, 1.0);
+
+    kama (pato_kwa_mtu > 0.7) {
+        sm->uhalali.idhini_ya_serikali = kiwango_cha_chini_d64(1.0, sm->uhalali.idhini_ya_serikali + 0.01);
+    } sivyo { kama (pato_kwa_mtu < 0.4) {
+        sm->uhalali.idhini_ya_serikali = kiwango_cha_juu_d64(0.0, sm->uhalali.idhini_ya_serikali - 0.01);
+    } }
+}
+
+// civ_soft_metrics_update_from_events: angalia maelezo ya wigo juu ya
+// faili -- HAKUNA-TENDO kwa makusudi, sawa na mwili wa kitanzi tupu
+// wa C (idadi_ya_matukio haijatumika kwa makusudi).
+w0 vipimo_laini_sasisha_kutoka_matukio(VipimoLainiMsimamizi* sm, n32 idadi_ya_matukio) {
+    rudisha;
+}

@@ -1,0 +1,207 @@
+husisha { moduli/onyesho/baiti_ghafi.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+// soketi.swa -- wrappers za syscalls ghafi za AF_UNIX stream socket
+// (socket=41, connect=42, sendmsg=46, recvmsg=47) + ujenzi wa
+// sockaddr_un/iovec/msghdr kama bafa ghafi za n8* (mtindo uleule wa
+// moduli/onyesho/baiti_ghafi.swa/drm.swa -- miundo ya ABI ya kernel
+// kama bafa ya offset halisi, SI `muundo` ya Swa -- angalia maelezo
+// ya baiti_ghafi.swa kwa sababu).
+//
+// Kiambishi: wayland_soketi_ (eneo JIPYA, si tafsiri ya src/core/ --
+// angalia ../../../KANUNI-MAJINA.md, sehemu ya "Onyesho/kifaa").
+//
+// MUHIMU: sendmsg/recvmsg zinatumika (SI write/read wazi) ili
+// miundombinu iwe tayari kwa SCM_RIGHTS (upitishaji wa file
+// descriptor, unaohitajika kwa wl_shm.create_pool na picha za
+// kuchorwa) -- lakini AWAMU HII haitumii control message (SCM_RIGHTS)
+// KABISA, ni ya Awamu 2. msg_control/msg_controllen zinabaki sifuri
+// hapa kwa makusudi.
+
+n64 WAYLAND_SOKETI_AF_UNIX = 1;
+n64 WAYLAND_SOKETI_SOCK_STREAM = 1;
+
+n64 WAYLAND_SOKETI_SYS_SOCKET = 41;
+n64 WAYLAND_SOKETI_SYS_CONNECT = 42;
+n64 WAYLAND_SOKETI_SYS_SENDMSG = 46;
+n64 WAYLAND_SOKETI_SYS_RECVMSG = 47;
+
+n64 wayland_sys_socket(n64 domain, n64 aina, n64 protokali) {
+    rudisha wito_wa_mfumo(WAYLAND_SOKETI_SYS_SOCKET, domain, aina, protokali, 0, 0, 0);
+}
+
+n64 wayland_sys_connect(n64 fd, n8* anwani_soketi, n64 urefu) {
+    rudisha wito_wa_mfumo(WAYLAND_SOKETI_SYS_CONNECT, fd, anwani_soketi, urefu, 0, 0, 0);
+}
+
+n64 wayland_sys_sendmsg(n64 fd, n8* msg, n64 bendera) {
+    rudisha wito_wa_mfumo(WAYLAND_SOKETI_SYS_SENDMSG, fd, msg, bendera, 0, 0, 0);
+}
+
+n64 wayland_sys_recvmsg(n64 fd, n8* msg, n64 bendera) {
+    rudisha wito_wa_mfumo(WAYLAND_SOKETI_SYS_RECVMSG, fd, msg, bendera, 0, 0, 0);
+}
+
+// struct sockaddr_un (Linux ABI x86-64, baiti 110, HAKUNA upakiaji wa
+// mwisho -- imehakikiwa dhidi ya uzoefu wa kawaida wa ABI hii, ni
+// muundo thabiti wa muda mrefu): 0 sun_family(u16)  2 sun_path[108]
+n8* wayland_soketi_anwani_unix(n8* njia) {
+    n8* a = tenga(110);
+    weka_sifuri(a, 110);
+    weka_u16(a, 0, WAYLAND_SOKETI_AF_UNIX);
+    n64 urefu = urefu_wa_mfuatano(njia);
+    // 107 = 108 (ukubwa wa sun_path) - 1 (nafasi ya NUL ya mwisho,
+    // tayari ipo kutoka weka_sifuri hapo juu).
+    kama (urefu > 107) { urefu = 107; }
+    nakili(a + 2, njia, urefu);
+    rudisha a;
+}
+
+n64 wayland_soketi_fungua() {
+    rudisha wayland_sys_socket(WAYLAND_SOKETI_AF_UNIX, WAYLAND_SOKETI_SOCK_STREAM, 0);
+}
+
+n64 wayland_soketi_unganisha(n64 fd, n8* njia) {
+    n8* anwani = wayland_soketi_anwani_unix(njia);
+    rudisha wayland_sys_connect(fd, anwani, 110);
+}
+
+n64 wayland_soketi_funga(n64 fd) {
+    rudisha mfumo_funga(fd);
+}
+
+// struct iovec, baiti 16: 0 iov_base(u64 ptr)  8 iov_len(u64)
+n8* wayland_soketi_jenga_iovec(n8* bafa, n64 urefu) {
+    n8* iov = tenga(16);
+    weka_u64(iov, 0, anwani(bafa));
+    weka_u64(iov, 8, urefu);
+    rudisha iov;
+}
+
+// struct msghdr, baiti 56 (ABI x86-64):
+//   0  msg_name(u64 ptr)        8  msg_namelen(u32) [+4 upakwa]
+//   16 msg_iov(u64 ptr)         24 msg_iovlen(u64)
+//   32 msg_control(u64 ptr)     40 msg_controllen(u64)
+//   48 msg_flags(u32) [+4 upakwa]
+// msg_name/msg_control zinabaki sifuri (hatutumii ANCILLARY data --
+// AF_UNIX haihitaji anwani ya mwisho kwenye socket iliyounganishwa
+// tayari, na SCM_RIGHTS ni ya Awamu 2, angalia maoni ya juu).
+n8* wayland_soketi_jenga_msghdr(n8* iov, n64 idadi_iov) {
+    n8* m = tenga(56);
+    weka_sifuri(m, 56);
+    weka_u64(m, 16, anwani(iov));
+    weka_u64(m, 24, idadi_iov);
+    rudisha m;
+}
+
+n64 wayland_soketi_tuma(n64 fd, n8* bafa, n64 urefu) {
+    n8* iov = wayland_soketi_jenga_iovec(bafa, urefu);
+    n8* msg = wayland_soketi_jenga_msghdr(iov, 1);
+    rudisha wayland_sys_sendmsg(fd, msg, 0);
+}
+
+n64 wayland_soketi_pokea(n64 fd, n8* bafa, n64 urefu) {
+    n8* iov = wayland_soketi_jenga_iovec(bafa, urefu);
+    n8* msg = wayland_soketi_jenga_msghdr(iov, 1);
+    rudisha wayland_sys_recvmsg(fd, msg, 0);
+}
+
+// =================================================================
+// AWAMU 2 -- SCM_RIGHTS (upitishaji wa file descriptor kupitia
+// sendmsg ancillary data), unaohitajika na wl_shm.create_pool (hoja
+// yake ya `fd` HAIANDIKWI kwenye mwili wa ujumbe -- inapita PEKEE
+// kupitia control message hii).
+//
+// Imethibitishwa dhidi ya maelezo rasmi ya cmsg(3)/sendmsg(2) (ABI ya
+// Linux x86-64, glibc):
+//
+//   struct cmsghdr {
+//       size_t cmsg_len;    // baiti 8 -- offset 0
+//       int    cmsg_level;  // baiti 4 -- offset 8
+//       int    cmsg_type;   // baiti 4 -- offset 12
+//       // CMSG_DATA huanzia hapa -- offset 16 (sizeof(cmsghdr)=16
+//       // TAYARI imepangiliwa kwa mzunguko wa 8, hakuna upakwaji wa
+//       // ziada unaohitajika kati ya kichwa na data kwenye x86-64).
+//   };
+//
+//   CMSG_LEN(n)   = 16 + n           (baiti HALISI za data zinazotumika)
+//   CMSG_SPACE(n) = 16 + ALIGN8(n)   (ukubwa wa bafa, ikiwemo upakwaji)
+//
+// Kwa fd MOJA (n=4): CMSG_LEN(4)=20, CMSG_SPACE(4)=24 (ALIGN8(4)=8).
+// Bafa ya baiti 24 inatengwa, baiti 4 za mwisho (20..24) ni upakwaji
+// wa sifuri uliohitajika kwa ALIGN8 (hazitumiki na kernel lakini
+// lazima ziwepo kwenye bafa iliyotengwa kama msg_controllen=24).
+//
+// msg_iov bado ina baiti za KAWAIDA za ujumbe wa Wayland (kwa mfano
+// wl_shm.create_pool: id+size, BILA fd -- angalia waya.swa) -- fd
+// inasafiri PEKEE kupitia control data hii, SI kupitia iov.
+
+n64 WAYLAND_SOKETI_SOL_SOCKET = 1;
+n64 WAYLAND_SOKETI_SCM_RIGHTS = 1;
+
+n8* wayland_soketi_jenga_cmsg_fd(n64 fd_kutuma) {
+    n8* c = tenga(24);          // CMSG_SPACE(4)
+    weka_sifuri(c, 24);
+    weka_u64(c, 0, 20);         // cmsg_len = CMSG_LEN(4) = 16+4
+    weka_u32(c, 8, WAYLAND_SOKETI_SOL_SOCKET);   // cmsg_level
+    weka_u32(c, 12, WAYLAND_SOKETI_SCM_RIGHTS);  // cmsg_type
+    weka_u32(c, 16, fd_kutuma);                  // CMSG_DATA: fd yenyewe
+    rudisha c;
+}
+
+// msghdr yenye msg_control ikielekeza kwenye cmsghdr+fd iliyojengwa
+// hapo juu (tofauti na wayland_soketi_jenga_msghdr ya kawaida ambayo
+// huacha msg_control/msg_controllen sifuri kwa makusudi -- angalia
+// maoni ya juu ya faili hii).
+n8* wayland_soketi_jenga_msghdr_na_fd(n8* iov, n64 idadi_iov, n64 fd_kutuma) {
+    n8* m = tenga(56);
+    weka_sifuri(m, 56);
+    weka_u64(m, 16, anwani(iov));
+    weka_u64(m, 24, idadi_iov);
+    n8* cmsg = wayland_soketi_jenga_cmsg_fd(fd_kutuma);
+    weka_u64(m, 32, anwani(cmsg));  // msg_control
+    weka_u64(m, 40, 24);            // msg_controllen = CMSG_SPACE(4)
+    rudisha m;
+}
+
+// wayland_soketi_tuma_na_fd -- tuma ujumbe wa kawaida wa waya (bafa_
+// ujumbe/urefu_ujumbe kupitia iov, kama kawaida) HUKU ukipitisha
+// fd_wa_kutuma kwa compositor kupitia SCM_RIGHTS kwenye control data
+// ya sendmsg HIYO HIYO (ancillary data husafiri pamoja na ujumbe wa
+// kwanza wa sendmsg -- SIYO ujumbe tofauti).
+n64 wayland_soketi_tuma_na_fd(n64 fd_soketi, n8* bafa_ujumbe, n64 urefu_ujumbe, n64 fd_wa_kutuma) {
+    n8* iov = wayland_soketi_jenga_iovec(bafa_ujumbe, urefu_ujumbe);
+    n8* msg = wayland_soketi_jenga_msghdr_na_fd(iov, 1, fd_wa_kutuma);
+    rudisha wayland_sys_sendmsg(fd_soketi, msg, 0);
+}
+
+// =================================================================
+// AWAMU 2 -- kudhibiti uzuiaji (blocking) wa soketi na kulala kwa
+// muda mfupi, zinazohitajika kwa kitanzi cha "bakia dirisha wazi kwa
+// sekunde N" bila kuzuia (block) milele kwenye recvmsg ikiwa hakuna
+// ujumbe unaofika.
+
+n64 WAYLAND_SOKETI_SYS_FCNTL = 72;
+n64 WAYLAND_SOKETI_F_SETFL = 4;
+n64 WAYLAND_SOKETI_O_NONBLOCK = 2048;
+n64 WAYLAND_SOKETI_EAGAIN = -11;
+
+// F_SETFL hubadilisha PEKEE baadhi ya bendera (O_APPEND/O_ASYNC/
+// O_DIRECT/O_NOATIME/O_NONBLOCK) -- HAIGUSI namna ya ufikiaji
+// (O_RDWR) iliyowekwa na socket() -- salama kuituma peke yake bila
+// kusoma flags za awali kwanza (angalia fcntl(2)).
+n64 wayland_soketi_weka_zisizozuia(n64 fd) {
+    rudisha wito_wa_mfumo(WAYLAND_SOKETI_SYS_FCNTL, fd, WAYLAND_SOKETI_F_SETFL, WAYLAND_SOKETI_O_NONBLOCK, 0, 0, 0);
+}
+
+n64 WAYLAND_SOKETI_SYS_NANOSLEEP = 35;
+
+// struct timespec { long tv_sec; long tv_nsec; } -- n64 mbili.
+w0 wayland_soketi_lala_ms(n64 ms) {
+    n64 sekunde = ms / 1000;
+    n64 nanosekunde = (ms % 1000) * 1000000;
+    n8* ts = tenga(16);
+    weka_u64(ts, 0, sekunde);
+    weka_u64(ts, 8, nanosekunde);
+    wito_wa_mfumo(WAYLAND_SOKETI_SYS_NANOSLEEP, ts, 0, 0, 0, 0, 0);
+}

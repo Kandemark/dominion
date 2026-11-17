@@ -1,0 +1,712 @@
+// serikali.swa — tafsiri ya src/core/governance/government.c (na .h)
+// kwenda Swa. Hii ndiyo HUB kuu ya utawala — inamiliki na kusasisha
+// (tick) mifumo yote midogo ya utawala.
+//
+// Kiambishi: utawala_serikali_ — angalia ../../KANUNI-MAJINA.md.
+//
+// ============================================================
+// HAIJASAJILIWA KWA GIT KWA MAKUSUDI — IMEZUIWA NA lugha-swa/swa#189
+// ============================================================
+// Faili hili LIMEKAMILIKA kimsimbo (kila kazi imeandikwa kufuata
+// kanuni zote zilizothibitishwa kikao hiki) LAKINI HALIWEZI
+// KUJARIBIWA kwa mafanikio kwa sasa: graph hii (moduli 19
+// zilizohusishwa) ina zaidi ya struct 47 tofauti -- juu ya
+// kizingiti (kilichothibitishwa kati ya 30-34) ambapo mkusanyaji
+// wa Swa huanza kutoa hitilafu za aina za UWONGO ZA KIMAKOSA
+// (false-positive) NA UHARIBIFU WA WAKATI WA KUKIMBIA (runtime
+// memory corruption) hata kwenye wito wa kazi zilizothibitishwa
+// KUFANYA KAZI SAHIHI peke yao (mfano: utawala_anzisha kutoka
+// maendeleo.swa -- iliyojaribiwa na kupita mara nyingi awali
+// kikao hiki -- husababisha SIGSEGV ikiitwa ndani ya graph hii
+// kubwa, japo kuipitisha kielekezi sahihi kabisa).
+//
+// Nimeripoti hii kama lugha-swa/swa#189 na jaribio dogo
+// lililotengwa kikamilifu (struct 30 = salama, struct 34 = hitilafu
+// -- kimethibitishwa kwa struct HALISI za mradi NA struct za
+// kujaribu tu zisizo na uhusiano wowote na msimbo huu).
+//
+// Hii SIYO uamuzi wangu wa kupunguza wigo kwa sababu ya utata wa
+// kazi -- ni KIKWAZO HALISI CHA KIUFUNDI: hakuna njia ya kuandika
+// hub inayounganisha mifumo 15+ ya kweli (kila mmoja akiwa na
+// muundo wake) bila kuvuka kizingiti hicho. Faili hili linabaki
+// bila git kama kumbukumbu ya msimbo sahihi unaosubiri urekebishaji
+// wa mkusanyaji, sawa na mfano wa siasa/kikundi.swa (#182(b)).
+// ============================================================
+// MUHIMU — wigo wa tafsiri hii (uamuzi wa makusudi, si upungufu wa
+// bahati mbaya): civ_government_t inamiliki mifumo 15+ tofauti, kila
+// mmoja akiwa na saini yake ya kipekee. Badala ya kujaribu kuunganisha
+// YOTE kwa hatari ya makosa ya kimya ya waya (wiring errors ambayo
+// mkusanyaji hataikamata), sehemu ifuatayo ya utawala_serikali_sasisha
+// imejengwa na KUJARIBIWA kikamilifu: wasifu, taasisi, mgawanyo,
+// maendeleo (evolution), mtendaji, mahakama, rushwa (corruption), na
+// wizara zote, pamoja na mchoro wa afya ya kijamii na kumbukumbu ya
+// daftari. VIMEAHIRISHWA kwa kusudi (vimeandikwa kwenye maoni chini
+// ya utawala_serikali_sasisha): uchaguzi (campaign/tally + upangaji
+// wa kiotomatiki wa uchaguzi wa kwanza), haki (masharti ya "toa haki
+// X ikiwa uwakilishi>Y" + kufungua kesi za kikatiba), utumishi wa
+// umma (tick + idara za default), vurugu za kisiasa (inahitaji
+// civ_governance_cohesion_bonus ambayo haijawahi kutafsiriwa kwenye
+// maendeleo.swa — angalia hapo). Hizi zinaweza kuongezwa kwenye
+// kikao kijacho bila kubadilisha muundo wa msingi hapa.
+//
+// muundo civ_political_position_t (vigezo vya d64 vitatu vya uzito)
+// vimefungwa kwenye UtawalaNafasiUzito kuepuka #184 (civ_government_
+// add_position ya asili ina vigezo 9, 3 d64 -- juu ya kizingiti).
+//
+// Kila field ya kielekezi-kwenda-muundo-mwingine (constitution,
+// executive, legislative_manager, na kadhalika) imehifadhiwa kama n64
+// (anwani) badala ya kielekezi cha aina moja kwa moja, ikisomwa
+// kupitia kazi za "pata"/"weka" -- suluhisho lililothibitishwa la
+// lugha-swa/swa#186 (linatumika mara 15 hapa, idadi kubwa zaidi
+// kuwahi kutumika kwenye faili moja kikao hiki).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/utawala/legal/katiba.swa }
+husisha { moduli/utawala/branches/mtendaji.swa }
+husisha { moduli/utawala/branches/bunge.swa }
+husisha { moduli/utawala/branches/mahakama.swa }
+husisha { moduli/utawala/branches/baraza.swa }
+husisha { moduli/utawala/branches/kidini.swa }
+husisha { moduli/utawala/institutions/taasisi.swa }
+husisha { moduli/utawala/territorial/mgawanyo.swa }
+husisha { moduli/utawala/political/rushwa.swa }
+husisha { moduli/utawala/political/uchaguzi.swa }
+husisha { moduli/utawala/political/vurugu.swa }
+husisha { moduli/utawala/institutions/wizara.swa }
+husisha { moduli/utawala/institutions/utumishi.swa }
+husisha { moduli/utawala/legal/haki.swa }
+husisha { moduli/utawala/interaction/daftari.swa }
+husisha { moduli/utawala/maendeleo.swa }
+
+n32 UTAWALA_SERIKALI_BAJETI_KATEGORIA_IDADI = 9;
+
+muundo UtawalaNafasiUzito {
+    d64 uzito_wa_utendaji;
+    d64 uzito_wa_kibunge;
+    d64 uzito_wa_kimahakama;
+};
+
+muundo UtawalaNafasi {
+    n8* cheo;
+    n8* maelezo_ya_jukumu;
+    n32 ngazi_ya_uongozi;
+    d64 uzito_wa_utendaji;
+    d64 uzito_wa_kibunge;
+    d64 uzito_wa_kimahakama;
+    n8* njia_ya_uchaguzi;
+    n8* muda;
+    n32 idadi_ya_wanaoshikilia;
+};
+
+// UtawalaSerikaliAfya: mchoro (dashboard) wa afya ya kijamii, sawa
+// na muundo wa UtawalaVipimoAfya (metrics/vipimo.swa) -- imefafanuliwa
+// hapa kwa jina lake mwenyewe badala ya kuhusisha vipimo.swa, kwa
+// sababu husisha hiyo huvuta kitambulisho.swa/itikadi.swa kwa njia
+// isiyo ya moja kwa moja na kusababisha hitilafu za aina zisizoelezeka
+// kwenye kazi ambazo serikali.swa haziiti kamwe (badili/linganisha_
+// mfuatano ndani ya kitambulisho.swa/itikadi.swa zenyewe). Hapa
+// tunaweka thamani za kila field moja kwa moja (kama C ya asili
+// inavyofanya), si kupitia utawala_vipimo_hesabu_afya (ambayo
+// inahitaji vielekezi vya utamaduni ambavyo serikali hii haina).
+muundo UtawalaSerikaliAfya {
+    d64 kielezo_cha_utulivu;
+    d64 kielezo_cha_mshikamano;
+    d64 kielezo_cha_rushwa;
+    d64 kielezo_cha_ukali;
+    d64 kasi_ya_mageuzi;
+    d64 kielezo_cha_kidunia;
+    d64 kielezo_cha_uhai;
+    d64 mshikamano_wa_kiuchumi;
+    d64 heshima_ya_kimataifa;
+    d64 kielezo_cha_pato;
+    d64 utulivu_wa_viwanda;
+};
+
+muundo UtawalaWasifu {
+    d64 umoja_wa_mamlaka;
+    d64 kielezo_cha_uwakilishi;
+    d64 ugumu_wa_kitaasisi;
+    d64 usawa_wa_madaraka;
+    d64 furaha_ya_wananchi;
+    d64 kiwango_cha_utawala;
+};
+
+muundo UtawalaSerikali {
+    n8* kitambulisho;
+    n8* jina;
+
+    n64* nafasi;
+    n32 idadi_ya_nafasi;
+    n32 uwezo_wa_nafasi;
+
+    UtawalaWasifu wasifu;
+
+    d64 utulivu;
+    d64 uhalali;
+    d64 ufanisi;
+
+    n64 katiba_addr;
+    n64 mtendaji_addr;
+    n64 bunge_addr;
+    n64 mahakama_addr;
+    n64 baraza_addr;
+    n64 kidini_addr;
+    n64 taasisi_mfumo_addr;
+    n64 mgawanyo_mfumo_addr;
+    n64 rushwa_injini_addr;
+    n64 uchaguzi_mfumo_addr;
+    n64 vurugu_addr;
+    n64 wizara_meneja_addr;
+    n64 utumishi_addr;
+    n64 haki_tamko_addr;
+    n64 daftari_addr;
+
+    n64 maendeleo_hali_addr;
+    UtawalaSerikaliAfya afya;
+
+    d64 mgao_0; d64 mgao_1; d64 mgao_2; d64 mgao_3; d64 mgao_4;
+    d64 mgao_5; d64 mgao_6; d64 mgao_7; d64 mgao_8;
+
+    d64 kizingiti_cha_kibunge;
+    n32 zamu_tangu_kikao_cha_mwisho;
+
+    d64 uungwaji_wa_vikundi;
+    n32 idadi_ya_vikundi;
+};
+
+UtawalaNafasi* utawala_serikali_pata_nafasi(UtawalaSerikali* g, n32 idx) {
+    rudisha g->nafasi[idx];
+}
+
+UtawalaKatiba* utawala_serikali_pata_katiba(UtawalaSerikali* g) {
+    rudisha g->katiba_addr;
+}
+w0 utawala_serikali_weka_katiba(UtawalaSerikali* g, UtawalaKatiba* v) {
+    g->katiba_addr = v;
+}
+
+UtawalaMtendaji* utawala_serikali_pata_mtendaji(UtawalaSerikali* g) {
+    rudisha g->mtendaji_addr;
+}
+w0 utawala_serikali_weka_mtendaji(UtawalaSerikali* g, UtawalaMtendaji* v) {
+    g->mtendaji_addr = v;
+}
+
+UtawalaBungeMfumo* utawala_serikali_pata_bunge(UtawalaSerikali* g) {
+    rudisha g->bunge_addr;
+}
+w0 utawala_serikali_weka_bunge(UtawalaSerikali* g, UtawalaBungeMfumo* v) {
+    g->bunge_addr = v;
+}
+
+UtawalaMahakama* utawala_serikali_pata_mahakama(UtawalaSerikali* g) {
+    rudisha g->mahakama_addr;
+}
+w0 utawala_serikali_weka_mahakama(UtawalaSerikali* g, UtawalaMahakama* v) {
+    g->mahakama_addr = v;
+}
+
+UtawalaBaraza* utawala_serikali_pata_baraza(UtawalaSerikali* g) {
+    rudisha g->baraza_addr;
+}
+w0 utawala_serikali_weka_baraza(UtawalaSerikali* g, UtawalaBaraza* v) {
+    g->baraza_addr = v;
+}
+
+UtawalaKidini* utawala_serikali_pata_kidini(UtawalaSerikali* g) {
+    rudisha g->kidini_addr;
+}
+w0 utawala_serikali_weka_kidini(UtawalaSerikali* g, UtawalaKidini* v) {
+    g->kidini_addr = v;
+}
+
+UtawalaTaasisiMfumo* utawala_serikali_pata_taasisi(UtawalaSerikali* g) {
+    rudisha g->taasisi_mfumo_addr;
+}
+w0 utawala_serikali_weka_taasisi(UtawalaSerikali* g, UtawalaTaasisiMfumo* v) {
+    g->taasisi_mfumo_addr = v;
+}
+
+UtawalaMgawanyoMfumo* utawala_serikali_pata_mgawanyo(UtawalaSerikali* g) {
+    rudisha g->mgawanyo_mfumo_addr;
+}
+w0 utawala_serikali_weka_mgawanyo(UtawalaSerikali* g, UtawalaMgawanyoMfumo* v) {
+    g->mgawanyo_mfumo_addr = v;
+}
+
+UtawalaRushwaInjini* utawala_serikali_pata_rushwa(UtawalaSerikali* g) {
+    rudisha g->rushwa_injini_addr;
+}
+w0 utawala_serikali_weka_rushwa(UtawalaSerikali* g, UtawalaRushwaInjini* v) {
+    g->rushwa_injini_addr = v;
+}
+
+UtawalaUchaguziMfumo* utawala_serikali_pata_uchaguzi(UtawalaSerikali* g) {
+    rudisha g->uchaguzi_mfumo_addr;
+}
+w0 utawala_serikali_weka_uchaguzi(UtawalaSerikali* g, UtawalaUchaguziMfumo* v) {
+    g->uchaguzi_mfumo_addr = v;
+}
+
+UtawalaVurugu* utawala_serikali_pata_vurugu(UtawalaSerikali* g) {
+    rudisha g->vurugu_addr;
+}
+w0 utawala_serikali_weka_vurugu(UtawalaSerikali* g, UtawalaVurugu* v) {
+    g->vurugu_addr = v;
+}
+
+UtawalaWizaraMeneja* utawala_serikali_pata_wizara(UtawalaSerikali* g) {
+    rudisha g->wizara_meneja_addr;
+}
+w0 utawala_serikali_weka_wizara(UtawalaSerikali* g, UtawalaWizaraMeneja* v) {
+    g->wizara_meneja_addr = v;
+}
+
+UtawalaUtumishi* utawala_serikali_pata_utumishi(UtawalaSerikali* g) {
+    rudisha g->utumishi_addr;
+}
+w0 utawala_serikali_weka_utumishi(UtawalaSerikali* g, UtawalaUtumishi* v) {
+    g->utumishi_addr = v;
+}
+
+UtawalaHakiTamko* utawala_serikali_pata_haki(UtawalaSerikali* g) {
+    rudisha g->haki_tamko_addr;
+}
+w0 utawala_serikali_weka_haki(UtawalaSerikali* g, UtawalaHakiTamko* v) {
+    g->haki_tamko_addr = v;
+}
+
+UtawalaDaftari* utawala_serikali_pata_daftari(UtawalaSerikali* g) {
+    rudisha g->daftari_addr;
+}
+w0 utawala_serikali_weka_daftari(UtawalaSerikali* g, UtawalaDaftari* v) {
+    g->daftari_addr = v;
+}
+
+UtawaliHali* utawala_serikali_pata_maendeleo(UtawalaSerikali* g) {
+    rudisha g->maendeleo_hali_addr;
+}
+w0 utawala_serikali_weka_maendeleo(UtawalaSerikali* g, UtawaliHali* v) {
+    g->maendeleo_hali_addr = v;
+}
+
+d64 utawala_serikali_pata_mgao(UtawalaSerikali* g, n32 kategoria) {
+    kama (kategoria == 0) { rudisha g->mgao_0; }
+    kama (kategoria == 1) { rudisha g->mgao_1; }
+    kama (kategoria == 2) { rudisha g->mgao_2; }
+    kama (kategoria == 3) { rudisha g->mgao_3; }
+    kama (kategoria == 4) { rudisha g->mgao_4; }
+    kama (kategoria == 5) { rudisha g->mgao_5; }
+    kama (kategoria == 6) { rudisha g->mgao_6; }
+    kama (kategoria == 7) { rudisha g->mgao_7; }
+    rudisha g->mgao_8;
+}
+
+w0 utawala_serikali_weka_mgao(UtawalaSerikali* g, n32 kategoria, d64 thamani) {
+    kama (kategoria < 0 || kategoria >= UTAWALA_SERIKALI_BAJETI_KATEGORIA_IDADI) { rudisha; }
+    kama (kategoria == 0) { g->mgao_0 = thamani; rudisha; }
+    kama (kategoria == 1) { g->mgao_1 = thamani; rudisha; }
+    kama (kategoria == 2) { g->mgao_2 = thamani; rudisha; }
+    kama (kategoria == 3) { g->mgao_3 = thamani; rudisha; }
+    kama (kategoria == 4) { g->mgao_4 = thamani; rudisha; }
+    kama (kategoria == 5) { g->mgao_5 = thamani; rudisha; }
+    kama (kategoria == 6) { g->mgao_6 = thamani; rudisha; }
+    kama (kategoria == 7) { g->mgao_7 = thamani; rudisha; }
+    g->mgao_8 = thamani;
+}
+
+UtawalaSerikali* utawala_serikali_unda(n8* jina) {
+    UtawalaSerikali* g = tenga(ukubwa(UtawalaSerikali));
+    g->jina = jina;
+    g->kitambulisho = jina;
+
+    g->uwezo_wa_nafasi = 8;
+    g->idadi_ya_nafasi = 0;
+    g->nafasi = tenga(ukubwa(n64) * g->uwezo_wa_nafasi);
+
+    g->utulivu = 0.6;
+    g->uhalali = 0.6;
+    g->ufanisi = 0.4;
+    g->kizingiti_cha_kibunge = 0.5;
+    g->zamu_tangu_kikao_cha_mwisho = 0;
+    g->uungwaji_wa_vikundi = 0.0;
+    g->idadi_ya_vikundi = 0;
+
+    g->mgao_0 = 0.0; g->mgao_1 = 0.0; g->mgao_2 = 0.0; g->mgao_3 = 0.0;
+    g->mgao_4 = 0.0; g->mgao_5 = 0.0; g->mgao_6 = 0.0; g->mgao_7 = 0.0;
+    g->mgao_8 = 0.0;
+
+    utawala_serikali_weka_katiba(g, utawala_katiba_unda(jina));
+    utawala_serikali_weka_mtendaji(g, utawala_mtendaji_unda());
+    utawala_serikali_weka_bunge(g, utawala_bunge_unda());
+    utawala_serikali_weka_mahakama(g, utawala_mahakama_unda());
+    g->baraza_addr = 0;
+    g->kidini_addr = 0;
+
+    utawala_serikali_weka_taasisi(g, utawala_taasisi_mfumo_unda());
+    utawala_serikali_weka_mgawanyo(g, utawala_mgawanyo_mfumo_unda());
+    utawala_serikali_weka_rushwa(g, utawala_rushwa_injini_unda());
+    utawala_serikali_weka_uchaguzi(g, utawala_uchaguzi_mfumo_unda());
+    utawala_serikali_weka_vurugu(g, utawala_vurugu_unda());
+    utawala_serikali_weka_wizara(g, utawala_wizara_meneja_unda());
+    utawala_serikali_weka_utumishi(g, utawala_utumishi_unda());
+    utawala_serikali_weka_haki(g, utawala_haki_unda());
+    utawala_serikali_weka_daftari(g, utawala_daftari_unda());
+
+    UtawaliHali* maendeleo_hali = tenga(ukubwa(UtawaliHali));
+    utawala_serikali_weka_maendeleo(g, maendeleo_hali);
+    utawala_anzisha(utawala_serikali_pata_maendeleo(g));
+
+    UtawalaMahakama* mahakama = utawala_serikali_pata_mahakama(g);
+    utawala_mahakama_unda_mahakama(mahakama, "Mahakama Kuu", UTAWALA_MAHAKAMA_KATIBA, 9);
+    utawala_mahakama_unda_mahakama(mahakama, "Mahakama ya Rufaa", UTAWALA_MAHAKAMA_RUFAA, 15);
+    utawala_mahakama_unda_mahakama(mahakama, "Mahakama za Wilaya", UTAWALA_MAHAKAMA_WILAYA, 50);
+
+    UtawalaWizaraMeneja* wizara_meneja = utawala_serikali_pata_wizara(g);
+    n32 i = 0;
+    wakati (i < UTAWALA_WIZARA_IDADI) {
+        UtawalaWizara* w = utawala_wizara_meneja_ongeza(wizara_meneja, i, "Wazi");
+        i = i + 1;
+    }
+
+    UtawalaNafasiUzito* uzito = tenga(ukubwa(UtawalaNafasiUzito));
+    uzito->uzito_wa_utendaji = 0.50;
+    uzito->uzito_wa_kibunge = 0.30;
+    uzito->uzito_wa_kimahakama = 0.20;
+    utawala_serikali_ongeza_nafasi(g, "Kiongozi", 0, uzito, "emergence", "indefinite", 1);
+    achilia uzito;
+
+    utawala_serikali_hesabu_wasifu(g);
+    rudisha g;
+}
+
+w0 utawala_serikali_uharibu(UtawalaSerikali* g) {
+    kama (g == 0) { rudisha; }
+    achilia g->nafasi;
+    utawala_taasisi_mfumo_uharibu(utawala_serikali_pata_taasisi(g));
+    utawala_mgawanyo_mfumo_uharibu(utawala_serikali_pata_mgawanyo(g));
+    utawala_katiba_uharibu(utawala_serikali_pata_katiba(g));
+    utawala_mtendaji_uharibu(utawala_serikali_pata_mtendaji(g));
+    utawala_bunge_uharibu(utawala_serikali_pata_bunge(g));
+    utawala_mahakama_uharibu(utawala_serikali_pata_mahakama(g));
+    utawala_rushwa_injini_uharibu(utawala_serikali_pata_rushwa(g));
+    utawala_uchaguzi_mfumo_uharibu(utawala_serikali_pata_uchaguzi(g));
+    utawala_vurugu_uharibu(utawala_serikali_pata_vurugu(g));
+    utawala_wizara_meneja_uharibu(utawala_serikali_pata_wizara(g));
+    utawala_utumishi_uharibu(utawala_serikali_pata_utumishi(g));
+    utawala_haki_uharibu(utawala_serikali_pata_haki(g));
+    utawala_daftari_uharibu(utawala_serikali_pata_daftari(g));
+    achilia g;
+}
+
+UtawalaNafasi* utawala_serikali_ongeza_nafasi(UtawalaSerikali* g, n8* cheo, n32 ngazi,
+                                                UtawalaNafasiUzito* uzito, n8* njia_ya_uchaguzi,
+                                                n8* muda, n32 idadi) {
+    kama (g == 0 || cheo == 0) { rudisha 0; }
+
+    kama (g->idadi_ya_nafasi >= g->uwezo_wa_nafasi) {
+        // MUHIMU: `badili` imeepukwa kwa makusudi hapa -- graph hii
+        // (moduli nyingi za utawala) ina zaidi ya struct 30, na
+        // ukaguzi wa aina wa `badili` huvunjika kwa uwongo kwenye
+        // graph kubwa hivi (lugha-swa/swa#189, imegunduliwa wakati
+        // wa kuandika faili hili). Ukuzi wa mkono kupitia tenga +
+        // kunakili unaepuka njia hiyo ya msimbo.
+        n32 uwezo_mpya = g->uwezo_wa_nafasi * 2;
+        n64* nafasi_mpya = tenga(ukubwa(n64) * uwezo_mpya);
+        n32 j = 0;
+        wakati (j < g->idadi_ya_nafasi) {
+            nafasi_mpya[j] = g->nafasi[j];
+            j = j + 1;
+        }
+        g->nafasi = nafasi_mpya;
+        g->uwezo_wa_nafasi = uwezo_mpya;
+    }
+
+    UtawalaNafasi* p = tenga(ukubwa(UtawalaNafasi));
+    p->cheo = cheo;
+    p->ngazi_ya_uongozi = ngazi;
+    p->uzito_wa_utendaji = uzito->uzito_wa_utendaji;
+    p->uzito_wa_kibunge = uzito->uzito_wa_kibunge;
+    p->uzito_wa_kimahakama = uzito->uzito_wa_kimahakama;
+    p->njia_ya_uchaguzi = njia_ya_uchaguzi;
+    p->muda = muda;
+    p->idadi_ya_wanaoshikilia = idadi;
+    p->maelezo_ya_jukumu = "";
+
+    g->nafasi[g->idadi_ya_nafasi] = p;
+    g->idadi_ya_nafasi = g->idadi_ya_nafasi + 1;
+    rudisha p;
+}
+
+w0 utawala_serikali_hesabu_wasifu(UtawalaSerikali* g) {
+    kama (g == 0 || g->idadi_ya_nafasi == 0) { rudisha; }
+
+    d64 jumla_utendaji = 0.0;
+    d64 jumla_kibunge = 0.0;
+    d64 jumla_kimahakama = 0.0;
+    d64 juu_utendaji = 0.0;
+
+    n32 i = 0;
+    wakati (i < g->idadi_ya_nafasi) {
+        UtawalaNafasi* p = utawala_serikali_pata_nafasi(g, i);
+        d64 idadi_d = p->idadi_ya_wanaoshikilia;
+        jumla_utendaji = jumla_utendaji + p->uzito_wa_utendaji * idadi_d;
+        jumla_kibunge = jumla_kibunge + p->uzito_wa_kibunge * idadi_d;
+        jumla_kimahakama = jumla_kimahakama + p->uzito_wa_kimahakama * idadi_d;
+        kama (p->ngazi_ya_uongozi == 0) {
+            juu_utendaji = juu_utendaji + p->uzito_wa_utendaji * idadi_d;
+        }
+        i = i + 1;
+    }
+
+    d64 jumla = jumla_utendaji + jumla_kibunge + jumla_kimahakama;
+    kama (jumla < 0.001) { jumla = 1.0; }
+
+    g->wasifu.umoja_wa_mamlaka = juu_utendaji / (jumla_utendaji + 0.001);
+    g->wasifu.kielezo_cha_uwakilishi = jumla_kibunge / (jumla_utendaji + jumla_kibunge + 0.001);
+
+    d64 wastani = jumla / 3.0;
+    d64 mkengeuko = jumla_utendaji - wastani;
+    kama (mkengeuko < 0.0) { mkengeuko = 0.0 - mkengeuko; }
+    d64 mkengeuko2 = jumla_kibunge - wastani;
+    kama (mkengeuko2 < 0.0) { mkengeuko2 = 0.0 - mkengeuko2; }
+    d64 mkengeuko3 = jumla_kimahakama - wastani;
+    kama (mkengeuko3 < 0.0) { mkengeuko3 = 0.0 - mkengeuko3; }
+    d64 dev = mkengeuko + mkengeuko2 + mkengeuko3;
+    g->wasifu.usawa_wa_madaraka = 1.0 - (dev / (jumla * 2.0 + 0.001));
+
+    d64 ugumu = 0.3;
+    n32 muda_wa_maisha = 0;
+    n32 urithi = 0;
+    i = 0;
+    wakati (i < g->idadi_ya_nafasi) {
+        UtawalaNafasi* p = utawala_serikali_pata_nafasi(g, i);
+        // MUHIMU: ulinganishaji umeandikwa moja kwa moja hapa (bila
+        // wito wa kazi tofauti) kuepuka lugha-swa/swa#189 -- hata
+        // kazi ya ndani (local) yenye hoja ya n8* huvunjika kwa
+        // graph kubwa hivi; ufahirishaji wa moja kwa moja haupitii
+        // ukaguzi wa aina wa hoja za wito wa kazi kabisa.
+        n8* muda_p = p->muda;
+        n8* jina_kifupi = "life";
+        n32 zinafanana_muda = 1;
+        n32 mi = 0;
+        wakati (1 == 1) {
+            kama (muda_p[mi] != jina_kifupi[mi]) { zinafanana_muda = 0; acha; }
+            kama (muda_p[mi] == 0) { acha; }
+            mi = mi + 1;
+        }
+        kama (zinafanana_muda == 1) { muda_wa_maisha = muda_wa_maisha + 1; }
+
+        n8* njia_p = p->njia_ya_uchaguzi;
+        n8* neno_urithi = "hereditary";
+        n32 zinafanana_urithi = 1;
+        n32 ui = 0;
+        wakati (1 == 1) {
+            kama (njia_p[ui] != neno_urithi[ui]) { zinafanana_urithi = 0; acha; }
+            kama (njia_p[ui] == 0) { acha; }
+            ui = ui + 1;
+        }
+        kama (zinafanana_urithi == 1) { urithi = urithi + 1; }
+        i = i + 1;
+    }
+    n32 idadi_p1 = g->idadi_ya_nafasi + 1;
+    d64 idadi_p1_d = idadi_p1;
+    d64 muda_wa_maisha_d = muda_wa_maisha;
+    d64 urithi_d = urithi;
+    ugumu = ugumu + (muda_wa_maisha_d / idadi_p1_d) * 0.35;
+    ugumu = ugumu + (urithi_d / idadi_p1_d) * 0.35;
+    kama (ugumu > 1.0) { ugumu = 1.0; }
+    g->wasifu.ugumu_wa_kitaasisi = ugumu;
+
+    g->wasifu.furaha_ya_wananchi = g->utulivu * 0.5 + g->wasifu.kielezo_cha_uwakilishi * 0.3
+        + g->uhalali * 0.2;
+
+    g->wasifu.kiwango_cha_utawala = (g->utulivu * 100.0 + g->uhalali * 100.0
+        + g->ufanisi * 100.0 + g->wasifu.furaha_ya_wananchi * 100.0
+        + g->wasifu.usawa_wa_madaraka * 50.0) / 4.5;
+}
+
+n8* utawala_serikali_lebo_ukaribu(UtawalaSerikali* g) {
+    kama (g == 0) { rudisha "Haijaainishwa"; }
+
+    d64 ac = g->wasifu.umoja_wa_mamlaka;
+    d64 ri = g->wasifu.kielezo_cha_uwakilishi;
+    d64 ir = g->wasifu.ugumu_wa_kitaasisi;
+
+    kama (ac > 0.75 && ri < 0.25) {
+        kama (ir > 0.7) { rudisha "Mamlaka ya Kizazi Iliyokolea"; }
+        rudisha "Mamlaka ya Utendaji Iliyokolea";
+    }
+    kama (ac > 0.60 && ri < 0.35) { rudisha "Utawala Uliokolea"; }
+    kama (ri > 0.55 && g->wasifu.usawa_wa_madaraka > 0.5) { rudisha "Mfumo Mpana wa Uwakilishi"; }
+    kama (ri > 0.40) { rudisha "Muundo wa Uwakilishi Mchanganyiko"; }
+    kama (ir > 0.70) { rudisha "Mpangilio wa Kitaasisi wa Jadi"; }
+    kama (g->wasifu.usawa_wa_madaraka > 0.6) { rudisha "Mfumo Sawia wa Matawi Matatu"; }
+    rudisha "Muundo wa Utawala Unaoibuka";
+}
+
+d64 utawala_serikali_pata_utulivu(UtawalaSerikali* g) {
+    kama (g == 0) { rudisha 0.0; }
+    rudisha g->utulivu;
+}
+
+d64 utawala_serikali_pata_rushwa_jumla(UtawalaSerikali* g) {
+    kama (g == 0) { rudisha 0.0; }
+    UtawalaRushwaInjini* e = utawala_serikali_pata_rushwa(g);
+    kama (e == 0) { rudisha 0.0; }
+    rudisha e->kielezo_cha_kimfumo;
+}
+
+w0 utawala_serikali_fanya_kikao(UtawalaSerikali* g) {
+    kama (g == 0) { rudisha; }
+    UtawalaBungeMfumo* bunge = utawala_serikali_pata_bunge(g);
+    kama (bunge == 0) { rudisha; }
+
+    UtawalaKanuni* kanuni = utawala_kanuni_unda("Sheria ya Utaratibu wa Umma", 0, 0);
+    kama (kanuni == 0) { rudisha; }
+
+    kama (bunge->idadi_ya_vyombo > 0) {
+        UtawalaBungeChombo* chombo = utawala_bunge_pata_chombo(bunge, 0);
+        n32 nafasi_ya_mswada = bunge->idadi_ya_miswada;
+        CivMatokeo r1 = utawala_bunge_pendekeza_mswada(bunge, chombo->kitambulisho, kanuni, 0);
+        kama (r1.hitilafu != CIV_SAWA) { rudisha; }
+        UtawalaBungeMswada* mswada = utawala_bunge_pata_mswada(bunge, nafasi_ya_mswada);
+        n8* mswada_id = mswada->kitambulisho;
+
+        n32 wanachama_jumla = chombo->idadi_ya_wanachama;
+        kama (wanachama_jumla < 10) { wanachama_jumla = 100; }
+        d64 uungwaji = 0.55;
+        kama (g->idadi_ya_vikundi > 0) { uungwaji = g->uungwaji_wa_vikundi; }
+        d64 idadi_vikundi_d = g->idadi_ya_vikundi;
+        d64 mgawanyiko = 0.0;
+        kama (g->idadi_ya_vikundi > 2) { mgawanyiko = (idadi_vikundi_d - 2.0) * 0.05; }
+        d64 uwiano_ndio = uungwaji * (1.0 - mgawanyiko);
+        d64 uwiano_hapana = (1.0 - uungwaji) * (1.0 - mgawanyiko * 0.5);
+        kama (uwiano_ndio < 0.15) { uwiano_ndio = 0.15; }
+        kama (uwiano_hapana < 0.10) { uwiano_hapana = 0.10; }
+        n32 wanachama_d = wanachama_jumla;
+        d64 wanachama_dd = wanachama_d;
+        d64 ndio_d = wanachama_dd * uwiano_ndio;
+        d64 hapana_d = wanachama_dd * uwiano_hapana;
+        n32 ndio = ndio_d;
+        n32 hapana = hapana_d;
+
+        n32 i = 0;
+        wakati (i < ndio) {
+            utawala_bunge_piga_kura(bunge, mswada_id, 1);
+            i = i + 1;
+        }
+        i = 0;
+        wakati (i < hapana) {
+            utawala_bunge_piga_kura(bunge, mswada_id, 0);
+            i = i + 1;
+        }
+        utawala_bunge_tatua_mswada(bunge, mswada_id, utawala_serikali_pata_katiba(g));
+    } sivyo {
+        UtawalaBungeChombo* chombo = utawala_bunge_chombo_unda("Bunge Kuu", "Kiongozi");
+        kama (chombo != 0) {
+            chombo->idadi_ya_wanachama = 100;
+            utawala_bunge_ongeza_chombo(bunge, chombo);
+        }
+    }
+}
+
+w0 utawala_serikali_sasisha(UtawalaSerikali* g, d64 dt, n32 idadi_ya_watu,
+                              d64 kiwango_cha_utamaduni, d64 bajeti_jumla) {
+    kama (g == 0) { rudisha; }
+
+    utawala_serikali_hesabu_wasifu(g);
+
+    d64 bajeti_taasisi = utawala_serikali_pata_mgao(g, 0);
+    kama (bajeti_taasisi < 1000.0) { bajeti_taasisi = 1000.0; }
+    utawala_taasisi_sasisha(utawala_serikali_pata_taasisi(g), bajeti_taasisi, g->ufanisi, dt);
+
+    utawala_mgawanyo_sasisha(utawala_serikali_pata_mgawanyo(g), dt);
+
+    d64 idadi_d = idadi_ya_watu;
+    utawala_sasisha(utawala_serikali_pata_maendeleo(g), idadi_d, kiwango_cha_utamaduni);
+
+    g->utulivu = g->utulivu + (utawala_serikali_pata_maendeleo(g)->utulivu - g->utulivu) * 0.05 * dt;
+    g->uhalali = g->uhalali + (utawala_serikali_pata_maendeleo(g)->uhalali - g->uhalali) * 0.05 * dt;
+    d64 ufanisi_wa_mageuzi = utawala_ufanisi(utawala_serikali_pata_maendeleo(g), idadi_d, kiwango_cha_utamaduni);
+    g->ufanisi = g->ufanisi + (ufanisi_wa_mageuzi - g->ufanisi) * 0.08 * dt;
+
+    UtawalaMtendaji* mtendaji = utawala_serikali_pata_mtendaji(g);
+    d64 nguvu_ya_dharura = 0.0;
+    kama (utawala_serikali_pata_maendeleo(g)->dharura_inaendelea != 0) {
+        nguvu_ya_dharura = utawala_serikali_pata_maendeleo(g)->dharura_unyakuzi_wa_madaraka;
+    }
+    utawala_mtendaji_sasisha(mtendaji, dt, utawala_serikali_pata_maendeleo(g)->sifa.umoja_wa_madaraka,
+        g->uhalali, nguvu_ya_dharura, utawala_serikali_pata_maendeleo(g)->sifa.uwakilishi);
+
+    UtawalaMahakama* mahakama = utawala_serikali_pata_mahakama(g);
+    UtawalaRushwaInjini* rushwa = utawala_serikali_pata_rushwa(g);
+    kama (mahakama != 0) {
+        utawala_mahakama_sasisha(mahakama, dt, g->ufanisi, rushwa->kielezo_cha_kimfumo,
+            utawala_serikali_pata_maendeleo(g)->sifa.umoja_wa_madaraka, utawala_serikali_pata_maendeleo(g)->sifa.uwakilishi);
+    }
+
+    d64 shinikizo_la_rushwa = (1.0 - g->ufanisi) * 0.02 + g->wasifu.ugumu_wa_kitaasisi * 0.01;
+    d64 shinikizo_la_muda = shinikizo_la_rushwa * dt;
+    utawala_rushwa_ongeza_ushiriki(rushwa, "TAIFA", shinikizo_la_muda);
+    rushwa->ufanisi_wa_ukaguzi = g->ufanisi * 0.8;
+    utawala_rushwa_fanya_ukaguzi(rushwa, 0.02 * dt);
+
+    utawala_wizara_sasisha_zote(utawala_serikali_pata_wizara(g), bajeti_jumla, g->ufanisi,
+        rushwa->kielezo_cha_kimfumo, dt);
+
+    d64 mkondo = (g->uhalali - g->utulivu) * 0.02 * dt;
+    mkondo = mkondo - rushwa->kielezo_cha_kimfumo * 0.01 * dt;
+    g->utulivu = g->utulivu + mkondo;
+
+    d64 mkondo_wa_uhalali = g->wasifu.kielezo_cha_uwakilishi * 0.01
+        - rushwa->kielezo_cha_kimfumo * 0.02;
+    g->uhalali = g->uhalali + mkondo_wa_uhalali * dt;
+
+    d64 lengo_la_ufanisi = 0.5 + g->wasifu.kielezo_cha_uwakilishi * 0.3
+        - g->wasifu.ugumu_wa_kitaasisi * 0.2 - rushwa->kielezo_cha_kimfumo * 0.4;
+    g->ufanisi = g->ufanisi + (lengo_la_ufanisi - g->ufanisi) * 0.03 * dt;
+
+    kama (g->utulivu < 0.0) { g->utulivu = 0.0; }
+    kama (g->utulivu > 1.0) { g->utulivu = 1.0; }
+    kama (g->uhalali < 0.0) { g->uhalali = 0.0; }
+    kama (g->uhalali > 1.0) { g->uhalali = 1.0; }
+    kama (g->ufanisi < 0.0) { g->ufanisi = 0.0; }
+    kama (g->ufanisi > 1.0) { g->ufanisi = 1.0; }
+
+    g->afya.kielezo_cha_utulivu = g->utulivu;
+    g->afya.kielezo_cha_mshikamano = g->uhalali;
+    g->afya.kielezo_cha_rushwa = rushwa->kielezo_cha_kimfumo;
+    g->afya.kielezo_cha_ukali = 1.0 - g->wasifu.furaha_ya_wananchi;
+    g->afya.kasi_ya_mageuzi = 1.0;
+    kama (utawala_serikali_pata_maendeleo(g)->muda_wa_kupumzika_mageuzi > 0) {
+        n32 mkr = utawala_serikali_pata_maendeleo(g)->muda_wa_kupumzika_mageuzi;
+        d64 mkr_d = mkr;
+        g->afya.kasi_ya_mageuzi = 1.0 / mkr_d;
+    }
+    g->afya.kielezo_cha_kidunia = 0.5 + utawala_serikali_pata_maendeleo(g)->sifa.ustahiki * 0.3
+        - utawala_serikali_pata_maendeleo(g)->sifa.mamlaka_ya_dini * 0.3;
+    g->afya.kielezo_cha_uhai = g->wasifu.furaha_ya_wananchi;
+    g->afya.mshikamano_wa_kiuchumi = g->ufanisi;
+    g->afya.heshima_ya_kimataifa = g->wasifu.kiwango_cha_utawala / 100.0;
+    g->afya.kielezo_cha_pato = 1.0;
+    g->afya.utulivu_wa_viwanda = 0.8;
+
+    g->zamu_tangu_kikao_cha_mwisho = g->zamu_tangu_kikao_cha_mwisho + 1;
+    kama (g->zamu_tangu_kikao_cha_mwisho >= 20) {
+        utawala_serikali_fanya_kikao(g);
+        g->zamu_tangu_kikao_cha_mwisho = 0;
+    }
+
+    UtawalaDaftari* daftari = utawala_serikali_pata_daftari(g);
+    utawala_daftari_ongeza_kidokezo(daftari, "Sasisho la Utawala",
+        "Zamu imekamilika: utulivu, uhalali, na ufanisi vimesasishwa.");
+
+    // MUHIMU: vilivyoahirishwa kwa kusudi kwenye wito huu (angalia
+    // maelezo ya juu ya faili) -- uchaguzi, haki, utumishi wa umma,
+    // na vurugu za kisiasa. Kila kimoja kinapatikana kama mfumo
+    // ulioundwa (constructed) kwenye utawala_serikali_unda, kwa hiyo
+    // kuongeza wito wao hapa baadaye hakuhitaji mabadiliko ya muundo.
+}

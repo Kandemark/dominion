@@ -1,0 +1,105 @@
+husisha { moduli/data/historia_db.swa }
+
+// jaribio_historia_db.swa -- jaribio la mkono dhidi ya HistoriaDB
+// (historia_db.swa, tafsiri ya data/history_db.c) PEKEE, bila
+// kupitia mchezo.swa (angalia lugha-swa/swa#295). Linathibitisha
+// THAMANI HALISI, kikiwemo mzunguko kamili wa kuandika->kuhifadhi->
+// kupakia tena kwenye faili halisi la diski.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    n8* njia = "/tmp/jaribio_historia_db.bin";
+    // lugha-swa/swa#296-kama (tofauti): kupitisha namba 0 moja kwa
+    // moja kama hoja yenye aina ya kielekezi (n8*) kunakataliwa pia
+    // (si tu ulinganisho) -- igawe kwenye kigezo cha n8* KABLA,
+    // mtindo uleule unaotumika kwenye mchezo.swa
+    // (mataifa_data_bado_hakuna / mipaka_kisiasa_bado_hakuna).
+    n8* hakuna_data = 0;
+    n8* hakuna_njia = 0;
+
+    HistoriaDB* j = historia_db_unda(njia);
+    n32 j_sio_tupu = (j != 0);
+    jaribio_thibitisha(j_sio_tupu, "historia_db_unda si tupu");
+    jaribio_thibitisha(j->idadi_ya_matukio == 0, "idadi_ya_matukio awali ni 0");
+    jaribio_thibitisha(j->uwezo >= 1024, "uwezo awali >= 1024");
+
+    CivMatokeo r1 = historia_db_andika(j, HISTORIA_TUKIO_MWANZO_WA_DUNIA, "uzalishaji wa dunia umeanza", hakuna_data, 0);
+    n32 andika1_ok = (r1.hitilafu == CIV_SAWA);
+    jaribio_thibitisha(andika1_ok, "andika tukio la kwanza linafaulu");
+    jaribio_thibitisha(j->idadi_ya_matukio == 1, "idadi_ya_matukio baada ya andika ni 1");
+
+    CivMatokeo r2 = historia_db_andika(j, HISTORIA_TUKIO_MAKAZI_YAMEANZISHWA, "Roma imeanzishwa", hakuna_data, 0);
+    historia_db_andika(j, HISTORIA_TUKIO_MAKAZI_YAMEANZISHWA, "Carthage imeanzishwa", hakuna_data, 0);
+    historia_db_andika(j, HISTORIA_TUKIO_JANGA_LA_ASILI, "tetemeko kubwa", hakuna_data, 0);
+    jaribio_thibitisha(j->idadi_ya_matukio == 4, "idadi_ya_matukio baada ya matukio 4 ni 4");
+
+    HistoriaTukio* tukio0 = historia_db_pata(j, 0);
+    n32 tukio0_sio_tupu = (tukio0 != 0);
+    jaribio_thibitisha(tukio0_sio_tupu, "pata(0) si tupu");
+    jaribio_thibitisha(tukio0->nambari_ya_mfuatano == 1, "nambari_ya_mfuatano ya tukio la kwanza ni 1");
+    jaribio_thibitisha(tukio0->aina == HISTORIA_TUKIO_MWANZO_WA_DUNIA, "aina ya tukio la kwanza ni MWANZO_WA_DUNIA");
+    n32 muktadha_sahihi = (linganisha_mfuatano(tukio0->muktadha, "uzalishaji wa dunia umeanza") == 0);
+    jaribio_thibitisha(muktadha_sahihi, "muktadha wa tukio la kwanza ni sahihi");
+
+    n64 idadi_makazi = historia_db_hesabu_kwa_aina(j, HISTORIA_TUKIO_MAKAZI_YAMEANZISHWA);
+    jaribio_thibitisha(idadi_makazi == 2, "hesabu_kwa_aina(MAKAZI_YAMEANZISHWA) == 2");
+    n64 idadi_janga = historia_db_hesabu_kwa_aina(j, HISTORIA_TUKIO_JANGA_LA_ASILI);
+    jaribio_thibitisha(idadi_janga == 1, "hesabu_kwa_aina(JANGA_LA_ASILI) == 1");
+
+    // Data ya binary (si muktadha wa mfuatano) -- jaribu blob halisi.
+    n8* blob = tenga(4);
+    blob[0] = 10;
+    blob[1] = 20;
+    blob[2] = 30;
+    blob[3] = 40;
+    historia_db_andika(j, HISTORIA_TUKIO_KUMBUKUMBU_YA_JUMLA, "blob-test", blob, 4);
+    HistoriaTukio* tukio_blob = historia_db_pata(j, 4);
+    jaribio_thibitisha(tukio_blob->ukubwa_wa_data == 4, "ukubwa_wa_data ya blob ni 4");
+    n32 blob_sahihi = (tukio_blob->data[0] == 10 && tukio_blob->data[3] == 40);
+    jaribio_thibitisha(blob_sahihi, "data ya blob imenakiliwa sahihi");
+
+    CivMatokeo r3 = historia_db_safisha(j);
+    n32 safisha_ok = (r3.hitilafu == CIV_SAWA);
+    jaribio_thibitisha(safisha_ok, "safisha (flush) kwenye faili inafaulu");
+    n32 faili_lipo = faili_ipo(njia);
+    jaribio_thibitisha(faili_lipo, "faili la journal lipo kwenye diski baada ya flush");
+
+    // Pakia tena kwenye journal MPYA (si ile ile) -- hii ndiyo
+    // thibitisho halisi kuwa umbizo letu la kuandika/kusoma
+    // linaendana lenyewe (round-trip).
+    HistoriaDB* j2 = historia_db_unda(hakuna_njia);
+    CivMatokeo r4 = historia_db_pakia(j2, njia);
+    n32 pakia_ok = (r4.hitilafu == CIV_SAWA);
+    jaribio_thibitisha(pakia_ok, "pakia (load) kutoka faili inafaulu");
+    jaribio_thibitisha(j2->idadi_ya_matukio == 5, "idadi_ya_matukio baada ya pakia ni 5 (4 za muktadha + 1 ya blob)");
+
+    HistoriaTukio* j2_tukio0 = historia_db_pata(j2, 0);
+    n32 j2_muktadha_sahihi = (linganisha_mfuatano(j2_tukio0->muktadha, "uzalishaji wa dunia umeanza") == 0);
+    jaribio_thibitisha(j2_muktadha_sahihi, "muktadha wa tukio la kwanza baada ya pakia unaendana");
+    jaribio_thibitisha(j2_tukio0->nambari_ya_mfuatano == 1, "nambari_ya_mfuatano baada ya pakia inaendana");
+
+    HistoriaTukio* j2_tukio_blob = historia_db_pata(j2, 4);
+    jaribio_thibitisha(j2_tukio_blob->ukubwa_wa_data == 4, "ukubwa_wa_data ya blob baada ya pakia unaendana");
+    n32 j2_blob_sahihi = (j2_tukio_blob->data[0] == 10 && j2_tukio_blob->data[3] == 40);
+    jaribio_thibitisha(j2_blob_sahihi, "maudhui ya blob baada ya pakia yanaendana kibaiti");
+
+    n64 j2_idadi_makazi = historia_db_hesabu_kwa_aina(j2, HISTORIA_TUKIO_MAKAZI_YAMEANZISHWA);
+    jaribio_thibitisha(j2_idadi_makazi == 2, "hesabu_kwa_aina baada ya pakia bado ni 2");
+
+    historia_db_uharibu(j);
+    historia_db_uharibu(j2);
+    faili_futa(njia);
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

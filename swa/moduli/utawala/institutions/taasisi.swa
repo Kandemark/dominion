@@ -1,0 +1,160 @@
+// taasisi.swa — tafsiri ya src/core/governance/institutions/institution.c
+// (na .h) kwenda Swa. Mfumo wa jumla wa taasisi (chuo, chama, kanisa,
+// n.k.) — tofauti na utumishi.swa/wizara.swa ambazo ni taasisi
+// mahususi, hii ni msimamizi wa jumla wa taasisi zozote zenye lengo
+// (focus) la aina yoyote.
+//
+// Kiambishi: utawala_taasisi_ — angalia ../../../KANUNI-MAJINA.md.
+// items[] (safu inayokua, malloc+realloc) imekuwa kikomo
+// kisichobadilika cha taasisi 8 (vigezo vyenye majina + kazi ya
+// kupata). "focuses" (bitmask ya uint32_t) imebaki bitmask ya n32,
+// ikitumia `|`/`&` moja kwa moja — imethibitishwa kufanya kazi
+// (angalia jukumu.swa). log2f/powf zimebadilishwa kuwa
+// civ_logasili(x)/ln(2) na civ_kuinua kutoka msingi_civ.swa.
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+n32 UTAWALA_TAASISI_LENGO_HAKUNA = 0;
+n32 UTAWALA_TAASISI_LENGO_UTAFITI = 1;
+n32 UTAWALA_TAASISI_LENGO_UZALISHAJI = 2;
+n32 UTAWALA_TAASISI_LENGO_BIASHARA = 4;
+n32 UTAWALA_TAASISI_LENGO_UTHABITI = 8;
+n32 UTAWALA_TAASISI_LENGO_KIJESHI = 16;
+n32 UTAWALA_TAASISI_LENGO_UTAMBULISHO = 32;
+
+n32 UTAWALA_TAASISI_UPEO = 8;
+
+muundo UtawalaTaasisi {
+    n8* kitambulisho;
+    n8* jina;
+    n32 malengo;
+    d64 hadhi;
+    d64 kiwango_cha_ukuaji;
+    d64 gharama_ya_matengenezo;
+    n8* jukumu_linalotawala;
+    n32 inafanya_kazi;
+    n32 inavunjwa;
+};
+
+muundo UtawalaTaasisiMfumo {
+    UtawalaTaasisi taasisi_0; UtawalaTaasisi taasisi_1;
+    UtawalaTaasisi taasisi_2; UtawalaTaasisi taasisi_3;
+    UtawalaTaasisi taasisi_4; UtawalaTaasisi taasisi_5;
+    UtawalaTaasisi taasisi_6; UtawalaTaasisi taasisi_7;
+    n32 idadi;
+};
+
+UtawalaTaasisi* utawala_taasisi_pata(UtawalaTaasisiMfumo* m, n32 idx) {
+    kama (idx == 0) { rudisha &m->taasisi_0; }
+    kama (idx == 1) { rudisha &m->taasisi_1; }
+    kama (idx == 2) { rudisha &m->taasisi_2; }
+    kama (idx == 3) { rudisha &m->taasisi_3; }
+    kama (idx == 4) { rudisha &m->taasisi_4; }
+    kama (idx == 5) { rudisha &m->taasisi_5; }
+    kama (idx == 6) { rudisha &m->taasisi_6; }
+    rudisha &m->taasisi_7;
+}
+
+UtawalaTaasisiMfumo* utawala_taasisi_mfumo_unda() {
+    UtawalaTaasisiMfumo* m = tenga(ukubwa(UtawalaTaasisiMfumo));
+    m->idadi = 0;
+    rudisha m;
+}
+
+w0 utawala_taasisi_mfumo_uharibu(UtawalaTaasisiMfumo* m) {
+    achilia m;
+}
+
+CivMatokeo utawala_taasisi_anzisha(UtawalaTaasisiMfumo* m, n8* jina, n32 malengo,
+                                     n8* jukumu_linalotawala) {
+    CivMatokeo r;
+    kama (m == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Msimamizi tupu";
+        rudisha r;
+    }
+    kama (m->idadi >= UTAWALA_TAASISI_UPEO) {
+        r.hitilafu = CIV_HITILAFU_KUMBUKUMBU_IMEISHA;
+        r.ujumbe = "Kikomo cha taasisi kimefikiwa";
+        rudisha r;
+    }
+
+    UtawalaTaasisi* t = utawala_taasisi_pata(m, m->idadi);
+    t->kitambulisho = jina;
+    t->jina = jina;
+    t->malengo = malengo;
+    kama (jukumu_linalotawala != 0) {
+        t->jukumu_linalotawala = jukumu_linalotawala;
+    } sivyo {
+        t->jukumu_linalotawala = 0;
+    }
+    t->hadhi = 1.0;
+    t->kiwango_cha_ukuaji = 0.0;
+    t->gharama_ya_matengenezo = 0.0;
+    t->inafanya_kazi = 1;
+    t->inavunjwa = 0;
+    m->idadi = m->idadi + 1;
+
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    rudisha r;
+}
+
+w0 utawala_taasisi_sasisha(UtawalaTaasisiMfumo* m, d64 bajeti_jumla,
+                             d64 ufanisi_wa_serikali, d64 muda) {
+    kama (m == 0 || m->idadi == 0) { rudisha; }
+
+    n32 idadi_hai = 0;
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        UtawalaTaasisi* t = utawala_taasisi_pata(m, i);
+        kama (t->inafanya_kazi != 0 && t->inavunjwa == 0) {
+            idadi_hai = idadi_hai + 1;
+        }
+        i = i + 1;
+    }
+    kama (idadi_hai == 0) { rudisha; }
+
+    d64 idadi_hai_d = idadi_hai;
+    d64 bajeti_kwa_taasisi = bajeti_jumla / idadi_hai_d;
+
+    i = 0;
+    wakati (i < m->idadi) {
+        UtawalaTaasisi* t = utawala_taasisi_pata(m, i);
+        kama (t->inafanya_kazi == 0) { i = i + 1; }
+        sivyo {
+            kama (t->inavunjwa != 0) {
+                t->hadhi = t->hadhi - 0.1 * muda;
+                kama (t->hadhi <= 0.0) {
+                    t->hadhi = 0.0;
+                    t->inafanya_kazi = 0;
+                }
+            } sivyo {
+                t->gharama_ya_matengenezo = 0.05 * civ_kuinua(t->hadhi, 1.2);
+                d64 uwekezaji_halisi = bajeti_kwa_taasisi - t->gharama_ya_matengenezo;
+                d64 mabadiliko = uwekezaji_halisi * ufanisi_wa_serikali * 0.01;
+                d64 hadhi_mpya = t->hadhi + mabadiliko * muda;
+                kama (hadhi_mpya < 0.1) { hadhi_mpya = 0.1; }
+                t->hadhi = hadhi_mpya;
+            }
+            i = i + 1;
+        }
+    }
+}
+
+d64 utawala_taasisi_jumla_ya_faida(UtawalaTaasisiMfumo* m, n32 lengo) {
+    kama (m == 0) { rudisha 0.0; }
+    d64 jumla = 0.0;
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        UtawalaTaasisi* t = utawala_taasisi_pata(m, i);
+        n32 ina_lengo = t->malengo & lengo;
+        kama (t->inafanya_kazi != 0 && ina_lengo != 0) {
+            d64 ln2 = 0.693147;
+            jumla = jumla + (civ_logasili(1.0 + t->hadhi) / ln2) * 0.1;
+        }
+        i = i + 1;
+    }
+    rudisha jumla;
+}

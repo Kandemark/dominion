@@ -1,0 +1,103 @@
+husisha { moduli/onyesho/mchoro.swa }
+
+// jaribio_mchoro_rangi.swa -- huthibitisha kazi nne mpya za
+// RANGI/UPAUZI/GRADIENT zilizoongezwa kwenye mchoro.swa
+// (mchoro_changanya_rangi, mchoro_weka_pikseli_alpha,
+// mchoro_piga_mstatili_gradient, mchoro_rangi_ya_faharisi) dhidi ya
+// thamani HASA zinazojulikana (si tu "haikuanguka").
+
+n32 anza() {
+    n64 canvas_w = 100;
+    n64 canvas_h = 100;
+    n64 pitch = canvas_w * 4;
+
+    n64 nyeupe = 16777215;   // 0xFFFFFF
+    n64 nyeusi = 0;          // 0x000000
+    n64 nyekundu = 16711680; // 0xFF0000
+    n64 bluu = 255;          // 0x0000FF
+
+    // ===== 1. mchoro_changanya_rangi =====
+
+    // kipimo=0 lazima irudishe rangi_a HASA KABISA
+    n64 c_sifuri = mchoro_changanya_rangi(nyekundu, bluu, 0);
+    kama (c_sifuri != nyekundu) { andika_kosa("FAIL: changanya_rangi kipimo=0 =%d (ilitarajiwa nyekundu %d)\n", c_sifuri, nyekundu, 0, 0, 0, 0); rudisha 1; }
+
+    // kipimo=255 lazima irudishe rangi_b HASA KABISA
+    n64 c_juu = mchoro_changanya_rangi(nyekundu, bluu, 255);
+    kama (c_juu != bluu) { andika_kosa("FAIL: changanya_rangi kipimo=255 =%d (ilitarajiwa bluu %d)\n", c_juu, bluu, 0, 0, 0, 0); rudisha 1; }
+
+    // nyeupe na nyeusi kwa kipimo=128 -- kila kijenzi KARIBU 128
+    // (126-130, mzunguko wa integer)
+    n64 c_kati = mchoro_changanya_rangi(nyeupe, nyeusi, 128);
+    n64 ck_r = (c_kati >> 16) & 255;
+    n64 ck_g = (c_kati >> 8) & 255;
+    n64 ck_b = c_kati & 255;
+    kama (ck_r < 126 || ck_r > 130) { andika_kosa("FAIL: changanya_rangi katikati R=%d (ilitarajiwa 126-130)\n", ck_r, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (ck_g < 126 || ck_g > 130) { andika_kosa("FAIL: changanya_rangi katikati G=%d (ilitarajiwa 126-130)\n", ck_g, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (ck_b < 126 || ck_b > 130) { andika_kosa("FAIL: changanya_rangi katikati B=%d (ilitarajiwa 126-130)\n", ck_b, 0, 0, 0, 0, 0); rudisha 1; }
+
+    // ===== 2. mchoro_weka_pikseli_alpha =====
+    n8* fb2 = tenga(pitch * canvas_h);
+    weka_sifuri(fb2, pitch * canvas_h);
+
+    mchoro_weka_pikseli(fb2, pitch, 5, 5, nyekundu);
+    mchoro_weka_pikseli_alpha(fb2, pitch, 5, 5, bluu, 128);
+
+    n64 px = mchoro_pata_pikseli(fb2, pitch, 5, 5);
+    kama (px == nyekundu) { andika_kosa("FAIL: weka_pikseli_alpha haikubadilisha pikseli (bado nyekundu safi, =%d)\n", px, 0, 0, 0, 0, 0); rudisha 1; }
+    kama (px == bluu) { andika_kosa("FAIL: weka_pikseli_alpha ilichukua bluu safi (=%d), haikuchanganya\n", px, 0, 0, 0, 0, 0); rudisha 1; }
+
+    // thamani HASA inayotarajiwa: changanya_rangi(nyekundu, bluu, 128)
+    n64 px_tarajiwa = mchoro_changanya_rangi(nyekundu, bluu, 128);
+    kama (px != px_tarajiwa) { andika_kosa("FAIL: weka_pikseli_alpha =%d (ilitarajiwa %d)\n", px, px_tarajiwa, 0, 0, 0, 0); rudisha 1; }
+
+    // ===== 3. mchoro_piga_mstatili_gradient =====
+    n8* fb3 = tenga(pitch * canvas_h);
+    weka_sifuri(fb3, pitch * canvas_h);
+
+    mchoro_piga_mstatili_gradient(fb3, pitch, canvas_w, canvas_h, 10, 0, 50, 100, nyeusi, nyeupe);
+
+    // safu y=0 (dy=0) -- KARIBU nyeusi
+    n64 g0 = mchoro_pata_pikseli(fb3, pitch, 10, 0);
+    n64 g0_r = (g0 >> 16) & 255;
+    kama (g0_r > 10) { andika_kosa("FAIL: gradient y=0 R=%d (ilitarajiwa KARIBU 0)\n", g0_r, 0, 0, 0, 0, 0); rudisha 1; }
+
+    // safu y=50 (dy=50) -- KARIBU kijivu cha katikati
+    n64 g50 = mchoro_pata_pikseli(fb3, pitch, 10, 50);
+    n64 g50_r = (g50 >> 16) & 255;
+    kama (g50_r < 110 || g50_r > 145) { andika_kosa("FAIL: gradient y=50 R=%d (ilitarajiwa KARIBU 127)\n", g50_r, 0, 0, 0, 0, 0); rudisha 1; }
+
+    // safu y=99 (dy=99) -- KARIBU nyeupe
+    n64 g99 = mchoro_pata_pikseli(fb3, pitch, 10, 99);
+    n64 g99_r = (g99 >> 16) & 255;
+    kama (g99_r < 245) { andika_kosa("FAIL: gradient y=99 R=%d (ilitarajiwa KARIBU 255)\n", g99_r, 0, 0, 0, 0, 0); rudisha 1; }
+
+    // uwiano wa taratibu -- SI random: y=0 < y=50 < y=99
+    kama (g0_r >= g50_r || g50_r >= g99_r) { andika_kosa("FAIL: gradient si ya taratibu (g0=%d g50=%d g99=%d)\n", g0_r, g50_r, g99_r, 0, 0, 0); rudisha 1; }
+
+    // ===== 4. mchoro_rangi_ya_faharisi =====
+    n64 rangi8[8];
+    n32 i = 0;
+    wakati (i < 8) {
+        rangi8[i] = mchoro_rangi_ya_faharisi(i);
+        i = i + 1;
+    }
+
+    // rangi 8 TOFAUTI KABISA kutoka kwa KILA MMOJA
+    n32 a = 0;
+    wakati (a < 8) {
+        n32 b = a + 1;
+        wakati (b < 8) {
+            kama (rangi8[a] == rangi8[b]) { andika_kosa("FAIL: rangi_ya_faharisi(%d) na (%d) zinafanana (=%d)\n", a, b, rangi8[a], 0, 0, 0); rudisha 1; }
+            b = b + 1;
+        }
+        a = a + 1;
+    }
+
+    // mzunguko wa kurudia: faharisi=8 == faharisi=0
+    n64 r8 = mchoro_rangi_ya_faharisi(8);
+    kama (r8 != rangi8[0]) { andika_kosa("FAIL: rangi_ya_faharisi(8) =%d (ilitarajiwa sawa na faharisi(0) =%d)\n", r8, rangi8[0], 0, 0, 0, 0); rudisha 1; }
+
+    andika("PASS mchoro_rangi.swa (changanya_rangi/weka_pikseli_alpha/mstatili_gradient/rangi_ya_faharisi -- thamani zote sahihi)\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

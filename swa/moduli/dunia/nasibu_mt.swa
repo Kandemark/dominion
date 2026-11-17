@@ -1,0 +1,167 @@
+husisha { msingi/maktaba/kumbukumbu.swa }
+
+// nasibu_mt.swa -- kizalishaji cha nasibu cha Mersenne Twister (MT19937) na
+// CRC-32, vyote kwa hesabu kamili pekee.
+//
+// Dunia ya Dominion ilizaliwa kwa mbegu: majina yote hutoka kwenye mfuatano
+// mmoja wa nasibu unaoanzia CRC-32 ya "familia/lugha/mbegu". Ili dunia ile
+// ile izaliwe tena herufi kwa herufi, mfuatano lazima uwe uleule: MT19937
+// yenye mbegu ya safu (init_by_array), biti 53 kwa sehemu, na "chini ya n"
+// kwa kukataa (biti k = urefu wa n, rudia hadi thamani iwe ndogo kuliko n).
+//
+// Hakuna d64 hapa: sehemu ya [0,1) hurudishwa kama kamili ya biti 53
+// (r / 2^53), na ulinganisho hufanywa kwa kamili ili matokeo yasitegemee
+// mzunguko wa desimali.
+
+n64 NASIBU_MT_N = 624;
+n64 NASIBU_MT_M = 397;
+n64 NASIBU_MT_KINYAGO = 4294967295;      // biti 32 za chini
+n64 NASIBU_MT_JUU = 2147483648;          // biti ya 31
+n64 NASIBU_MT_CHINI = 2147483647;        // biti 31 za chini
+
+// Mipaka ya r (biti 53) kwa ulinganisho wa sehemu:
+//   r / 2^53 < 0.5  <=>  r < 4503599627370496
+//   r / 2^53 < 0.3  <=>  r <= 2702159776422297   (0.3 ya d64 = 5404319552844595 / 2^54)
+n64 NASIBU_MT_NUSU = 4503599627370496;
+n64 NASIBU_MT_SEHEMU_03 = 2702159776422298;
+
+muundo NasibuMT {
+    n64* mt;
+    n64 nafasi;
+}
+
+w0 nasibu_mt_panda(NasibuMT* g, n64 mbegu) {
+    n64* mt = g->mt;
+    // init_genrand(19650218)
+    mt[0] = 19650218;
+    n64 i = 1;
+    wakati (i < NASIBU_MT_N) {
+        n64 p = mt[i - 1];
+        mt[i] = (1812433253 * (p ^ (p >> 30)) + i) & NASIBU_MT_KINYAGO;
+        i = i + 1;
+    }
+    // init_by_array(ufunguo = [mbegu], urefu 1)
+    i = 1;
+    n64 k = NASIBU_MT_N;
+    wakati (k > 0) {
+        n64 p1 = mt[i - 1];
+        mt[i] = ((mt[i] ^ ((p1 ^ (p1 >> 30)) * 1664525)) + mbegu) & NASIBU_MT_KINYAGO;
+        i = i + 1;
+        kama (i >= NASIBU_MT_N) { mt[0] = mt[NASIBU_MT_N - 1]; i = 1; }
+        k = k - 1;
+    }
+    k = NASIBU_MT_N - 1;
+    wakati (k > 0) {
+        n64 p2 = mt[i - 1];
+        mt[i] = ((mt[i] ^ ((p2 ^ (p2 >> 30)) * 1566083941)) - i) & NASIBU_MT_KINYAGO;
+        i = i + 1;
+        kama (i >= NASIBU_MT_N) { mt[0] = mt[NASIBU_MT_N - 1]; i = 1; }
+        k = k - 1;
+    }
+    mt[0] = NASIBU_MT_JUU;
+    g->nafasi = NASIBU_MT_N;
+}
+
+// Kizalishaji kipya chenye mbegu ya biti 32 (kama CRC-32).
+NasibuMT* nasibu_mt_unda(n64 mbegu) {
+    NasibuMT* g = tenga(ukubwa(NasibuMT));
+    g->mt = tenga(8 * NASIBU_MT_N);
+    nasibu_mt_panda(g, mbegu & NASIBU_MT_KINYAGO);
+    rudisha g;
+}
+
+w0 nasibu_mt_achilia(NasibuMT* g) {
+    kama (g == 0) { rudisha; }
+    achilia g->mt;
+    achilia g;
+}
+
+n64 nasibu_mt_geuza(n64 a, n64 b, n64 c) {
+    n64 y = (a & NASIBU_MT_JUU) | (b & NASIBU_MT_CHINI);
+    n64 v = c ^ (y >> 1);
+    kama ((y & 1) != 0) { v = v ^ 2567483615; }
+    rudisha v;
+}
+
+w0 nasibu_mt_zalisha(NasibuMT* g) {
+    n64* mt = g->mt;
+    n64 kk = 0;
+    wakati (kk < NASIBU_MT_N - NASIBU_MT_M) {
+        mt[kk] = nasibu_mt_geuza(mt[kk], mt[kk + 1], mt[kk + NASIBU_MT_M]);
+        kk = kk + 1;
+    }
+    wakati (kk < NASIBU_MT_N - 1) {
+        mt[kk] = nasibu_mt_geuza(mt[kk], mt[kk + 1], mt[kk + NASIBU_MT_M - NASIBU_MT_N]);
+        kk = kk + 1;
+    }
+    mt[NASIBU_MT_N - 1] = nasibu_mt_geuza(mt[NASIBU_MT_N - 1], mt[0], mt[NASIBU_MT_M - 1]);
+    g->nafasi = 0;
+}
+
+// Kamili ya biti 32.
+n64 nasibu_mt_u32(NasibuMT* g) {
+    kama (g->nafasi >= NASIBU_MT_N) { nasibu_mt_zalisha(g); }
+    n64 y = g->mt[g->nafasi];
+    g->nafasi = g->nafasi + 1;
+    y = y ^ (y >> 11);
+    y = y ^ ((y << 7) & 2636928640);
+    y = y ^ ((y << 15) & 4022730752);
+    y = y ^ (y >> 18);
+    rudisha y & NASIBU_MT_KINYAGO;
+}
+
+// Biti k za juu za kamili moja (1 <= k <= 32).
+n64 nasibu_mt_biti(NasibuMT* g, n64 k) {
+    rudisha nasibu_mt_u32(g) >> (32 - k);
+}
+
+// Kamili katika [0, n), 1 <= n < 2^32, bila upendeleo.
+n64 nasibu_mt_chini_ya(NasibuMT* g, n64 n) {
+    n64 k = 0;
+    n64 m = n;
+    wakati (m > 0) { k = k + 1; m = m >> 1; }
+    n64 r = nasibu_mt_biti(g, k);
+    wakati (r >= n) { r = nasibu_mt_biti(g, k); }
+    rudisha r;
+}
+
+// Sehemu ya [0,1) kama kamili ya biti 53: thamani halisi ni r / 2^53.
+n64 nasibu_mt_53(NasibuMT* g) {
+    n64 a = nasibu_mt_u32(g) >> 5;
+    n64 b = nasibu_mt_u32(g) >> 6;
+    rudisha a * 67108864 + b;
+}
+
+// Sampuli ya vitu k tofauti kutoka 0..n-1 bila kurudia, kwa mpangilio wa
+// kuchaguliwa. Faharisi huandikwa kwenye `nje`. Ni njia ya "bwawa"
+// (n <= 21), inayotosha kwa orodha zote za lugha.
+w0 nasibu_mt_sampuli(NasibuMT* g, n64 n, n64 k, n64* nje) {
+    n64* bwawa = tenga(8 * n);
+    n64 i = 0;
+    wakati (i < n) { bwawa[i] = i; i = i + 1; }
+    i = 0;
+    wakati (i < k) {
+        n64 j = nasibu_mt_chini_ya(g, n - i);
+        nje[i] = bwawa[j];
+        bwawa[j] = bwawa[n - i - 1];
+        i = i + 1;
+    }
+    achilia bwawa;
+}
+
+// CRC-32 (polinomia 0xEDB88320 iliyogeuzwa = 3988292384), kama zlib.
+n64 crc32_ya_baiti(n8* data, n64 urefu) {
+    n64 c = NASIBU_MT_KINYAGO;
+    n64 i = 0;
+    wakati (i < urefu) {
+        c = c ^ (data[i] & 255);
+        n64 b = 0;
+        wakati (b < 8) {
+            kama ((c & 1) != 0) { c = (c >> 1) ^ 3988292384; }
+            sivyo { c = c >> 1; }
+            b = b + 1;
+        }
+        i = i + 1;
+    }
+    rudisha (c ^ NASIBU_MT_KINYAGO) & NASIBU_MT_KINYAGO;
+}

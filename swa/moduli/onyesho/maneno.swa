@@ -1,0 +1,266 @@
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+// maneno.swa -- maneno ya kiolesura cha Dominion kwa lugha ya mchezaji.
+//
+// Mchezo ni wa dunia nzima: lugha ya chaguo-msingi ya kiolesura ni
+// Kiingereza, na mchezaji huchagua nyingine kwenye skrini ya Mipangilio.
+// Msimbo huandika neno la Kiingereza mahali linapotumika -- ui("Economy")
+// -- nalo ndilo ufunguo wa tafsiri. Lugha isiyo na tafsiri ya neno fulani
+// hurudi kwenye Kiingereza, hivyo skrini haibaki tupu kamwe.
+//
+// Neno lenye maana mbili hupewa muktadha kwa herufi ndogo kabla ya '|':
+// ui("tab|GDP") na ui("row|GDP") ni funguo tofauti, zote huonyesha "GDP"
+// kwa Kiingereza.
+//
+// Majina ya ndani ya dunia (mataifa, miji, mito) hayapiti hapa: hubaki
+// katika lugha zake.
+//
+// Kuongeza lugha: ongeza safu kwenye maneno_sajili na jina lake kwenye
+// maneno_lugha_jina, kisha ongeza MANENO_LUGHA_IDADI.
+
+n64 MANENO_KIINGEREZA = 0;
+n64 MANENO_KISWAHILI = 1;
+n64 MANENO_KIFARANSA = 2;
+n64 MANENO_LUGHA_IDADI = 3;
+
+n64 MANENO_UWEZO = 1024;         // nafasi za jedwali (kipeo cha 2)
+
+n64 maneno_lugha = 0;
+n64* maneno_funguo = 0;          // viashiria vya funguo (Kiingereza)
+n64* maneno_thamani = 0;         // [nafasi * 2 + (lugha - 1)]
+
+n64 maneno_heshi(n8* s) {
+    n64 h = 2166136261;
+    n64 i = 0;
+    wakati (s[i] != 0) {
+        h = ((h ^ (s[i] & 255)) * 16777619) & 4294967295;
+        i = i + 1;
+    }
+    rudisha h & (MANENO_UWEZO - 1);
+}
+
+w0 maneno_sajili(n8* en, n8* sw, n8* fr) {
+    n64 p = maneno_heshi(en);
+    wakati (maneno_funguo[p] != 0) {
+        n8* k = maneno_funguo[p];
+        kama (linganisha_mfuatano(k, en) == 0) { rudisha; }
+        p = (p + 1) & (MANENO_UWEZO - 1);
+    }
+    maneno_funguo[p] = en;
+    maneno_thamani[p * 2] = sw;
+    maneno_thamani[p * 2 + 1] = fr;
+}
+
+w0 maneno_jaza() {
+    maneno_funguo = tenga(8 * MANENO_UWEZO);
+    maneno_thamani = tenga(16 * MANENO_UWEZO);
+    weka_sifuri(maneno_funguo, 8 * MANENO_UWEZO);
+    weka_sifuri(maneno_thamani, 16 * MANENO_UWEZO);
+    maneno_sajili("War", "Vita", "Guerre");
+    maneno_sajili("Hostile", "Uadui", "Hostile");
+    maneno_sajili("Friendly", "Urafiki", "Amical");
+    maneno_sajili("Allied", "Umoja", "Allié");
+    maneno_sajili("Neutral", "Kati", "Neutre");
+    maneno_sajili("Diplomacy", "Diplomasia", "Diplomatie");
+    maneno_sajili("NEIGHBOURS", "MAJIRANI", "VOISINS");
+    maneno_sajili("FRIENDLY / ALLIED", "URAFIKI / MIUNGANO", "AMIS / ALLIÉS");
+    maneno_sajili("HOSTILE / AT WAR", "UADUI / VITA", "HOSTILES / EN GUERRE");
+    maneno_sajili("ACTIVE TREATIES (WORLD)", "MIKATABA HAI (DUNIA)", "TRAITÉS ACTIFS (MONDE)");
+    maneno_sajili("NEIGHBOURS -- %d", "MAJIRANI -- %d", "VOISINS -- %d");
+    maneno_sajili("NATION", "TAIFA", "NATION");
+    maneno_sajili("RELATION", "UHUSIANO", "RELATION");
+    maneno_sajili("TRUST", "IMANI", "CONFIANCE");
+    maneno_sajili("BORDER (KM)", "MPAKA (KM)", "FRONTIÈRE (KM)");
+    maneno_sajili("GDP", "PATO GHAFI", "PIB");
+    maneno_sajili("Trust", "Imani", "Confiance");
+    maneno_sajili("Grievances", "Malalamiko", "Griefs");
+    maneno_sajili("Active treaties", "Mikataba hai", "Traités actifs");
+    maneno_sajili("WORLD FORCES · UNITS NOT YET ASSIGNED TO NATIONS", "VIKOSI VYA DUNIA · VITENGO BADO HAVIHUSISHWI NA TAIFA", "FORCES MONDIALES · UNITÉS PAS ENCORE AFFECTÉES AUX NATIONS");
+    maneno_sajili("WORLD UNITS", "VITENGO VYA DUNIA", "UNITÉS DU MONDE");
+    maneno_sajili("FORCE STRENGTH", "NGUVU YA VIKOSI", "PUISSANCE DES FORCES");
+    maneno_sajili("AVERAGE MORALE", "MORALE WASTANI", "MORAL MOYEN");
+    maneno_sajili("MILITARY INDEX", "KIASHIRIA CHA JESHI", "INDICE MILITAIRE");
+    maneno_sajili("ORDER OF BATTLE", "ORODHA YA VIKOSI", "ORDRE DE BATAILLE");
+    maneno_sajili("No military units", "Hakuna vitengo vya kijeshi", "Aucune unité militaire");
+    maneno_sajili("Forces appear here once the simulation raises them.", "Vikosi vitaonekana hapa baada ya kuundwa na simulizi.", "Les forces apparaîtront ici une fois levées par la simulation.");
+    maneno_sajili("Morale", "Morale", "Moral");
+    maneno_sajili("Turn %s", "Zamu %s", "Tour %s");
+    maneno_sajili("Overview", "Muhtasari", "Aperçu");
+    maneno_sajili("Economy", "Uchumi", "Économie");
+    maneno_sajili("Politics", "Siasa", "Politique");
+    maneno_sajili("Military", "Jeshi", "Armée");
+    maneno_sajili("Culture", "Utamaduni", "Culture");
+    maneno_sajili("Technology", "Teknolojia", "Technologie");
+    maneno_sajili("Map", "Ramani", "Carte");
+    maneno_sajili("NATIONS", "MATAIFA", "NATIONS");
+    maneno_sajili("No matching nation", "Hakuna taifa linalolingana", "Aucune nation correspondante");
+    maneno_sajili("Try another name or clear the search.", "Jaribu jina lingine au futa utafutaji.", "Essayez un autre nom ou effacez la recherche.");
+    maneno_sajili("NATIONS %s-%s / %d", "MATAIFA %s-%s / %d", "NATIONS %s-%s / %d");
+    maneno_sajili("tab|GDP", "PATO", "PIB");
+    maneno_sajili("POP", "WATU", "POP");
+    maneno_sajili("TECH", "TEK", "TECH");
+    maneno_sajili("PER CAPITA", "KWA KILA MTU", "PAR HABITANT");
+    maneno_sajili("TECHNOLOGY", "TEKNOLOJIA", "TECHNOLOGIE");
+    maneno_sajili("ECONOMY", "UCHUMI", "ÉCONOMIE");
+    maneno_sajili("MILITARY", "JESHI", "ARMÉE");
+    maneno_sajili("CULTURE", "UTAMADUNI", "CULTURE");
+    maneno_sajili("WORLD GDP -- HISTORY", "PATO GHAFI LA DUNIA -- HISTORIA", "PIB MONDIAL -- HISTORIQUE");
+    maneno_sajili("History appears after two turns.", "Historia itaonekana baada ya zamu mbili.", "L'historique apparaît après deux tours.");
+    maneno_sajili("POPULATION", "IDADI YA WATU", "POPULATION");
+    maneno_sajili("WORLD GDP", "PATO GHAFI LA DUNIA", "PIB MONDIAL");
+    maneno_sajili("GDP PER CAPITA", "PATO KWA KILA MTU", "PIB PAR HABITANT");
+    maneno_sajili("Capital: %s", "Mji mkuu: %s", "Capitale : %s");
+    maneno_sajili("Population", "Watu", "Population");
+    maneno_sajili("row|GDP", "Pato ghafi", "PIB");
+    maneno_sajili("GDP rank", "Nafasi kwa pato", "Rang (PIB)");
+    maneno_sajili("Area", "Eneo", "Superficie");
+    maneno_sajili("Provinces", "Mikoa", "Provinces");
+    maneno_sajili("Language", "Lugha", "Langue");
+    maneno_sajili("INDICATORS", "VIASHIRIA", "INDICATEURS");
+    maneno_sajili("LARGEST CITIES", "MIJI MIKUBWA", "PLUS GRANDES VILLES");
+    maneno_sajili("capital", "mji mkuu", "capitale");
+    maneno_sajili("port", "bandari", "port");
+    maneno_sajili("WORLD POLITICS · NATIONAL DATA NOT YET LINKED", "SIASA YA DUNIA · DATA ZA TAIFA HAZIJAUNGANISHWA", "POLITIQUE MONDIALE · DONNÉES NATIONALES PAS ENCORE LIÉES");
+    maneno_sajili("LEGITIMACY (WORLD)", "HALALI (DUNIA)", "LÉGITIMITÉ (MONDE)");
+    maneno_sajili("STABILITY (WORLD)", "UTULIVU (DUNIA)", "STABILITÉ (MONDE)");
+    maneno_sajili("POLITICAL FACTIONS", "VIKUNDI VYA SIASA", "FACTIONS POLITIQUES");
+    maneno_sajili("CURRENT TURN", "ZAMU YA SASA", "TOUR ACTUEL");
+    maneno_sajili("FACTION REPRESENTATION", "UWAKILISHI WA VIKUNDI", "REPRÉSENTATION DES FACTIONS");
+    maneno_sajili("STATE OF GOVERNMENT", "HALI YA UTAWALA", "ÉTAT DU GOUVERNEMENT");
+    maneno_sajili("No factions formed", "Hakuna vikundi vilivyoundwa", "Aucune faction formée");
+    maneno_sajili("The political system is waiting for its first factions.", "Mfumo wa kisiasa bado unasubiri vikundi vya mwanzo.", "Le système politique attend ses premières factions.");
+    maneno_sajili("Support", "Uungwaji mkono", "Soutien");
+    maneno_sajili("Government legitimacy", "Uhalali wa serikali", "Légitimité du gouvernement");
+    maneno_sajili("Political stability", "Utulivu wa kisiasa", "Stabilité politique");
+    maneno_sajili("Indicators are simulation state; policy and votes are not yet linked.", "Viashiria ni hali za simulizi; sera na kura bado hazijaunganishwa.", "Les indicateurs reflètent la simulation ; politiques et votes ne sont pas encore liés.");
+    maneno_sajili("WORLD TECHNOLOGY RESEARCH", "UTAFITI WA TEKNOLOJIA WA DUNIA", "RECHERCHE TECHNOLOGIQUE MONDIALE");
+    maneno_sajili("TOTAL LEVEL", "KIWANGO CHA JUMLA", "NIVEAU TOTAL");
+    maneno_sajili("PROVISIONAL RANK", "CHEO CHA MUDA", "RANG PROVISOIRE");
+    maneno_sajili("RESEARCH BUDGET", "BAJETI YA UTAFITI", "BUDGET DE RECHERCHE");
+    maneno_sajili("RESEARCH FIELDS", "NYANJA ZA UTAFITI", "DOMAINES DE RECHERCHE");
+    maneno_sajili("RESEARCH MAP · WORLD RANKS ARE PROVISIONAL", "RAMANI YA UTAFITI · NAFASI ZA DUNIA NI ZA MUDA", "CARTE DE RECHERCHE · RANGS MONDIAUX PROVISOIRES");
+    maneno_sajili("Level %s  |  Rank %s / %s", "Kiwango %s  |  Nafasi %s / %s", "Niveau %s  |  Rang %s / %s");
+    maneno_sajili("BUDGET SPENDING BREAKDOWN — WORLD", "MGAWANYO WA MATUMIZI YA BAJETI — DUNIA", "RÉPARTITION DES DÉPENSES — MONDE");
+    maneno_sajili("Spending", "Matumizi", "Dépenses");
+    maneno_sajili("Infrastructure", "Miundombinu", "Infrastructures");
+    maneno_sajili("Education", "Elimu", "Éducation");
+    maneno_sajili("Health", "Afya", "Santé");
+    maneno_sajili("NATIONAL ECONOMY", "UCHUMI WA TAIFA", "ÉCONOMIE NATIONALE");
+    maneno_sajili("UNEMPLOYMENT", "UKOSEFU WA KAZI", "CHÔMAGE");
+    maneno_sajili("TAX REVENUE", "MAPATO YA KODI", "RECETTES FISCALES");
+    maneno_sajili("GDP -- HISTORY", "PATO GHAFI -- HISTORIA", "PIB -- HISTORIQUE");
+    maneno_sajili("PRODUCTION VS CONSUMPTION", "UZALISHAJI DHIDI YA MATUMIZI", "PRODUCTION ET CONSOMMATION");
+    maneno_sajili("Food", "Chakula", "Alimentation");
+    maneno_sajili("Labour force", "Nguvukazi", "Population active");
+    maneno_sajili("Average wage", "Mshahara wa wastani", "Salaire moyen");
+    maneno_sajili("Energy (GWh per year)", "Nishati (GWh kwa mwaka)", "Énergie (GWh par an)");
+    maneno_sajili("Industrial output", "Pato la viwanda", "Production industrielle");
+    maneno_sajili("Raw materials", "Malighafi", "Matières premières");
+    maneno_sajili("Land (tiles)", "Ardhi (vipande)", "Terres (cases)");
+    maneno_sajili("GDP growth", "Ukuaji wa pato", "Croissance du PIB");
+    maneno_sajili("Inflation", "Mfumuko wa bei", "Inflation");
+    maneno_sajili("RANK AMONG ALL NATIONS", "NAFASI KATI YA MATAIFA YOTE", "RANG PARMI TOUTES LES NATIONS");
+    maneno_sajili("GDP per capita", "Pato kwa kila mtu", "PIB par habitant");
+    maneno_sajili("Land", "Ardhi", "Terres");
+    maneno_sajili("WORLD CULTURE · IDENTITY, FAITH AND IDEAS", "UTAMADUNI WA DUNIA · UTAMBULISHO, IMANI NA MAWAZO", "CULTURE MONDIALE · IDENTITÉ, FOI ET IDÉES");
+    maneno_sajili("IDENTITIES", "UTAMBULISHO", "IDENTITÉS");
+    maneno_sajili("SCHOOLS OF THOUGHT", "MIKONDO YA MAWAZO", "COURANTS DE PENSÉE");
+    maneno_sajili("DIFFUSION EVENTS", "MATUKIO YA KUENEA", "ÉVÉNEMENTS DE DIFFUSION");
+    maneno_sajili("SOCIAL IDENTITY", "UTAMBULISHO WA JAMII", "IDENTITÉ SOCIALE");
+    maneno_sajili("FAITHS AND SCHOOLS OF THOUGHT", "IMANI NA MIKONDO YA MAWAZO", "FOIS ET COURANTS DE PENSÉE");
+    maneno_sajili("No identities recorded", "Hakuna utambulisho uliorekodiwa", "Aucune identité enregistrée");
+    maneno_sajili("Cultural systems are ready; their data has not been generated yet.", "Mifumo ya utamaduni ipo tayari; data yake bado haijazalishwa.", "Les systèmes culturels sont prêts ; leurs données ne sont pas encore générées.");
+    maneno_sajili("Cohesion", "Mshikamano", "Cohésion");
+    maneno_sajili("No faiths or ideologies yet", "Bado hakuna imani au itikadi", "Pas encore de fois ni d'idéologies");
+    maneno_sajili("Faiths, values and outlooks appear once they emerge.", "Imani, maadili na mitazamo itaonekana baada ya kuibuka.", "Fois, valeurs et visions apparaîtront dès leur émergence.");
+    maneno_sajili(" M", " mil", " M");
+    maneno_sajili(" B", " bil", " Md");
+    maneno_sajili(" T", " tril", " Bn");
+    maneno_sajili("Search nations", "Tafuta taifa", "Rechercher une nation");
+    maneno_sajili("Click a nation on the map", "Bofya taifa kwenye ramani", "Cliquez sur une nation sur la carte");
+    maneno_sajili("Cities", "Miji", "Villes");
+    maneno_sajili("Towns", "Miji midogo", "Bourgs");
+    maneno_sajili("Villages", "Vijiji", "Villages");
+    maneno_sajili("Ports", "Bandari", "Ports");
+    maneno_sajili("Settings", "Mipangilio", "Réglages");
+    maneno_sajili("Interface language", "Lugha ya kiolesura", "Langue de l'interface");
+    maneno_sajili("LANGUAGE", "LUGHA", "LANGUE");
+    maneno_sajili("Names of nations, cities and rivers stay in their own languages.", "Majina ya mataifa, miji na mito hubaki katika lugha zake.", "Les noms des nations, des villes et des fleuves restent dans leur langue.");
+    maneno_sajili("English", "Kiingereza", "Anglais");
+    maneno_sajili("Swahili", "Kiswahili", "Swahili");
+    maneno_sajili("French", "Kifaransa", "Français");
+    maneno_sajili("GAME STUDIO", "STUDIO YA MICHEZO", "STUDIO DE JEUX");
+    maneno_sajili("PRESENTS", "INAWASILISHA", "PRÉSENTE");
+    maneno_sajili("A grand strategy of nations", "Mkakati mkuu wa mataifa", "Une grande stratégie des nations");
+    maneno_sajili("Convening the assembly", "Kuitisha bunge", "Convocation de l'assemblée");
+    maneno_sajili("Drawing the borders", "Kuchora mipaka", "Tracé des frontières");
+    maneno_sajili("Taking the census", "Kuhesabu watu", "Recensement de la population");
+    maneno_sajili("Swearing in the cabinet", "Kuapisha baraza la mawaziri", "Prestation de serment du cabinet");
+    maneno_sajili("Press any key to take office", "Bonyeza kitufe chochote kuingia ofisini", "Appuyez sur une touche pour entrer en fonction");
+    maneno_sajili("FAITHS", "IMANI", "FOIS");
+    maneno_sajili("Language and adviser", "Lugha na mshauri", "Langue et conseiller");
+    maneno_sajili("AI ADVISER", "MSHAURI WA AI", "CONSEILLER IA");
+    maneno_sajili("Off", "Zima", "Désactivé");
+    maneno_sajili("Local model on this computer", "Modeli ya ndani ya kompyuta hii", "Modèle local sur cet ordinateur");
+    maneno_sajili("Custom server with API key", "Seva maalum yenye ufunguo wa API", "Serveur personnalisé avec clé API");
+    maneno_sajili("Ollama at 127.0.0.1:11434. Nothing leaves this machine.", "Ollama kwenye 127.0.0.1:11434. Hakuna kinachotoka kwenye mashine hii.", "Ollama sur 127.0.0.1:11434. Rien ne quitte cette machine.");
+    maneno_sajili("Any chat-completions server. Uses the address, model and key in saves/akili.", "Seva yoyote ya chat-completions. Hutumia anwani, modeli na ufunguo wa saves/akili.", "Tout serveur chat-completions. Utilise l'adresse, le modèle et la clé de saves/akili.");
+    maneno_sajili("No adviser. The game makes no network connections.", "Hakuna mshauri. Mchezo hauungani na mtandao.", "Aucun conseiller. Le jeu n'établit aucune connexion réseau.");
+    maneno_sajili("Server", "Seva", "Serveur");
+    maneno_sajili("Model", "Modeli", "Modèle");
+    maneno_sajili("API key", "Ufunguo wa API", "Clé API");
+    maneno_sajili("Set (hidden)", "Umewekwa (umefichwa)", "Définie (masquée)");
+    maneno_sajili("Not set", "Haujawekwa", "Non définie");
+    maneno_sajili("Test connection", "Jaribu muunganisho", "Tester la connexion");
+    maneno_sajili("Connected", "Imeunganishwa", "Connecté");
+    maneno_sajili("Not reachable", "Haifikiki", "Injoignable");
+    maneno_sajili("To change the server, model or key, edit the file saves/akili and reopen Settings.", "Kubadili seva, modeli au ufunguo, hariri faili saves/akili kisha fungua Mipangilio tena.", "Pour changer le serveur, le modèle ou la clé, modifiez le fichier saves/akili puis rouvrez les Réglages.");
+    maneno_sajili("Hemicycle", "Nusu-duara", "Hémicycle");
+    maneno_sajili("Horseshoe", "Kiatu cha farasi", "Fer à cheval");
+    maneno_sajili("In the round", "Duara", "En cercle");
+    maneno_sajili("Opposing benches", "Pande zinazotazamana", "Bancs opposés");
+    maneno_sajili("Classroom", "Darasa", "Salle de classe");
+}
+
+// Jina la lugha kwa lugha yenyewe (halitafsiriwi).
+n8* maneno_lugha_jina(n64 l) {
+    kama (l == MANENO_KISWAHILI) { rudisha "Kiswahili"; }
+    kama (l == MANENO_KIFARANSA) { rudisha "Français"; }
+    rudisha "English";
+}
+
+// Msimbo wa lugha kwa mfumo wa ujumbe wa uigaji (lugha_dominion).
+n8* maneno_lugha_msimbo(n64 l) {
+    kama (l == MANENO_KISWAHILI) { rudisha "sw"; }
+    kama (l == MANENO_KIFARANSA) { rudisha "fr"; }
+    rudisha "en";
+}
+
+w0 maneno_weka_lugha(n64 l) {
+    kama (l < 0 || l >= MANENO_LUGHA_IDADI) { l = 0; }
+    maneno_lugha = l;
+}
+
+// Neno la kiolesura kwa lugha hai.
+n8* ui(n8* en) {
+    kama (maneno_lugha != 0) {
+        kama (maneno_funguo == 0) { maneno_jaza(); }
+        n64 p = maneno_heshi(en);
+        n64 imeisha = 0;
+        wakati (imeisha == 0 && maneno_funguo[p] != 0) {
+            n8* k = maneno_funguo[p];
+            kama (linganisha_mfuatano(k, en) == 0) {
+                n8* v = maneno_thamani[p * 2 + maneno_lugha - 1];
+                kama (v != 0) { rudisha v; }
+                imeisha = 1;
+            }
+            p = (p + 1) & (MANENO_UWEZO - 1);
+        }
+    }
+    // Kiingereza: ondoa muktadha "abc|" wa mwanzo
+    n64 i = 0;
+    wakati (en[i] >= 97 && en[i] <= 122 && i < 16) { i = i + 1; }
+    kama (i > 0 && en[i] == 124) { rudisha &en[i + 1]; }
+    rudisha en;
+}

@@ -1,0 +1,83 @@
+husisha { moduli/siasa/kikasha.swa }
+
+// jaribio_kalenda.swa -- tarehe, matukio ya katiba, shajara na kikasha.
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+w0 tarehe_ni(n64 n, n64 y, n64 m, n64 d, n8* jina) {
+    n64 a = 0;
+    n64 b = 0;
+    n64 c = 0;
+    tarehe_ya_siku(n, &a, &b, &c);
+    kama (a != y || b != m || c != d) { andika("SHINDWA: %s -> %d/%d/%d\n", jina, c, b, a, 0, 0); makosa = makosa + 1; }
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    // tarehe
+    tarehe_ni(0, 1954, 1, 4, "siku 0");
+    tarehe_ni(28, 1954, 2, 1, "siku 28");
+    tarehe_ni(361, 1954, 12, 31, "mwisho wa 1954");
+    tarehe_ni(362, 1955, 1, 1, "mwaka mpya");
+    tarehe_ni(0 - 3, 1954, 1, 1, "kabla ya mwanzo");
+    tarehe_ni(tarehe_siku_ya(1956, 2, 29), 1956, 2, 29, "siku ya mwaka mrefu");
+    thibitisha("siku_ya ni kinyume", tarehe_siku_ya(1960, 7, 15) >= 0 && tarehe_siku_ya(1954, 1, 4) == 0);
+    thibitisha("zamu 1 Jumatatu", tarehe_siku_ya_wiki(tarehe_siku_ya_zamu(1)) == 0 && tarehe_siku_ya_zamu(3) == 14);
+    // 1 Januari 1954 ilikuwa Ijumaa
+    thibitisha("1/1/1954 Ijumaa", tarehe_siku_ya_wiki(0 - 3) == 4);
+    n8 m[48];
+    tarehe_maandishi_mafupi(0, m, 48);
+    thibitisha("maandishi mafupi", linganisha_mfuatano(m, "MON 04/01/1954") == 0);
+
+    // matukio: jamhuri ya rais yenye mabaraza mawili
+    n64 mbegu = 0;
+    Dola* d = 0;
+    wakati (d == 0 && mbegu < 400) {
+        Dola* x = dola_unda(mbegu, "Republic of Test", 40000000);
+        kama (x->aina == DOLA_JAMHURI_YA_RAIS && x->mabaraza == 2) { d = x; }
+        sivyo { mbegu = mbegu + 1; }
+    }
+    Wahusika* w = wahusika_unda(d, mbegu, 40000000);
+    TukioLaSiku* t = tenga(ukubwa(TukioLaSiku) * TUKIO_JUU);
+    n64 n = kalenda_matukio_ya_siku(d, w, 0, t);
+    thibitisha("Jumatatu ya kwanza: baraza la dola na mawaziri", n == 2 && t[0].aina == TUKIO_BARAZA_LA_DOLA && t[1].aina == TUKIO_BARAZA_LA_MAWAZIRI);
+    n = kalenda_matukio_ya_siku(d, w, 1, t);
+    thibitisha("Jumanne: vikao viwili vya bunge", n == 2 && t[0].aina == TUKIO_BUNGE && t[1].kuanza == 15);
+    n = kalenda_matukio_ya_siku(d, w, 4, t);
+    thibitisha("Ijumaa: wanahabari", n == 1 && t[0].aina == TUKIO_WANAHABARI);
+    n = kalenda_matukio_ya_siku(d, w, 7, t);
+    thibitisha("Jumatatu ya pili: mawaziri tu", n == 1);
+    // shajara
+    kalenda_panga(2, 5);
+    kalenda_panga(2, 6);
+    n = kalenda_matukio_ya_siku(d, w, 2, t);
+    thibitisha("mikutano miwili Jumatano", n == 2 && t[0].kuanza == 10 && t[1].kuanza == 11 && t[0].mtu == 5);
+    thibitisha("mikutano wiki hii", kalenda_mikutano_kati(0, 6) == 2 && kalenda_mikutano_kati(7, 13) == 0);
+
+    // kikasha: zamu moja hutoa ujumbe mara moja tu
+    d->utulivu = 20;
+    d->hazina = 30;
+    kikasha_zamu(d, w, 0, 1);
+    n64 baada_ya_kwanza = kikasha_idadi;
+    kikasha_zamu(d, w, 0, 1);
+    thibitisha("zamu moja, mara moja", kikasha_idadi == baada_ya_kwanza);
+    thibitisha("ujumbe upo", baada_ya_kwanza >= 3);
+    n64 tahadhari = 0;
+    n64 shajara = 0;
+    n64 i = 0;
+    wakati (i < kikasha_idadi) {
+        Ujumbe* u = kikasha_pata(i);
+        kama (u->aina == UJUMBE_TAHADHARI) { tahadhari = tahadhari + 1; }
+        kama (u->aina == UJUMBE_SHAJARA) { shajara = shajara + 1; }
+        i = i + 1;
+    }
+    thibitisha("tahadhari mbili", tahadhari == 2);
+    thibitisha("shajara ya wiki", shajara == 1);
+    thibitisha("visivyosomwa", kikasha_visivyosomwa() == kikasha_idadi);
+    andika("kalenda: ujumbe %d\n", kikasha_idadi, 0, 0, 0, 0, 0);
+    kama (makosa == 0) { andika("kalenda: sawa\n", 0, 0, 0, 0, 0, 0); rudisha 0; }
+    rudisha 1;
+}

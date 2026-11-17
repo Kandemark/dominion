@@ -1,0 +1,828 @@
+husisha { moduli/onyesho/sura.swa }
+husisha { moduli/onyesho/uhuishaji.swa }
+husisha { msingi/maktaba/hesabu.swa }
+
+// vipengele.swa -- maktaba ya vipengele vya kiwango cha juu vya Dominion.
+//
+// Hivi ni VICHORAJI na vihesabu vya mpangilio, si mfumo wa matukio.
+// Programu hupitisha hali_ya_kipengele (imechaguliwa, imezimwa, imefunguliwa, alpha)
+// wakati wa kuchora na kuita vipimo vya hit-test/move/resize kwenye safu
+// yake ya ingizo. Hii hufanya kitufe au dirisha litumike kwenye skrini
+// yoyote bila kufunga hali_ya_kipengele yake kwa programu moja.
+//
+// Rangi hutumia mandhari ya sura.swa. Vipengele vyote vya kuelea
+// vinachora kwenye sura_t, kwa hiyo vinaheshimu turubai iliyofungwa na
+// skrini inayoita. Alpha ni 0..255.
+
+n64 SURA_HALI_KAWAIDA = 0;
+n64 SURA_HALI_HOVER = 1;
+n64 SURA_HALI_BONYEZA = 2;
+n64 SURA_HALI_ZIMWA = 3;
+
+n64 SURA_KITufe_MSINGI = 0;
+n64 SURA_KITufe_PILI = 1;
+n64 SURA_KITufe_TULIVU = 2;
+n64 SURA_KITufe_HATARI = 3;
+
+n64 SURA_ICON_PLUS = 1;
+n64 SURA_ICON_MINUS = 2;
+n64 SURA_ICON_CLOSE = 3;
+n64 SURA_ICON_CHECK = 4;
+n64 SURA_ICON_CHEVRON = 5;
+n64 SURA_ICON_INFO = 6;
+n64 SURA_ICON_SEARCH = 7;
+n64 SURA_ICON_MORE = 8;
+n64 SURA_ICON_ARROW_UP = 9;
+n64 SURA_ICON_ARROW_DOWN = 10;
+n64 SURA_ICON_SETTINGS = 11;
+n64 SURA_ICON_ARROW_LEFT = 12;
+n64 SURA_ICON_ARROW_RIGHT = 13;
+
+n64 SURA_TOAST_TAARIFA = 0;
+n64 SURA_TOAST_MAFANIKIO = 1;
+n64 SURA_TOAST_ONYO = 2;
+n64 SURA_TOAST_HITILAFU = 3;
+
+// ---------- msingi wa vipimo na mwingiliano ----------
+
+n32 sura_imegusa(n64 x, n64 y, n64 w, n64 h, n64 px, n64 py) {
+    rudisha px >= x && py >= y && px < x + w && py < y + h;
+}
+
+// Alpha ya mpito wa kuonekana 0..255. Muda ni ms.
+n64 sura_alpha_ya_mpito(n64 muda, n64 muda_jumla) {
+    kama (muda_jumla <= 0) { rudisha 255; }
+    kama (muda <= 0) { rudisha 0; }
+    kama (muda >= muda_jumla) { rudisha 255; }
+    n64 t = (muda * 1000) / muda_jumla;
+    // ease-out: 1 - (1-t)^3. Hutoa mwendo laini unaopungua kasi.
+    n64 baki = 1000 - t;
+    n64 cube = (baki * baki * baki) / 1000000;
+    rudisha ((1000 - cube) * 255) / 1000;
+}
+
+// Offset ya kuingia. Tumia x au y kama umbali wa mwanzo; hufika sifuri
+// mwishoni mwa muda. `mwelekeo` = 1 (kutoka x>0/y>0), -1 (kutoka x<0/y<0).
+n64 sura_offset_ya_mpito(n64 umbali, n64 muda, n64 muda_jumla, n64 mwelekeo) {
+    kama (muda_jumla <= 0 || muda >= muda_jumla) { rudisha 0; }
+    kama (muda <= 0) { rudisha umbali * mwelekeo; }
+    n64 a = sura_alpha_ya_mpito(muda, muda_jumla);
+    rudisha (umbali * (255 - a) / 255) * mwelekeo;
+}
+
+// Hamisha dirisha kwa delta ya pointer.
+muundo SuraDirishaKuelea {
+    n64 x;
+    n64 y;
+    n64 w;
+    n64 h;
+    n64 upana_wa_chini;
+    n64 kimo_cha_chini;
+    n64 limefunguliwa;
+    n64 limebanwa;
+};
+
+w0 sura_dirisha_sogeza(SuraDirishaKuelea* d, n64 dx, n64 dy) {
+    kama (d == 0) { rudisha; }
+    d->x = d->x + dx;
+    d->y = d->y + dy;
+}
+
+// Resize ya kona ya chini-kulia. Weka min_width/min_height kabla ya
+// kuitumia; ukubwa haupungui chini ya mipaka hiyo.
+w0 sura_dirisha_resize(SuraDirishaKuelea* d, n64 dx, n64 dy) {
+    kama (d == 0 || d->limebanwa) { rudisha; }
+    d->w = d->w + dx;
+    d->h = d->h + dy;
+    kama (d->w < d->upana_wa_chini) { d->w = d->upana_wa_chini; }
+    kama (d->h < d->kimo_cha_chini) { d->h = d->kimo_cha_chini; }
+}
+
+n32 sura_dirisha_kichwa_hit(n64 x, n64 y, n64 w, n64 kichwa_h, n64 px, n64 py) {
+    rudisha sura_imegusa(x, y, w, kichwa_h, px, py);
+}
+
+n32 sura_dirisha_resize_hit(n64 x, n64 y, n64 w, n64 h, n64 ukubwa, n64 px, n64 py) {
+    rudisha sura_imegusa(x + w - ukubwa, y + h - ukubwa, ukubwa, ukubwa, px, py);
+}
+
+// ---------- alama na maandishi ya sehemu ----------
+
+// Dot ya hali_ya_kipengele yenye lebo; rangi ni ya hali_ya_kipengele, maandishi hubaki neutral.
+w0 sura_hali(n8* lebo, n64 x, n64 y, n64 rangi, n64 alpha) {
+    kama (sura_t == 0 || lebo == 0) { rudisha; }
+    turubai_brashi(sura_t, rangi, alpha);
+    turubai_duara(sura_t, x + 5, y + 8, 4);
+    turubai_brashi(sura_t, SURA_MAANDISHI, alpha);
+    maandishi_chora(sura_t, sura_kawaida, lebo, x + 16, y, 13);
+}
+
+// Beji ya hali_ya_kipengele. state: 0 neutral, 1 positive, 2 warning, 3 danger, 4 accent.
+w0 sura_beji(n8* lebo, n64 x, n64 y, n64 state, n64 alpha) {
+    kama (sura_t == 0 || lebo == 0) { rudisha; }
+    n64 rangi = SURA_BAHARI;
+    kama (state == 1) { rangi = SURA_CHANYA; }
+    sivyo { kama (state == 2) { rangi = SURA_LAFUDHI; }
+    sivyo { kama (state == 3) { rangi = SURA_HASI; }
+    sivyo { kama (state == 4) { rangi = SURA_LAFUDHI; } } } }
+    n64 w = maandishi_upana(sura_kati, lebo, 12) + 22;
+    turubai_brashi(sura_t, rangi, alpha / 5);
+    turubai_mviringo(sura_t, x, y, w, 24, 12);
+    turubai_brashi(sura_t, rangi, alpha);
+    turubai_duara(sura_t, x + 10, y + 12, 2);
+    maandishi_chora(sura_t, sura_kati, lebo, x + 18, y + 5, 12);
+}
+
+// Kichwa cha ukurasa: kicker ndogo, kichwa kikuu, na maelezo ya hiari.
+// Kichwa cha sehemu chenye hiari ya thamani ya kulia (mf. "zaidi").
+w0 sura_kichwa_sehemu(n8* kichwa, n8* kulia, n64 x, n64 y, n64 w) {
+    kama (sura_t == 0 || kichwa == 0) { rudisha; }
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kati(kichwa, x, y, 15);
+    kama (kulia != 0) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo_kulia(kulia, x + w, y + 1, 12);
+    }
+}
+
+w0 sura_kigawanyaji(n64 x, n64 y, n64 w, n64 rangi, n64 alpha) {
+    kama (sura_t == 0 || w <= 0) { rudisha; }
+    turubai_brashi(sura_t, rangi, alpha);
+    turubai_jaza(sura_t, x, y, w, 1);
+}
+
+// ---------- vitufe na vidhibiti ----------
+
+w0 sura_kitufe(n8* lebo, n64 x, n64 y, n64 w, n64 h, n64 aina, n64 hali_ya_kipengele) {
+    kama (sura_t == 0 || lebo == 0 || w <= 0 || h <= 0) { rudisha; }
+    n64 bg = SURA_PANELI_JUU;
+    n64 fg = SURA_MAANDISHI;
+    n64 alpha = 255;
+    kama (aina == SURA_KITufe_MSINGI) { bg = SURA_LAFUDHI; fg = SURA_USULI; }
+    sivyo { kama (aina == SURA_KITufe_HATARI) { bg = SURA_HASI; fg = SURA_MAANDISHI; } }
+    kama (hali_ya_kipengele == SURA_HALI_HOVER) { alpha = 220; }
+    sivyo { kama (hali_ya_kipengele == SURA_HALI_BONYEZA) { alpha = 170; } }
+    kama (hali_ya_kipengele == SURA_HALI_ZIMWA) { alpha = 70; }
+    kama (aina == SURA_KITufe_TULIVU) {
+        kama (hali_ya_kipengele == SURA_HALI_HOVER || hali_ya_kipengele == SURA_HALI_BONYEZA) {
+            turubai_brashi(sura_t, SURA_PANELI_JUU, alpha);
+            turubai_mviringo(sura_t, x, y, w, h, 8);
+        }
+    } sivyo {
+        turubai_brashi(sura_t, bg, alpha);
+        turubai_mviringo(sura_t, x, y, w, h, 8);
+        kama (aina == SURA_KITufe_PILI) {
+            turubai_brashi(sura_t, SURA_MPAKA, alpha);
+            turubai_mpaka(sura_t, x, y, w, h, 8);
+        }
+    }
+    n64 tw = maandishi_upana(sura_kati, lebo, 13);
+    turubai_brashi(sura_t, fg, alpha);
+    maandishi_chora(sura_t, sura_kati, lebo, x + (w - tw) / 2, y + (h - 16) / 2, 13);
+}
+
+// Kitufe cha duara chenye alama iliyochorwa vectorially. icon ni mojawapo
+// ya SURA_ICON_* juu; state hutumia SURA_HALI_*.
+w0 sura_ikoni(n64 cx, n64 cy, n64 r, n64 icon, n64 rangi, n64 alpha) {
+    kama (sura_t == 0 || r < 2) { rudisha; }
+    n64 a = r / 2;
+    turubai_brashi(sura_t, rangi, alpha);
+    kama (icon == SURA_ICON_PLUS) {
+        turubai_mstari(sura_t, cx - a, cy, cx + a, cy, 2 * 256);
+        turubai_mstari(sura_t, cx, cy - a, cx, cy + a, 2 * 256);
+    } sivyo { kama (icon == SURA_ICON_MINUS) {
+        turubai_mstari(sura_t, cx - a, cy, cx + a, cy, 2 * 256);
+    } sivyo { kama (icon == SURA_ICON_CLOSE) {
+        turubai_mstari(sura_t, cx - a, cy - a, cx + a, cy + a, 2 * 256);
+        turubai_mstari(sura_t, cx - a, cy + a, cx + a, cy - a, 2 * 256);
+    } sivyo { kama (icon == SURA_ICON_CHECK) {
+        turubai_mstari(sura_t, cx - a, cy, cx - a / 3, cy + a / 2, 2 * 256);
+        turubai_mstari(sura_t, cx - a / 3, cy + a / 2, cx + a, cy - a / 2, 2 * 256);
+    } sivyo { kama (icon == SURA_ICON_CHEVRON) {
+        turubai_mstari(sura_t, cx - a / 2, cy - a, cx + a / 2, cy, 2 * 256);
+        turubai_mstari(sura_t, cx + a / 2, cy, cx - a / 2, cy + a, 2 * 256);
+    } sivyo { kama (icon == SURA_ICON_INFO) {
+        turubai_duara(sura_t, cx, cy, r - 2);
+        turubai_brashi(sura_t, SURA_PANELI, alpha);
+        turubai_duara(sura_t, cx, cy, r - 4);
+        turubai_brashi(sura_t, rangi, alpha);
+        turubai_duara(sura_t, cx, cy - a + 2, 1);
+        turubai_mstari(sura_t, cx, cy - 1, cx, cy + a - 1, 2 * 256);
+    } sivyo { kama (icon == SURA_ICON_SEARCH) {
+        turubai_duara(sura_t, cx - 2, cy - 2, a - 2);
+        turubai_brashi(sura_t, SURA_PANELI, alpha);
+        turubai_duara(sura_t, cx - 2, cy - 2, a - 4);
+        turubai_brashi(sura_t, rangi, alpha);
+        turubai_mstari(sura_t, cx + a / 2, cy + a / 2, cx + a, cy + a, 2 * 256);
+    } sivyo { kama (icon == SURA_ICON_MORE) {
+        turubai_duara(sura_t, cx - a / 2, cy, 1);
+        turubai_duara(sura_t, cx, cy, 1);
+        turubai_duara(sura_t, cx + a / 2, cy, 1);
+    } sivyo { kama (icon == SURA_ICON_ARROW_UP) {
+        turubai_mstari(sura_t, cx, cy + a, cx, cy - a, 2 * 256);
+        turubai_mstari(sura_t, cx, cy - a, cx - a / 2, cy - a / 2, 2 * 256);
+        turubai_mstari(sura_t, cx, cy - a, cx + a / 2, cy - a / 2, 2 * 256);
+    } sivyo { kama (icon == SURA_ICON_ARROW_DOWN) {
+        turubai_mstari(sura_t, cx, cy - a, cx, cy + a, 2 * 256);
+        turubai_mstari(sura_t, cx, cy + a, cx - a / 2, cy + a / 2, 2 * 256);
+        turubai_mstari(sura_t, cx, cy + a, cx + a / 2, cy + a / 2, 2 * 256);
+    } sivyo { kama (icon == SURA_ICON_SETTINGS) {
+        turubai_duara(sura_t, cx, cy, a);
+        turubai_brashi(sura_t, SURA_PANELI, alpha);
+        turubai_duara(sura_t, cx, cy, a - 3);
+        turubai_brashi(sura_t, rangi, alpha);
+        turubai_duara(sura_t, cx, cy, 2);
+    } sivyo { kama (icon == SURA_ICON_ARROW_LEFT) {
+        turubai_mstari(sura_t, cx + a / 2, cy - a / 2, cx - a / 2, cy, 2 * 256);
+        turubai_mstari(sura_t, cx - a / 2, cy, cx + a / 2, cy + a / 2, 2 * 256);
+    } sivyo { kama (icon == SURA_ICON_ARROW_RIGHT) {
+        turubai_mstari(sura_t, cx - a / 2, cy - a / 2, cx + a / 2, cy, 2 * 256);
+        turubai_mstari(sura_t, cx + a / 2, cy, cx - a / 2, cy + a / 2, 2 * 256);
+    } } } } } } } } } } } } }
+}
+
+w0 sura_kitufe_ikoni(n64 cx, n64 cy, n64 r, n64 icon, n64 hali_ya_kipengele, n64 alpha) {
+    kama (sura_t == 0) { rudisha; }
+    n64 bg = SURA_PANELI_JUU;
+    kama (hali_ya_kipengele == SURA_HALI_HOVER) { turubai_brashi(sura_t, bg, alpha / 2); turubai_duara(sura_t, cx, cy, r); }
+    kama (hali_ya_kipengele == SURA_HALI_BONYEZA) { turubai_brashi(sura_t, SURA_LAFUDHI, alpha / 3); turubai_duara(sura_t, cx, cy, r); }
+    n64 fg = SURA_HAFIFU;
+    kama (hali_ya_kipengele != SURA_HALI_ZIMWA) { fg = SURA_MAANDISHI; }
+    sura_ikoni(cx, cy, r, icon, fg, alpha);
+}
+
+// Floating action button. `alpha` huwezesha fade-in/fade-out bila
+// kuunganisha animation state na draw function.
+w0 sura_kitufe_kuelea(n64 cx, n64 cy, n64 r, n64 icon, n64 alpha) {
+    kama (sura_t == 0) { rudisha; }
+    turubai_brashi(sura_t, 0, alpha / 5);
+    turubai_duara(sura_t, cx + 2, cy + 3, r + 1);
+    turubai_brashi(sura_t, SURA_LAFUDHI, alpha);
+    turubai_duara(sura_t, cx, cy, r);
+    sura_ikoni(cx, cy, r, icon, SURA_USULI, alpha);
+}
+
+// ---------- toggle, checkbox, radio, na tabs ----------
+
+w0 sura_switch(n64 x, n64 y, n64 imewashwa, n64 hali_ya_kipengele) {
+    kama (sura_t == 0) { rudisha; }
+    n64 alpha = 255;
+    kama (hali_ya_kipengele == SURA_HALI_ZIMWA) { alpha = 90; }
+    turubai_brashi(sura_t, SURA_MPAKA, alpha);
+    turubai_mviringo(sura_t, x, y, 42, 24, 12);
+    kama (imewashwa) { turubai_brashi(sura_t, SURA_LAFUDHI, alpha); }
+    sivyo { turubai_brashi(sura_t, SURA_HAFIFU, alpha); }
+    n64 cx = x + 12;
+    kama (imewashwa) { cx = x + 30; }
+    kama (hali_ya_kipengele == SURA_HALI_HOVER) { turubai_duara(sura_t, cx, y + 12, 10); }
+    turubai_brashi(sura_t, SURA_MAANDISHI, alpha);
+    turubai_duara(sura_t, cx, y + 12, 8);
+}
+
+w0 sura_checkbox(n64 x, n64 y, n64 imechaguliwa, n64 hali_ya_kipengele) {
+    kama (sura_t == 0) { rudisha; }
+    n64 alpha = 255;
+    kama (hali_ya_kipengele == SURA_HALI_ZIMWA) { alpha = 80; }
+    kama (imechaguliwa) { turubai_brashi(sura_t, SURA_LAFUDHI, alpha); }
+    sivyo { turubai_brashi(sura_t, SURA_PANELI_JUU, alpha); }
+    turubai_mviringo(sura_t, x, y, 18, 18, 4);
+    kama (imechaguliwa) { sura_ikoni(x + 9, y + 9, 7, SURA_ICON_CHECK, SURA_USULI, alpha); }
+    sivyo {
+        turubai_brashi(sura_t, SURA_MPAKA, alpha);
+        turubai_mpaka(sura_t, x, y, 18, 18, 4);
+    }
+}
+
+w0 sura_radio(n64 cx, n64 cy, n64 imechaguliwa, n64 rangi, n64 alpha) {
+    kama (sura_t == 0) { rudisha; }
+    turubai_brashi(sura_t, SURA_MPAKA, alpha);
+    turubai_duara(sura_t, cx, cy, 8);
+    turubai_brashi(sura_t, SURA_PANELI, alpha);
+    turubai_duara(sura_t, cx, cy, 6);
+    kama (imechaguliwa) { turubai_brashi(sura_t, rangi, alpha); turubai_duara(sura_t, cx, cy, 3); }
+}
+
+// Kipengee cha segmented control; x inayofuata = x + upana unaorudishwa.
+n64 sura_segmenti(n8* lebo, n64 x, n64 y, n64 upana, n64 imechaguliwa, n64 hali_ya_kipengele) {
+    kama (sura_t == 0 || lebo == 0) { rudisha 0; }
+    n64 alpha = 255;
+    kama (hali_ya_kipengele == SURA_HALI_ZIMWA) { alpha = 90; }
+    kama (imechaguliwa) {
+        turubai_brashi(sura_t, SURA_PANELI_JUU, alpha);
+        turubai_mviringo(sura_t, x, y, upana, 32, 7);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kati(lebo, x + 10, y + 8, 13);
+    } sivyo {
+        kama (hali_ya_kipengele == SURA_HALI_HOVER) { turubai_brashi(sura_t, SURA_PANELI_JUU, alpha / 2); turubai_mviringo(sura_t, x, y, upana, 32, 7); }
+        turubai_brashi(sura_t, SURA_HAFIFU, alpha);
+        maandishi_chora(sura_t, sura_kawaida, lebo, x + 10, y + 8, 13);
+    }
+    rudisha upana;
+}
+
+// ---------- indicators, progress, and sparkline ----------
+
+w0 sura_mita(n8* lebo, n8* thamani, n64 x, n64 y, n64 w, n64 progress, n64 rangi) {
+    kama (sura_t == 0) { rudisha; }
+    sura_rangi(SURA_HAFIFU);
+    kama (lebo != 0) { sura_lebo(lebo, x, y, 12); }
+    kama (thamani != 0) { sura_rangi(SURA_MAANDISHI); sura_lebo_kulia(thamani, x + w, y, 12); }
+    sura_pau(x, y + 21, w, 5, progress, rangi);
+}
+
+w0 sura_kipande_cha_maendeleo(n64 x, n64 y, n64 w, n64 h, n64 hatua, n64 jumla, n64 rangi) {
+    kama (sura_t == 0 || jumla <= 0 || w <= 0) { rudisha; }
+    n64 pengo = 3;
+    n64 kipande = (w - (jumla - 1) * pengo) / jumla;
+    n64 i = 0;
+    wakati (i < jumla) {
+        kama (i < hatua) { turubai_brashi(sura_t, rangi, 255); }
+        sivyo { turubai_brashi(sura_t, SURA_MPAKA, 255); }
+        turubai_mviringo(sura_t, x + i * (kipande + pengo), y, kipande, h, h / 2);
+        i = i + 1;
+    }
+}
+
+// Sparkline ya data n64. Hakuna mihimili wala maandishi; pointi za data
+// huchorwa katika urefu wote unaopewa. `area_alpha` 0 huzima eneo.
+w0 sura_sparkline(n64* thamani, n64 idadi, n64 x, n64 y, n64 w, n64 h, n64 rangi, n64 area_alpha) {
+    kama (sura_t == 0 || thamani == 0 || idadi < 2 || w < 2 || h < 2) { rudisha; }
+    n64 chini = thamani[0];
+    n64 juu = thamani[0];
+    n64 i = 1;
+    wakati (i < idadi) {
+        kama (thamani[i] < chini) { chini = thamani[i]; }
+        kama (thamani[i] > juu) { juu = thamani[i]; }
+        i = i + 1;
+    }
+    n64 wigo = juu - chini;
+    kama (wigo <= 0) { wigo = 1; }
+    // clip huweka mistari/alama ndani ya eneo la sparkline.
+    n64 kx0 = sura_t->kx0; n64 ky0 = sura_t->ky0;
+    n64 kx1 = sura_t->kx1; n64 ky1 = sura_t->ky1;
+    turubai_kata(sura_t, x, y, w, h);
+    i = 0;
+    n64 x0 = x;
+    n64 y0 = y + h - ((thamani[0] - chini) * (h - 2)) / wigo - 1;
+    wakati (i < w) {
+        n64 pos = (i * (idadi - 1) * 256) / (w - 1);
+        n64 a = pos / 256;
+        n64 f = pos - a * 256;
+        n64 b = a + 1;
+        kama (b >= idadi) { b = idadi - 1; }
+        n64 v = (thamani[a] * (256 - f) + thamani[b] * f) / 256;
+        n64 yy = y + h - ((v - chini) * (h - 2)) / wigo - 1;
+        kama (i > 0 && area_alpha > 0) {
+            turubai_brashi(sura_t, rangi, area_alpha);
+            n64 ybase = y + h;
+            n64 ytop = yy;
+            kama (y0 < yy) { ytop = y0; }
+            turubai_safu(sura_t, x + i - 1, x + i, ytop);
+            kama (ybase > ytop + 1) { turubai_brashi(sura_t, rangi, area_alpha / 2); turubai_jaza(sura_t, x + i - 1, ytop + 1, 1, ybase - ytop - 1); }
+        }
+        i = i + 1;
+    }
+    turubai_brashi(sura_t, rangi, 255);
+    i = 1;
+    wakati (i < idadi) {
+        n64 xa = x + ((i - 1) * w) / (idadi - 1);
+        n64 xb = x + (i * w) / (idadi - 1);
+        n64 ya = y + h - ((thamani[i - 1] - chini) * (h - 2)) / wigo - 1;
+        n64 yb = y + h - ((thamani[i] - chini) * (h - 2)) / wigo - 1;
+        turubai_mstari(sura_t, xa, ya, xb, yb, 2 * 256);
+        i = i + 1;
+    }
+    turubai_brashi(sura_t, SURA_MAANDISHI, 255);
+    turubai_duara(sura_t, x + w - 1, y + h - ((thamani[idadi - 1] - chini) * (h - 2)) / wigo - 1, 2);
+    sura_t->kx0 = kx0; sura_t->ky0 = ky0;
+    sura_t->kx1 = kx1; sura_t->ky1 = ky1;
+}
+
+// ---------- rows, legends, avatars, and table treatment ----------
+
+w0 sura_safu_maelezo(n8* kichwa, n8* maelezo, n8* thamani, n64 x, n64 y, n64 w, n64 h, n64 imechaguliwa) {
+    kama (sura_t == 0 || kichwa == 0) { rudisha; }
+    sura_safu(x, y, w, h, 0, imechaguliwa);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kati(kichwa, x + 12, y + 5, 13);
+    kama (maelezo != 0) { sura_rangi(SURA_HAFIFU); sura_lebo(maelezo, x + 12, y + 23, 11); }
+    kama (thamani != 0) { sura_rangi(SURA_MAANDISHI); sura_lebo_kulia(thamani, x + w - 12, y + (h - 15) / 2, 13); }
+}
+
+w0 sura_legend(n8* lebo, n64 x, n64 y, n64 rangi, n64 alpha) {
+    kama (sura_t == 0 || lebo == 0) { rudisha; }
+    turubai_brashi(sura_t, rangi, alpha);
+    turubai_duara(sura_t, x + 4, y + 7, 4);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(lebo, x + 14, y, 12);
+}
+
+w0 sura_legend_thamani(n8* lebo, n8* thamani, n64 x, n64 y, n64 rangi) {
+    kama (sura_t == 0 || lebo == 0 || thamani == 0) { rudisha; }
+    sura_legend(lebo, x, y, rangi, 255);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kulia(thamani, x + 220, y, 13);
+}
+
+// Avatar/monogram ya duara kwa taifa, waziri, au kikundi. Tumia herufi
+// 1-2 kwenye initials; rangi na alpha hupitishwa na mwitaji.
+w0 sura_avatar(n8* initials, n64 cx, n64 cy, n64 r, n64 rangi, n64 alpha) {
+    kama (sura_t == 0) { rudisha; }
+    turubai_brashi(sura_t, rangi, alpha / 4);
+    turubai_duara(sura_t, cx, cy, r);
+    turubai_brashi(sura_t, rangi, alpha);
+    turubai_duara(sura_t, cx, cy, r - 2);
+    kama (initials != 0) {
+        n64 tw = maandishi_upana(sura_nene, initials, 12);
+        sura_rangi(SURA_USULI);
+        maandishi_chora(sura_t, sura_nene, initials, cx - tw / 2, cy - 7, 12);
+    }
+}
+
+// Safu ya jedwali yenye leading label, secondary text, status dot na
+// value inayolinganishwa kulia. `selected` hutumia highlight iliyopo.
+w0 sura_safu_takwimu(n8* lebo, n8* maelezo, n8* thamani, n64 x, n64 y, n64 w, n64 h, n64 rangi, n64 selected) {
+    kama (sura_t == 0 || lebo == 0) { rudisha; }
+    sura_safu(x, y, w, h, 0, selected);
+    turubai_brashi(sura_t, rangi, 255);
+    turubai_duara(sura_t, x + 14, y + h / 2, 4);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kati(lebo, x + 28, y + (h - 15) / 2, 13);
+    kama (maelezo != 0) { sura_rangi(SURA_HAFIFU); sura_lebo(maelezo, x + 28, y + h / 2 + 4, 10); }
+    kama (thamani != 0) { sura_rangi(SURA_MAANDISHI); sura_lebo_kulia(thamani, x + w - 14, y + (h - 15) / 2, 13); }
+}
+
+// ---------- floating windows, popovers, modal, tooltip, toast ----------
+
+// Kadi inayoelea yenye tabaka za kivuli; alpha hufanya fade. `offset_y`
+// husaidia slide-in; piga sura_alpha_ya_mpito/sura_offset_ya_mpito.
+w0 sura_kadi_kuelea(n64 x, n64 y, n64 w, n64 h, n64 alpha, n64 offset_y) {
+    kama (sura_t == 0 || w <= 0 || h <= 0 || alpha <= 0) { rudisha; }
+    n64 yy = y + offset_y;
+    turubai_brashi(sura_t, 0, alpha / 14);
+    turubai_mviringo(sura_t, x - 5, yy + 8, w + 10, h + 8, 16);
+    turubai_brashi(sura_t, 0, alpha / 9);
+    turubai_mviringo(sura_t, x - 2, yy + 4, w + 4, h + 4, 14);
+    turubai_brashi(sura_t, SURA_PANELI_JUU, alpha);
+    turubai_mviringo(sura_t, x, yy, w, h, 12);
+    turubai_brashi(sura_t, SURA_MPAKA, alpha);
+    turubai_mpaka(sura_t, x, yy, w, h, 12);
+}
+
+// Dirisha linaloelea: kichwa, subtitle, alama za close/minimize/maximize,
+// mpaka wa resize na opacity. Interaction/hit-test ni ya programu.
+w0 sura_dirisha_kuelea_chora(SuraDirishaKuelea* d, n8* kichwa, n8* maelezo, n64 focused, n64 alpha, n64 offset_y) {
+    kama (d == 0 || kichwa == 0 || d->limefunguliwa == 0) { rudisha; }
+    n64 y = d->y + offset_y;
+    n64 visible_h = d->h;
+    kama (d->limebanwa != 0) { visible_h = 48; }
+    sura_kadi_kuelea(d->x, y, d->w, d->h, alpha, 0);
+    n64 header_bg = SURA_PANELI;
+    n64 header_line = SURA_MPAKA;
+    kama (focused) { header_bg = SURA_PANELI_JUU; header_line = SURA_LAFUDHI; }
+    turubai_brashi(sura_t, header_bg, alpha);
+    turubai_mviringo(sura_t, d->x + 1, y + 1, d->w - 2, 46, 10);
+    turubai_brashi(sura_t, header_line, alpha / 2);
+    turubai_jaza(sura_t, d->x + 14, y + 45, d->w - 28, 1);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kati(kichwa, d->x + 16, y + 8, 14);
+    kama (maelezo != 0) { sura_rangi(SURA_HAFIFU); sura_lebo(maelezo, d->x + 16, y + 27, 10); }
+    sura_kitufe_ikoni(d->x + d->w - 20, y + 22, 14, SURA_ICON_CLOSE, SURA_HALI_KAWAIDA, alpha);
+    // resize grip: three short diagonal strokes, matching desktop affordance.
+    kama (d->limebanwa == 0) {
+        turubai_brashi(sura_t, SURA_HAFIFU, alpha);
+        turubai_mstari(sura_t, d->x + d->w - 9, y + visible_h - 17, d->x + d->w - 17, y + visible_h - 9, 1 * 256);
+        turubai_mstari(sura_t, d->x + d->w - 9, y + visible_h - 12, d->x + d->w - 12, y + visible_h - 9, 1 * 256);
+    }
+    kama (focused) { turubai_brashi(sura_t, SURA_LAFUDHI, alpha / 2); turubai_mpaka(sura_t, d->x, y, d->w, visible_h, 12); }
+}
+
+// Popover/command menu with shadow and optional header, suitable for
+// context actions, nation switcher, and small floating details.
+w0 sura_popover(n64 x, n64 y, n64 w, n64 h, n8* kichwa, n64 alpha) {
+    kama (sura_t == 0 || alpha <= 0) { rudisha; }
+    sura_kadi_kuelea(x, y, w, h, alpha, 0);
+    kama (kichwa != 0) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo_kati(kichwa, x + 14, y + 12, 11);
+        sura_kigawanyaji(x + 12, y + 34, w - 24, SURA_MPAKA, alpha);
+    }
+}
+
+// Modal overlay; alpha zero leaves the scene untouched, 255 dims it fully.
+w0 sura_modal_overlay(n64 alpha) {
+    kama (sura_t == 0 || alpha <= 0) { rudisha; }
+    turubai_brashi(sura_t, 461586, alpha * 3 / 4);
+    turubai_jaza(sura_t, 0, 0, sura_t->upana, sura_t->kimo);
+}
+
+// Tooltip yenye mwonekano wa kuelea. Weka kwenye coordinates za pointer;
+// caller ihakikishe inabaki ndani ya skrini.
+w0 sura_tooltip(n8* maandishi, n64 x, n64 y, n64 w, n64 alpha) {
+    kama (sura_t == 0 || maandishi == 0 || alpha <= 0) { rudisha; }
+    n64 h = 32;
+    turubai_brashi(sura_t, 0, alpha / 4);
+    turubai_mviringo(sura_t, x - 2, y + 3, w + 4, h + 2, 7);
+    turubai_brashi(sura_t, SURA_PANELI_JUU, alpha);
+    turubai_mviringo(sura_t, x, y, w, h, 6);
+    turubai_brashi(sura_t, SURA_MPAKA, alpha);
+    turubai_mpaka(sura_t, x, y, w, h, 6);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kati(maandishi, x + 10, y + 8, 12);
+}
+
+// Toast yenye rangi ya aina, upau wa muda na fade ya alpha.
+w0 sura_toast(n8* kichwa, n8* maelezo, n64 x, n64 y, n64 w, n64 aina, n64 alpha, n64 muda_uliobaki, n64 muda_jumla) {
+    kama (sura_t == 0 || kichwa == 0 || alpha <= 0) { rudisha; }
+    n64 rangi = SURA_BAHARI;
+    kama (aina == SURA_TOAST_MAFANIKIO) { rangi = SURA_CHANYA; }
+    sivyo { kama (aina == SURA_TOAST_ONYO) { rangi = SURA_LAFUDHI; }
+    sivyo { kama (aina == SURA_TOAST_HITILAFU) { rangi = SURA_HASI; } } }
+    sura_kadi_kuelea(x, y, w, 68, alpha, 0);
+    turubai_brashi(sura_t, rangi, alpha);
+    turubai_mviringo(sura_t, x + 1, y + 12, 3, 44, 1);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kati(kichwa, x + 16, y + 10, 13);
+    kama (maelezo != 0) { sura_rangi(SURA_HAFIFU); sura_lebo(maelezo, x + 16, y + 33, 11); }
+    kama (muda_jumla > 0) {
+        n64 p = (muda_uliobaki * 1000) / muda_jumla;
+        sura_pau(x + 1, y + 65, w - 2, 2, p, rangi);
+    }
+}
+
+// Empty state / callout ya taarifa kwa skrini tupu, hakuna matokeo, au
+// mfumo ambao bado haujazalisha historia.
+w0 sura_hali_tupu(n8* kichwa, n8* maelezo, n8* kitufe, n64 x, n64 y, n64 w, n64 h) {
+    kama (sura_t == 0 || kichwa == 0) { rudisha; }
+    turubai_brashi(sura_t, SURA_BAHARI, 28);
+    turubai_duara(sura_t, x + w / 2, y + 42, 20);
+    sura_ikoni(x + w / 2, y + 42, 12, SURA_ICON_INFO, SURA_BAHARI, 255);
+    n64 tw = maandishi_upana(sura_nene, kichwa, 16);
+    sura_rangi(SURA_MAANDISHI);
+    maandishi_chora(sura_t, sura_nene, kichwa, x + (w - tw) / 2, y + 76, 16);
+    kama (maelezo != 0) {
+        n64 dw = maandishi_upana(sura_kawaida, maelezo, 13);
+        sura_rangi(SURA_HAFIFU);
+        maandishi_chora(sura_t, sura_kawaida, maelezo, x + (w - dw) / 2, y + 104, 13);
+    }
+    kama (kitufe != 0) { sura_kitufe(kitufe, x + (w - 150) / 2, y + h - 48, 150, 34, SURA_KITufe_PILI, SURA_HALI_KAWAIDA); }
+}
+
+// Kadi ya takwimu yenye microtrend: reusable KPI variant.
+w0 sura_kadi_sparkline(n8* lebo, n8* thamani_kuu, n8* badiliko, n64 mwelekeo, n64* sampuli, n64 idadi, n64 x, n64 y, n64 w, n64 h) {
+    kama (sura_t == 0 || lebo == 0 || thamani_kuu == 0) { rudisha; }
+    sura_paneli(x, y, w, h, 0);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(lebo, x + 16, y + 14, 12);
+    sura_rangi(SURA_MAANDISHI);
+    maandishi_chora(sura_t, sura_nene, thamani_kuu, x + 16, y + 36, 25);
+    n64 rangi = SURA_HAFIFU;
+    kama (mwelekeo > 0) { rangi = SURA_CHANYA; }
+    sivyo { kama (mwelekeo < 0) { rangi = SURA_HASI; } }
+    kama (badiliko != 0) { turubai_brashi(sura_t, rangi, 255); maandishi_chora(sura_t, sura_kati, badiliko, x + 16, y + h - 26, 12); }
+    kama (sampuli != 0 && idadi > 1) { sura_sparkline(sampuli, idadi, x + w - 90, y + h - 42, 74, 28, rangi, 28); }
+}
+
+// ---------- controls za kuandika na kutafuta ----------
+
+w0 sura_sehemu_ya_maandishi(n8* lebo, n8* thamani, n8* kidokezo, n64 x, n64 y, n64 w, n64 focused, n64 invalid) {
+    kama (sura_t == 0) { rudisha; }
+    kama (lebo != 0) { sura_rangi(SURA_HAFIFU); sura_lebo(lebo, x, y, 12); }
+    n64 yy = y + 20;
+    n64 bg = SURA_PANELI;
+    n64 border = SURA_MPAKA;
+    kama (focused) { border = SURA_LAFUDHI; }
+    kama (invalid) { border = SURA_HASI; }
+    turubai_brashi(sura_t, bg, 255);
+    turubai_mviringo(sura_t, x, yy, w, 38, 7);
+    turubai_brashi(sura_t, border, 255);
+    turubai_mpaka(sura_t, x, yy, w, 38, 7);
+    kama (thamani != 0) { sura_rangi(SURA_MAANDISHI); sura_lebo(thamani, x + 12, yy + 11, 13); }
+    sivyo { kama (kidokezo != 0) { sura_rangi(SURA_HAFIFU); sura_lebo(kidokezo, x + 12, yy + 11, 13); } }
+}
+
+w0 sura_sehemu_ya_tafuta(n8* kidokezo, n8* thamani, n64 x, n64 y, n64 w, n64 focused) {
+    kama (sura_t == 0) { rudisha; }
+    n64 yy = y + 20;
+    n64 border = SURA_MPAKA;
+    kama (focused) { border = SURA_LAFUDHI; }
+    turubai_brashi(sura_t, SURA_PANELI, 255);
+    turubai_mviringo(sura_t, x, yy, w, 38, 7);
+    turubai_brashi(sura_t, border, 255);
+    turubai_mpaka(sura_t, x, yy, w, 38, 7);
+    sura_ikoni(x + 18, y + 39, 9, SURA_ICON_SEARCH, SURA_HAFIFU, 255);
+    kama (thamani != 0) { sura_rangi(SURA_MAANDISHI); sura_lebo(thamani, x + 34, y + 31, 13); }
+    sivyo { kama (kidokezo != 0) { sura_rangi(SURA_HAFIFU); sura_lebo(kidokezo, x + 34, y + 31, 13); } }
+}
+
+w0 sura_tafuta_compact(n8* thamani, n64 x, n64 y, n64 w, n64 focused) {
+    kama (sura_t == 0 || w <= 34) { rudisha; }
+    n64 border = SURA_MPAKA;
+    kama (focused) { border = SURA_LAFUDHI; }
+    turubai_brashi(sura_t, SURA_PANELI, 255);
+    turubai_mviringo(sura_t, x, y, w, 30, 7);
+    turubai_brashi(sura_t, border, 255);
+    turubai_mpaka(sura_t, x, y, w, 30, 7);
+    sura_ikoni(x + 15, y + 15, 8, SURA_ICON_SEARCH, SURA_HAFIFU, 255);
+    n8* text = thamani;
+    kama (text == 0 || text[0] == 0) { text = ui("Search nations"); }
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(text, x + 29, y + 8, 11);
+}
+
+// Slider ya kuona: `thamani` ni 0..1000. Hit-test na kubadilisha thamani
+// hufanywa na mwenye skrini kwa kutumia x/w ya track.
+w0 sura_slider(n64 x, n64 y, n64 w, n64 thamani, n64 rangi, n64 imewashwa) {
+    kama (sura_t == 0 || w < 12) { rudisha; }
+    n64 p = thamani;
+    kama (p < 0) { p = 0; }
+    kama (p > 1000) { p = 1000; }
+    n64 xx = x + (w * p) / 1000;
+    n64 alpha = 255;
+    kama (imewashwa == 0) { alpha = 80; }
+    turubai_brashi(sura_t, SURA_MPAKA, alpha);
+    turubai_mviringo(sura_t, x, y + 5, w, 4, 2);
+    turubai_brashi(sura_t, rangi, alpha);
+    turubai_mviringo(sura_t, x, y + 5, xx - x, 4, 2);
+    turubai_brashi(sura_t, SURA_USULI, alpha);
+    turubai_duara(sura_t, xx, y + 7, 8);
+    turubai_brashi(sura_t, rangi, alpha);
+    turubai_duara(sura_t, xx, y + 7, 6);
+}
+
+// ---------- chart tiles: stacked bar, ring, heatmap ----------
+
+// Sehemu moja ya stacked bar. `start` na `width` ni pikseli za segmenti.
+w0 sura_sehemu_ya_pau(n64 x, n64 y, n64 w, n64 h, n64 rangi, n64 alpha, n64 mwisho) {
+    kama (sura_t == 0 || w <= 0 || h <= 0) { rudisha; }
+    turubai_brashi(sura_t, rangi, alpha);
+    kama (mwisho) { turubai_mviringo(sura_t, x, y, w, h, h / 2); }
+    sivyo { turubai_jaza(sura_t, x, y, w, h); }
+}
+
+w0 sura_pau_lililopangwa(n64 x, n64 y, n64 w, n64 h, n64* thamani, n64* rangi, n64 idadi, n64 jumla, n64 pengo) {
+    kama (sura_t == 0 || thamani == 0 || rangi == 0 || idadi <= 0 || jumla <= 0) { rudisha; }
+    n64 usable = w - pengo * (idadi - 1);
+    kama (usable <= 0) { rudisha; }
+    n64 xx = x;
+    n64 i = 0;
+    wakati (i < idadi) {
+        n64 segment = (thamani[i] * usable) / jumla;
+        kama (i == idadi - 1) { segment = x + w - xx; }
+        kama (segment > 0) { sura_sehemu_ya_pau(xx, y, segment, h, rangi[i], 255, i == 0 || i == idadi - 1); }
+        xx = xx + segment + pengo;
+        i = i + 1;
+    }
+}
+
+// Donut / ring indicator inayotumia mistari yenye kingo laini. Safu za
+// rangi/thamani ni stable identities; `jumla` ni denominator halisi.
+w0 sura_donut(n64 cx, n64 cy, n64 radius, n64 unene, n64* thamani, n64* rangi, n64 idadi, n64 jumla, n64 background) {
+    kama (sura_t == 0 || thamani == 0 || rangi == 0 || idadi <= 0 || jumla <= 0 || radius <= 0) { rudisha; }
+    n64 pi = civ_pi();
+    n64 pi2 = pi * 2.0;
+    n64 segments = 96;
+    n64 j = 0;
+    turubai_brashi(sura_t, background, 255);
+    wakati (j < segments) {
+        d64 a0 = (j * pi2) / segments;
+        d64 a1 = ((j + 1) * pi2) / segments;
+        n64 x0 = cx + radius * civ_cos(a0);
+        n64 y0 = cy + radius * civ_sin(a0);
+        n64 x1 = cx + radius * civ_cos(a1);
+        n64 y1 = cy + radius * civ_sin(a1);
+        turubai_mstari(sura_t, x0, y0, x1, y1, unene * 256);
+        j = j + 1;
+    }
+    n64 offset = 0;
+    n64 i = 0;
+    wakati (i < idadi) {
+        n64 arc = (thamani[i] * segments) / jumla;
+        kama (arc > 0) {
+            turubai_brashi(sura_t, rangi[i], 255);
+            n64 q = 0;
+            wakati (q < arc) {
+                d64 a0 = ((offset + q) * pi2) / segments - pi / 2.0;
+                d64 a1 = ((offset + q + 1) * pi2) / segments - pi / 2.0;
+                n64 x0 = cx + radius * civ_cos(a0);
+                n64 y0 = cy + radius * civ_sin(a0);
+                n64 x1 = cx + radius * civ_cos(a1);
+                n64 y1 = cy + radius * civ_sin(a1);
+                turubai_mstari(sura_t, x0, y0, x1, y1, unene * 256);
+                q = q + 1;
+            }
+        }
+        offset = offset + arc;
+        i = i + 1;
+    }
+}
+
+// Tile ya heatmap: kiwango 0..1000 huchanganywa kutoka neutral kwenda
+// rangi ya data; maandishi/selection hutolewa na mwitaji.
+w0 sura_heatmap_kisanduku(n64 x, n64 y, n64 w, n64 h, n64 kiwango, n64 rangi, n64 selected) {
+    kama (sura_t == 0 || w <= 0 || h <= 0) { rudisha; }
+    n64 k = kiwango;
+    kama (k < 0) { k = 0; }
+    kama (k > 1000) { k = 1000; }
+    turubai_brashi(sura_t, rangi, 24 + (k * 140) / 1000);
+    turubai_mviringo(sura_t, x, y, w, h, 4);
+    kama (selected) { turubai_brashi(sura_t, SURA_MAANDISHI, 190); turubai_mpaka(sura_t, x, y, w, h, 4); }
+}
+
+// Sankey connector: three straight segments form a clean right-angle
+// flow; `unene` is proportional to the amount, expressed in pixels.
+w0 sura_sankey_mtiririko(n64 x0, n64 y0, n64 x1, n64 y1, n64 unene, n64 rangi, n64 alpha) {
+    kama (sura_t == 0 || unene <= 0 || x1 <= x0) { rudisha; }
+    n64 wa = unene * 256;
+    n64 katikati = x0 + (x1 - x0) / 2;
+    turubai_brashi(sura_t, rangi, alpha);
+    turubai_mstari(sura_t, x0, y0, katikati, y0, wa);
+    turubai_mstari(sura_t, katikati, y0, katikati, y1, wa);
+    turubai_mstari(sura_t, katikati, y1, x1, y1, wa);
+}
+
+w0 sura_sankey_nodi(n8* lebo, n8* thamani, n64 x, n64 y, n64 w, n64 h, n64 rangi, n64 alpha) {
+    kama (sura_t == 0 || lebo == 0 || w <= 0 || h <= 0) { rudisha; }
+    turubai_brashi(sura_t, rangi, alpha / 4);
+    turubai_mviringo(sura_t, x, y, w, h, 7);
+    turubai_brashi(sura_t, rangi, alpha);
+    turubai_mpaka(sura_t, x, y, w, h, 7);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo(lebo, x + 10, y + (h - 16) / 2, 12);
+    kama (thamani != 0) { sura_rangi(SURA_HAFIFU); sura_lebo_kulia(thamani, x + w - 10, y + (h - 15) / 2, 11); }
+}
+
+// ---------- modal ya uthibitisho na menu ya vitufe vinavyoelea ----------
+
+w0 sura_dialog(n8* kichwa, n8* mwili, n8* kitufe_ghairi, n8* kitufe_thibitisha, n64 x, n64 y, n64 w, n64 alpha) {
+    kama (sura_t == 0 || kichwa == 0 || alpha <= 0) { rudisha; }
+    n64 h = 230;
+    sura_modal_overlay(alpha * 3 / 4);
+    sura_kadi_kuelea(x, y, w, h, alpha, 0);
+    sura_rangi(SURA_MAANDISHI);
+    maandishi_chora(sura_t, sura_nene, kichwa, x + 22, y + 22, 19);
+    kama (mwili != 0) { sura_rangi(SURA_HAFIFU); sura_lebo(mwili, x + 22, y + 62, 14); }
+    sura_kigawanyaji(x + 20, y + h - 62, w - 40, SURA_MPAKA, alpha);
+    kama (kitufe_ghairi != 0) { sura_kitufe(kitufe_ghairi, x + w - 270, y + h - 48, 112, 32, SURA_KITufe_PILI, SURA_HALI_KAWAIDA); }
+    kama (kitufe_thibitisha != 0) { sura_kitufe(kitufe_thibitisha, x + w - 146, y + h - 48, 124, 32, SURA_KITufe_MSINGI, SURA_HALI_KAWAIDA); }
+}
+
+// Safu ya FABs kwa quick actions. `icons` ni safu ya SURA_ICON_*;
+// hit testing hufanywa kwa radius na sura_imegusa/sura_fab_hit.
+w0 sura_fab(n64 cx, n64 cy, n64 radius, n64 icon, n64 state, n64 alpha) {
+    kama (sura_t == 0) { rudisha; }
+    kama (state == SURA_HALI_HOVER) { turubai_brashi(sura_t, SURA_MAANDISHI, alpha / 7); turubai_duara(sura_t, cx, cy, radius + 3); }
+    sura_kitufe_kuelea(cx, cy, radius, icon, alpha);
+}
+
+n32 sura_fab_hit(n64 cx, n64 cy, n64 radius, n64 px, n64 py) {
+    n64 dx = px - cx;
+    n64 dy = py - cy;
+    rudisha dx * dx + dy * dy <= radius * radius;
+}
+
+
+// ---------- maandishi yaliyotawanywa ----------
+
+// Urefu wa herufi moja ya UTF-8 inayoanzia baiti b.
+n64 sura_urefu_wa_herufi(n64 b) {
+    kama (b >= 240) { rudisha 4; }
+    kama (b >= 224) { rudisha 3; }
+    kama (b >= 192) { rudisha 2; }
+    rudisha 1;
+}
+
+// Upana wa maandishi yenye pengo la ziada kati ya herufi.
+n64 sura_upana_mapana(Fonti* f, n8* s, n64 px, n64 pengo) {
+    n8 h[8];
+    n64 w = 0;
+    n64 i = 0;
+    wakati (s[i] != 0) {
+        n64 n = sura_urefu_wa_herufi(s[i] & 255);
+        n64 k = 0;
+        wakati (k < n && s[i + k] != 0) { h[k] = s[i + k]; k = k + 1; }
+        h[k] = 0;
+        w = w + maandishi_upana(f, h, px);
+        i = i + k;
+        kama (s[i] != 0) { w = w + pengo; }
+    }
+    rudisha w;
+}
+
+// Maandishi yaliyotawanywa (herufi kwa herufi), kitovu chake kikiwa cx.
+// Rangi na uwazi ni vya brashi ya sasa.
+w0 sura_maandishi_mapana(Fonti* f, n8* s, n64 cx, n64 y, n64 px, n64 pengo) {
+    kama (sura_t == 0 || s == 0) { rudisha; }
+    n8 h[8];
+    n64 x = cx - sura_upana_mapana(f, s, px, pengo) / 2;
+    n64 i = 0;
+    wakati (s[i] != 0) {
+        n64 n = sura_urefu_wa_herufi(s[i] & 255);
+        n64 k = 0;
+        wakati (k < n && s[i + k] != 0) { h[k] = s[i + k]; k = k + 1; }
+        h[k] = 0;
+        maandishi_chora(sura_t, f, h, x, y, px);
+        x = x + maandishi_upana(f, h, px) + pengo;
+        i = i + k;
+    }
+}

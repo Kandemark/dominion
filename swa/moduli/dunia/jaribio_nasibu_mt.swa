@@ -1,0 +1,46 @@
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/dunia/nasibu_mt.swa }
+
+// jaribio_nasibu_mt.swa -- MT19937 na CRC-32 dhidi ya thamani zinazojulikana
+// (mfuatano wa marejeo wa random.Random ya Python kwa mbegu zilezile).
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n64 pata, n64 tarajia) {
+    kama (pata != tarajia) {
+        andika("SHINDWA %s: %d != %d\n", jina, pata, tarajia, 0, 0, 0);
+        makosa = makosa + 1;
+    }
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    thibitisha("crc32 tupu", crc32_ya_baiti("", 0), 0);
+    thibitisha("crc32 123456789", crc32_ya_baiti("123456789", 9), 3421780262);
+    thibitisha("crc32 Veric/Valerian/7", crc32_ya_baiti("Veric/Valerian/7", 16), 3597112460);
+
+    NasibuMT* g = nasibu_mt_unda(7);
+    thibitisha("mbegu 7 u32[0]", nasibu_mt_u32(g), 1390851128);
+    thibitisha("mbegu 7 u32[1]", nasibu_mt_u32(g), 4071050724);
+    n64 i = 0;
+    wakati (i < 1000) { nasibu_mt_u32(g); i = i + 1; }
+    thibitisha("mbegu 7 u32[1002]", nasibu_mt_u32(g), 1307461650);
+    thibitisha("mbegu 7 biti 53", nasibu_mt_53(g), 5594828583035730);
+    thibitisha("mbegu 7 chini ya 13", nasibu_mt_chini_ya(g, 13), 2);
+    thibitisha("mbegu 7 chini ya 5", nasibu_mt_chini_ya(g, 5), 0);
+    n64 s[3];
+    nasibu_mt_sampuli(g, 13, 3, s);
+    thibitisha("sampuli 0", s[0], 7);
+    thibitisha("sampuli 1", s[1], 0);
+    thibitisha("sampuli 2", s[2], 12);
+    nasibu_mt_achilia(g);
+
+    NasibuMT* z = nasibu_mt_unda(0);
+    thibitisha("mbegu 0 u32[0]", nasibu_mt_u32(z), 3626764237);
+    nasibu_mt_achilia(z);
+    NasibuMT* k = nasibu_mt_unda(4294967295);
+    thibitisha("mbegu 2^32-1 u32[0]", nasibu_mt_u32(k), 2728839433);
+    nasibu_mt_achilia(k);
+
+    kama (makosa == 0) { andika("nasibu_mt: majaribio yote yamefaulu\n", 0, 0, 0, 0, 0, 0); rudisha 0; }
+    rudisha 1;
+}

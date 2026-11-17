@@ -1,0 +1,204 @@
+// kitengo.swa — tafsiri ya src/core/military/units.c (na .h) kwenda
+// Swa. Vitengo vya kijeshi — uumbaji, kuajiri, na ngazi.
+//
+// Kiambishi: jeshi_ — angalia ../../KANUNI-MAJINA.md.
+// units[] (safu inayokua ya civ_unit_t KWA THAMANI, si kwa
+// kielekezi, kwenye C) imekuwa safu ya n64* (anwani) inayoelekeza
+// kwenye JeshiKitengo zilizotengwa kwa tenga() moja moja — mtindo
+// uleule ulioothibitishwa kwenye dini.swa (lugha-swa/swa#185: TYPE**
+// hukokotoa hatua isiyo sahihi, n64* ya anwani ghafi hufanya kazi
+// sahihi).
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/lugha_dominion.swa }
+
+n32 JESHI_AINA_ASKARI = 0;
+n32 JESHI_AINA_WAPANDA_FARASI = 1;
+n32 JESHI_AINA_WAPIGA_MSHALE = 2;
+n32 JESHI_AINA_MIZINGA = 3;
+n32 JESHI_AINA_MAGARI_YA_VITA = 4;
+n32 JESHI_AINA_MSAADA = 5;
+n32 JESHI_AINA_NGUVU_MAALUM = 6;
+n32 JESHI_AINA_WAKAAJI = 7;
+
+muundo JeshiKitengo {
+    n8* kitambulisho;
+    n8* jina;
+    n32 aina;
+    d64 nguvu_ya_vita;
+    d64 kasi_ya_mwendo;
+    d64 matumizi_ya_ugavi;
+    d64 morali;
+    d64 uzoefu;
+    n32 nguvu_ya_sasa;
+    n32 nguvu_ya_juu;
+    n32 x;
+    n32 y;
+    n32 wigo_wa_uonekano;
+    n32 amehama;
+    n32 ngazi;
+    d64 uzoefu_wa_ngazi_ijayo;
+};
+
+muundo JeshiVitengoMfumo {
+    n64* vitengo;
+    n32 idadi;
+    n32 uwezo;
+};
+
+d64 jeshi_nguvu_ya_msingi(n32 aina) {
+    kama (aina == JESHI_AINA_ASKARI) { rudisha 10.0; }
+    kama (aina == JESHI_AINA_WAPIGA_MSHALE) { rudisha 12.0; }
+    kama (aina == JESHI_AINA_WAPANDA_FARASI) { rudisha 20.0; }
+    kama (aina == JESHI_AINA_MIZINGA) { rudisha 25.0; }
+    kama (aina == JESHI_AINA_MAGARI_YA_VITA) { rudisha 30.0; }
+    kama (aina == JESHI_AINA_MSAADA) { rudisha 8.0; }
+    kama (aina == JESHI_AINA_NGUVU_MAALUM) { rudisha 35.0; }
+    kama (aina == JESHI_AINA_WAKAAJI) { rudisha 2.0; }
+    rudisha 10.0;
+}
+
+d64 jeshi_kasi_ya_msingi(n32 aina) {
+    kama (aina == JESHI_AINA_ASKARI) { rudisha 5.0; }
+    kama (aina == JESHI_AINA_WAPIGA_MSHALE) { rudisha 4.0; }
+    kama (aina == JESHI_AINA_WAPANDA_FARASI) { rudisha 8.0; }
+    kama (aina == JESHI_AINA_MIZINGA) { rudisha 2.0; }
+    kama (aina == JESHI_AINA_MAGARI_YA_VITA) { rudisha 6.0; }
+    kama (aina == JESHI_AINA_MSAADA) { rudisha 3.0; }
+    kama (aina == JESHI_AINA_NGUVU_MAALUM) { rudisha 7.0; }
+    kama (aina == JESHI_AINA_WAKAAJI) { rudisha 3.0; }
+    rudisha 5.0;
+}
+
+JeshiVitengoMfumo* jeshi_vitengo_unda() {
+    JeshiVitengoMfumo* m = tenga(ukubwa(JeshiVitengoMfumo));
+    m->uwezo = 100;
+    m->idadi = 0;
+    m->vitengo = tenga(ukubwa(n64) * m->uwezo);
+    rudisha m;
+}
+
+w0 jeshi_vitengo_uharibu(JeshiVitengoMfumo* m) {
+    achilia m->vitengo;
+    achilia m;
+}
+
+JeshiKitengo* jeshi_vitengo_pata(JeshiVitengoMfumo* m, n32 idx) {
+    rudisha m->vitengo[idx];
+}
+
+JeshiKitengo* jeshi_kitengo_unda(JeshiVitengoMfumo* m, n32 aina, n8* jina, n32 ukubwa) {
+    kama (m == 0 || jina == 0) { rudisha 0; }
+
+    kama (m->idadi >= m->uwezo) {
+        m->uwezo = m->uwezo * 2;
+        m->vitengo = badili(m->vitengo, ukubwa(n64) * m->uwezo);
+    }
+
+    JeshiKitengo* kitengo = tenga(ukubwa(JeshiKitengo));
+    n8* jina_id = tenga(32);
+    n32 idadi_p1 = m->idadi + 1;
+    n8* namba_buf = tenga(16);
+    nambari_kwa_mfuatano(idadi_p1, namba_buf);
+    unganisha_mfuatano(jina_id, "kitengo_", namba_buf);
+    kitengo->kitambulisho = jina_id;
+    kitengo->jina = jina;
+    kitengo->aina = aina;
+    kitengo->nguvu_ya_vita = jeshi_nguvu_ya_msingi(aina);
+    kitengo->kasi_ya_mwendo = jeshi_kasi_ya_msingi(aina);
+    kitengo->matumizi_ya_ugavi = 1.0;
+    kitengo->morali = 0.6;
+    kitengo->uzoefu = 0.0;
+    kitengo->nguvu_ya_sasa = ukubwa;
+    kitengo->nguvu_ya_juu = ukubwa;
+    kitengo->x = 0;
+    kitengo->y = 0;
+    kama (aina == JESHI_AINA_NGUVU_MAALUM) { kitengo->wigo_wa_uonekano = 5; }
+    sivyo { kama (aina == JESHI_AINA_WAKAAJI) { kitengo->wigo_wa_uonekano = 4; }
+    sivyo { kitengo->wigo_wa_uonekano = 3; } }
+    kitengo->amehama = 0;
+    kitengo->ngazi = 1;
+    kitengo->uzoefu_wa_ngazi_ijayo = 100.0;
+
+    m->vitengo[m->idadi] = kitengo;
+    m->idadi = m->idadi + 1;
+
+    rudisha kitengo;
+}
+
+JeshiKitengo* jeshi_kitengo_zalisha(JeshiVitengoMfumo* m, n32 aina, n8* jina, n32 ukubwa, n32 x, n32 y) {
+    JeshiKitengo* kitengo = jeshi_kitengo_unda(m, aina, jina, ukubwa);
+    kama (kitengo != 0) {
+        kitengo->x = x;
+        kitengo->y = y;
+    }
+    rudisha kitengo;
+}
+
+w0 jeshi_vitengo_ajiri(JeshiVitengoMfumo* m, n8* taifa_id, n32 aina, n32 idadi, d64 ubora) {
+    kama (m == 0 || taifa_id == 0) { rudisha; }
+
+    n8* jina_awali = tenga(48);
+    n8* jina = tenga(64);
+    n8* namba_buf = tenga(16);
+    nambari_kwa_mfuatano(aina, namba_buf);
+    unganisha_mfuatano(jina_awali, taifa_id, "_");
+    unganisha_mfuatano(jina, jina_awali, namba_buf);
+
+    JeshiKitengo* kitengo = jeshi_kitengo_unda(m, aina, jina, idadi);
+    kama (kitengo != 0) {
+        kitengo->nguvu_ya_vita = kitengo->nguvu_ya_vita * ubora;
+        kitengo->morali = ubora;
+    }
+}
+
+n32 jeshi_vitengo_sasisha_nguvu(JeshiVitengoMfumo* m, n8* kitengo_id, n32 waliouawa, n32 mateka) {
+    kama (m == 0 || kitengo_id == 0) { rudisha 0; }
+
+    n32 i = 0;
+    wakati (i < m->idadi) {
+        JeshiKitengo* kitengo = jeshi_vitengo_pata(m, i);
+        kama (linganisha_mfuatano(kitengo->kitambulisho, kitengo_id) == 0) {
+            n32 hasara_jumla = waliouawa + mateka;
+            n32 nguvu_mpya = kitengo->nguvu_ya_sasa - hasara_jumla;
+            kama (nguvu_mpya < 0) { nguvu_mpya = 0; }
+            kitengo->nguvu_ya_sasa = nguvu_mpya;
+
+            kama (kitengo->nguvu_ya_juu > 0) {
+                d64 hasara_jumla_d = hasara_jumla;
+                d64 nguvu_ya_juu_d = kitengo->nguvu_ya_juu;
+                d64 uwiano_wa_hasara = hasara_jumla_d / nguvu_ya_juu_d;
+
+                d64 morali_mpya = kitengo->morali - uwiano_wa_hasara * 0.3;
+                kama (morali_mpya < 0.1) { morali_mpya = 0.1; }
+                kitengo->morali = morali_mpya;
+
+                d64 uzoefu_mpya = kitengo->uzoefu + uwiano_wa_hasara * 0.1;
+                kama (uzoefu_mpya > 1.0) { uzoefu_mpya = 1.0; }
+                kitengo->uzoefu = uzoefu_mpya;
+            }
+
+            rudisha 1;
+        }
+        i = i + 1;
+    }
+
+    rudisha 0;
+}
+
+w0 jeshi_kitengo_pandisha_ngazi(JeshiKitengo* kitengo) {
+    kama (kitengo == 0) { rudisha; }
+
+    wakati (kitengo->uzoefu >= kitengo->uzoefu_wa_ngazi_ijayo) {
+        kitengo->uzoefu = kitengo->uzoefu - kitengo->uzoefu_wa_ngazi_ijayo;
+        kitengo->ngazi = kitengo->ngazi + 1;
+        kitengo->uzoefu_wa_ngazi_ijayo = kitengo->uzoefu_wa_ngazi_ijayo * 1.5;
+
+        kitengo->nguvu_ya_vita = kitengo->nguvu_ya_vita * 1.10;
+        kitengo->kasi_ya_mwendo = kitengo->kasi_ya_mwendo * 1.05;
+
+        andika(d_tafsiri("m8"),
+            kitengo->jina, kitengo->ngazi, 0, 0, 0, 0);
+    }
+}

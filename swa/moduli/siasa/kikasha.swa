@@ -1,0 +1,107 @@
+husisha { moduli/siasa/kalenda.swa }
+
+// kikasha.swa -- kikasha cha ujumbe wa mchezaji.
+//
+// Kila zamu, ujumbe mpya huzaliwa kutoka hali halisi ya dola:
+//   maombi ya mikutano      kila afisa anayeomba kuonana na mchezaji
+//   shajara ya wiki         msaidizi hutaja mikutano iliyopangwa wiki hii
+//   tahadhari               waziri wa mambo ya ndani utulivu ukiwa chini
+//                           ya 40; waziri wa fedha hazina ikiwa chini ya 40
+// Ujumbe una mtumaji (mhusika), kichwa, mwili, zamu, siku, aina, na kama
+// umesomwa. Ombi la mkutano lina kitendo: kumwona sasa.
+
+n64 UJUMBE_OMBI = 0;
+n64 UJUMBE_SHAJARA = 1;
+n64 UJUMBE_TAHADHARI = 2;
+
+n64 KIKASHA_UWEZO = 300;
+
+muundo Ujumbe {
+    n64 mtumaji;            // faharisi ya mhusika
+    n64 aina;
+    n64 zamu;
+    n64 siku;
+    n8* kichwa;
+    n8* mwili;
+    n64 umesomwa;
+}
+
+n64 kikasha_idadi = 0;
+n64* kikasha = 0;           // Ujumbe* kwa kila mmoja, wa zamani kwanza
+n64 kikasha_zamu_ya_mwisho = 0;
+
+w0 kikasha_ongeza(n64 mtumaji, n64 aina, n64 zamu, n64 siku, n8* kichwa, n8* mwili) {
+    kama (kikasha == 0) { kikasha = tenga(8 * KIKASHA_UWEZO); }
+    kama (kikasha_idadi >= KIKASHA_UWEZO) {
+        // ujumbe wa zamani kabisa huondoka
+        n64 i = 1;
+        wakati (i < kikasha_idadi) { kikasha[i - 1] = kikasha[i]; i = i + 1; }
+        kikasha_idadi = kikasha_idadi - 1;
+    }
+    Ujumbe* u = tenga(ukubwa(Ujumbe));
+    u->mtumaji = mtumaji;
+    u->aina = aina;
+    u->zamu = zamu;
+    u->siku = siku;
+    u->kichwa = kichwa;
+    u->mwili = mwili;
+    u->umesomwa = 0;
+    kikasha[kikasha_idadi] = u;
+    kikasha_idadi = kikasha_idadi + 1;
+}
+
+Ujumbe* kikasha_pata(n64 i) {
+    kama (i < 0 || i >= kikasha_idadi) { rudisha 0; }
+    rudisha kikasha[i];
+}
+
+n64 kikasha_visivyosomwa() {
+    n64 n = 0;
+    n64 i = 0;
+    wakati (i < kikasha_idadi) {
+        Ujumbe* u = kikasha[i];
+        kama (u->umesomwa == 0) { n = n + 1; }
+        i = i + 1;
+    }
+    rudisha n;
+}
+
+// Ujumbe wa zamu `zamu` (mara moja kwa kila zamu).
+w0 kikasha_zamu(Dola* d, Wahusika* w, n64 ofisi, n64 zamu) {
+    kama (zamu <= kikasha_zamu_ya_mwisho) { rudisha; }
+    kikasha_zamu_ya_mwisho = zamu;
+    n64 leo = tarehe_siku_ya_zamu(zamu);
+    // maombi ya mikutano
+    n64 maombi[3];
+    n64 nq = katiba_maombi_yanayoingia(w, ofisi, zamu, maombi, 3);
+    n64 i = 0;
+    wakati (i < nq) {
+        MhusikaWaDola* m = wahusika_pata(w, maombi[i]);
+        n8* mwili = tenga(320);
+        mfuatano_umbiza(mwili, 320, ui("%s, %s, %s and asks for a meeting at your earliest convenience."), m->jina, m->cheo, katiba_sababu_ya_ombi(m, zamu), 0, 0, 0);
+        kikasha_ongeza(maombi[i], UJUMBE_OMBI, zamu, leo, ui("Request for a meeting"), mwili);
+        i = i + 1;
+    }
+    // shajara ya wiki kutoka kwa msaidizi
+    n64 wiki_hii = kalenda_mikutano_kati(leo, leo + 6);
+    kama (wiki_hii > 0) {
+        n8* mwili = tenga(240);
+        mfuatano_umbiza(mwili, 240, ui("You have %d meetings in your diary this week. The Calendar shows the day and hour of each."), wiki_hii, 0, 0, 0, 0, 0);
+        kikasha_ongeza(w->msaidizi, UJUMBE_SHAJARA, zamu, leo, ui("Your diary this week"), mwili);
+    }
+    // tahadhari, kila zamu nne
+    kama (zamu % 4 == 1) {
+        n64 ndani = wahusika_tafuta(w, "Minister of the Interior");
+        kama (d->utulivu < 40 && ndani >= 0) {
+            n8* mwili = tenga(240);
+            mfuatano_umbiza(mwili, 240, ui("Stability has fallen to %d. Strikes are spreading in the provinces and the police ask for instructions."), d->utulivu, 0, 0, 0, 0, 0);
+            kikasha_ongeza(ndani, UJUMBE_TAHADHARI, zamu, leo, ui("Unrest in the provinces"), mwili);
+        }
+        n64 fedha = wahusika_tafuta(w, "Minister of Finance");
+        kama (d->hazina < 40 && fedha >= 0) {
+            n8* mwili = tenga(240);
+            mfuatano_umbiza(mwili, 240, ui("Treasury health stands at %d. Salaries for the civil service are due and the reserves will not cover them for long."), d->hazina, 0, 0, 0, 0, 0);
+            kikasha_ongeza(fedha, UJUMBE_TAHADHARI, zamu, leo, ui("The treasury is running low"), mwili);
+        }
+    }
+}

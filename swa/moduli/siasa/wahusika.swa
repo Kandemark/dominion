@@ -1,0 +1,417 @@
+husisha { moduli/siasa/dola.swa }
+
+// wahusika.swa -- watu wa dola: mti mzima wa vyeo vya kila taifa.
+//
+// Katiba ya taifa (moduli/siasa/dola.swa: aina ya utawala na mabaraza yake)
+// ndiyo huamua vyeo vilivyopo. Hakuna seneta pasipo Seneti; ufalme una
+// mrithi na msimamizi wa kasri; dola ya chama kimoja ina katibu mkuu na
+// politburo; muungano wa kabila una machifu wa koo badala ya magavana;
+// jumuiya isiyo na serikali ina wajumbe wa jumuiya tu.
+//
+// Kila cheo kina ngazi (0..9), bosi wake, namna kinavyojazwa (kuchaguliwa,
+// kuteuliwa, kurithi), nani huteua, na baraza linalohakiki uteuzi (ikiwa
+// katiba inataka). Mchezaji anaweza kushika cheo chochote kwenye mti huu:
+// walio juu yake ni wakubwa wake, walio chini ni watu wake.
+//
+// Kila mhusika ana tabia mbili zinazoongoza namna anavyozungumza, na
+// msimamo (-100..100) unaobadilika kadiri mchezaji anavyoshughulika naye.
+
+// Matawi ya dola.
+n64 TAWI_UTENDAJI = 0;
+n64 TAWI_BUNGE = 1;
+n64 TAWI_MAHAKAMA = 2;
+n64 TAWI_JESHI = 3;
+n64 TAWI_MIKOA = 4;
+n64 TAWI_OFISI = 5;         // ofisi binafsi ya mchezaji: msaidizi
+n64 TAWI_IDADI = 6;
+
+n8* tawi_jina(n64 t) {
+    kama (t == TAWI_BUNGE) { rudisha ui("LEGISLATURE"); }
+    kama (t == TAWI_MAHAKAMA) { rudisha ui("JUDICIARY"); }
+    kama (t == TAWI_JESHI) { rudisha ui("ARMED FORCES"); }
+    kama (t == TAWI_MIKOA) { rudisha ui("REGIONS"); }
+    kama (t == TAWI_OFISI) { rudisha ui("YOUR OFFICE"); }
+    rudisha ui("EXECUTIVE");
+}
+
+// Namna cheo kinavyojazwa.
+n64 UJAZAJI_KUCHAGULIWA = 0;
+n64 UJAZAJI_KUTEULIWA = 1;
+n64 UJAZAJI_KURITHI = 2;
+n64 UJAZAJI_NA_BARAZA = 3;      // huchaguliwa na baraza lenyewe
+
+n8* ujazaji_jina(n64 u) {
+    kama (u == UJAZAJI_KUTEULIWA) { rudisha ui("Appointed"); }
+    kama (u == UJAZAJI_KURITHI) { rudisha ui("Hereditary"); }
+    kama (u == UJAZAJI_NA_BARAZA) { rudisha ui("Chosen by the chamber"); }
+    rudisha ui("Elected");
+}
+
+n64 TABIA_IDADI = 12;
+
+n8* tabia_jina(n64 t) {
+    kama (t == 1) { rudisha ui("ambitious"); }
+    kama (t == 2) { rudisha ui("loyal"); }
+    kama (t == 3) { rudisha ui("corrupt"); }
+    kama (t == 4) { rudisha ui("idealistic"); }
+    kama (t == 5) { rudisha ui("pragmatic"); }
+    kama (t == 6) { rudisha ui("hawkish"); }
+    kama (t == 7) { rudisha ui("conciliatory"); }
+    kama (t == 8) { rudisha ui("populist"); }
+    kama (t == 9) { rudisha ui("technocratic"); }
+    kama (t == 10) { rudisha ui("devout"); }
+    kama (t == 11) { rudisha ui("cynical"); }
+    rudisha ui("cautious");
+}
+
+muundo MhusikaWaDola {
+    n8* jina;
+    n8* cheo;               // cheo kamili ("Minister of Finance")
+    n64 tawi;               // TAWI_*
+    n64 ngazi;              // 0 (chifu wa kijiji) .. 9 (mkuu wa dola)
+    n64 bosi;               // faharisi ya mkubwa wake, au -1
+    n64 ujazaji;            // UJAZAJI_*
+    n64 mteuzi;             // faharisi ya anayeteua (na kufuta), au -1
+    n64 uhakiki;            // baraza linalohakiki uteuzi, au -1
+    n64 itikadi;
+    n8* chama;              // jina la chama, au 0
+    n64 faharisi_ya_chama;  // au -1
+    n64 tabia_1;
+    n64 tabia_2;
+    n64 umri;
+    n64 msimamo;            // -100..100 kwa mchezaji
+    n64 kizazi;             // huongezeka kila cheo kinapojazwa upya
+    n64 mkutano;            // 0 haujaombwa, 1 umekubaliwa, 2 umekataliwa, 3 umepangwa
+    n64 mkutano_siku;       // siku ya mkutano uliopangwa (mkutano == 3)
+}
+
+n64 WAHUSIKA_JUU = 180;
+
+muundo Wahusika {
+    n64 idadi;
+    n64* watu;              // MhusikaWaDola* kwa kila mmoja
+    n64 mbegu;
+    n64 msaidizi;           // faharisi ya msaidizi binafsi wa mchezaji
+}
+
+// Jina la kubuni la mtu: jina la kwanza na la ukoo kutoka silabi.
+w0 wahusika_jina(n8* nje, n64 mbegu) {
+    n8* konsonanti = "bdfghjklmnprstvz";
+    n8* vokali = "aeiou";
+    n64 n = 0;
+    n64 neno = 0;
+    wakati (neno < 2) {
+        n64 silabi = 2 + dola_nasibu(mbegu, 300 + neno) % 2;
+        n64 i = 0;
+        wakati (i < silabi) {
+            n64 k = dola_nasibu(mbegu, 310 + neno * 16 + i);
+            n64 c = konsonanti[k % 16];
+            kama (i == 0) { c = c - 32; }
+            nje[n] = c;
+            nje[n + 1] = vokali[(k >> 8) % 5];
+            n = n + 2;
+            // mara moja moja silabi hufungwa kwa konsonanti
+            kama ((k >> 16) % 4 == 0 && i == silabi - 1) { nje[n] = konsonanti[(k >> 20) % 16]; n = n + 1; }
+            i = i + 1;
+        }
+        kama (neno == 0) { nje[n] = 32; n = n + 1; }
+        neno = neno + 1;
+    }
+    nje[n] = 0;
+}
+
+// Mpe mhusika utu mpya (jina, tabia, umri, msimamo) kwa kizazi chake.
+w0 wahusika_zalisha_mtu(Wahusika* w, Dola* d, n64 i) {
+    MhusikaWaDola* m = w->watu[i];
+    n64 k = w->mbegu * 131 + i * 17 + m->kizazi * 7919;
+    kama (m->jina == 0) { m->jina = tenga(40); }
+    wahusika_jina(m->jina, k);
+    m->itikadi = ITIKADI_HURU;
+    m->chama = 0;
+    kama (m->faharisi_ya_chama >= 0 && m->faharisi_ya_chama < d->vyama) {
+        m->itikadi = d->chama_itikadi[m->faharisi_ya_chama];
+        m->chama = d->chama_jina[m->faharisi_ya_chama];
+    }
+    m->tabia_1 = dola_nasibu(k, 400) % TABIA_IDADI;
+    m->tabia_2 = (m->tabia_1 + 1 + dola_nasibu(k, 401) % (TABIA_IDADI - 1)) % TABIA_IDADI;
+    m->umri = 30 + dola_nasibu(k, 402) % 44;
+    m->msimamo = dola_nasibu(k, 403) % 121 - 40;
+    m->mkutano = 0;
+}
+
+// Ongeza cheo kwenye mti. Hurudisha faharisi yake (au -1 mti ukijaa).
+n64 wahusika_ongeza(Wahusika* w, Dola* d, n8* cheo, n64 tawi, n64 ngazi, n64 bosi, n64 ujazaji, n64 mteuzi, n64 uhakiki, n64 chama) {
+    kama (w->idadi >= WAHUSIKA_JUU) { rudisha 0 - 1; }
+    MhusikaWaDola* m = tenga(ukubwa(MhusikaWaDola));
+    weka_sifuri(m, ukubwa(MhusikaWaDola));
+    m->cheo = cheo;
+    m->tawi = tawi;
+    m->ngazi = ngazi;
+    m->bosi = bosi;
+    m->ujazaji = ujazaji;
+    m->mteuzi = mteuzi;
+    m->uhakiki = uhakiki;
+    m->faharisi_ya_chama = chama;
+    n64 i = w->idadi;
+    w->watu[i] = m;
+    w->idadi = i + 1;
+    wahusika_zalisha_mtu(w, d, i);
+    rudisha i;
+}
+
+// Cheo chenye jina la baraza: "Speaker of the Senate".
+n8* wahusika_cheo_cha_baraza(n8* kiolezo, n8* baraza) {
+    n8* nje = tenga(96);
+    mfuatano_umbiza(nje, 96, kiolezo, baraza, 0, 0, 0, 0, 0);
+    rudisha nje;
+}
+
+// Chama cha kwanza cha serikali, na cha kwanza cha upinzani (au -1).
+n64 wahusika_chama_cha_serikali(Dola* d) {
+    n64 c = 0;
+    wakati (c < d->vyama) {
+        kama (d->chama_serikalini[c]) { rudisha c; }
+        c = c + 1;
+    }
+    rudisha 0 - 1;
+}
+
+n64 wahusika_chama_cha_upinzani(Dola* d) {
+    n64 c = 0;
+    wakati (c < d->vyama) {
+        kama (d->chama_serikalini[c] == 0) { rudisha c; }
+        c = c + 1;
+    }
+    rudisha 0 - 1;
+}
+
+// Je, mkuu wa dola hurithi cheo chake?
+n32 wahusika_ni_ufalme(Dola* d) {
+    rudisha d->aina == DOLA_UFALME_WA_KATIBA || d->aina == DOLA_UFALME_KAMILI || d->aina == DOLA_MILKI;
+}
+
+// Tawi la utendaji: mkuu wa dola, makamu au mrithi, mkuu wa serikali,
+// mawaziri na manaibu wao, na vyeo vya pekee vya aina ya utawala.
+// Hurudisha faharisi ya mkuu wa dola.
+n64 wahusika_jenga_utendaji(Wahusika* w, Dola* d, n64 watu) {
+    n64 gs = wahusika_chama_cha_serikali(d);
+    n64 a = d->aina;
+    n64 ujazaji_wa_mkuu = UJAZAJI_KUCHAGULIWA;
+    kama (wahusika_ni_ufalme(d) || a == DOLA_MUUNGANO_WA_KABILA) { ujazaji_wa_mkuu = UJAZAJI_KURITHI; }
+    kama (a == DOLA_UFALME_WA_KUCHAGULIWA || a == DOLA_JUMUIYA_YA_WAUNGWANA || a == DOLA_UTAWALA_WA_KIDINI) { ujazaji_wa_mkuu = UJAZAJI_NA_BARAZA; }
+    n64 mkuu = wahusika_ongeza(w, d, d->mkuu_wa_dola, TAWI_UTENDAJI, 9, 0 - 1, ujazaji_wa_mkuu, 0 - 1, 0 - 1, gs);
+    // makamu, mrithi au naibu -- kufuatana na katiba
+    kama (a == DOLA_JAMHURI_YA_RAIS || a == DOLA_JAMHURI_NUSU_RAIS || a == DOLA_JAMHURI_YA_SHIRIKISHO || a == DOLA_UDIKTETA || a == DOLA_SERIKALI_YA_MPITO) {
+        wahusika_ongeza(w, d, ui("Vice President"), TAWI_UTENDAJI, 8, mkuu, UJAZAJI_KUCHAGULIWA, 0 - 1, 0 - 1, gs);
+    }
+    kama (wahusika_ni_ufalme(d)) {
+        wahusika_ongeza(w, d, ui("Heir to the Throne"), TAWI_UTENDAJI, 8, mkuu, UJAZAJI_KURITHI, 0 - 1, 0 - 1, 0 - 1);
+        wahusika_ongeza(w, d, ui("Lord Chamberlain"), TAWI_UTENDAJI, 6, mkuu, UJAZAJI_KUTEULIWA, mkuu, 0 - 1, 0 - 1);
+    }
+    kama (a == DOLA_CHAMA_KIMOJA) {
+        n64 katibu = wahusika_ongeza(w, d, ui("General Secretary of the Party"), TAWI_UTENDAJI, 9, 0 - 1, UJAZAJI_NA_BARAZA, 0 - 1, 0 - 1, gs);
+        wahusika_ongeza(w, d, ui("Member of the Politburo"), TAWI_UTENDAJI, 8, katibu, UJAZAJI_KUTEULIWA, katibu, 0 - 1, gs);
+        wahusika_ongeza(w, d, ui("Member of the Politburo"), TAWI_UTENDAJI, 8, katibu, UJAZAJI_KUTEULIWA, katibu, 0 - 1, gs);
+        wahusika_ongeza(w, d, ui("Member of the Politburo"), TAWI_UTENDAJI, 8, katibu, UJAZAJI_KUTEULIWA, katibu, 0 - 1, gs);
+    }
+    kama (a == DOLA_UTAWALA_WA_KIDINI) { wahusika_ongeza(w, d, ui("Head of the Clergy"), TAWI_UTENDAJI, 8, mkuu, UJAZAJI_NA_BARAZA, 0 - 1, 0 - 1, gs); }
+    kama (a == DOLA_UTAWALA_WA_KIJESHI) {
+        wahusika_ongeza(w, d, ui("Member of the Junta"), TAWI_UTENDAJI, 8, mkuu, UJAZAJI_KUTEULIWA, mkuu, 0 - 1, gs);
+        wahusika_ongeza(w, d, ui("Member of the Junta"), TAWI_UTENDAJI, 8, mkuu, UJAZAJI_KUTEULIWA, mkuu, 0 - 1, gs);
+    }
+    kama (a == DOLA_JAMHURI_YA_WAFANYABIASHARA) {
+        wahusika_ongeza(w, d, ui("Master of the Merchants' Guild"), TAWI_UTENDAJI, 7, mkuu, UJAZAJI_KUCHAGULIWA, 0 - 1, 0 - 1, gs);
+        wahusika_ongeza(w, d, ui("Master of the Bankers' Guild"), TAWI_UTENDAJI, 7, mkuu, UJAZAJI_KUCHAGULIWA, 0 - 1, 0 - 1, gs);
+    }
+    // mkuu wa serikali: huteuliwa na mkuu wa dola; jamhuri za bunge humhakiki bungeni
+    n64 serikali = mkuu;
+    kama (d->mkuu_wa_serikali != 0) {
+        n64 hakiki = 0 - 1;
+        kama (d->mabaraza > 0 && (a == DOLA_JAMHURI_YA_BUNGE || a == DOLA_JAMHURI_NUSU_RAIS || a == DOLA_UFALME_WA_KATIBA || a == DOLA_JAMHURI_YA_SHIRIKISHO)) { hakiki = 0; }
+        serikali = wahusika_ongeza(w, d, d->mkuu_wa_serikali, TAWI_UTENDAJI, 8, mkuu, UJAZAJI_KUTEULIWA, mkuu, hakiki, gs);
+    }
+    // mawaziri: 8..14 kufuatana na ukubwa wa taifa; katiba za rais na bunge huhakiki
+    n64 idadi = 8 + watu / 12000000;
+    kama (idadi > 14) { idadi = 14; }
+    n64 hakiki_ya_waziri = 0 - 1;
+    kama (d->mabaraza > 0 && (a == DOLA_JAMHURI_YA_RAIS || a == DOLA_JAMHURI_YA_SHIRIKISHO || a == DOLA_SERIKALI_YA_MPITO)) { hakiki_ya_waziri = d->mabaraza - 1; }
+    n64 i = 0;
+    wakati (i < idadi) {
+        n8* wizara = ui("Minister of Finance");
+        kama (i == 1) { wizara = ui("Minister of Foreign Affairs"); }
+        kama (i == 2) { wizara = ui("Minister of Defence"); }
+        kama (i == 3) { wizara = ui("Minister of the Interior"); }
+        kama (i == 4) { wizara = ui("Minister of Justice"); }
+        kama (i == 5) { wizara = ui("Minister of Education"); }
+        kama (i == 6) { wizara = ui("Minister of Health"); }
+        kama (i == 7) { wizara = ui("Minister of Trade and Industry"); }
+        kama (i == 8) { wizara = ui("Minister of Agriculture"); }
+        kama (i == 9) { wizara = ui("Minister of Labour"); }
+        kama (i == 10) { wizara = ui("Minister of Transport"); }
+        kama (i == 11) { wizara = ui("Minister of Energy"); }
+        kama (i == 12) { wizara = ui("Minister of Culture"); }
+        kama (i == 13) { wizara = ui("Minister of Planning"); }
+        // muungano: wizara hugawiwa vyama vya serikali kwa zamu
+        n64 chama = gs;
+        n64 c = 0;
+        n64 zamu = i;
+        wakati (c < d->vyama && d->tawala == 0) {
+            kama (d->chama_serikalini[c]) { kama (zamu % 3 == 2) { chama = c; } zamu = zamu + 1; }
+            c = c + 1;
+        }
+        n64 waziri = wahusika_ongeza(w, d, wizara, TAWI_UTENDAJI, 7, serikali, UJAZAJI_KUTEULIWA, serikali, hakiki_ya_waziri, chama);
+        kama (i < 6 && waziri >= 0) {
+            n8* naibu = ui("Deputy Minister of Finance");
+            kama (i == 1) { naibu = ui("Deputy Minister of Foreign Affairs"); }
+            kama (i == 2) { naibu = ui("Deputy Minister of Defence"); }
+            kama (i == 3) { naibu = ui("Deputy Minister of the Interior"); }
+            kama (i == 4) { naibu = ui("Deputy Minister of Justice"); }
+            kama (i == 5) { naibu = ui("Deputy Minister of Education"); }
+            wahusika_ongeza(w, d, naibu, TAWI_UTENDAJI, 6, waziri, UJAZAJI_KUTEULIWA, waziri, 0 - 1, chama);
+        }
+        i = i + 1;
+    }
+    wahusika_ongeza(w, d, ui("Chief of Staff"), TAWI_UTENDAJI, 6, mkuu, UJAZAJI_KUTEULIWA, mkuu, 0 - 1, gs);
+    wahusika_ongeza(w, d, ui("Press Secretary"), TAWI_UTENDAJI, 5, mkuu, UJAZAJI_KUTEULIWA, mkuu, 0 - 1, gs);
+    rudisha mkuu;
+}
+
+// Tawi la kutunga sheria: kwa kila baraza la katiba -- spika, kiongozi wa
+// wengi, wa upinzani, mnadhimu, na mjumbe mashuhuri wa kila chama.
+w0 wahusika_jenga_bunge(Wahusika* w, Dola* d) {
+    n64 gs = wahusika_chama_cha_serikali(d);
+    n64 up = wahusika_chama_cha_upinzani(d);
+    n64 b = 0;
+    wakati (b < d->mabaraza) {
+        n8* baraza = d->baraza_jina[b];
+        n64 ujazaji = UJAZAJI_KUCHAGULIWA;
+        kama (d->baraza_uteuzi[b] == UTEUZI_KURITHI) { ujazaji = UJAZAJI_KURITHI; }
+        kama (d->baraza_uteuzi[b] == UTEUZI_KUTEULIWA || d->baraza_uteuzi[b] == UTEUZI_WA_KIJESHI || d->baraza_uteuzi[b] == UTEUZI_WA_KIDINI) { ujazaji = UJAZAJI_KUTEULIWA; }
+        n64 spika = wahusika_ongeza(w, d, wahusika_cheo_cha_baraza(ui("Speaker of the %s"), baraza), TAWI_BUNGE, 7, 0 - 1, UJAZAJI_NA_BARAZA, 0 - 1, 0 - 1, gs);
+        wahusika_ongeza(w, d, wahusika_cheo_cha_baraza(ui("Deputy Speaker of the %s"), baraza), TAWI_BUNGE, 6, spika, UJAZAJI_NA_BARAZA, 0 - 1, 0 - 1, gs);
+        kama (d->vyama > 0) { wahusika_ongeza(w, d, wahusika_cheo_cha_baraza(ui("Majority Leader, %s"), baraza), TAWI_BUNGE, 6, spika, UJAZAJI_NA_BARAZA, 0 - 1, 0 - 1, gs); }
+        kama (up >= 0 && d->viti[b * DOLA_VYAMA_JUU + up] > 0) { wahusika_ongeza(w, d, wahusika_cheo_cha_baraza(ui("Leader of the Opposition, %s"), baraza), TAWI_BUNGE, 6, spika, UJAZAJI_NA_BARAZA, 0 - 1, 0 - 1, up); }
+        kama (d->vyama > 0) { wahusika_ongeza(w, d, wahusika_cheo_cha_baraza(ui("Chief Whip, %s"), baraza), TAWI_BUNGE, 5, spika, UJAZAJI_NA_BARAZA, 0 - 1, 0 - 1, gs); }
+        // wenyeviti wa kamati kuu za baraza
+        wahusika_ongeza(w, d, wahusika_cheo_cha_baraza(ui("Chair of the Finance Committee, %s"), baraza), TAWI_BUNGE, 5, spika, UJAZAJI_NA_BARAZA, 0 - 1, 0 - 1, gs);
+        wahusika_ongeza(w, d, wahusika_cheo_cha_baraza(ui("Chair of the Foreign Affairs Committee, %s"), baraza), TAWI_BUNGE, 5, spika, UJAZAJI_NA_BARAZA, 0 - 1, 0 - 1, gs);
+        kama (up >= 0 && d->viti[b * DOLA_VYAMA_JUU + up] > 0) { wahusika_ongeza(w, d, wahusika_cheo_cha_baraza(ui("Chair of the Public Accounts Committee, %s"), baraza), TAWI_BUNGE, 5, spika, UJAZAJI_NA_BARAZA, 0 - 1, 0 - 1, up); }
+        n64 c = 0;
+        n64 wajumbe = 0;
+        wakati (c < d->vyama && wajumbe < 6) {
+            kama (d->viti[b * DOLA_VYAMA_JUU + c] > 0) {
+                wahusika_ongeza(w, d, wahusika_cheo_cha_baraza(ui("Member, %s"), baraza), TAWI_BUNGE, 4, spika, ujazaji, 0 - 1, 0 - 1, c);
+                wajumbe = wajumbe + 1;
+            }
+            c = c + 1;
+        }
+        b = b + 1;
+    }
+}
+
+// Mahakama, majeshi na mikoa.
+w0 wahusika_jenga_mengine(Wahusika* w, Dola* d, n64 mkuu) {
+    n64 gs = wahusika_chama_cha_serikali(d);
+    n64 a = d->aina;
+    // mahakama: jaji mkuu huteuliwa na mkuu wa dola; baraza la juu humhakiki likiwepo
+    n64 hakiki = 0 - 1;
+    kama (d->mabaraza > 0 && (a == DOLA_JAMHURI_YA_RAIS || a == DOLA_JAMHURI_YA_BUNGE || a == DOLA_JAMHURI_NUSU_RAIS || a == DOLA_JAMHURI_YA_SHIRIKISHO)) { hakiki = d->mabaraza - 1; }
+    n64 jaji = wahusika_ongeza(w, d, ui("Chief Justice"), TAWI_MAHAKAMA, 7, 0 - 1, UJAZAJI_KUTEULIWA, mkuu, hakiki, 0 - 1);
+    wahusika_ongeza(w, d, ui("Justice of the High Court"), TAWI_MAHAKAMA, 6, jaji, UJAZAJI_KUTEULIWA, mkuu, hakiki, 0 - 1);
+    wahusika_ongeza(w, d, ui("Justice of the High Court"), TAWI_MAHAKAMA, 6, jaji, UJAZAJI_KUTEULIWA, mkuu, hakiki, 0 - 1);
+    wahusika_ongeza(w, d, ui("Attorney General"), TAWI_MAHAKAMA, 6, jaji, UJAZAJI_KUTEULIWA, mkuu, 0 - 1, gs);
+    // majeshi
+    n64 mnadhimu = wahusika_ongeza(w, d, ui("Chief of the General Staff"), TAWI_JESHI, 7, mkuu, UJAZAJI_KUTEULIWA, mkuu, 0 - 1, 0 - 1);
+    wahusika_ongeza(w, d, ui("Commander of the Army"), TAWI_JESHI, 6, mnadhimu, UJAZAJI_KUTEULIWA, mkuu, 0 - 1, 0 - 1);
+    wahusika_ongeza(w, d, ui("Commander of the Navy"), TAWI_JESHI, 6, mnadhimu, UJAZAJI_KUTEULIWA, mkuu, 0 - 1, 0 - 1);
+    wahusika_ongeza(w, d, ui("Commander of the Air Force"), TAWI_JESHI, 6, mnadhimu, UJAZAJI_KUTEULIWA, mkuu, 0 - 1, 0 - 1);
+    wahusika_ongeza(w, d, ui("Director of Intelligence"), TAWI_JESHI, 6, mkuu, UJAZAJI_KUTEULIWA, mkuu, 0 - 1, 0 - 1);
+    // mikoa: magavana huchaguliwa kwenye mashirikisho, huteuliwa kwingineko;
+    // muungano wa kabila una machifu wa koo wanaorithi
+    n64 ujazaji = UJAZAJI_KUTEULIWA;
+    n64 mteuzi = mkuu;
+    n8* cheo = ui("Provincial Governor");
+    kama (a == DOLA_JAMHURI_YA_SHIRIKISHO || a == DOLA_MUUNGANO_WA_DOLA) { ujazaji = UJAZAJI_KUCHAGULIWA; mteuzi = 0 - 1; cheo = ui("State Governor"); }
+    kama (a == DOLA_MUUNGANO_WA_KABILA) { ujazaji = UJAZAJI_KURITHI; mteuzi = 0 - 1; cheo = ui("Clan Chief"); }
+    n64 i = 0;
+    wakati (i < 8) {
+        n64 gavana = wahusika_ongeza(w, d, cheo, TAWI_MIKOA, 6, mkuu, ujazaji, mteuzi, 0 - 1, gs);
+        kama (i < 4 && gavana >= 0) {
+            n64 wilaya = wahusika_ongeza(w, d, ui("District Commissioner"), TAWI_MIKOA, 3, gavana, UJAZAJI_KUTEULIWA, gavana, 0 - 1, 0 - 1);
+            wahusika_ongeza(w, d, ui("Village Chief"), TAWI_MIKOA, 1, wilaya, UJAZAJI_KURITHI, 0 - 1, 0 - 1, 0 - 1);
+        }
+        i = i + 1;
+    }
+}
+
+// Mti wa dola kutoka katiba yake. `watu` ni idadi ya watu wa taifa.
+Wahusika* wahusika_unda(Dola* d, n64 mbegu, n64 watu) {
+    Wahusika* w = tenga(ukubwa(Wahusika));
+    w->idadi = 0;
+    w->watu = tenga(8 * WAHUSIKA_JUU);
+    w->mbegu = mbegu;
+    w->msaidizi = 0 - 1;
+    kama (d->aina == DOLA_BILA_SERIKALI) {
+        // hakuna serikali: wajumbe wa jumuiya na wasemaji wa vijiji pekee
+        n64 i = 0;
+        wakati (i < 8) {
+            n64 mjumbe = wahusika_ongeza(w, d, ui("Commune Delegate"), TAWI_MIKOA, 4, 0 - 1, UJAZAJI_KUCHAGULIWA, 0 - 1, 0 - 1, 0 - 1);
+            wahusika_ongeza(w, d, ui("Village Speaker"), TAWI_MIKOA, 1, mjumbe, UJAZAJI_KUCHAGULIWA, 0 - 1, 0 - 1, 0 - 1);
+            i = i + 1;
+        }
+    } sivyo {
+        n64 mkuu = wahusika_jenga_utendaji(w, d, watu);
+        wahusika_jenga_bunge(w, d);
+        wahusika_jenga_mengine(w, d, mkuu);
+    }
+    w->msaidizi = wahusika_ongeza(w, d, ui("Personal Assistant"), TAWI_OFISI, 2, 0 - 1, UJAZAJI_KUTEULIWA, 0 - 1, 0 - 1, 0 - 1);
+    rudisha w;
+}
+
+// Akiba: mti mmoja kwa kila taifa.
+n64* wahusika_akiba = 0;
+
+Wahusika* wahusika_wa_taifa(n64 faharisi, Dola* d, n64 watu) {
+    kama (faharisi < 0 || faharisi >= DOLA_AKIBA_UWEZO || d == 0) { rudisha 0; }
+    kama (wahusika_akiba == 0) {
+        wahusika_akiba = tenga(8 * DOLA_AKIBA_UWEZO);
+        weka_sifuri(wahusika_akiba, 8 * DOLA_AKIBA_UWEZO);
+    }
+    kama (wahusika_akiba[faharisi] == 0) { wahusika_akiba[faharisi] = wahusika_unda(d, faharisi, watu); }
+    rudisha wahusika_akiba[faharisi];
+}
+
+MhusikaWaDola* wahusika_pata(Wahusika* w, n64 i) {
+    kama (w == 0 || i < 0 || i >= w->idadi) { rudisha 0; }
+    rudisha w->watu[i];
+}
+
+// Faharisi ya mhusika wa kwanza mwenye cheo chenye maneno haya, au -1.
+n64 wahusika_tafuta(Wahusika* w, n8* cheo) {
+    n64 i = 0;
+    wakati (i < w->idadi) {
+        MhusikaWaDola* m = w->watu[i];
+        kama (tafuta_mfuatano(m->cheo, cheo) >= 0) { rudisha i; }
+        i = i + 1;
+    }
+    rudisha 0 - 1;
+}
+
+// Kina cha mhusika kwenye mti (0 = hana mkubwa).
+n64 wahusika_kina(Wahusika* w, n64 i) {
+    n64 kina = 0;
+    MhusikaWaDola* m = wahusika_pata(w, i);
+    wakati (m != 0 && m->bosi >= 0 && kina < 6) {
+        kina = kina + 1;
+        m = wahusika_pata(w, m->bosi);
+    }
+    rudisha kina;
+}
+
+n8* msimamo_jina(n64 m) {
+    kama (m >= 50) { rudisha ui("devoted"); }
+    kama (m >= 15) { rudisha ui("friendly"); }
+    kama (m > 0 - 15) { rudisha ui("neutral"); }
+    kama (m > 0 - 50) { rudisha ui("wary"); }
+    rudisha ui("hostile");
+}

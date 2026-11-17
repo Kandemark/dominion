@@ -1,0 +1,243 @@
+// mataifa_data.swa — tafsiri ya src/core/world/nations_data.c (na .h)
+// kwenda Swa. Faharisi kuu ya mataifa ya dunia halisi (jina, misimbo
+// ya ISO, bara, idadi ya watu, GDP, kuratibu za mji mkuu).
+//
+// Kiambishi: dunia_mataifa_ — angalia ../../KANUNI-MAJINA.md.
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - civ_nations_data_load() SASA IMELETWA kama dunia_mataifa_pakia
+//     (angalia chini) -- kisomaji cha faili la binary data/nations.bin
+//     halisi, kikitumia msingi/maktaba/bin_soma.swa (visaidizi vya
+//     kusoma u8/u16le/u32le/f32le/mfuatano, vilivyojaribiwa kwa data
+//     halisi ya IEEE754 kabla ya kutumika hapa).
+//   - safu ya "nations" (inayokua, C: civ_nation_data_t*) imekuwa
+//     n64* ya vielekezi vya DuniaTaifaData (mtindo wa #185,
+//     angalia dini.swa).
+//   - float imekuwa d64 kila mahali (Swa haina float ya baiti 4).
+//   - dunia_mataifa_ongeza() bado inapatikana kwa kuongeza taifa
+//     moja moja kwa mkono (majaribio), kando na dunia_mataifa_pakia().
+
+husisha { msingi/msingi_civ.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/faili.swa }
+husisha { msingi/maktaba/bin_soma.swa }
+
+n32 DUNIA_MATAIFA_JINA_UPEO = 64;
+
+muundo DuniaTaifaData {
+    n32 kitambulisho;
+    n8* iso_a3;
+    n8* iso_a2;
+    n8* jina;
+    n32 rangi_rgb;
+    n8* bara;
+    n8* mkoa;
+    n8* mkoa_mdogo;
+    n32 idadi_ya_watu_ukadiriaji;
+    n32 gdp_ukadiriaji_milioni;
+    d64 mji_mkuu_lon;
+    d64 mji_mkuu_lat;
+    d64 katikati_lon;
+    d64 katikati_lat;
+    d64 eneo_km2;
+};
+
+muundo DuniaMataifaData {
+    n64* mataifa;
+    n32 idadi;
+    n32 uwezo;
+};
+
+DuniaTaifaData* dunia_mataifa_pata_kwa_faharisi(DuniaMataifaData* nd, n32 faharisi) {
+    rudisha nd->mataifa[faharisi];
+}
+
+DuniaMataifaData* dunia_mataifa_data_unda() {
+    DuniaMataifaData* nd = tenga(ukubwa(DuniaMataifaData));
+    nd->uwezo = 256;
+    nd->idadi = 0;
+    nd->mataifa = tenga(ukubwa(n64) * nd->uwezo);
+    rudisha nd;
+}
+
+w0 dunia_mataifa_data_uharibu(DuniaMataifaData* nd) {
+    achilia nd->mataifa;
+    achilia nd;
+}
+
+DuniaTaifaData* dunia_mataifa_ongeza(DuniaMataifaData* nd, n32 kitambulisho, n8* iso_a3,
+                                       n8* iso_a2, n8* jina) {
+    kama (nd->idadi >= nd->uwezo) {
+        nd->uwezo = nd->uwezo * 2;
+        nd->mataifa = badili(nd->mataifa, ukubwa(n64) * nd->uwezo);
+    }
+
+    DuniaTaifaData* t = tenga(ukubwa(DuniaTaifaData));
+    t->kitambulisho = kitambulisho;
+    t->iso_a3 = iso_a3;
+    t->iso_a2 = iso_a2;
+    t->jina = jina;
+    t->rangi_rgb = 0;
+    t->bara = 0;
+    t->mkoa = 0;
+    t->mkoa_mdogo = 0;
+    t->idadi_ya_watu_ukadiriaji = 0;
+    t->gdp_ukadiriaji_milioni = 0;
+    t->mji_mkuu_lon = 0.0;
+    t->mji_mkuu_lat = 0.0;
+    t->katikati_lon = 0.0;
+    t->katikati_lat = 0.0;
+    t->eneo_km2 = 0.0;
+
+    nd->mataifa[nd->idadi] = t;
+    nd->idadi = nd->idadi + 1;
+    rudisha t;
+}
+
+DuniaTaifaData* dunia_mataifa_pata_kwa_kitambulisho(DuniaMataifaData* nd, n32 kitambulisho) {
+    kama (nd == 0) { rudisha 0; }
+    n32 i = 0;
+    wakati (i < nd->idadi) {
+        DuniaTaifaData* t = dunia_mataifa_pata_kwa_faharisi(nd, i);
+        kama (t->kitambulisho == kitambulisho) { rudisha t; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+DuniaTaifaData* dunia_mataifa_pata_kwa_iso(DuniaMataifaData* nd, n8* iso_a3) {
+    kama (nd == 0 || iso_a3 == 0) { rudisha 0; }
+    n32 i = 0;
+    wakati (i < nd->idadi) {
+        DuniaTaifaData* t = dunia_mataifa_pata_kwa_faharisi(nd, i);
+        kama (linganisha_mfuatano(t->iso_a3, iso_a3) == 0) { rudisha t; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+DuniaTaifaData* dunia_mataifa_pata_kwa_jina(DuniaMataifaData* nd, n8* jina) {
+    kama (nd == 0 || jina == 0) { rudisha 0; }
+    n32 i = 0;
+    wakati (i < nd->idadi) {
+        DuniaTaifaData* t = dunia_mataifa_pata_kwa_faharisi(nd, i);
+        kama (linganisha_mfuatano(t->jina, jina) == 0) { rudisha t; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+// NATIONS_MAGIC ("NANT" kwa endian ndogo) = 0x4E414E54
+n32 DUNIA_MATAIFA_MAGIC = 1312902740;
+
+// dunia_mataifa_pakia: soma faili la binary data/nations.bin halisi
+// na kujaza DuniaMataifaData. Muundo wa faili (endian ndogo):
+// magic(u32) version(u32) idadi(u32) kisha kwa kila taifa: id(u32)
+// iso_a3_urefu(u8)+mfuatano iso_a2_urefu(u8)+mfuatano
+// jina_urefu(u16)+mfuatano(<=255) rangi_rgb(u32)
+// bara_urefu(u8)+mfuatano mkoa_urefu(u8)+mfuatano
+// mkoa_mdogo_urefu(u8)+mfuatano idadi_ya_watu(u32) gdp_milioni(u32)
+// mji_mkuu_lon/lat(f32) katikati_lon/lat(f32) eneo_km2(f32).
+CivMatokeo dunia_mataifa_pakia(DuniaMataifaData* nd, n8* njia) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    // MUHIMU: `tenga()` ina kikomo cha JUMLA cha baiti milioni 1 kwa
+    // maisha yote ya programu (angalia lugha-swa/swa#190) — bafa hili
+    // limewekwa dogo kimakusudi (64KB) kuacha nafasi ya kutosha kwa
+    // migao mingine yote (struct za DuniaTaifaData, mfuatano) ndani
+    // ya kikomo hicho hicho.
+    n32 uwezo_bafa = 65536;
+    n8* buf = tenga(uwezo_bafa);
+    n64 urefu64 = faili_soma_yote(njia, buf, uwezo_bafa);
+    kama (urefu64 < 12) {
+        r.hitilafu = CIV_HITILAFU_HAIJAPATIKANA;
+        r.ujumbe = "faili halifunguki au ni fupi mno";
+        rudisha r;
+    }
+
+    n32 magic = civ_bin_u32le(buf, 0);
+    kama (magic != DUNIA_MATAIFA_MAGIC) {
+        r.hitilafu = CIV_HITILAFU_HOJA_MBAYA;
+        r.ujumbe = "magic si sahihi";
+        rudisha r;
+    }
+    n32 idadi = civ_bin_u32le(buf, 8);
+
+    n32 off = 12;
+    n32 i = 0;
+    wakati (i < idadi) {
+        n32 kitambulisho = civ_bin_u32le(buf, off);
+        off = off + 4;
+
+        n32 iso_a3_urefu = civ_bin_u8(buf, off);
+        off = off + 1;
+        n8* iso_a3 = civ_bin_mfuatano(buf, off, iso_a3_urefu);
+        off = off + iso_a3_urefu;
+
+        n32 iso_a2_urefu = civ_bin_u8(buf, off);
+        off = off + 1;
+        n8* iso_a2 = civ_bin_mfuatano(buf, off, iso_a2_urefu);
+        off = off + iso_a2_urefu;
+
+        n32 jina_urefu = civ_bin_u16le(buf, off);
+        off = off + 2;
+        n32 jina_urefu_kikomo = jina_urefu;
+        kama (jina_urefu_kikomo > 255) { jina_urefu_kikomo = 255; }
+        n8* jina = civ_bin_mfuatano(buf, off, jina_urefu_kikomo);
+        off = off + jina_urefu_kikomo;
+
+        n32 rangi_rgb = civ_bin_u32le(buf, off);
+        off = off + 4;
+
+        n32 bara_urefu = civ_bin_u8(buf, off);
+        off = off + 1;
+        n8* bara = civ_bin_mfuatano(buf, off, bara_urefu);
+        off = off + bara_urefu;
+
+        n32 mkoa_urefu = civ_bin_u8(buf, off);
+        off = off + 1;
+        n8* mkoa = civ_bin_mfuatano(buf, off, mkoa_urefu);
+        off = off + mkoa_urefu;
+
+        n32 mkoa_mdogo_urefu = civ_bin_u8(buf, off);
+        off = off + 1;
+        n8* mkoa_mdogo = civ_bin_mfuatano(buf, off, mkoa_mdogo_urefu);
+        off = off + mkoa_mdogo_urefu;
+
+        n32 idadi_ya_watu_ukadiriaji = civ_bin_u32le(buf, off);
+        off = off + 4;
+        n32 gdp_ukadiriaji_milioni = civ_bin_u32le(buf, off);
+        off = off + 4;
+        d64 mji_mkuu_lon = civ_bin_f32le(buf, off);
+        off = off + 4;
+        d64 mji_mkuu_lat = civ_bin_f32le(buf, off);
+        off = off + 4;
+        d64 katikati_lon = civ_bin_f32le(buf, off);
+        off = off + 4;
+        d64 katikati_lat = civ_bin_f32le(buf, off);
+        off = off + 4;
+        d64 eneo_km2 = civ_bin_f32le(buf, off);
+        off = off + 4;
+
+        DuniaTaifaData* t = dunia_mataifa_ongeza(nd, kitambulisho, iso_a3, iso_a2, jina);
+        t->rangi_rgb = rangi_rgb;
+        t->bara = bara;
+        t->mkoa = mkoa;
+        t->mkoa_mdogo = mkoa_mdogo;
+        t->idadi_ya_watu_ukadiriaji = idadi_ya_watu_ukadiriaji;
+        t->gdp_ukadiriaji_milioni = gdp_ukadiriaji_milioni;
+        t->mji_mkuu_lon = mji_mkuu_lon;
+        t->mji_mkuu_lat = mji_mkuu_lat;
+        t->katikati_lon = katikati_lon;
+        t->katikati_lat = katikati_lat;
+        t->eneo_km2 = eneo_km2;
+
+        i = i + 1;
+    }
+
+    achilia buf;
+    r.ujumbe = "taifa zimepakiwa";
+    rudisha r;
+}

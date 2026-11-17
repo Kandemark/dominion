@@ -1,0 +1,123 @@
+// daftari.swa — tafsiri ya
+// src/core/governance/interaction/notebook.c (na .h) kwenda Swa.
+// Daftari la vidokezo la mchezaji.
+//
+// Kiambishi: utawala_daftari_ — angalia ../../../KANUNI-MAJINA.md.
+// notes[] (safu inayokua ya C) imekuwa safu ya n64* ya vielekezi
+// vya UtawalaKidokezo* (angalia lugha-swa/swa#185, mfano halisi:
+// dini.swa). Kitambulisho cha kidokezo (kilichoundwa na
+// snprintf("NOTE_%zu")) kimekuwa n32 inayoongezeka (kaunta) badala
+// ya mfuatano — mtindo uleule uliotumika kwenye biashara_nje.swa
+// kwa id ya njia.
+
+husisha { msingi/msingi_civ.swa }
+
+n32 UTAWALA_DAFTARI_UWEZO_AWALI = 32;
+
+muundo UtawalaKidokezo {
+    n32 kitambulisho;
+    n8* kichwa;
+    n8* maudhui;
+    n64 muda;
+};
+
+muundo UtawalaDaftari {
+    n64* vidokezo;   // safu ya vielekezi vya UtawalaKidokezo* (#185)
+    n32 idadi;
+    n32 uwezo;
+    n32 kaunta_ya_kitambulisho;
+};
+
+UtawalaKidokezo* utawala_daftari_pata(UtawalaDaftari* d, n32 idx) {
+    rudisha d->vidokezo[idx];
+}
+
+UtawalaDaftari* utawala_daftari_unda() {
+    UtawalaDaftari* d = tenga(ukubwa(UtawalaDaftari));
+    d->uwezo = UTAWALA_DAFTARI_UWEZO_AWALI;
+    d->idadi = 0;
+    d->kaunta_ya_kitambulisho = 0;
+    d->vidokezo = tenga(ukubwa(n64) * d->uwezo);
+    rudisha d;
+}
+
+w0 utawala_daftari_uharibu(UtawalaDaftari* d) {
+    achilia d->vidokezo;
+    achilia d;
+}
+
+CivMatokeo utawala_daftari_ongeza_kidokezo(UtawalaDaftari* d, n8* kichwa, n8* maudhui) {
+    CivMatokeo m;
+    m.hitilafu = CIV_SAWA;
+    m.ujumbe = 0;
+    kama (d == 0 || kichwa == 0 || maudhui == 0) {
+        m.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        m.ujumbe = "Kielekezi tupu";
+        rudisha m;
+    }
+    kama (d->idadi >= d->uwezo) {
+        // MUHIMU: `badili` imeepukwa kwa makusudi -- ikitumika ndani
+        // ya graph kubwa za husisha (struct 30+), ukaguzi wa aina wa
+        // hoja yake huvunjika kwa uwongo (lugha-swa/swa#189, muundo
+        // huu unatumika sasa kwenye utawala/serikali.swa yenye struct
+        // 40+). Ukuzi wa mkono kupitia tenga + kunakili unaepuka njia
+        // ya msimbo iliyoathirika bila kubadilisha tabia.
+        n32 uwezo_mpya = d->uwezo * 2;
+        n64* vidokezo_mpya = tenga(ukubwa(n64) * uwezo_mpya);
+        n32 vi = 0;
+        wakati (vi < d->idadi) {
+            vidokezo_mpya[vi] = d->vidokezo[vi];
+            vi = vi + 1;
+        }
+        d->vidokezo = vidokezo_mpya;
+        d->uwezo = uwezo_mpya;
+    }
+    UtawalaKidokezo* n = tenga(ukubwa(UtawalaKidokezo));
+    d->kaunta_ya_kitambulisho = d->kaunta_ya_kitambulisho + 1;
+    n->kitambulisho = d->kaunta_ya_kitambulisho;
+    n->kichwa = kichwa;
+    n->maudhui = maudhui;
+    n->muda = civ_muda_sasa();
+    d->vidokezo[d->idadi] = n;
+    d->idadi = d->idadi + 1;
+    rudisha m;
+}
+
+CivMatokeo utawala_daftari_ondoa_kidokezo(UtawalaDaftari* d, n32 kitambulisho) {
+    CivMatokeo m;
+    m.hitilafu = CIV_HITILAFU_HAIJAPATIKANA;
+    m.ujumbe = "Kidokezo hakikupatikana";
+    kama (d == 0) {
+        m.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        m.ujumbe = "Daftari tupu";
+        rudisha m;
+    }
+    n32 i = 0;
+    wakati (i < d->idadi) {
+        UtawalaKidokezo* n = utawala_daftari_pata(d, i);
+        kama (n->kitambulisho == kitambulisho) {
+            n32 j = i;
+            wakati (j < d->idadi - 1) {
+                d->vidokezo[j] = d->vidokezo[j + 1];
+                j = j + 1;
+            }
+            d->idadi = d->idadi - 1;
+            m.hitilafu = CIV_SAWA;
+            m.ujumbe = 0;
+            rudisha m;
+        }
+        i = i + 1;
+    }
+    rudisha m;
+}
+
+UtawalaKidokezo* utawala_daftari_tafuta_kidokezo(UtawalaDaftari* d, n32 kitambulisho) {
+    kama (d == 0) { rudisha 0; }
+    n32 i = 0;
+    wakati (i < d->idadi) {
+        UtawalaKidokezo* n = utawala_daftari_pata(d, i);
+        kama (n->kitambulisho == kitambulisho) { rudisha n; }
+        i = i + 1;
+    }
+    rudisha 0;
+}

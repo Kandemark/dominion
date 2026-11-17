@@ -1,0 +1,14 @@
+# vendored-manifest.txt -- orodha ya nakala za maktaba ya msingi
+# (vendored) ndani ya Dominion, zinazopaswa kuendana na chanzo chake
+# halisi kwenye hazina ya lugha (lugha-swa/swa). Kila mstari:
+# <njia-ya-Dominion (jamaa na swa/, saraka ambayo kagua_usawazishaji
+# LAZIMA iendeshwe kutoka humo)> TABO <njia-jamaa-na-mzizi-wa-lugha-swa>
+#
+# Angalia gharama/kagua_usawazishaji.swa kwa jinsi ya kutumia.
+msingi/maktaba/faili.swa	msingi/maktaba/faili.swa
+msingi/maktaba/hesabu.swa	msingi/maktaba/hesabu.swa
+msingi/maktaba/kumbukumbu.swa	msingi/maktaba/kumbukumbu.swa
+msingi/maktaba/mfuatano.swa	msingi/maktaba/mfuatano.swa
+msingi/maktaba/mpangilio.swa	msingi/maktaba/mpangilio.swa
+msingi/maktaba/orodha.swa	msingi/maktaba/orodha.swa
+msingi/maktaba/ramani.swa	msingi/maktaba/ramani.swa

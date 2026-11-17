@@ -1,0 +1,334 @@
+husisha { moduli/onyesho/baiti_ghafi.swa }
+
+// turubai.swa -- turubai ya 2D yenye kingo laini (anti-aliasing), uwazi
+// (alpha) na eneo la kukata. Ni tabaka la chini la injini ya onyesho ya
+// Dominion: paneli, jedwali, chati na maandishi vyote huchora kupitia hapa.
+//
+// Tofauti na mchoro.swa (pikseli nzima au tupu, mipaka ya turubai kama
+// hoja za kila wito), turubai hubeba hali yake:
+//   - bafa ya XRGB8888 (ile ile ya Wayland shm / DRM / tenga());
+//   - eneo la kukata [kx0,kx1) x [ky0,ky1) -- hakuna pikseli inayoandikwa nje;
+//   - brashi: rangi 0xRRGGBB na uwazi 0..255.
+//
+// Kingo laini hupatikana kwa "funiko": sehemu ya pikseli iliyofunikwa na
+// umbo, 0..256. Kwa pembe ya mviringo funiko ni r - umbali + 1/2 (umbali
+// wa kitovu cha pikseli kutoka kitovu cha pembe), kwa hesabu ya namba
+// kamili zenye sehemu 8 za biti (1/256 ya pikseli) -- hakuna desimali.
+
+muundo Turubai {
+    n8* pikseli;
+    n64 hatua;      // baiti kwa kila mstari wa pikseli
+    n64 upana;
+    n64 kimo;
+    n64 kx0;        // eneo la kukata
+    n64 ky0;
+    n64 kx1;
+    n64 ky1;
+    n64 rangi;      // brashi: 0xRRGGBB
+    n64 uwazi;      // brashi: 0 (haionekani) .. 255 (kamili)
+}
+
+// Funga turubai juu ya bafa iliyopo (shm ya Wayland, DRM, au tenga()).
+w0 turubai_funga(Turubai* t, n8* pikseli, n64 hatua, n64 upana, n64 kimo) {
+    t->pikseli = pikseli;
+    t->hatua = hatua;
+    t->upana = upana;
+    t->kimo = kimo;
+    t->kx0 = 0;
+    t->ky0 = 0;
+    t->kx1 = upana;
+    t->ky1 = kimo;
+    t->rangi = 16777215;
+    t->uwazi = 255;
+}
+
+// Turubai mpya yenye bafa yake (nje ya skrini).
+Turubai* turubai_unda(n64 upana, n64 kimo) {
+    Turubai* t = tenga(ukubwa(Turubai));
+    n8* p = tenga(upana * kimo * 4);
+    weka_sifuri(p, upana * kimo * 4);
+    turubai_funga(t, p, upana * 4, upana, kimo);
+    rudisha t;
+}
+
+w0 turubai_brashi(Turubai* t, n64 rangi, n64 uwazi) {
+    t->rangi = rangi;
+    t->uwazi = uwazi;
+}
+
+// Punguza eneo la kukata hadi (x,y,w,h), likibanwa ndani ya turubai.
+w0 turubai_kata(Turubai* t, n64 x, n64 y, n64 w, n64 h) {
+    n64 x0 = x;
+    n64 y0 = y;
+    n64 x1 = x + w;
+    n64 y1 = y + h;
+    kama (x0 < 0) { x0 = 0; }
+    kama (y0 < 0) { y0 = 0; }
+    kama (x1 > t->upana) { x1 = t->upana; }
+    kama (y1 > t->kimo) { y1 = t->kimo; }
+    kama (x1 < x0) { x1 = x0; }
+    kama (y1 < y0) { y1 = y0; }
+    t->kx0 = x0;
+    t->ky0 = y0;
+    t->kx1 = x1;
+    t->ky1 = y1;
+}
+
+w0 turubai_kata_yote(Turubai* t) {
+    t->kx0 = 0;
+    t->ky0 = 0;
+    t->kx1 = t->upana;
+    t->ky1 = t->kimo;
+}
+
+// Changanya rangi ya brashi kwenye pikseli moja kwa funiko 0..256.
+// Uwazi halisi = funiko * uwazi wa brashi. Nje ya eneo la kukata: hakuna.
+w0 turubai_changanya(Turubai* t, n64 x, n64 y, n64 funiko) {
+    kama (x < t->kx0 || x >= t->kx1 || y < t->ky0 || y >= t->ky1) { rudisha; }
+    n64 a = (funiko * t->uwazi) / 256;
+    kama (a <= 0) { rudisha; }
+    n64 mahali = y * t->hatua + x * 4;
+    kama (a >= 255) {
+        weka_u32(t->pikseli, mahali, t->rangi);
+        rudisha;
+    }
+    n64 chini = pata_u32(t->pikseli, mahali);
+    n64 b = 255 - a;
+    n64 r = (((t->rangi >> 16) & 255) * a + ((chini >> 16) & 255) * b) / 255;
+    n64 g = (((t->rangi >> 8) & 255) * a + ((chini >> 8) & 255) * b) / 255;
+    n64 bl = ((t->rangi & 255) * a + (chini & 255) * b) / 255;
+    weka_u32(t->pikseli, mahali, (r << 16) | (g << 8) | bl);
+}
+
+// Mstari mlalo [x0,x1) kwenye safu y, funiko kamili. Njia ya haraka ya
+// ndani ya maumbo: hukata mara moja, kisha huandika au huchanganya.
+w0 turubai_safu(Turubai* t, n64 x0, n64 x1, n64 y) {
+    kama (y < t->ky0 || y >= t->ky1) { rudisha; }
+    n64 a0 = x0;
+    n64 a1 = x1;
+    kama (a0 < t->kx0) { a0 = t->kx0; }
+    kama (a1 > t->kx1) { a1 = t->kx1; }
+    kama (a1 <= a0) { rudisha; }
+    n64 mahali = y * t->hatua + a0 * 4;
+    n64 mwisho = y * t->hatua + a1 * 4;
+    kama (t->uwazi >= 255) {
+        wakati (mahali < mwisho) {
+            weka_u32(t->pikseli, mahali, t->rangi);
+            mahali = mahali + 4;
+        }
+        rudisha;
+    }
+    n64 a = t->uwazi;
+    n64 b = 255 - a;
+    n64 sr = ((t->rangi >> 16) & 255) * a;
+    n64 sg = ((t->rangi >> 8) & 255) * a;
+    n64 sb = (t->rangi & 255) * a;
+    wakati (mahali < mwisho) {
+        n64 chini = pata_u32(t->pikseli, mahali);
+        n64 r = (sr + ((chini >> 16) & 255) * b) / 255;
+        n64 g = (sg + ((chini >> 8) & 255) * b) / 255;
+        n64 bl = (sb + (chini & 255) * b) / 255;
+        weka_u32(t->pikseli, mahali, (r << 16) | (g << 8) | bl);
+        mahali = mahali + 4;
+    }
+}
+
+// Jaza mstatili (pembe kali).
+w0 turubai_jaza(Turubai* t, n64 x, n64 y, n64 w, n64 h) {
+    n64 j = y;
+    wakati (j < y + h) {
+        turubai_safu(t, x, x + w, j);
+        j = j + 1;
+    }
+}
+
+// Kipeuo cha pili cha namba kamili (sakafu), kwa njia ya Newton. Kisio
+// la kwanza ni 2^(k+1) ambapo 4^k <= n: juu ya jibu, na ndani ya mara
+// mbili yake -- hivyo marudio 3-5 badala ya ~30 (kila moja ni kugawanya).
+n64 turubai_kipeuo(n64 n) {
+    kama (n <= 0) { rudisha 0; }
+    n64 m = n;
+    n64 s = 1;
+    wakati (m >= 256) { m = m >> 8; s = s << 4; }
+    wakati (m >= 4) { m = m >> 2; s = s << 1; }
+    n64 x = s * 2;
+    kama (x > n) { x = n; }
+    n64 y = (x + n / x) / 2;
+    wakati (y < x) {
+        x = y;
+        y = (x + n / x) / 2;
+    }
+    rudisha x;
+}
+
+// Funiko (0..256) la pikseli (px,py) na duara lenye kitovu (cx256,cy256)
+// na nusu-kipenyo r256 -- vyote kwa 1/256 ya pikseli.
+n64 turubai_funiko_duara(n64 px, n64 py, n64 cx256, n64 cy256, n64 r256) {
+    n64 dx = px * 256 + 128 - cx256;
+    n64 dy = py * 256 + 128 - cy256;
+    n64 umbali = turubai_kipeuo(dx * dx + dy * dy);
+    n64 f = r256 - umbali + 128;
+    kama (f < 0) { rudisha 0; }
+    kama (f > 256) { rudisha 256; }
+    rudisha f;
+}
+
+// Mstatili wenye pembe za mviringo, kingo laini. r = nusu-kipenyo cha pembe
+// (hubanwa hadi nusu ya upande mfupi). r = 0 ni mstatili wa kawaida.
+w0 turubai_mviringo(Turubai* t, n64 x, n64 y, n64 w, n64 h, n64 r) {
+    kama (w <= 0 || h <= 0) { rudisha; }
+    n64 rr = r;
+    kama (rr * 2 > w) { rr = w / 2; }
+    kama (rr * 2 > h) { rr = h / 2; }
+    kama (rr <= 0) { turubai_jaza(t, x, y, w, h); rudisha; }
+    n64 r256 = rr * 256;
+    n64 j = 0;
+    wakati (j < h) {
+        n64 py = y + j;
+        // kitovu cha pembe kwa safu hii: juu, chini, au hakuna (katikati)
+        n64 cy256 = 0 - 1;
+        kama (j < rr) { cy256 = (y + rr) * 256; }
+        kama (j >= h - rr) { cy256 = (y + h - rr) * 256; }
+        kama (cy256 < 0) {
+            turubai_safu(t, x, x + w, py);
+        } sivyo {
+            n64 i = 0;
+            wakati (i < rr) {
+                n64 f = turubai_funiko_duara(x + i, py, (x + rr) * 256, cy256, r256);
+                turubai_changanya(t, x + i, py, f);
+                turubai_changanya(t, x + w - 1 - i, py, f);
+                i = i + 1;
+            }
+            turubai_safu(t, x + rr, x + w - rr, py);
+        }
+        j = j + 1;
+    }
+}
+
+// Duara lenye kitovu na nusu-kipenyo kwa 1/256 ya pikseli.
+w0 turubai_duara256(Turubai* t, n64 cx256, n64 cy256, n64 r256) {
+    n64 r = r256 / 256 + 2;
+    n64 y = (cy256 >> 8) - r;
+    wakati (y <= (cy256 >> 8) + r) {
+        n64 x = (cx256 >> 8) - r;
+        wakati (x <= (cx256 >> 8) + r) {
+            n64 f = turubai_funiko_duara(x, y, cx256, cy256, r256);
+            kama (f > 0) { turubai_changanya(t, x, y, f); }
+            x = x + 1;
+        }
+        y = y + 1;
+    }
+}
+
+// Duara lililojazwa, kingo laini. (cx,cy) ni kitovu kwa pikseli.
+w0 turubai_duara(Turubai* t, n64 cx, n64 cy, n64 r) {
+    turubai_mviringo(t, cx - r, cy - r, r * 2, r * 2, r);
+}
+
+// Mpaka wa mstatili wa mviringo, unene u, kingo laini: funiko la umbo la
+// nje likitolewa la ndani. Pande nyoofu ni mistatili; pembe ni tao.
+w0 turubai_mpaka(Turubai* t, n64 x, n64 y, n64 w, n64 h, n64 r) {
+    n64 u = 1;
+    kama (w <= 2 * u || h <= 2 * u) { turubai_mviringo(t, x, y, w, h, r); rudisha; }
+    n64 rr = r;
+    kama (rr * 2 > w) { rr = w / 2; }
+    kama (rr * 2 > h) { rr = h / 2; }
+    kama (rr < u) { rr = u; }
+    // pande nyoofu
+    turubai_jaza(t, x + rr, y, w - 2 * rr, u);
+    turubai_jaza(t, x + rr, y + h - u, w - 2 * rr, u);
+    turubai_jaza(t, x, y + rr, u, h - 2 * rr);
+    turubai_jaza(t, x + w - u, y + rr, u, h - 2 * rr);
+    // pembe nne: funiko la nje - la ndani
+    n64 nje = rr * 256;
+    n64 ndani = (rr - u) * 256;
+    n64 j = 0;
+    wakati (j < rr) {
+        n64 i = 0;
+        wakati (i < rr) {
+            n64 f = turubai_funiko_duara(x + i, y + j, (x + rr) * 256, (y + rr) * 256, nje)
+                  - turubai_funiko_duara(x + i, y + j, (x + rr) * 256, (y + rr) * 256, ndani);
+            kama (f > 0) {
+                turubai_changanya(t, x + i, y + j, f);
+                turubai_changanya(t, x + w - 1 - i, y + j, f);
+                turubai_changanya(t, x + i, y + h - 1 - j, f);
+                turubai_changanya(t, x + w - 1 - i, y + h - 1 - j, f);
+            }
+            i = i + 1;
+        }
+        j = j + 1;
+    }
+}
+
+// Mstari wenye kingo laini na unene (kwa 1/256 ya pikseli: 256 = pikseli 1).
+// Funiko la kila pikseli ni unene/2 - umbali wake kutoka kipande cha mstari
+// + 1/2. Hutembelea sanduku la mstari pekee -- inatosha kwa chati na ramani.
+w0 turubai_mstari(Turubai* t, n64 x0, n64 y0, n64 x1, n64 y1, n64 unene256) {
+    turubai_mstari256(t, x0 * 256 + 128, y0 * 256 + 128, x1 * 256 + 128, y1 * 256 + 128, unene256);
+}
+
+// Kama turubai_mstari, lakini ncha ziko kwa 1/256 ya pikseli -- kwa
+// mistari ya ramani ambayo ncha zake hazilingani na pikseli nzima.
+w0 turubai_mstari256(Turubai* t, n64 ax, n64 ay, n64 bx, n64 by, n64 unene256) {
+    n64 nusu = unene256 / 2;
+    n64 pembeni = nusu / 256 + 2;
+    n64 vx = bx - ax;
+    n64 vy = by - ay;
+    n64 urefu2 = vx * vx + vy * vy;
+    n64 x0 = ax >> 8;
+    n64 y0 = ay >> 8;
+    n64 x1 = bx >> 8;
+    n64 y1 = by >> 8;
+    n64 chini_x = x0;
+    n64 juu_x = x1;
+    kama (x1 < x0) { chini_x = x1; juu_x = x0; }
+    n64 chini_y = y0;
+    n64 juu_y = y1;
+    kama (y1 < y0) { chini_y = y1; juu_y = y0; }
+    // kata sanduku kwa eneo la kukata kabla ya kuzunguka
+    kama (chini_x - pembeni < t->kx0) { chini_x = t->kx0 + pembeni; }
+    kama (juu_x + pembeni >= t->kx1) { juu_x = t->kx1 - 1 - pembeni; }
+    kama (chini_y - pembeni < t->ky0) { chini_y = t->ky0 + pembeni; }
+    kama (juu_y + pembeni >= t->ky1) { juu_y = t->ky1 - 1 - pembeni; }
+    n64 py = chini_y - pembeni;
+    wakati (py <= juu_y + pembeni) {
+        n64 px = chini_x - pembeni;
+        wakati (px <= juu_x + pembeni) {
+            n64 qx = px * 256 + 128 - ax;
+            n64 qy = py * 256 + 128 - ay;
+            // sehemu ya makadirio kwenye kipande, 0..urefu2
+            n64 s = qx * vx + qy * vy;
+            kama (s < 0) { s = 0; }
+            kama (s > urefu2) { s = urefu2; }
+            n64 dx = qx;
+            n64 dy = qy;
+            kama (urefu2 > 0) {
+                dx = qx - (vx * s) / urefu2;
+                dy = qy - (vy * s) / urefu2;
+            }
+            n64 f = nusu - turubai_kipeuo(dx * dx + dy * dy) + 128;
+            kama (f > 256) { f = 256; }
+            kama (f > 0) { turubai_changanya(t, px, py, f); }
+            px = px + 1;
+        }
+        py = py + 1;
+    }
+}
+
+// Mstatili wenye mteremko wa rangi wima (juu -> chini), uwazi wa brashi.
+w0 turubai_mteremko(Turubai* t, n64 x, n64 y, n64 w, n64 h, n64 rangi_chini) {
+    n64 juu = t->rangi;
+    n64 j = 0;
+    wakati (j < h) {
+        n64 k = 0;
+        kama (h > 1) { k = (j * 255) / (h - 1); }
+        n64 b = 255 - k;
+        n64 r = (((juu >> 16) & 255) * b + ((rangi_chini >> 16) & 255) * k) / 255;
+        n64 g = (((juu >> 8) & 255) * b + ((rangi_chini >> 8) & 255) * k) / 255;
+        n64 bl = ((juu & 255) * b + (rangi_chini & 255) * k) / 255;
+        t->rangi = (r << 16) | (g << 8) | bl;
+        turubai_safu(t, x, x + w, y + j);
+        j = j + 1;
+    }
+    t->rangi = juu;
+}

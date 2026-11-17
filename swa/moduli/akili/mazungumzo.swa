@@ -1,0 +1,199 @@
+husisha { moduli/akili/mshauri.swa }
+husisha { moduli/siasa/katiba.swa }
+
+// mazungumzo.swa -- mazungumzo ya mchezaji na watu wa mchezo kupitia AI.
+//
+// AI huchukua nafasi mbili:
+//   mhusika   mtu wa dola mwenye jina, cheo, chama, tabia na msimamo wake;
+//             hujibu kama yeye, kamwe hasemi ni AI
+//   mshauri   AI yenyewe: mshauri wa faragha wa mchezaji, anayepima matokeo
+//             ya uamuzi kabla haujafanywa
+//
+// Kila jibu huishia kwa mstari mmoja wa matokeo ambao mchezo huusoma:
+//   EFFECT: attitude=N stability=N legitimacy=N treasury=N
+// Mchezo huuondoa kwenye maandishi yanayoonyeshwa na kutumia namba hizo kwa
+// msimamo wa mhusika na viashiria vya dola. Hivyo AI ndiyo inayopima
+// matokeo ya kila kauli na uamuzi.
+//
+// Kumbukumbu: kila mabadilishano huongezwa kwenye faili la kumbukumbu la
+// nafasi ya hifadhi (saves/nafasi_N/kumbukumbu), na mistari ya mwisho
+// hurudishwa kwenye maelekezo ya mazungumzo yanayofuata, ili watu
+// wakumbuke walichoambiwa na kilichoamuliwa.
+
+n64 ATHARI_MSIMAMO = 0;
+n64 ATHARI_UTULIVU = 1;
+n64 ATHARI_UHALALI = 2;
+n64 ATHARI_HAZINA = 3;
+n64 ATHARI_IDADI = 4;
+
+// Namba kamili baada ya "ufunguo=" ndani ya mstari, au 0.
+n64 mazungumzo_thamani(n8* mstari, n8* ufunguo) {
+    n32 p = tafuta_mfuatano(mstari, ufunguo);
+    kama (p < 0) { rudisha 0; }
+    n64 i = p + urefu_wa_mfuatano(ufunguo);
+    kama (mstari[i] == 43) { i = i + 1; }
+    rudisha mfuatano_hadi_n64(&mstari[i]);
+}
+
+n64 mazungumzo_bana(n64 v, n64 kikomo) {
+    kama (v > kikomo) { rudisha kikomo; }
+    kama (v < 0 - kikomo) { rudisha 0 - kikomo; }
+    rudisha v;
+}
+
+// Tenganisha mstari wa "EFFECT:" kutoka jibu: maandishi hukatwa mahali
+// mstari unapoanzia, na namba huandikwa kwenye athari[0..3] (zikibanwa).
+// Hurudisha 1 ikiwa mstari ulikuwepo.
+n32 mazungumzo_changanua_athari(n8* jibu, n64* athari) {
+    athari[ATHARI_MSIMAMO] = 0;
+    athari[ATHARI_UTULIVU] = 0;
+    athari[ATHARI_UHALALI] = 0;
+    athari[ATHARI_HAZINA] = 0;
+    n32 p = tafuta_mfuatano(jibu, "EFFECT:");
+    kama (p < 0) { rudisha 0; }
+    n8* mstari = &jibu[p];
+    athari[ATHARI_MSIMAMO] = mazungumzo_bana(mazungumzo_thamani(mstari, "attitude="), 10);
+    athari[ATHARI_UTULIVU] = mazungumzo_bana(mazungumzo_thamani(mstari, "stability="), 5);
+    athari[ATHARI_UHALALI] = mazungumzo_bana(mazungumzo_thamani(mstari, "legitimacy="), 5);
+    athari[ATHARI_HAZINA] = mazungumzo_bana(mazungumzo_thamani(mstari, "treasury="), 5);
+    // kata maandishi kabla ya mstari, pamoja na nafasi zinazoutangulia
+    n64 i = p;
+    wakati (i > 0 && (jibu[i - 1] == 10 || jibu[i - 1] == 32 || jibu[i - 1] == 13)) { i = i - 1; }
+    jibu[i] = 0;
+    rudisha 1;
+}
+
+// Tumia athari kwa mhusika (msimamo) na dola (utulivu, uhalali, hazina).
+w0 mazungumzo_tumia_athari(n64* athari, MhusikaWaDola* m, Dola* d) {
+    kama (m != 0) {
+        m->msimamo = m->msimamo + athari[ATHARI_MSIMAMO];
+        kama (m->msimamo > 100) { m->msimamo = 100; }
+        kama (m->msimamo < 0 - 100) { m->msimamo = 0 - 100; }
+    }
+    kama (d != 0) {
+        d->utulivu = dola_rekebisha(d->utulivu, athari[ATHARI_UTULIVU]);
+        d->uhalali = dola_rekebisha(d->uhalali, athari[ATHARI_UHALALI]);
+        d->hazina = dola_rekebisha(d->hazina, athari[ATHARI_HAZINA]);
+    }
+}
+
+// Maelekezo ya AI kwa mazungumzo. m = 0 ni mshauri (AI yenyewe).
+//   taifa      jina la taifa
+//   tarehe     tarehe ya mchezo kama maandishi
+//   cheo_cha_mchezaji  nafasi ya mchezaji ("Head of state", "Village chief")
+//   kumbukumbu mistari ya mwisho ya kumbukumbu, au tupu
+//   lugha      jina la lugha ya mchezaji ("English")
+n64 mazungumzo_maelekezo(n8* nje, n64 uwezo, Dola* d, n8* taifa, n8* tarehe, MhusikaWaDola* m, n8* cheo_cha_mchezaji, n8* kumbukumbu, n8* lugha) {
+    n8* hali_ya_dola = tenga(1024);
+    mfuatano_umbiza(hali_ya_dola, 1024, "Setting: %s, a %s. Date: %s. Political stability %d/100, government legitimacy %d/100, treasury health %d/100.", taifa, dola_aina_jina(d->aina), tarehe, d->utulivu, d->uhalali, d->hazina);
+    n8* nani = tenga(1536);
+    kama (m == 0) {
+        mfuatano_umbiza(nani, 1536, "You are the Adviser: the player's private counsel, loyal only to the player, who holds the office of %s. Weigh what the player says or proposes. State the likely consequences plainly, name who gains and who loses, and say what you would do. At most five sentences. Answer in %s.", cheo_cha_mchezaji, lugha, 0, 0, 0, 0);
+    } sivyo {
+        n8* chama = "no party";
+        kama (m->chama != 0) { chama = m->chama; }
+        n8* utambulisho = tenga(512);
+        mfuatano_umbiza(utambulisho, 512, "You are %s, %s. You are %d years old. Party: %s (%s). Temperament: %s and %s.", m->jina, m->cheo, m->umri, chama, itikadi_jina(m->itikadi), tabia_jina(m->tabia_1));
+        mfuatano_umbiza(nani, 1536, "%s %s. You are speaking with the player, who holds the office of %s. Your attitude to the player is %s (%d on a scale of -100 to 100). Stay in character at all times: speak in the first person, defend your own interests and your party's, and never say you are an AI or a model. At most four sentences. Answer in %s.", utambulisho, tabia_jina(m->tabia_2), cheo_cha_mchezaji, msimamo_jina(m->msimamo), m->msimamo, lugha);
+        achilia utambulisho;
+    }
+    n8* kumbuka = "";
+    kama (kumbukumbu != 0 && kumbukumbu[0] != 0) { kumbuka = "\nWhat has been said and decided so far (oldest first):\n"; }
+    sivyo { kumbukumbu = ""; }
+    n64 n = mfuatano_umbiza(nje, uwezo, "%s\n%s%s%s\nAfter your reply, add one final line in exactly this form, with whole numbers for how this exchange changes things (attitude -10..10, the others -5..5; use 0 when nothing changes):\nEFFECT: attitude=0 stability=0 legitimacy=0 treasury=0", hali_ya_dola, nani, kumbuka, kumbukumbu, 0, 0);
+    achilia hali_ya_dola;
+    achilia nani;
+    rudisha n;
+}
+
+// ---------- kumbukumbu ----------
+
+// Njia ya faili la kumbukumbu la nafasi ya hifadhi (1..): saves/nafasi_N/kumbukumbu.
+w0 kumbukumbu_njia(n8* nje, n64 uwezo, n64 nafasi) {
+    n8 saraka[64];
+    mfuatano_umbiza(saraka, 64, "saves/nafasi_%d", nafasi, 0, 0, 0, 0, 0);
+    mfumo_unda_saraka("saves", 493);
+    mfumo_unda_saraka(saraka, 493);
+    mfuatano_umbiza(nje, uwezo, "%s/kumbukumbu", saraka, 0, 0, 0, 0, 0);
+}
+
+// Nakili s kwenda nje bila mistari mipya (kumbukumbu ni mstari mmoja kwa ingizo).
+n64 kumbukumbu_mstari_mmoja(n8* nje, n64 uwezo, n8* s) {
+    n64 n = 0;
+    n64 i = 0;
+    wakati (s[i] != 0 && n < uwezo - 1) {
+        n64 c = s[i];
+        kama (c == 10 || c == 13) { c = 32; }
+        nje[n] = c;
+        n = n + 1;
+        i = i + 1;
+    }
+    nje[n] = 0;
+    rudisha n;
+}
+
+// Ongeza mabadilishano kwenye kumbukumbu: tarehe, mchezaji alisema nini kwa
+// nani, na alijibiwa nini.
+w0 kumbukumbu_ongeza(n8* njia, n8* tarehe, n8* nani, n8* kauli, n8* jibu) {
+    n8* k = tenga(1024);
+    n8* j = tenga(4096);
+    kumbukumbu_mstari_mmoja(k, 1024, kauli);
+    kumbukumbu_mstari_mmoja(j, 4096, jibu);
+    n8* mstari = tenga(6144);
+    n64 n = mfuatano_umbiza(mstari, 6144, "[%s] Player to %s: %s\n[%s] %s: %s\n", tarehe, nani, k, tarehe, nani, j);
+    n64 fd = mfumo_fungua(njia, 1089, 420);         // andika, unda, ongeza mwishoni
+    kama (fd >= 0) {
+        mfumo_andika(fd, mstari, n);
+        mfumo_funga(fd);
+    }
+    achilia k;
+    achilia j;
+    achilia mstari;
+}
+
+// Soma mwisho wa kumbukumbu (baiti za mwisho zisizozidi uwezo-1, kuanzia
+// mwanzo wa mstari). Hurudisha urefu.
+n64 kumbukumbu_soma_mwisho(n8* njia, n8* nje, n64 uwezo) {
+    nje[0] = 0;
+    n64 fd = mfumo_fungua(njia, 0, 0);
+    kama (fd < 0) { rudisha 0; }
+    n64 ukubwa = mfumo_tafuta_nafasi(fd, 0, 2);
+    n64 mwanzo = 0;
+    kama (ukubwa > uwezo - 1) { mwanzo = ukubwa - (uwezo - 1); }
+    mfumo_tafuta_nafasi(fd, mwanzo, 0);
+    n64 n = mfumo_soma(fd, nje, uwezo - 1);
+    mfumo_funga(fd);
+    kama (n < 0) { n = 0; }
+    nje[n] = 0;
+    kama (mwanzo > 0) {
+        // anza kwenye mstari kamili
+        n64 i = 0;
+        wakati (i < n && nje[i] != 10) { i = i + 1; }
+        kama (i < n) {
+            nakili(nje, &nje[i + 1], n - i - 1);
+            n = n - i - 1;
+            nje[n] = 0;
+        }
+    }
+    rudisha n;
+}
+
+// Mazungumzo kamili: jenga maelekezo (pamoja na kumbukumbu), muulize AI,
+// tenganisha na tumia athari, na uandike kwenye kumbukumbu. Hurudisha urefu
+// wa jibu linaloonyeshwa, au hasi kwa hitilafu ya mshauri.
+n64 mazungumzo_sema(AkiliUsanidi* u, Dola* d, n8* taifa, n8* tarehe, MhusikaWaDola* m, n8* cheo_cha_mchezaji, n8* lugha, n8* njia_ya_kumbukumbu, n8* kauli, n8* nje, n64 uwezo, n64* athari) {
+    n8* kumbukumbu = tenga(3072);
+    kumbukumbu_soma_mwisho(njia_ya_kumbukumbu, kumbukumbu, 3072);
+    n8* maelekezo = tenga(8192);
+    mazungumzo_maelekezo(maelekezo, 8192, d, taifa, tarehe, m, cheo_cha_mchezaji, kumbukumbu, lugha);
+    n64 r = akili_uliza(u, maelekezo, kauli, nje, uwezo);
+    achilia kumbukumbu;
+    achilia maelekezo;
+    kama (r < 0) { rudisha r; }
+    mazungumzo_changanua_athari(nje, athari);
+    mazungumzo_tumia_athari(athari, m, d);
+    n8* nani = "Adviser";
+    kama (m != 0) { nani = m->jina; }
+    kumbukumbu_ongeza(njia_ya_kumbukumbu, tarehe, nani, kauli, nje);
+    rudisha urefu_wa_mfuatano(nje);
+}

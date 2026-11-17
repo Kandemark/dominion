@@ -1,0 +1,87 @@
+husisha { moduli/utamaduni/uandishi.swa }
+
+// jaribio_uandishi.swa -- jaribio la mkono dhidi ya
+// UtamaduniAndikoMsimamizi (uandishi.swa, tafsiri ya
+// culture/writing_system.c) PEKEE, bila kupitia mchezo.swa (angalia
+// lugha-swa/swa#295). Linathibitisha THAMANI HALISI.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    civ_nasibu_panda(42);
+
+    UtamaduniAndikoMsimamizi* m = uandishi_msimamizi_unda();
+    n32 m_sio_tupu = (m != 0);
+    jaribio_thibitisha(m_sio_tupu, "msimamizi_unda si tupu");
+    jaribio_thibitisha(m->uwezo == 32, "uwezo awali ni 32");
+
+    UtamaduniAndiko* mzazi = uandishi_unda("andiko_1", "Kiarabu cha Kale", UANDISHI_AINA_ABJADI);
+    n32 mzazi_sio_tupu = (mzazi != 0);
+    jaribio_thibitisha(mzazi_sio_tupu, "uandishi_unda si tupu");
+    jaribio_thibitisha(mzazi->aina == UANDISHI_AINA_ABJADI, "aina ni ABJADI");
+    n32 utata_sahihi = (mzazi->utata > 0.49 && mzazi->utata < 0.51);
+    jaribio_thibitisha(utata_sahihi, "utata chaguomsingi 0.5");
+
+    CivMatokeo r1 = uandishi_weka_herufi(mzazi, "bkdfghjlmnpqrstvwxyz", "aeiou");
+    n32 weka_ok = (r1.hitilafu == CIV_SAWA);
+    jaribio_thibitisha(weka_ok, "weka_herufi inafaulu");
+    jaribio_thibitisha(mzazi->idadi_ya_konsonanti == 20, "idadi_ya_konsonanti == 20");
+    jaribio_thibitisha(mzazi->idadi_ya_vokali == 5, "idadi_ya_vokali == 5");
+
+    CivMatokeo r2 = uandishi_msimamizi_ongeza(m, mzazi);
+    n32 ongeza_ok = (r2.hitilafu == CIV_SAWA);
+    jaribio_thibitisha(ongeza_ok, "msimamizi_ongeza inafaulu");
+    jaribio_thibitisha(m->idadi == 1, "idadi baada ya ongeza ni 1");
+
+    UtamaduniAndiko* tafuta1 = uandishi_msimamizi_tafuta(m, "andiko_1");
+    n32 tafuta_sahihi = (tafuta1 == mzazi);
+    jaribio_thibitisha(tafuta_sahihi, "msimamizi_tafuta inapata andiko sahihi");
+
+    CivMatokeo r3 = uandishi_ibuka_kutoka(m, mzazi, "andiko_2", "Kiebrania cha Kale");
+    n32 ibuka_ok = (r3.hitilafu == CIV_SAWA);
+    jaribio_thibitisha(ibuka_ok, "ibuka_kutoka inafaulu");
+    jaribio_thibitisha(m->idadi == 2, "idadi baada ya ibuka ni 2");
+
+    UtamaduniAndiko* mtoto = uandishi_msimamizi_tafuta(m, "andiko_2");
+    n32 mtoto_sio_tupu = (mtoto != 0);
+    jaribio_thibitisha(mtoto_sio_tupu, "mtoto wa ibuka anapatikana");
+    jaribio_thibitisha(mtoto->aina == UANDISHI_AINA_ABJADI, "mtoto anarithi aina ya mzazi");
+    n32 mzazi_id_sahihi = (linganisha_mfuatano(mtoto->mzazi_andiko_id, "andiko_1") == 0);
+    jaribio_thibitisha(mzazi_id_sahihi, "mtoto ana mzazi_andiko_id sahihi");
+    jaribio_thibitisha(mtoto->idadi_ya_konsonanti == 20, "mtoto amerithi konsonanti za mzazi");
+    jaribio_thibitisha(mtoto->idadi_ya_vokali == 5, "mtoto amerithi vokali za mzazi");
+
+    n8* jina_jipya = uandishi_zalisha_jina(mzazi, 4, 8);
+    n32 jina_sio_tupu = (jina_jipya != 0);
+    jaribio_thibitisha(jina_sio_tupu, "zalisha_jina inarudisha jina");
+    n64 urefu_wa_jina = urefu_wa_mfuatano(jina_jipya);
+    n32 urefu_sahihi = (urefu_wa_jina >= 4 && urefu_wa_jina <= 8);
+    jaribio_thibitisha(urefu_sahihi, "jina lina urefu kati ya 4 na 8");
+    n32 herufi_kwanza_kubwa = (jina_jipya[0] >= 65 && jina_jipya[0] <= 90);
+    jaribio_thibitisha(herufi_kwanza_kubwa, "herufi ya kwanza ya jina ni KUBWA");
+
+    n8 konsonanti_kabla_0 = mzazi->konsonanti[0];
+    CivMatokeo r4 = uandishi_badilisha_alama(mzazi, 0.5);
+    n32 badilisha_ok = (r4.hitilafu == CIV_SAWA);
+    jaribio_thibitisha(badilisha_ok, "badilisha_alama inafaulu");
+
+    UtamaduniAndiko* bila_herufi = uandishi_unda("andiko_3", "Jipya Lisilo na Herufi", UANDISHI_AINA_NYINGINE);
+    n8* jina_bila_herufi = uandishi_zalisha_jina(bila_herufi, 3, 5);
+    n32 jina_bila_herufi_ni_tupu = (jina_bila_herufi == 0);
+    jaribio_thibitisha(jina_bila_herufi_ni_tupu, "zalisha_jina inarudisha 0 bila konsonanti/vokali");
+
+    uandishi_msimamizi_uharibu(m);
+    uandishi_uharibu(bila_herufi);
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

@@ -1,0 +1,73 @@
+husisha { moduli/mchezo.swa }
+
+// jaribio_majirani.swa -- majirani wa mataifa kutoka ramani ya atlasi:
+// matriki ni sawa pande zote (a,b) == (b,a), hakuna taifa ni jirani wa
+// nafsi yake, mataifa mengi yana majirani, na jumla ya mipaka inalingana
+// na hesabu huru ya jozi za vipande kwenye ramani.
+
+n32 jm_makosa = 0;
+
+w0 jm_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti) { andika("SAWA: %s\n", jina, 0, 0, 0, 0, 0); }
+    sivyo { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); jm_makosa = jm_makosa + 1; }
+}
+
+n32 anza() {
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    mchezo_anzisha(g, &usanidi);
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    DuniaRamani* r = mchezo_pata_ramani(g);
+    n32 n = tm->idadi;
+
+    n32 sawa_pande = 1;
+    n32 nafsi = 0;
+    n32 wenye_majirani = 0;
+    n64 jumla = 0;
+    n32 a = 0;
+    wakati (a < n) {
+        kama (dunia_atlasi_mpaka(a, a) != 0) { nafsi = nafsi + 1; }
+        kama (dunia_atlasi_idadi_ya_majirani(a) > 0) { wenye_majirani = wenye_majirani + 1; }
+        n32 b = 0;
+        wakati (b < n) {
+            kama (dunia_atlasi_mpaka(a, b) != dunia_atlasi_mpaka(b, a)) { sawa_pande = 0; }
+            jumla = jumla + dunia_atlasi_mpaka(a, b);
+            b = b + 1;
+        }
+        a = a + 1;
+    }
+    jm_thibitisha(sawa_pande, "mpaka(a,b) == mpaka(b,a) kwa kila jozi");
+    jm_thibitisha(nafsi == 0, "hakuna taifa lenye mpaka na nafsi yake");
+    andika("mataifa yenye majirani: %d kati ya %d\n", wenye_majirani, n, 0, 0, 0, 0);
+    jm_thibitisha(wenye_majirani * 10 >= n * 8, "angalau 80% ya mataifa yana jirani wa nchi kavu");
+
+    // hesabu huru: jozi za vipande jirani zenye wamiliki tofauti (kwa mfuatano)
+    n64 huru = 0;
+    n32 y = 0;
+    wakati (y < r->urefu) {
+        n32 x = 0;
+        wakati (x < r->upana) {
+            DuniaRamaniKipande* k = dunia_ramani_pata_kipande(r, x, y);
+            kama (k->mmiliki_id != 0) {
+                kama (x + 1 < r->upana) {
+                    DuniaRamaniKipande* kk = dunia_ramani_pata_kipande(r, x + 1, y);
+                    kama (kk->mmiliki_id != 0 && linganisha_mfuatano(kk->mmiliki_id, k->mmiliki_id) != 0) { huru = huru + 1; }
+                }
+                kama (y + 1 < r->urefu) {
+                    DuniaRamaniKipande* kk = dunia_ramani_pata_kipande(r, x, y + 1);
+                    kama (kk->mmiliki_id != 0 && linganisha_mfuatano(kk->mmiliki_id, k->mmiliki_id) != 0) { huru = huru + 1; }
+                }
+            }
+            x = x + 1;
+        }
+        y = y + 1;
+    }
+    andika("jozi za mipaka: matriki %d, hesabu huru %d\n", jumla / 2, huru, 0, 0, 0, 0);
+    jm_thibitisha(jumla == huru * 2, "jumla ya matriki == mara 2 ya hesabu huru ya jozi");
+
+    mchezo_uharibu(g);
+    andika("[muhtasari] yaliyoshindwa: %d\n", jm_makosa, 0, 0, 0, 0, 0);
+    kama (jm_makosa > 0) { rudisha 1; }
+    rudisha 0;
+}

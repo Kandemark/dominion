@@ -1,0 +1,66 @@
+husisha { moduli/utawala/interaction/mwingiliano.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+
+// jaribio_mwingiliano.swa -- jaribio la mkono dhidi ya
+// UtawalaMwingilianoMeneja (mwingiliano.swa, tafsiri ya
+// interaction.c) PEKEE, bila kupitia mchezo.swa (angalia
+// lugha-swa/swa#292). Linathibitisha THAMANI HALISI.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    UtawalaMwingilianoMeneja* meneja = utawala_mwingiliano_meneja_unda();
+    jaribio_thibitisha(meneja->idadi == 0, "meneja huanza bila mwingiliano");
+    jaribio_thibitisha(meneja->uwezo == UTAWALA_MWINGILIANO_UWEZO_AWALI, "uwezo wa awali ni sahihi");
+
+    UtawalaMwingiliano* m = utawala_mwingiliano_unda(UTAWALA_MWINGILIANO_MKUTANO_WA_KILELE);
+    n32 m_sio_tupu = (m != 0);
+    jaribio_thibitisha(m_sio_tupu, "utawala_mwingiliano_unda inarudisha kielekezi");
+    jaribio_thibitisha(m->aina == UTAWALA_MWINGILIANO_MKUTANO_WA_KILELE, "aina imewekwa sahihi");
+    jaribio_thibitisha(m->hali_ya_mwingiliano == UTAWALA_MWINGILIANO_HALI_INASUBIRI, "hali huanza INASUBIRI");
+    jaribio_thibitisha(m->idadi_ya_washiriki == 0, "hakuna washiriki mwanzoni");
+
+    CivMatokeo r1 = utawala_mwingiliano_ongeza_mshiriki(m, "kiongozi_a", "Rais", "sw");
+    jaribio_thibitisha(r1.hitilafu == CIV_SAWA, "ongeza_mshiriki wa kwanza inafanikiwa");
+    CivMatokeo r2 = utawala_mwingiliano_ongeza_mshiriki(m, "kiongozi_b", "Waziri Mkuu", "en");
+    jaribio_thibitisha(r2.hitilafu == CIV_SAWA, "ongeza_mshiriki wa pili inafanikiwa");
+    jaribio_thibitisha(m->idadi_ya_washiriki == 2, "idadi_ya_washiriki ni 2 baada ya kuongeza wawili");
+
+    UtawalaMshiriki* mshiriki0 = utawala_mwingiliano_pata_mshiriki(m, 0);
+    jaribio_thibitisha(linganisha_mfuatano(mshiriki0->kitambulisho, "kiongozi_a") == 0, "mshiriki wa kwanza ana kitambulisho sahihi");
+    jaribio_thibitisha(mshiriki0->uhusiano > 0.49 && mshiriki0->uhusiano < 0.51, "uhusiano wa awali wa mshiriki ni 0.5");
+
+    // Kujaribu kuongeza bila kutumia hali ya INAENDELEA -- sasisha
+    // haipaswi kubadilisha chochote (placeholder kwenye chanzo asili).
+    CivMatokeo rs_kabla = utawala_mwingiliano_sasisha(m, 1.0);
+    jaribio_thibitisha(rs_kabla.hitilafu == CIV_SAWA, "sasisha kabla ya anza bado inarudisha CIV_SAWA (haifanyi lolote)");
+
+    CivMatokeo r3 = utawala_mwingiliano_anza(m);
+    jaribio_thibitisha(r3.hitilafu == CIV_SAWA, "anza inafanikiwa");
+    jaribio_thibitisha(m->hali_ya_mwingiliano == UTAWALA_MWINGILIANO_HALI_INAENDELEA, "hali ni INAENDELEA baada ya anza");
+
+    CivMatokeo r4 = utawala_mwingiliano_maliza(m);
+    jaribio_thibitisha(r4.hitilafu == CIV_SAWA, "maliza inafanikiwa");
+    jaribio_thibitisha(m->hali_ya_mwingiliano == UTAWALA_MWINGILIANO_HALI_IMEMALIZIKA, "hali ni IMEMALIZIKA baada ya maliza");
+    jaribio_thibitisha(m->muda_wa_mwisho > 0, "muda_wa_mwisho umewekwa baada ya maliza");
+
+    // Jaribu kuongeza kupitia safu ya meneja kwa mkono (mtindo wa
+    // mchezo_anzisha, kwa sababu mwingiliano.swa haina "meneja_ongeza").
+    meneja->mwingiliano_zote[0] = m;
+    meneja->idadi = 1;
+    jaribio_thibitisha(meneja->idadi == 1, "idadi ya meneja imesasishwa kwa mkono");
+    UtawalaMwingiliano* kwa_faharisi = utawala_mwingiliano_meneja_pata(meneja, 0);
+    jaribio_thibitisha(kwa_faharisi->idadi_ya_washiriki == 2, "meneja_pata(0) inarudisha mwingiliano sahihi");
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

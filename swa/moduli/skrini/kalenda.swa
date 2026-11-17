@@ -1,0 +1,307 @@
+husisha { moduli/skrini/mkutano.swa }
+husisha { moduli/onyesho/chati_kadi.swa }
+
+// kalenda.swa -- skrini ya kalenda: mwezi mzima, ratiba ya siku, na
+// yanayokuja.
+//
+//   kushoto   gridi ya mwezi: kila siku ni duara lenye ukali kufuatana na
+//             idadi ya matukio; leo ina pete ya njano, siku teule imejazwa
+//   juu yake  idadi za mwezi: mikutano, vikao vya bunge, taarifa kwa wanahabari
+//   kulia     ratiba ya siku teule kwa saa (08:00 hadi 18:00), na matukio
+//             yanayokuja kutoka leo
+// Mishale juu kulia hubadili mwezi; kubofya siku huichagua.
+
+n64 kalenda_mwaka_onyesha = 0;          // 0 = mwezi wa leo
+n64 kalenda_mwezi_onyesha = 0;
+n64 kalenda_teule = -100000;            // siku teule; -100000 = leo
+
+// Vipimo vya mpangilio (vinashirikiwa na kuchora na kubofya).
+n64 kalenda_x() { rudisha SKRINI_UPANA_WA_PEMBENI + 25; }
+n64 kalenda_y() { rudisha SKRINI_UPAU_WA_JUU + 22; }
+n64 kalenda_w_gridi(n64 upana) { rudisha ((upana - kalenda_x() - 24 - 14) * 56) / 100; }
+n64 kalenda_y_gridi() { rudisha kalenda_y() + 64 + 120 + 14 + 52; }
+
+// Siku ya kwanza ya mwezi unaoonyeshwa, na weka mwezi kama haujawekwa.
+n64 kalenda_mwanzo_wa_mwezi(n64 leo) {
+    kama (kalenda_mwaka_onyesha == 0) {
+        n64 y = 0;
+        n64 m = 0;
+        n64 d = 0;
+        tarehe_ya_siku(leo, &y, &m, &d);
+        kalenda_mwaka_onyesha = y;
+        kalenda_mwezi_onyesha = m;
+    }
+    rudisha tarehe_siku_ya(kalenda_mwaka_onyesha, kalenda_mwezi_onyesha, 1);
+}
+
+w0 kalenda_badili_mwezi(n64 hatua) {
+    n64 m = kalenda_mwezi_onyesha + hatua;
+    n64 y = kalenda_mwaka_onyesha;
+    kama (m < 1) { m = 12; y = y - 1; }
+    kama (m > 12) { m = 1; y = y + 1; }
+    kalenda_mwezi_onyesha = m;
+    kalenda_mwaka_onyesha = y;
+}
+
+n64 kalenda_kisanduku(n64 upana) { rudisha kalenda_w_gridi(upana) / 7; }
+// Kimo cha safu ya gridi: gridi hujaza kimo kilichopo (safu sita).
+n64 kalenda_kimo_cha_safu(n64 kimo) {
+    n64 hs = (kimo - kalenda_y_gridi() - 34) / 6;
+    kama (hs < 40) { hs = 40; }
+    kama (hs > 96) { hs = 96; }
+    rudisha hs;
+}
+
+// Bofya: 1 mwezi uliopita, 2 unaofuata, 3 siku imechaguliwa; 0 hakuna.
+n64 skrini_kalenda_bofya(n64 upana, n64 kimo, n64 leo, n64 px, n64 py) {
+    n64 x = kalenda_x();
+    n64 w = upana - x - 24;
+    n64 y = kalenda_y();
+    kama (py >= y && py < y + 36) {
+        kama (px >= x + w - 84 && px < x + w - 46) { kalenda_badili_mwezi(0 - 1); rudisha 1; }
+        kama (px >= x + w - 40 && px < x + w) { kalenda_badili_mwezi(1); rudisha 2; }
+    }
+    n64 yg = kalenda_y_gridi();
+    n64 c = kalenda_kisanduku(upana);
+    n64 hs = kalenda_kimo_cha_safu(kimo);
+    kama (px >= x + 18 && px < x + 18 + 7 * c && py >= yg && py < yg + 6 * hs) {
+        n64 mwanzo = kalenda_mwanzo_wa_mwezi(leo);
+        n64 gridi_mwanzo = mwanzo - tarehe_siku_ya_wiki(mwanzo);
+        kalenda_teule = gridi_mwanzo + ((py - yg) / hs) * 7 + (px - x - 18) / c;
+        rudisha 3;
+    }
+    rudisha 0;
+}
+
+// "09:00"
+w0 kalenda_saa_maandishi(n64 saa, n8* nje) {
+    nje[0] = 48 + saa / 10;
+    nje[1] = 48 + saa % 10;
+    nje[2] = 58;
+    nje[3] = 48;
+    nje[4] = 48;
+    nje[5] = 0;
+}
+
+// Takwimu ndogo ya juu: namba na lebo yenye nukta ya rangi.
+w0 kalenda_takwimu(n64 x, n64 y, n64 thamani, n8* lebo, n64 rangi) {
+    n8 m[16];
+    sura_namba(m, thamani);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(m, x, y, 28);
+    turubai_brashi(sura_t, rangi, 255);
+    turubai_duara(sura_t, x + 4, y + 50, 4);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(lebo, x + 14, y + 42, 12);
+}
+
+// Kadi ya ratiba ya siku moja: mistari ya saa na vitalu vya matukio.
+w0 kalenda_ratiba(Dola* d, Wahusika* w, n64 siku, n64 x, n64 y, n64 wk, n64 h) {
+    n8 tarehe[64];
+    tarehe_maandishi(siku, tarehe, 64);
+    chati_kadi(x, y, wk, h, ui("Schedule"), tarehe);
+    TukioLaSiku* t = tenga(ukubwa(TukioLaSiku) * TUKIO_JUU);
+    n64 n = kalenda_matukio_ya_siku(d, w, siku, t);
+    n64 y0 = y + 52;
+    n64 saa_ya_kwanza = 8;
+    n64 saa = 11;
+    n64 hs = (h - 70) / saa;
+    n8 lebo[8];
+    n64 k = 0;
+    wakati (k < saa) {
+        n64 ry = y0 + k * hs;
+        kalenda_saa_maandishi(saa_ya_kwanza + k, lebo);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(lebo, x + 18, ry - 7, 11);
+        chati_mstari_wa_vistari(x + 70, x + wk - 18, ry, 16777215, 30);
+        k = k + 1;
+    }
+    n64 i = 0;
+    wakati (i < n) {
+        TukioLaSiku* e = &t[i];
+        n64 ya = y0 + (e->kuanza - saa_ya_kwanza) * hs + 2;
+        n64 hb = (e->kumaliza - e->kuanza) * hs - 4;
+        kama (hb < 22) { hb = 22; }
+        n64 rangi = kalenda_rangi(e->aina);
+        turubai_brashi(sura_t, rangi, 46);
+        turubai_mviringo(sura_t, x + 76, ya, wk - 100, hb, 6);
+        turubai_brashi(sura_t, rangi, 255);
+        turubai_jaza(sura_t, x + 76, ya + 2, 3, hb - 4);
+        kalenda_saa_maandishi(e->kuanza, lebo);
+        turubai_kata(sura_t, x + 76, ya, wk - 104, hb);
+        sura_rangi(rangi);
+        sura_lebo_kati(lebo, x + 88, ya + 5, 11);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kati(e->kichwa, x + 136, ya + 4, 12);
+        MhusikaWaDola* m = wahusika_pata(w, e->mtu);
+        kama (m != 0 && hb >= 40) {
+            sura_rangi(SURA_HAFIFU);
+            sura_lebo(m->jina, x + 136, ya + 22, 11);
+        }
+        turubai_kata_yote(sura_t);
+        i = i + 1;
+    }
+    kama (n == 0) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(ui("Nothing is scheduled for this day."), x + 76, y0 + 2 * hs, 12);
+    }
+    achilia t;
+}
+
+w0 skrini_kalenda_chora(Mchezo* g, Turubai* tt, n64 taifa) {
+    sura_anzisha(tt);
+    turubai_brashi(tt, SURA_USULI, 255);
+    turubai_jaza(tt, 0, 0, tt->upana, tt->kimo);
+    skrini_upau_wa_juu(g, tt);
+    skrini_urambazaji(tt, 12);
+    Dola* d = skrini_siasa_dola(g, taifa);
+    Wahusika* w = skrini_mkutano_watu(g, taifa);
+    kama (d == 0 || w == 0) { rudisha; }
+    n64 leo = tarehe_siku_ya_zamu(g->zamu_ya_sasa);
+    kama (kalenda_teule == 0 - 100000) { kalenda_teule = leo; }
+    n64 mwanzo = kalenda_mwanzo_wa_mwezi(leo);
+    n64 siku_za_mwezi = tarehe_siku_za_mwezi(kalenda_mwaka_onyesha, kalenda_mwezi_onyesha);
+
+    n64 x = kalenda_x();
+    n64 y = kalenda_y();
+    n64 w_wote = tt->upana - x - 24;
+    // kichwa: mwezi na mwaka, wiki ya leo, mishale
+    n8 kichwa[64];
+    mfuatano_umbiza(kichwa, 64, "%s %d", tarehe_jina_la_mwezi(kalenda_mwezi_onyesha), kalenda_mwaka_onyesha, 0, 0, 0, 0);
+    n8 leo_m[48];
+    tarehe_maandishi(leo, leo_m, 48);
+    n8 chini[96];
+    mfuatano_umbiza(chini, 96, ui("%s  ·  today is %s"), kichwa, leo_m, 0, 0, 0, 0);
+    skrini_kichwa_fm(g, tt, ui("Calendar"), chini, x, y - 4);
+    turubai_brashi(tt, SURA_PANELI_JUU, 255);
+    turubai_mviringo(tt, x + w_wote - 84, y, 38, 32, 6);
+    turubai_mviringo(tt, x + w_wote - 40, y, 38, 32, 6);
+    sura_ikoni(x + w_wote - 65, y + 16, 12, SURA_ICON_ARROW_LEFT, SURA_MAANDISHI, 255);
+    sura_ikoni(x + w_wote - 21, y + 16, 12, SURA_ICON_ARROW_RIGHT, SURA_MAANDISHI, 255);
+    y = y + 64;
+
+    // idadi za mwezi
+    TukioLaSiku* t = tenga(ukubwa(TukioLaSiku) * TUKIO_JUU);
+    n64 mikutano = 0;
+    n64 vikao = 0;
+    n64 wanahabari = 0;
+    n64 s = 0;
+    wakati (s < siku_za_mwezi) {
+        n64 n = kalenda_matukio_ya_siku(d, w, mwanzo + s, t);
+        n64 i = 0;
+        wakati (i < n) {
+            kama (t[i].aina == TUKIO_MKUTANO) { mikutano = mikutano + 1; }
+            kama (t[i].aina == TUKIO_BUNGE) { vikao = vikao + 1; }
+            kama (t[i].aina == TUKIO_WANAHABARI) { wanahabari = wanahabari + 1; }
+            i = i + 1;
+        }
+        s = s + 1;
+    }
+    n64 wg = kalenda_w_gridi(tt->upana) + 36;
+    chati_kadi(x, y, wg, 120, 0, 0);
+    kalenda_takwimu(x + 18, y + 22, mikutano, ui("Meetings"), kalenda_rangi(TUKIO_MKUTANO));
+    kalenda_takwimu(x + 18 + wg / 3, y + 22, vikao, ui("Sittings"), kalenda_rangi(TUKIO_BUNGE));
+    kalenda_takwimu(x + 18 + (2 * wg) / 3, y + 22, wanahabari, ui("Press briefings"), kalenda_rangi(TUKIO_WANAHABARI));
+    y = y + 120 + 14;
+
+    // gridi ya mwezi
+    n64 hg = 52 + 6 * kalenda_kimo_cha_safu(tt->kimo) + 18;
+    chati_kadi(x, y, wg, hg, ui("Month"), 0);
+    n64 c = kalenda_kisanduku(tt->upana);
+    n64 hs = kalenda_kimo_cha_safu(tt->kimo);
+    n64 k = 0;
+    wakati (k < 7) {
+        n8* jina = tarehe_jina_la_siku_fupi(k);
+        n64 wl = maandishi_upana(sura_kati, jina, 11);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo_kati(jina, x + 18 + k * c + (c - wl) / 2, y + 36, 11);
+        k = k + 1;
+    }
+    n64 yg = kalenda_y_gridi();
+    n64 gridi_mwanzo = mwanzo - tarehe_siku_ya_wiki(mwanzo);
+    n64 seli = 0;
+    wakati (seli < 42) {
+        n64 siku = gridi_mwanzo + seli;
+        n64 cx = x + 18 + (seli % 7) * c + c / 2;
+        n64 cy = yg + (seli / 7) * hs + hs / 2;
+        n64 r = hs / 2 - 5;
+        kama (r > c / 2 - 5) { r = c / 2 - 5; }
+        n32 ndani = siku >= mwanzo && siku < mwanzo + siku_za_mwezi;
+        n64 n = kalenda_matukio_ya_siku(d, w, siku, t);
+        n64 mkutano = 0;
+        n64 i = 0;
+        wakati (i < n) { kama (t[i].aina == TUKIO_MKUTANO) { mkutano = 1; } i = i + 1; }
+        n64 uwazi = 0;
+        kama (n > 0) { uwazi = 40 + n * 40; }
+        kama (uwazi > 200) { uwazi = 200; }
+        kama (ndani == 0) { uwazi = uwazi / 4; }
+        n64 rangi = SURA_BAHARI;
+        kama (mkutano) { rangi = SURA_LAFUDHI; }
+        kama (siku == kalenda_teule) { turubai_brashi(tt, SURA_MAANDISHI, 255); turubai_duara(tt, cx, cy, r + 2); }
+        kama (uwazi > 0) { turubai_brashi(tt, rangi, uwazi); turubai_duara(tt, cx, cy, r); }
+        sivyo { turubai_brashi(tt, SURA_PANELI_JUU, 255); turubai_duara(tt, cx, cy, r); }
+        kama (siku == leo) {
+            turubai_brashi(tt, SURA_LAFUDHI, 255);
+            turubai_duara(tt, cx, cy, r + 3);
+            kama (uwazi > 0) { turubai_brashi(tt, rangi, uwazi); } sivyo { turubai_brashi(tt, SURA_PANELI_JUU, 255); }
+            turubai_duara(tt, cx, cy, r);
+        }
+        n64 y_ = 0;
+        n64 m_ = 0;
+        n64 dd = 0;
+        tarehe_ya_siku(siku, &y_, &m_, &dd);
+        n8 namba[4];
+        namba[0] = 48 + dd / 10;
+        namba[1] = 48 + dd % 10;
+        namba[2] = 0;
+        kama (dd < 10) { namba[0] = 48 + dd; namba[1] = 0; }
+        n64 wn = maandishi_upana(sura_kati, namba, 13);
+        kama (ndani == 0) { turubai_brashi(tt, SURA_HAFIFU, 110); }
+        sivyo { kama (uwazi > 150 || siku == kalenda_teule) { turubai_brashi(tt, CHATI_GIZA, 255); } sivyo { turubai_brashi(tt, SURA_MAANDISHI, 255); } }
+        maandishi_chora(tt, sura_kati, namba, cx - wn / 2, cy - 9, 13);
+        seli = seli + 1;
+    }
+
+    // kulia: ratiba ya siku teule na yanayokuja
+    n64 xr = x + wg + 14;
+    n64 wr = w_wote - wg - 14;
+    n64 h_ratiba = 120 + 14 + hg;
+    kalenda_ratiba(d, w, kalenda_teule, xr, kalenda_y() + 64, wr, (h_ratiba * 62) / 100);
+    n64 yu = kalenda_y() + 64 + (h_ratiba * 62) / 100 + 14;
+    n64 hu = h_ratiba - (h_ratiba * 62) / 100 - 14;
+    chati_kadi(xr, yu, wr, hu, ui("Coming up"), 0);
+    n64 ry = yu + 46;
+    n64 kiasi = 0;
+    n64 siku = leo;
+    wakati (siku < leo + 30 && ry + 34 <= yu + hu) {
+        n64 n = kalenda_matukio_ya_siku(d, w, siku, t);
+        n64 i = 0;
+        wakati (i < n && ry + 34 <= yu + hu) {
+            kama (t[i].aina == TUKIO_MKUTANO || t[i].aina == TUKIO_BARAZA_LA_DOLA || siku < leo + 7) {
+                n8 tarehe_m[48];
+                tarehe_maandishi_mafupi(siku, tarehe_m, 48);
+                turubai_brashi(tt, kalenda_rangi(t[i].aina), 255);
+                turubai_mviringo(tt, xr + 18, ry + 4, 4, 22, 2);
+                turubai_kata(tt, xr, ry, wr - 150, 34);
+                sura_rangi(SURA_MAANDISHI);
+                sura_lebo_kati(t[i].kichwa, xr + 32, ry + 2, 12);
+                turubai_kata_yote(tt);
+                n8 saa_m[8];
+                kalenda_saa_maandishi(t[i].kuanza, saa_m);
+                n8 mstari[64];
+                mfuatano_umbiza(mstari, 64, "%s  %s", tarehe_m, saa_m, 0, 0, 0, 0);
+                sura_rangi(SURA_HAFIFU);
+                sura_lebo_kulia(mstari, xr + wr - 18, ry + 4, 11);
+                ry = ry + 34;
+                kiasi = kiasi + 1;
+            }
+            i = i + 1;
+        }
+        siku = siku + 1;
+    }
+    kama (kiasi == 0) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(ui("Nothing in the next thirty days."), xr + 18, yu + 50, 12);
+    }
+    achilia t;
+}

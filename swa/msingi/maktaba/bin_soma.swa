@@ -1,0 +1,83 @@
+// bin_soma.swa — visaidizi vya kusoma data ya kibinari (binary),
+// endian ndogo (little-endian), kama inavyotumika kwenye faili za
+// data/*.bin za Dominion (nations.bin, resources.bin, cities.bin).
+//
+// MAKUSUDI: faili hili LINA KAZI TU, HAKUNA muundo (struct) mpya —
+// hii ni ya kimakusudi kuepuka lugha-swa/swa#189 (mdudu wa kikomo
+// cha graph ya husisha yenye struct 30+), ili moduli zozote
+// zinazohitaji kusoma data ya kibinari ziweze ku-husisha faili hili
+// bila kuongeza idadi ya struct kwenye graph yao.
+//
+// n8 kwenye Swa inaweza kuwa na alama (signed) -- kila usomaji wa
+// baiti hapa chini unafanya `& 255` ili kuhakikisha thamani ya 0-255
+// bila kujali alama, kabla ya kuunganisha baiti nyingi kuwa nambari
+// kubwa zaidi.
+
+husisha { msingi/msingi_civ.swa }
+
+n32 civ_bin_u8(n8* buf, n32 off) {
+    n32 b = buf[off];
+    rudisha b & 255;
+}
+
+n32 civ_bin_u16le(n8* buf, n32 off) {
+    n32 b0 = buf[off] & 255;
+    n32 b1 = buf[off + 1] & 255;
+    rudisha b0 | (b1 << 8);
+}
+
+n32 civ_bin_u32le(n8* buf, n32 off) {
+    n32 b0 = buf[off] & 255;
+    n32 b1 = buf[off + 1] & 255;
+    n32 b2 = buf[off + 2] & 255;
+    n32 b3 = buf[off + 3] & 255;
+    rudisha b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
+}
+
+// Kusanya d64 kutoka baiti 4 za IEEE754 single-precision (little-
+// endian). Haishughulikii subnormal/infinity/NaN -- inatosha kwa
+// data ya kijiografia/kiuchumi ya mchezo (idadi halisi, si maadili
+// maalum).
+d64 civ_bin_f32le(n8* buf, n32 off) {
+    n32 b0 = buf[off] & 255;
+    n32 b1 = buf[off + 1] & 255;
+    n32 b2 = buf[off + 2] & 255;
+    n32 b3 = buf[off + 3] & 255;
+
+    n32 alama = (b3 >> 7) & 1;
+    n32 kipeo = ((b3 & 127) << 1) | (b2 >> 7);
+    n32 mantissa = ((b2 & 127) << 16) | (b1 << 8) | b0;
+
+    kama (kipeo == 0 && mantissa == 0) {
+        rudisha 0.0;
+    }
+
+    d64 mantissa_d = mantissa;
+    d64 sehemu = 1.0 + mantissa_d / 8388608.0;
+    n32 e = kipeo - 127;
+    n32 e_abs = e;
+    kama (e_abs < 0) { e_abs = 0 - e_abs; }
+
+    n32 i = 0;
+    kama (e >= 0) {
+        wakati (i < e_abs) { sehemu = sehemu * 2.0; i = i + 1; }
+    } sivyo {
+        wakati (i < e_abs) { sehemu = sehemu / 2.0; i = i + 1; }
+    }
+
+    kama (alama == 1) { rudisha 0.0 - sehemu; }
+    rudisha sehemu;
+}
+
+// Nakili `urefu` baiti kutoka buf[off..] kwenda mfuatano mpya
+// ulioteng'wa kwenye rundo (heap), ukiongeza NUL mwishoni.
+n8* civ_bin_mfuatano(n8* buf, n32 off, n32 urefu) {
+    n8* s = tenga(urefu + 1);
+    n32 i = 0;
+    wakati (i < urefu) {
+        s[i] = buf[off + i];
+        i = i + 1;
+    }
+    s[urefu] = 0;
+    rudisha s;
+}

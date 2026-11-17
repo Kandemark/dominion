@@ -1,0 +1,622 @@
+w0 nakili(n8* lengwa, n8* chanzo, n64 n) {
+    n64 i = 0;
+    wakati (i < n) {
+        lengwa[i] = chanzo[i];
+        i = i + 1;
+    }
+}
+
+w0 weka_sifuri(n8* lengwa, n64 n) {
+    n64 i = 0;
+    wakati (i < n) {
+        lengwa[i] = 0;
+        i = i + 1;
+    }
+}
+
+n32 linganisha_kumbukumbu(n8* a, n8* b, n64 n) {
+    n64 i = 0;
+    wakati (i < n) {
+        kama (a[i] < b[i]) {
+            rudisha -1;
+        }
+        kama (a[i] > b[i]) {
+            rudisha 1;
+        }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+// ==========================================================
+// Runtime ya syscalls -- maktaba haihitaji libc tena
+// ==========================================================
+
+// Wito wa mfumo wa Linux -- builtin ya mzalishaji (uzalishaji_wito)
+// na kiolesura cha C kwa mbegu. Haina tangazo la .swa: mkaguzi wa Swa
+// hujenga saini kutoka hoja halisi za wito.
+
+n64 mfumo_soma(n32 faili, n8* chombo, n64 urefu) {
+    rudisha wito_wa_mfumo(0, faili, chombo, urefu, 0, 0, 0);
+}
+
+n64 mfumo_andika(n32 faili, n8* chombo, n64 urefu) {
+    rudisha wito_wa_mfumo(1, faili, chombo, urefu, 0, 0, 0);
+}
+
+n64 mfumo_fungua(n8* njia, n64 machaguo, n64 ruhusa) {
+    // Hoja ya 3 (ruhusa) ni ruhusa za faili linaloundwa (mode) --
+    // kernel inaitumia tu wakati O_CREAT iko kwenye bendera,
+    // vinginevyo inapuuzwa. Awali ilipitishwa kama 0, hivyo faili
+    // zilizoundwa na O_CREAT zilipata ruhusa 0000 (hazikufunguka
+    // kwa usomaji).
+    rudisha wito_wa_mfumo(2, njia, machaguo, ruhusa, 0, 0, 0);
+}
+
+n64 mfumo_funga(n32 faili) {
+    rudisha wito_wa_mfumo(3, faili, 0, 0, 0, 0, 0);
+}
+
+// mfumo_tafuta_nafasi -- soga kiashiria cha faili. aina: 0=SEEK_SET, 1=SEEK_CUR,
+// 2=SEEK_END. Hurudisha mahali papya (baiti kutoka mwanzo), au namba
+// hasi kwa kushindwa. Hutumika kupata ukubwa HALISI wa faili kabla
+// ya kusoma (lseek(fd, 0, SEEK_END)), ili kuepuka kukata maudhui
+// kimya pale faili ni kubwa kuliko bafa iliyotengwa.
+n64 mfumo_tafuta_nafasi(n32 faili, n64 mahali, n64 aina) {
+    rudisha wito_wa_mfumo(8, faili, mahali, aina, 0, 0, 0);
+}
+
+n64 mfumo_ramani_kumbukumbu(n8* anwani, n64 urefu, n64 ulinzi, n64 machaguo, n64 faili) {
+    rudisha wito_wa_mfumo(9, anwani, urefu, ulinzi, machaguo, faili, 0);
+}
+
+n64 mfumo_ondoa_ramani_kumbukumbu(n8* anwani, n64 urefu) {
+    rudisha wito_wa_mfumo(11, anwani, urefu, 0, 0, 0, 0);
+}
+
+// mfumo_gawanyika -- unda mchakato mtoto (child process) kwa kuiga mchakato
+// wa sasa kikamilifu (kumbukumbu, deskripta za faili zote). Hoja
+// ZOTE ni sifuri (fork() haina hoja kabisa). Hurudisha: 0 kwenye
+// mchakato MTOTO, PID ya mtoto (>0) kwenye mchakato MZAZI, namba
+// hasi kwa kushindwa. MUHIMU: baada ya fork(), MICHAKATO MIWILI
+// huendelea kutekeleza KUTOKA HAPA HAPA (si kutoka main()) --
+// ubaguzi kwa thamani ya kurudi ndiyo njia PEKEE ya kujua ni
+// mchakato upi.
+n64 mfumo_gawanyika() {
+    rudisha wito_wa_mfumo(57, 0, 0, 0, 0, 0, 0);
+}
+
+// mfumo_tekeleza_programu -- badilisha picha YOTE ya mchakato wa SASA na programu
+// mpya (HAIRUDI kamwe ikiwa imefaulu -- mchakato wa sasa HAUPO tena,
+// umebadilishwa kikamilifu; ikirudi, ni HITILAFU, thamani hasi).
+// `argv`/`envp` ni safu za n8* (kielekezi cha mfuatano), ZIKIISHIA
+// na kiingilio cha 0 (NULL) -- kioo HASA cha mkataba wa C wa
+// `execve(2)` (angalia jaribio_mfumo_gawanyika_tekeleza_subiri.swa kwa jinsi
+// safu hizi zinavyojengwa kwa mkono: hakuna safu za kielekezi
+// zinazokua [growable] bado, idadi ya hoja/env LAZIMA ijulikane
+// wakati wa kuandika msimbo).
+n64 mfumo_tekeleza_programu(n8* njia, n8** hoja_za_mstari, n8** mazingira) {
+    rudisha wito_wa_mfumo(59, njia, hoja_za_mstari, mazingira, 0, 0, 0);
+}
+
+// mfumo_subiri4 -- subiri mchakato MTOTO abadilishe hali (kawaida: amalize
+// kutekeleza). `pid`: >0 subiri MTOTO HUYO HASA, -1 subiri MTOTO
+// WOWOTE. `status_ptr`: kielekezi cha n32 MOJA ambapo kernel itaandika
+// hali ya kutoka iliyosimbwa (encoded) -- tumia
+// `mfumo_subiri4_msimbo_wa_kutoka`/`sys_wait4_ulikufa_kwa_ishara` chini
+// kuichanganua, USIJARIBU kuisoma moja kwa moja (umbizo la kiwango
+// cha biti ni maalum kwa kernel, SI msimbo wa kutoka safi). `chaguo`:
+// 0 kwa tabia ya kawaida (subiri hadi mtoto amalize), WNOHANG=1
+// kuuliza bila kuzuia. Hoja ya 4 (rusage) HAIHITAJIKI humu, daima 0.
+// Hurudisha PID ya mtoto aliyebadilisha hali, au namba hasi kwa
+// kushindwa.
+n64 mfumo_subiri4(n64 kitambulisho_mchakato, n32* hali_ya_kielekezi, n64 chaguo) {
+    rudisha wito_wa_mfumo(61, kitambulisho_mchakato, hali_ya_kielekezi, chaguo, 0, 0, 0);
+}
+
+// mfumo_subiri4_msimbo_wa_kutoka -- toa msimbo wa kutoka (0-255) kutoka
+// kwenye thamani iliyoandikwa na kernel kwenye status_ptr ya
+// mfumo_subiri4. Umbizo (angalia <bits/waitstatus.h> ya glibc/kernel):
+// biti 8-15 (((status) >> 8) & 0xff) ni msimbo wa kutoka IKIWA TU
+// mchakato ulitoka kwa kawaida (angalia mfumo_subiri4_ulitoka_kwa_kawaida
+// kwanza) -- HESABU ya / na % inatumika hapa kuepuka >> na & (mbegu
+// ina hitilafu kwenye hizo, kama ilivyoelezwa kote kwenye mradi).
+n32 mfumo_subiri4_msimbo_wa_kutoka(n32 hali_ya) {
+    rudisha (hali_ya / 256) % 256;
+}
+
+// mfumo_subiri4_ulitoka_kwa_kawaida -- 1 ikiwa mchakato ulitoka kwa
+// wito wa kawaida wa exit() (SI kuuawa na ishara/signal). Umbizo:
+// biti 0-6 za status ni namba ya ishara (0 ikiwa ulitoka kwa
+// kawaida).
+n32 mfumo_subiri4_ulitoka_kwa_kawaida(n32 hali_ya) {
+    n32 biti_za_ishara = hali_ya % 128;
+    kama (biti_za_ishara == 0) { rudisha 1; }
+    rudisha 0;
+}
+
+// mfumo_tuma_ishara -- tuma ishara (signal) kwenye mchakato. `ishara`=9 ni
+// SIGKILL (toa mara moja, HAIWEZI kupuuzwa/kukamatwa) -- hutumika
+// kusitisha mchakato uliozidi muda wa kikomo (timeout). Kutuma
+// kwenye PID isiyokuwepo tena (mfano imekwisha toka yenyewe) ni
+// salama -- kernel hurudisha ESRCH (hasi), hakuna athari.
+n64 mfumo_tuma_ishara(n64 kitambulisho_mchakato, n64 ishara) {
+    rudisha wito_wa_mfumo(62, kitambulisho_mchakato, ishara, 0, 0, 0, 0);
+}
+
+// mfumo_subiri_nano_sekunde -- lala kwa idadi kamili ya SEKUNDE (hoja
+// pekee ya kutumika na kikomo cha muda cha mchakato wa "mlinzi" --
+// angalia maelezo ya pr_endesha_kwa_kikomo, gharama/jaribu_mfululizo.swa).
+// Hujenga muundo wa `timespec` (sekunde za n64 + nanosekunde za n64,
+// baiti 16) kwenye rafu, hupitisha kielekezi chake kwenye
+// nanosleep(2) (namba 35). Hoja ya "rem" (muda uliobaki ikiwa
+// ishara imeingilia kati) HAIHITAJIKI humu -- daima 0 (hatutarajii
+// ishara nyingine yoyote wakati wa kulala).
+n64 mfumo_subiri_nano_sekunde(n64 sekunde) {
+    n64 muda[2];
+    muda[0] = sekunde;
+    muda[1] = 0;
+    rudisha wito_wa_mfumo(35, muda, 0, 0, 0, 0, 0);
+}
+
+// mfumo_unda_saraka -- unda saraka (haifanyi kazi kimya ikiwa TAYARI ipo --
+// angalia maelezo ya matumizi, ambayo yanapaswa kupuuza hitilafu
+// "tayari ipo" badala ya kuikataa). `ruhusa` ya kawaida: 0755 (493).
+n64 mfumo_unda_saraka(n8* njia, n64 ruhusa) {
+    rudisha wito_wa_mfumo(83, njia, ruhusa, 0, 0, 0, 0);
+}
+
+// ==========================================================
+// Uchapishaji -- andika_n64 / andika_mfuatano / andika_baiti
+// Hizi ndizo kazi zinazoitwa na builtin ya andika katika mzalishaji.
+// ==========================================================
+
+w0 andika_n64(n32 faili, n64 v) {
+    // Bafa ya n32, si n8 -- mbegu hutoa maandishi ya safu ya n8
+    // kwa mizani ya baiti 4, hivyo tumia n32 na uchapishe tarakimu
+    // moja kwa moja kupitia andika_herufi.
+    n32 chombo[32];
+    n32 n = 0;
+    kama (v < 0) {
+        andika_herufi(faili, 45);  // '-'
+        v = 0 - v;
+    }
+    wakati (1 == 1) {
+        chombo[n] = v - ((v / 10) * 10);
+        n = n + 1;
+        v = v / 10;
+        kama (v == 0) { acha; }
+    }
+    // Chapisha tarakimu kwa mpangilio wa nyuma
+    wakati (n > 0) {
+        n = n - 1;
+        andika_herufi(faili, 48 + chombo[n]);
+    }
+}
+
+w0 andika_mfuatano(n32 faili, n8* s) {
+    // Urefu wa mfuatano unahesabiwa hapa -- kumbukumbu.swa
+    // haitegemei mfuatano.swa (jaribio la k10a linahusisha peke yake).
+    n64 u = 0;
+    wakati (s[u] != 0) {
+        u = u + 1;
+    }
+    mfumo_andika(faili, s, u);
+}
+
+w0 andika_herufi(n32 faili, n64 b) {
+    n8 bb = b;
+    mfumo_andika(faili, &bb, 1);
+}
+
+w0 andika_sehemu(n32 faili, n8* s, n64 urefu) {
+    mfumo_andika(faili, s, urefu);
+}
+
+// ==========================================================
+// andika / andika_kosa -- utekelezaji wa ndani wa muundo
+// (kwa mbegu: wito za nje hujitatua hapa; codegen ya Swa ni builtin)
+// Muundo ni mfuatano PAMOJA na nukuu.
+//
+// Viashiria vinavyotumika:
+//   %d  -- n64 yenye ishara (desimali, na alama ya kutoa ikihitajika)
+//   %u  -- n64 isiyo na ishara (desimali; thamani hasi inaonyeshwa
+//         kama mfuatano kamili wa bits za baiti 64)
+//   %x  -- heksadesimali ndogo bila sifuri za mwanzo (42 -> "2a");
+//         thamani hasi inaonyeshwa kama bits zote 64
+//   %s  -- mfuatano unaoishia kwenye 0
+//   %c  -- herufi moja
+//   %%  -- alama ya % (haitumii hoja)
+// Viashiria VISIVYOSAIDIWA (%f, %l, %n, n.k.) vinachapishwa kama
+// herufi halisi ("%f" -> "%f") -- hakuna kinachomezwa, na havitumii
+// hoja. Dereva wa zamani wa Rust (andika = printf ya C) ulisaidia
+// vyote vya printf; tofauti hii imeandikwa kwenye
+// hati/uthibitisho-wa-lugha.md.
+// ==========================================================
+
+// Chagua hoja ya na kati ya a1..a6. na zaidi ya 5 hurudisha a6
+// (kama ilivyokuwa awali -- hoja ya 7+ haiwezekani kwenye andika).
+n64 hoja_kwa_na(n64 a1, n64 a2, n64 a3, n64 a4, n64 a5, n64 a6, n32 na) {
+    kama (na == 0) { rudisha a1; }
+    kama (na == 1) { rudisha a2; }
+    kama (na == 2) { rudisha a3; }
+    kama (na == 3) { rudisha a4; }
+    kama (na == 4) { rudisha a5; }
+    rudisha a6;
+}
+
+// andika_u64 -- andika n64 kama nambari isiyo na ishara (desimali
+// bila alama ya kutoa). Thamani hasi inaonyeshwa kama mfuatano
+// kamili wa bits 64: -1 -> 18446744073709551615. (Zamani gawanya
+// la ishara lilitoa tarakimu za takataka kwa hasi -- hitilafu ya
+// 2026-09-01. Hesabu: 2^64 = 10 * 1844674407370955161 + 6, kwa
+// hiyo tarakimu ya chini ni (v+6) mod 10 na sehemu ya juu ni
+// 1844674407370955161 + (v+6)/10 -- vyote viwili vya ishara.)
+w0 andika_u64(n32 faili, n64 v) {
+    n32 chombo[32];
+    n32 n = 0;
+    kama (v < 0) {
+        n64 u = v + 6;
+        n64 d = u % 10;
+        n32 ni_hasi = 0;
+        kama (d < 0) { d = d + 10; ni_hasi = 1; }  // salio la C ni hasi
+        chombo[n] = d;
+        n = n + 1;
+        v = 1844674407370955161 + u / 10;
+        kama (ni_hasi) { v = v - 1; }  // urekebishaji wa gawanya la C
+    }
+    wakati (1 == 1) {
+        chombo[n] = v - ((v / 10) * 10);
+        n = n + 1;
+        v = v / 10;
+        kama (v == 0) { acha; }
+    }
+    wakati (n > 0) {
+        n = n - 1;
+        andika_herufi(faili, 48 + chombo[n]);
+    }
+}
+
+// andika_heksa -- andika n64 kwa heksadesimali ndogo bila sifuri
+// za mwanzo. Thamani hasi inaonyeshwa kama kukamilisha mbili ya
+// bits zote 64: -1 -> ffffffffffffffff. Nibble huchukuliwa kutoka
+// biti za juu kwa hamisha na mask (gawanya la ishara lilitoa
+// takataka kwa hasi -- hitilafu ya 2026-09-01).
+w0 andika_heksa(n32 faili, n64 v) {
+    n32 imeanza = 0;
+    n32 i = 15;
+    wakati (i >= 0) {
+        n32 d = (v >> (4 * i)) & 15;
+        kama (d != 0 || imeanza) {
+            imeanza = 1;
+            kama (d < 10) { andika_herufi(faili, 48 + d); }
+            sivyo { andika_herufi(faili, 87 + d); }  // 'a' = 97, 97 - 10 = 87
+        }
+        i = i - 1;
+    }
+    kama (imeanza == 0) { andika_herufi(faili, 48); }  // '0'
+}
+
+// Kielekezi kutoka hoja ya n64: mkia wa andika (a1..a6) hupita kwa
+// rejesta za n64 kwa ABI, iwe thamani au kielekezi. %s huhitaji
+// kielekezi -- ubadilishaji wazi (ukaguzi wa hoja unakataa n64 kwa
+// kigezo cha n8* tangu 2026-09-01).
+n8* kielekezi_kutoka_hoja(n64 v) {
+    n8* p = v;
+    rudisha p;
+}
+
+w0 andika_ndani(n32 faili, n8* f, n64 a1, n64 a2, n64 a3, n64 a4, n64 a5, n64 a6) {
+    n32 p = 0;  // mfuatano hauna nukuu (kumbukumbu hutoa bila nukuu)
+    n32 na = 0;  // faharisi ya hoja inayofuata
+    wakati (1 == 1) {
+        kama (f[p] == 0) { acha; }  // mwisho wa mfuatano (null terminator)
+        kama (f[p] == 37) {  // '%'
+            n8 herufi_ya_umbizo = f[p + 1];
+            kama (herufi_ya_umbizo == 0) {  // '%' mwishoni mwa mfuatano -- chapisha kama herufi
+                andika_herufi(faili, 37);
+                p = p + 1;
+                endelea;
+            }
+            p = p + 2;
+            kama (herufi_ya_umbizo == 100) {  // %d
+                andika_n64(faili, hoja_kwa_na(a1, a2, a3, a4, a5, a6, na));
+                na = na + 1;
+            } sivyo { kama (herufi_ya_umbizo == 117) {  // %u
+                    andika_u64(faili, hoja_kwa_na(a1, a2, a3, a4, a5, a6, na));
+                    na = na + 1;
+                } sivyo { kama (herufi_ya_umbizo == 120) {  // %x
+                        andika_heksa(faili, hoja_kwa_na(a1, a2, a3, a4, a5, a6, na));
+                        na = na + 1;
+                    } sivyo { kama (herufi_ya_umbizo == 115) {  // %s
+                            andika_mfuatano(faili, kielekezi_kutoka_hoja(hoja_kwa_na(a1, a2, a3, a4, a5, a6, na)));
+                            na = na + 1;
+                        } sivyo { kama (herufi_ya_umbizo == 99) {  // %c
+                                andika_herufi(faili, hoja_kwa_na(a1, a2, a3, a4, a5, a6, na));
+                                na = na + 1;
+                            } sivyo { kama (herufi_ya_umbizo == 37) {  // %%
+                                    andika_herufi(faili, 37);  // haina hoja
+                                } sivyo {
+                                    // Visivyosaidiwa (%f, %l, %n, ...) -- chapisha
+                                    // kama herufi halisi, bila kutumia hoja.
+                                    andika_herufi(faili, 37);
+                                    andika_herufi(faili, herufi_ya_umbizo);
+                                } } } } } }
+            endelea;
+        }
+        kama (f[p] == 92 && f[p + 1] == 110) {  // \n
+            andika_herufi(faili, 10);
+            p = p + 2;
+            endelea;
+        }
+        andika_herufi(faili, f[p]);
+        p = p + 1;
+    }
+}
+
+n32 andika(n8* f, n64 a1, n64 a2, n64 a3, n64 a4, n64 a5, n64 a6) {
+    andika_ndani(1, f, a1, a2, a3, a4, a5, a6);
+    rudisha 0;
+}
+
+n32 andika_kosa(n8* f, n64 a1, n64 a2, n64 a3, n64 a4, n64 a5, n64 a6) {
+    andika_ndani(2, f, a1, a2, a3, a4, a5, a6);
+    rudisha 0;
+}
+
+// ukubwa -- kwa mbegu (codegen ya Swa huikokotoa wakati wa kukusanya)
+n64 ukubwa(n32 aina) {
+    kama (aina == 1) { rudisha 1; }
+    kama (aina == 2) { rudisha 2; }
+    kama (aina == 3) { rudisha 4; }
+    kama (aina == 4) { rudisha 8; }
+    rudisha 8;
+}
+
+// ==========================================================
+// Eneo la utengaji -- badala ya malloc/realloc/free
+//
+// MUHIMU (lugha-swa/swa#190): arena hii ZAMANI ilikuwa mmap MOJA ya
+// baiti 1,048,576 (1MB) ya KUDUMU kwa maisha yote ya programu --
+// tenga() ilirudisha 0 kwa usahihi ikiwa arena ilijaa (haikuharibu
+// kumbukumbu), lakini programu yoyote inayozidisha 1MB ya utengaji
+// wa jumla (hata kwa muda mrefu wa maisha, si mzigo mmoja mkubwa)
+// ingeanguka kwa null-deref mara tu tenga() ilipoanza kurudisha 0
+// bila kukaguliwa (kama karibu msimbo wote uliopo hauukagui).
+//
+// Suluhisho: arena ni sasa MFULULIZO wa vipande vya mmap -- kipande
+// kimoja kinapojaa, kipande KIPYA kinatengwa (kwa ukubwa angalau
+// UKUBWA_WA_MSINGI_WA_ENEO_LA_UTENGAJI, au kikubwa zaidi ikiwa utengaji mmoja
+// unahitaji zaidi ya hapo) na utengaji unaendelea kutoka humo.
+// Vipande vya zamani havitolewi (kama ilivyokuwa tabia ya awali --
+// achilia_eneo_la_utengaji() imekuwa no-op ya kudumu kwa MAKUSUDI tangu
+// 2026-09-01, angalia maelezo yake chini; hakuna msimbo unaotegemea
+// ikirudisha kumbukumbu kwa kweli) lakini KIKOMO CHA JUMLA
+// hakipo tena -- kila kipande kipya kinapoisha, kingine kinatengwa.
+// ==========================================================
+n8* anwani_ya_eneo_la_utengaji = 0;
+n64 nafasi_ndani_ya_eneo_la_utengaji = 0;
+n64 ukubwa_wa_eneo_la_utengaji = 0;   // ukubwa wa KIPANDE CHA SASA (si jumla)
+
+n64 UKUBWA_WA_MSINGI_WA_ENEO_LA_UTENGAJI = 1048576;
+
+n8* tenga(n64 ukubwa) {
+    kama (ukubwa == 0) { ukubwa = 8; }
+    ukubwa = ukubwa + 8;  // nafasi ya ukubwa wa kipande (kwa badili)
+
+    kama (anwani_ya_eneo_la_utengaji == 0 || nafasi_ndani_ya_eneo_la_utengaji + ukubwa > ukubwa_wa_eneo_la_utengaji) {
+        // Hakuna kipande bado, AU kipande cha sasa hakina nafasi ya
+        // kutosha -- tenga kipande KIPYA. Ukubwa wa kipande kipya ni
+        // angalau UKUBWA_WA_MSINGI_WA_ENEO_LA_UTENGAJI, lakini mkubwa zaidi ikiwa
+        // utengaji huu mmoja unahitaji zaidi ya hapo (mfano: utengaji
+        // mmoja wa MB kadhaa) -- hii inaepuka kupoteza kipande kizima
+        // cha msingi kwa ombi moja kubwa, na inahakikisha ombi kubwa
+        // LOLOTE linakubaliwa, si tu maombi madogo yanayozidi kwa
+        // wingi.
+        n64 kipya_ukubwa = UKUBWA_WA_MSINGI_WA_ENEO_LA_UTENGAJI;
+        kama (ukubwa > kipya_ukubwa) { kipya_ukubwa = ukubwa; }
+
+        // Anwani sifuri = "popote" (kama mmap(NULL, ...) ya C).
+        // Halisi 0 kwa kigezo cha kielekezi inakataliwa na ukaguzi
+        // wa 2026-09-01 -- tumia kielekezi cha sifuri wazi.
+        n8* anwani_sifuri = 0;
+        n8* kipande_kipya = mfumo_ramani_kumbukumbu(anwani_sifuri, kipya_ukubwa, 3, 34, 0 - 1);
+        kama (kipande_kipya == 0 - 1) { rudisha 0; }
+
+        anwani_ya_eneo_la_utengaji = kipande_kipya;
+        nafasi_ndani_ya_eneo_la_utengaji = 0;
+        ukubwa_wa_eneo_la_utengaji = kipya_ukubwa;
+    }
+
+    n8* r = anwani_ya_eneo_la_utengaji + nafasi_ndani_ya_eneo_la_utengaji;
+    // hifadhi ukubwa mbele ya kipande (baiti 8)
+    n8* h = &ukubwa;
+    n32 bi = 0;
+    wakati (bi < 8) {
+        r[bi] = h[bi];
+        bi = bi + 1;
+    }
+    nafasi_ndani_ya_eneo_la_utengaji = nafasi_ndani_ya_eneo_la_utengaji + ukubwa;
+    rudisha r + 8;
+}
+
+w0 achilia_eneo_la_utengaji(n8* p) {
+    // Eneo la utengaji haliwezi kufungua vipande -- hakuna kitu.
+    // Jina lilibadilishwa kutoka "achilia" (2026-09-01): achilia ni
+    // neno muhimu (taarifa ya kufungua kumbukumbu) -- hati 2.2
+    // inakataa maneno muhimu kama majina ya kazi.
+    //
+    // Hii inabaki no-op KWA MAKUSUDI hata baada ya #190 -- hakuna
+    // mahali kwenye mkusanyaji huu au maktaba zake (orodha.swa,
+    // ramani.swa) panapotegemea ikirudisha kumbukumbu kwa kweli;
+    // zote zinaita achilia_eneo_la_utengaji() kama "tumemaliza na hii" bila
+    // kutegemea matokeo yoyote. Sasa kwamba arena inaweza kuwa
+    // vipande vingi (si kimoja), munmap ya kweli ingehitaji
+    // kufuatilia kila kipande na si salama kufungua kipande
+    // kinachoshirikiwa na vitu vingine vilivyo hai bado -- muundo wa
+    // "achilia yote mara moja mwishoni" haufai kwa achilia_eneo_la_utengaji(p)
+    // ya kipande kimoja. Hii ni uamuzi wa makusudi, si upungufu.
+}
+
+n8* badili(n8* p, n64 ukubwa) {
+    kama (p == 0) { rudisha tenga(ukubwa); }
+    kama (ukubwa == 0) { rudisha p; }
+    // soma ukubwa wa zamani kutoka kichwa cha kipande
+    n64 zamani = 0;
+    n8* h2 = &zamani;
+    n32 bi2 = 0;
+    wakati (bi2 < 8) {
+        h2[bi2] = p[bi2 - 8];
+        bi2 = bi2 + 1;
+    }
+    n8* r = tenga(ukubwa);
+    kama (r == 0) { rudisha 0; }
+    n64 nakili_urefu = zamani;
+    kama (ukubwa < zamani) { nakili_urefu = ukubwa; }
+    nakili(r, p, nakili_urefu);
+    rudisha r;
+}
+
+// ==========================================================
+// Usomaji wa desimali halisi -- badala ya strtod (libc)
+// biti_ya_d64_swa: mfuatano [-]z.z -> baiti za d64 (IEEE 754)
+// (majina ya kigeu hayawezi kuwa herufi za aina: N A B D W)
+//
+// lugha-swa/swa#188: tarakimu za kasoro (baada ya nukta) zaidi ya 10
+// zilisababisha `hesabu * 2^hamisha` kuzidi n64 (baiti 64) KIMYA --
+// neno la tarakimu 11+ za kasoro lilitoa THAMANI ISIYOHUSIANA KABISA,
+// si kosa dogo la mzunguko wa mwisho. Uthibitisho wa hesabu: baada ya
+// "Kuinua hesabu" (hapo chini) hesabu iko [nene, 2*nene); hatua ya
+// kwanza ya kuzidisha kwa kugawanywa (2^26) inahitaji
+// `2*nene*2^26 < 2^63` (n64 ni ya ishara) => `nene < 2^36` =>
+// idadi_k <= 10 (10^10 < 2^36 < 10^11). Zaidi ya tarakimu 10,
+// tarakimu za ziada sasa zinaachwa (zimekatwa) badala ya kusababisha
+// kufurika kimya -- d64 yenyewe ina usahihi wa takriban tarakimu
+// 15-17 tu kwa vyovyote vile, kwa hiyo tarakimu 10 za kwanza
+// zilizohifadhiwa kwa uangalifu ni bora zaidi ya thamani isiyohusiana
+// kabisa iliyotolewa hapo awali.
+// ==========================================================
+
+n32 BITI_D64_KASORO_KIKOMO = 10;
+
+n64 p2_kwa(n32 kubwa) {
+    n64 thamani = 1;
+    n32 fasi = 0;
+    wakati (fasi < kubwa) {
+        thamani = thamani * 2;
+        fasi = fasi + 1;
+    }
+    rudisha thamani;
+}
+
+n64 biti_ya_d64_swa(n8* herufi, n32 u) {
+    n64 alama = 0;
+    n32 fasi = 0;
+    kama (herufi[fasi] == 45) { alama = 1; fasi = fasi + 1; }
+    n64 nzima = 0;
+    wakati (fasi < u && herufi[fasi] != 46) {
+        nzima = nzima * 10 + (herufi[fasi] - 48);
+        fasi = fasi + 1;
+    }
+    n64 kasoro = 0;
+    n64 idadi_k = 0;
+    kama (fasi < u && herufi[fasi] == 46) {
+        fasi = fasi + 1;
+        wakati (fasi < u) {
+            // lugha-swa/swa#188: tarakimu za ziada zaidi ya kikomo
+            // (baada ya idadi_k kufika BITS_D64_KASORO_KIKOMO)
+            // huachwa (kutwaliwa/kusomwa kutoka kwenye neno, lakini
+            // hazihesabiwi) badala ya kuruhusu kasoro/nene kuzidi
+            // n64 kimya -- angalia maelezo kamili juu ya faili hili.
+            kama (idadi_k < BITI_D64_KASORO_KIKOMO) {
+                kasoro = kasoro * 10 + (herufi[fasi] - 48);
+                idadi_k = idadi_k + 1;
+            }
+            fasi = fasi + 1;
+        }
+    }
+    // nene = 10^idadi_k
+    n64 nene = 1;
+    n32 kihesabu = 0;
+    wakati (kihesabu < idadi_k) { nene = nene * 10; kihesabu = kihesabu + 1; }
+    // hesabu = nzima * nene + kasoro  (thamani = hesabu / nene)
+    n64 hesabu = nzima * nene + kasoro;
+    kama (hesabu == 0) { rudisha 0; }
+
+    // kizio: kubwa zaidi kama 2^kizio <= hesabu/nene < 2^(kizio+1)
+    n64 urefu_juu = 0; n64 muda = hesabu;
+    wakati (muda > 0) { muda = muda / 2; urefu_juu = urefu_juu + 1; }
+    n64 urefu_chini = 0; muda = nene;
+    wakati (muda > 0) { muda = muda / 2; urefu_chini = urefu_chini + 1; }
+    n64 kizio = urefu_juu - urefu_chini;
+    kama (kizio >= 0) {
+        // kurekebisha chini: kama hesabu/nene < 2^kizio, punguza
+        n64 p2m = p2_kwa(kizio);
+        kama (hesabu < nene * p2m) { kizio = kizio - 1; }
+    } sivyo {
+        // kizio hasi (v < 1): linganisha hesabu * 2^m < nene, m = -kizio
+        n64 m = 0 - kizio;
+        n64 q = 1;
+        n32 mf = 0;
+        wakati (mf < m) { q = q * 2; mf = mf + 1; }
+        kama (hesabu * q < nene) { kizio = kizio - 1; }
+    }
+    // Kuinua hesabu hadi [nene, 2*nene) -- hesabu/nene sasa ni
+    // 2^(kizio+d); kizio yenyewe inabaki kielelezo cha thamani asilia.
+    n64 d = 0;
+    wakati (hesabu < nene) {
+        hesabu = hesabu * 2;
+        d = d + 1;
+    }
+
+    // pacha = (hesabu/nene - 2^(kizio+d)) * 2^(52-kizio-d)
+    //       = hesabu * 2^(52-kizio-d) / nene - 2^52
+    n64 hamisha = 52 - (kizio + d);
+    kama (hamisha < 0) { hamisha = 0; }
+    kama (hamisha > 52) { hamisha = 52; }
+    n64 p52 = p2_kwa(52);
+    n64 pacha = 0;
+    kama (hamisha <= 26) {
+        n64 p2s = p2_kwa(hamisha);
+        pacha = (hesabu * p2s) / nene - p52;
+    } sivyo {
+        // Gawanya kuzidisha ili kuepuka kuzidi baiti 64:
+        // hesabu*2^hamisha = (hi*nene + salio) * 2^(hamisha-26)
+        n64 p2a = p2_kwa(26);
+        n64 p2b = p2_kwa(hamisha - 26);
+        n64 hi = (hesabu * p2a) / nene;
+        n64 salio = hesabu * p2a - hi * nene;
+        pacha = hi * p2b + (salio * p2b) / nene - p52;
+    }
+
+    // bits: alama << 63 | (kizio + 1023) << 52 | pacha
+    n64 p63 = p2_kwa(63);
+    n64 biti = 0;
+    kama (alama == 1) { biti = biti + p63; }
+    biti = biti + (kizio + 1023) * p52;
+    biti = biti + (pacha - (pacha / p52) * p52);
+    rudisha biti;
+}
+
+// soma_mstari -- soma mstari mmoja kutoka faili hadi bafa.
+// Inasimama kwa '\n' (isiyojumuishwa) au EOF. Rudisha idadi ya
+// baiti zilizosomwa, au -1 ikiwa EOF mara moja bila baiti.
+n64 soma_mstari(n32 faili, n8* chombo, n64 upeo) {
+    n64 n = 0;
+    wakati (n + 1 < upeo) {
+        n8 herufi = 0;
+        n64 r = mfumo_soma(faili, &herufi, 1);
+        kama (r <= 0) {
+            kama (n == 0) {
+                rudisha -1;
+            }
+            rudisha n;
+        }
+        kama (herufi == 10) {
+            rudisha n;
+        }
+        chombo[n] = herufi;
+        n = n + 1;
+    }
+    rudisha n;
+}

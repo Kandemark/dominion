@@ -1,0 +1,126 @@
+// mfumo.swa (ndani ya moduli/akili/) — tafsiri ya src/core/ai/ai_system.c
+// (na .h) kwenda Swa. Mfumo mkuu unaosimamia wakala wote wa akili
+// bandia (mkakati na mbinu).
+//
+// Kiambishi: akili_mfumo_ — angalia msingi.swa kwa maelezo ya
+// viambishi vidogo vya ai/.
+//
+// strategic_ais[]/tactical_ais[] (safu za civ_strategic_ai_t**/
+// civ_tactical_ai_t**, TYPE** kwenye C) zimekuwa safu za n64*
+// (lugha-swa/swa#185). game_ptr HAIKULETWA (angalia mkakati.swa
+// kwa sababu -- kazi zake pekee zinazoihitaji hazikuletwa).
+
+husisha { msingi/msingi_civ.swa }
+husisha { moduli/akili/mkakati.swa }
+husisha { moduli/akili/mbinu.swa }
+
+muundo AkiliMfumo {
+    n64* mkakati_ais;
+    n64* mbinu_ais;
+    n32 idadi_ya_mkakati;
+    n32 idadi_ya_mbinu;
+    n32 uwezo_wa_mkakati;
+    n32 uwezo_wa_mbinu;
+};
+
+AkiliMkakati* akili_mfumo_pata_mkakati(AkiliMfumo* s, n32 idx) {
+    rudisha s->mkakati_ais[idx];
+}
+
+AkiliMbinu* akili_mfumo_pata_mbinu(AkiliMfumo* s, n32 idx) {
+    rudisha s->mbinu_ais[idx];
+}
+
+AkiliMfumo* akili_mfumo_unda() {
+    AkiliMfumo* s = tenga(ukubwa(AkiliMfumo));
+    s->uwezo_wa_mkakati = 16;
+    s->uwezo_wa_mbinu = 16;
+    s->idadi_ya_mkakati = 0;
+    s->idadi_ya_mbinu = 0;
+    s->mkakati_ais = tenga(ukubwa(n64) * s->uwezo_wa_mkakati);
+    s->mbinu_ais = tenga(ukubwa(n64) * s->uwezo_wa_mbinu);
+    rudisha s;
+}
+
+w0 akili_mfumo_uharibu(AkiliMfumo* s) {
+    n32 i = 0;
+    wakati (i < s->idadi_ya_mkakati) {
+        akili_mkakati_uharibu(akili_mfumo_pata_mkakati(s, i));
+        i = i + 1;
+    }
+    i = 0;
+    wakati (i < s->idadi_ya_mbinu) {
+        akili_mbinu_uharibu(akili_mfumo_pata_mbinu(s, i));
+        i = i + 1;
+    }
+    achilia s->mkakati_ais;
+    achilia s->mbinu_ais;
+    achilia s;
+}
+
+CivMatokeo akili_mfumo_ongeza_mkakati(AkiliMfumo* s, AkiliMkakati* ai) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (s == 0 || ai == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    kama (s->idadi_ya_mkakati >= s->uwezo_wa_mkakati) {
+        s->uwezo_wa_mkakati = s->uwezo_wa_mkakati * 2;
+        s->mkakati_ais = badili(s->mkakati_ais, ukubwa(n64) * s->uwezo_wa_mkakati);
+    }
+
+    s->mkakati_ais[s->idadi_ya_mkakati] = ai;
+    s->idadi_ya_mkakati = s->idadi_ya_mkakati + 1;
+
+    rudisha r;
+}
+
+CivMatokeo akili_mfumo_ongeza_mbinu(AkiliMfumo* s, AkiliMbinu* ai) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (s == 0 || ai == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    kama (s->idadi_ya_mbinu >= s->uwezo_wa_mbinu) {
+        s->uwezo_wa_mbinu = s->uwezo_wa_mbinu * 2;
+        s->mbinu_ais = badili(s->mbinu_ais, ukubwa(n64) * s->uwezo_wa_mbinu);
+    }
+
+    s->mbinu_ais[s->idadi_ya_mbinu] = ai;
+    s->idadi_ya_mbinu = s->idadi_ya_mbinu + 1;
+
+    rudisha r;
+}
+
+CivMatokeo akili_mfumo_sasisha(AkiliMfumo* s, d64 muda) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+
+    kama (s == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    n32 i = 0;
+    wakati (i < s->idadi_ya_mkakati) {
+        akili_mkakati_panga(akili_mfumo_pata_mkakati(s, i), muda);
+        i = i + 1;
+    }
+
+    i = 0;
+    wakati (i < s->idadi_ya_mbinu) {
+        akili_mbinu_itikia(akili_mfumo_pata_mbinu(s, i), muda);
+        i = i + 1;
+    }
+
+    rudisha r;
+}

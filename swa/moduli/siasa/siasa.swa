@@ -1,0 +1,81 @@
+// siasa.swa — tafsiri ya src/core/politics/politics.c (na
+// politics.h) kwenda Swa. Mratibu mkuu wa siasa — uhalali
+// (legitimacy) na utulivu (stability) wa jumla, unaolishwa na
+// mfumo wa vikundi vya kisiasa (siasa_kikundi, faction_system.c).
+//
+// Kiambishi: siasa_mfumo_ — angalia ../../KANUNI-MAJINA.md
+// (politics/ -> siasa_ kwa jumla; "mfumo_" ni kiambishi kidogo
+// kuepuka mgongano na siasa_kikundi_/siasa_upinzani_, mtindo
+// uleule wa utawala/metrics/vipimo.swa dhidi ya utawala/maendeleo.swa).
+//
+// Tofauti za kimakusudi kutoka kwa chanzo cha C:
+//   - civ_politics_system_t.faction_system (kielekezi chake
+//     MWENYEWE, kinachoundwa na civ_politics_system_init) HAIKULETWA
+//     kama umiliki tofauti wa SiasaKikundiMfumo mpya. SiasaKikundiMfumo
+//     TAYARI imeundwa na kusasishwa na mchezo.swa moja kwa moja
+//     (field kikundi_addr, siasa_kikundi_mfumo_sasisha ikiitwa kwenye
+//     mchezo_sasisha) -- kuunda nakala ya pili hapa ingesababisha
+//     MIFUMO MIWILI ya vikundi isiyolingana (hali mbili tofauti za
+//     "ukweli", kila moja ikibadilika kwa kasi yake), si tafsiri
+//     sahihi. Badala yake: siasa_mfumo_sasisha INAPOKEA kielekezi
+//     cha SiasaKikundiMfumo iliyopo TAYARI (kama hoja), na HUSOMA TU
+//     utulivu wake (siasa_kikundi_mfumo_utulivu) -- HAIITI
+//     siasa_kikundi_mfumo_sasisha tena (ambayo tayari imeshaitwa
+//     mahali pengine kwenye mzunguko uleule wa dt, angalia mchezo.swa
+//     kwa mpangilio sahihi wa wito).
+//   - civ_politics_system_create/destroy/init (zilizounganishwa
+//     kwenye C) zimekuwa siasa_mfumo_unda/uharibu pekee (hakuna
+//     "init" tofauti, sawa na muundo wa teknolojia.swa/kikundi.swa).
+//   - civ_log ya "Failed to allocate" haikuletwa -- tenga() ikirudisha
+//     0 inashughulikiwa na mwitaji (kama moduli nyingine zote).
+
+husisha { msingi/msingi_civ.swa }
+husisha { moduli/siasa/kikundi.swa }
+
+muundo SiasaMfumo {
+    d64 uhalali;  // legitimacy, 0..1
+    d64 utulivu;  // stability, 0..1 (nakala ya mwisho iliyosomwa)
+};
+
+SiasaMfumo* siasa_mfumo_unda() {
+    SiasaMfumo* s = tenga(ukubwa(SiasaMfumo));
+    kama (s == 0) { rudisha 0; }
+    s->uhalali = 0.7;
+    s->utulivu = 0.7;
+    rudisha s;
+}
+
+w0 siasa_mfumo_uharibu(SiasaMfumo* s) {
+    achilia s;
+}
+
+// siasa_mfumo_sasisha: angalia maoni ya juu -- "kikundi" lazima
+// liwe limeshasasishwa (dt hii hii) KABLA ya wito huu, vinginevyo
+// utulivu unaosomwa ni wa mzunguko uliopita.
+CivMatokeo siasa_mfumo_sasisha(SiasaMfumo* s, SiasaKikundiMfumo* kikundi, d64 muda) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (s == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        rudisha r;
+    }
+
+    kama (kikundi != 0) {
+        s->utulivu = siasa_kikundi_mfumo_utulivu(kikundi);
+    }
+
+    d64 badiliko_la_uhalali = (s->utulivu - s->uhalali) * muda * 0.01;
+    s->uhalali = finya_d64(s->uhalali + badiliko_la_uhalali, 0.0, 1.0);
+
+    rudisha r;
+}
+
+w0 siasa_mfumo_weka_uhalali(SiasaMfumo* s, d64 uhalali) {
+    s->uhalali = finya_d64(uhalali, 0.0, 1.0);
+}
+
+d64 siasa_mfumo_pata_utulivu(SiasaMfumo* s) {
+    kama (s == 0) { rudisha 0.0; }
+    rudisha s->utulivu;
+}

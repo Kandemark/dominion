@@ -1,0 +1,84 @@
+husisha { moduli/utawala/desturi.swa }
+
+// jaribio_desturi.swa -- jaribio la mkono dhidi ya UtawalaDesturi
+// (desturi.swa, tafsiri ya custom_governance.c) PEKEE, bila kupitia
+// mchezo.swa (angalia lugha-swa/swa#292). Linathibitisha THAMANI
+// HALISI.
+
+n32 jaribio_hesabu_yalioshindwa = 0;
+
+w0 jaribio_thibitisha(n32 sharti, n8* jina) {
+    kama (sharti == 0) {
+        andika_kosa("FAIL: %s\n", jina, 0, 0, 0, 0, 0);
+        jaribio_hesabu_yalioshindwa = jaribio_hesabu_yalioshindwa + 1;
+    } sivyo {
+        andika("PASS: %s\n", jina, 0, 0, 0, 0, 0);
+    }
+}
+
+n32 anza() {
+    UtawalaDesturiMsimamizi* m = utawala_desturi_msimamizi_unda();
+    jaribio_thibitisha(m->idadi == 0, "msimamizi huanza bila serikali");
+
+    UtawalaDesturi* g = utawala_desturi_unda("sk1", "Jamhuri ya Kwanza");
+    n32 g_sio_tupu = (g != 0);
+    jaribio_thibitisha(g_sio_tupu, "utawala_desturi_unda inarudisha kielekezi");
+    jaribio_thibitisha(g->umoja > 0.49 && g->umoja < 0.51, "umoja huanza 0.5");
+    jaribio_thibitisha(g->kiwango_cha_demokrasia > 0.29 && g->kiwango_cha_demokrasia < 0.31, "kiwango_cha_demokrasia huanza 0.3");
+    jaribio_thibitisha(g->rushwa > (0.0 - 0.001) && g->rushwa < 0.001, "rushwa huanza 0.0");
+
+    UtawalaKatiba* katiba = utawala_desturi_pata_katiba(g);
+    n32 katiba_sio_tupu = (katiba != 0);
+    jaribio_thibitisha(katiba_sio_tupu, "katiba imeundwa moja kwa moja na utawala_desturi_unda");
+
+    CivMatokeo r1 = utawala_desturi_msimamizi_ongeza(m, g);
+    jaribio_thibitisha(r1.hitilafu == CIV_SAWA, "msimamizi_ongeza inarudisha CIV_SAWA");
+    jaribio_thibitisha(m->idadi == 1, "idadi imeongezeka baada ya kuongeza");
+
+    UtawalaDesturi* iliyopatikana = utawala_desturi_msimamizi_tafuta(m, "sk1");
+    jaribio_thibitisha(linganisha_mfuatano(iliyopatikana->jina, "Jamhuri ya Kwanza") == 0, "msimamizi_tafuta inapata serikali sahihi kwa kitambulisho");
+
+    // Ongeza jukumu moja na uthibitishe idadi_ya_majukumu.
+    CivMatokeo r2 = utawala_desturi_ongeza_jukumu(g, "Waziri Mkuu", "Kiongozi wa baraza", 0.8);
+    jaribio_thibitisha(r2.hitilafu == CIV_SAWA, "ongeza_jukumu inarudisha CIV_SAWA");
+    jaribio_thibitisha(g->idadi_ya_majukumu == 1, "idadi_ya_majukumu imeongezeka");
+    UtawalaDesturiJukumu* jukumu0 = utawala_desturi_pata_jukumu(g, 0);
+    jaribio_thibitisha(jukumu0->mamlaka > 0.79 && jukumu0->mamlaka < 0.81, "mamlaka ya jukumu imewekwa sahihi (imefinywa 0..1)");
+    jaribio_thibitisha(jukumu0->wajibu > 0.63 && jukumu0->wajibu < 0.65, "wajibu = mamlaka * 0.8");
+
+    // Sasisha mara kadhaa na uthibitishe ufanisi unabadilika (si 0
+    // kila wakati kwa sababu kuna jukumu moja lenye mamlaka*wajibu).
+    utawala_desturi_sasisha(g, 1.0);
+    jaribio_thibitisha(g->ufanisi > 0.0, "ufanisi unahesabiwa kuwa chanya baada ya sasisha ya kwanza");
+
+    // Rushwa inapaswa kuongezeka kwa muda ikiwa demokrasia < 0.5
+    // (kiwango cha demokrasia ni 0.3 hapa, chini ya 0.5).
+    d64 rushwa_kabla = g->rushwa;
+    n32 i = 0;
+    wakati (i < 20) {
+        utawala_desturi_sasisha(g, 1.0);
+        i = i + 1;
+    }
+    jaribio_thibitisha(g->rushwa > rushwa_kabla, "rushwa inaongezeka kwa muda chini ya demokrasia ndogo");
+
+    // Marekebisho: "Decentralize power" inapaswa KUPUNGUZA umoja
+    // (angalia maoni ndani ya desturi.swa kuhusu bug ya chanzo cha C
+    // ambacho halifikii tawi hili kamwe -- Swa inarekebisha hilo).
+    UtawalaDesturi* g2 = utawala_desturi_unda("sk2", "Dola la Pili");
+    d64 umoja_kabla = g2->umoja;
+    utawala_desturi_marekebisho(g2, "Decentralize power to the regions");
+    jaribio_thibitisha(g2->umoja < umoja_kabla, "Decentralize inapunguza umoja (tofauti na bug ya chanzo cha C)");
+
+    UtawalaDesturi* g3 = utawala_desturi_unda("sk3", "Dola la Tatu");
+    d64 umoja_kabla3 = g3->umoja;
+    utawala_desturi_marekebisho(g3, "Centralize authority");
+    jaribio_thibitisha(g3->umoja > umoja_kabla3, "Centralize inaongeza umoja");
+
+    // zalisha_jina inapaswa kurudisha mfuatano usio tupu.
+    n8* jina_lililozalishwa = utawala_desturi_zalisha_jina(g);
+    n32 jina_sio_tupu = (jina_lililozalishwa != 0);
+    jaribio_thibitisha(jina_sio_tupu, "utawala_desturi_zalisha_jina inarudisha mfuatano");
+
+    andika("\n=== Matokeo: %d yameshindwa ===\n", jaribio_hesabu_yalioshindwa, 0, 0, 0, 0, 0);
+    rudisha jaribio_hesabu_yalioshindwa;
+}

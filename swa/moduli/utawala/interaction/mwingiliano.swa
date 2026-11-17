@@ -1,0 +1,167 @@
+// mwingiliano.swa — tafsiri ya
+// src/core/governance/interaction/interaction.c (na .h) kwenda Swa.
+// Mfumo rahisi wa mwingiliano kati ya NPC (mikutano, mikutano ya
+// kilele, mahakama, n.k.).
+//
+// Kiambishi: utawala_mwingiliano_ — angalia ../../../KANUNI-MAJINA.md.
+// active_interactions[] (safu inayokua ya thamani za muundo) na
+// participants[] (safu inayokua ndani ya kila mwingiliano) zote
+// zimekuwa safu za n64* za vielekezi (#185) badala ya safu za
+// thamani — kuandika kipengele cha safu ya muundo kupitia kielekezi
+// cha parameter kunaharibu (#182(b)), kwa hiyo hatuwezi kutumia safu
+// za THAMANI zinazokua. time_t start_time/end_time zimekuwa n64
+// kupitia civ_muda_sasa() (angalia msingi_civ.swa, iliyoongezwa na
+// wasifu.swa). civ_interaction_calculate_understanding (inayohitaji
+// civ_language_evolution_t, HAIJAWAHI kutafsiriwa Swa -- mfumo
+// tofauti kabisa na lugha.swa mpya ya i18n) IMERUKWA kimakusudi.
+
+husisha { msingi/msingi_civ.swa }
+
+n32 UTAWALA_MWINGILIANO_MKUTANO_BINAFSI = 0;
+n32 UTAWALA_MWINGILIANO_MKUTANO_WA_KILELE = 1;
+n32 UTAWALA_MWINGILIANO_TAARIFA_YA_KATIBU = 2;
+n32 UTAWALA_MWINGILIANO_USIKILIZAJI_WA_MAHAKAMA = 3;
+n32 UTAWALA_MWINGILIANO_MKUTANO_WA_KIDIPLOMASIA = 4;
+
+n32 UTAWALA_MWINGILIANO_HALI_INASUBIRI = 0;
+n32 UTAWALA_MWINGILIANO_HALI_INAENDELEA = 1;
+n32 UTAWALA_MWINGILIANO_HALI_IMEMALIZIKA = 2;
+n32 UTAWALA_MWINGILIANO_HALI_IMEGHAIRIWA = 3;
+
+n32 UTAWALA_MWINGILIANO_WASHIRIKI_UWEZO_AWALI = 8;
+n32 UTAWALA_MWINGILIANO_UWEZO_AWALI = 16;
+
+muundo UtawalaMshiriki {
+    n8* kitambulisho;
+    n8* jukumu;
+    n8* lugha_asilia_id;
+    d64 uhusiano;
+    d64 ushawishi;
+};
+
+muundo UtawalaMwingiliano {
+    n8* kitambulisho;
+    n32 aina;
+    n32 hali_ya_mwingiliano;
+
+    n64* washiriki;   // safu ya vielekezi vya UtawalaMshiriki* (#185)
+    n32 idadi_ya_washiriki;
+    n32 uwezo_wa_washiriki;
+
+    n8* hali_ya_tafsiri;      // translation_mode
+    d64 uelewano_wa_pamoja;    // mutual_understanding
+
+    n64 muda_wa_kuanza;
+    n64 muda_wa_mwisho;
+};
+
+muundo UtawalaMwingilianoMeneja {
+    n64* mwingiliano_zote;   // safu ya vielekezi vya UtawalaMwingiliano* (#185)
+    n32 idadi;
+    n32 uwezo;
+};
+
+UtawalaMshiriki* utawala_mwingiliano_pata_mshiriki(UtawalaMwingiliano* m, n32 idx) {
+    rudisha m->washiriki[idx];
+}
+
+UtawalaMwingiliano* utawala_mwingiliano_meneja_pata(UtawalaMwingilianoMeneja* meneja, n32 idx) {
+    rudisha meneja->mwingiliano_zote[idx];
+}
+
+UtawalaMwingilianoMeneja* utawala_mwingiliano_meneja_unda() {
+    UtawalaMwingilianoMeneja* meneja = tenga(ukubwa(UtawalaMwingilianoMeneja));
+    meneja->uwezo = UTAWALA_MWINGILIANO_UWEZO_AWALI;
+    meneja->idadi = 0;
+    meneja->mwingiliano_zote = tenga(ukubwa(n64) * meneja->uwezo);
+    rudisha meneja;
+}
+
+w0 utawala_mwingiliano_meneja_uharibu(UtawalaMwingilianoMeneja* meneja) {
+    achilia meneja->mwingiliano_zote;
+    achilia meneja;
+}
+
+UtawalaMwingiliano* utawala_mwingiliano_unda(n32 aina) {
+    UtawalaMwingiliano* m = tenga(ukubwa(UtawalaMwingiliano));
+    m->kitambulisho = 0;
+    m->aina = aina;
+    m->hali_ya_mwingiliano = UTAWALA_MWINGILIANO_HALI_INASUBIRI;
+    m->uwezo_wa_washiriki = UTAWALA_MWINGILIANO_WASHIRIKI_UWEZO_AWALI;
+    m->idadi_ya_washiriki = 0;
+    m->washiriki = tenga(ukubwa(n64) * m->uwezo_wa_washiriki);
+    m->hali_ya_tafsiri = "Moja kwa moja";
+    m->uelewano_wa_pamoja = 0.0;
+    m->muda_wa_kuanza = civ_muda_sasa();
+    m->muda_wa_mwisho = 0;
+    rudisha m;
+}
+
+w0 utawala_mwingiliano_uharibu(UtawalaMwingiliano* m) {
+    achilia m->washiriki;
+    achilia m;
+}
+
+CivMatokeo utawala_mwingiliano_ongeza_mshiriki(UtawalaMwingiliano* m, n8* kitambulisho,
+                                                 n8* jukumu, n8* lugha_id) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0 || kitambulisho == 0 || jukumu == 0 || lugha_id == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Kielekezi tupu";
+        rudisha r;
+    }
+    kama (m->idadi_ya_washiriki >= m->uwezo_wa_washiriki) {
+        m->uwezo_wa_washiriki = m->uwezo_wa_washiriki * 2;
+        m->washiriki = badili(m->washiriki, ukubwa(n64) * m->uwezo_wa_washiriki);
+    }
+    UtawalaMshiriki* p = tenga(ukubwa(UtawalaMshiriki));
+    p->kitambulisho = kitambulisho;
+    p->jukumu = jukumu;
+    p->lugha_asilia_id = lugha_id;
+    p->uhusiano = 0.5;
+    p->ushawishi = 1.0;
+    m->washiriki[m->idadi_ya_washiriki] = p;
+    m->idadi_ya_washiriki = m->idadi_ya_washiriki + 1;
+    rudisha r;
+}
+
+CivMatokeo utawala_mwingiliano_anza(UtawalaMwingiliano* m) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Mwingiliano tupu";
+        rudisha r;
+    }
+    m->hali_ya_mwingiliano = UTAWALA_MWINGILIANO_HALI_INAENDELEA;
+    rudisha r;
+}
+
+CivMatokeo utawala_mwingiliano_sasisha(UtawalaMwingiliano* m, d64 muda_tofauti) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0 || m->hali_ya_mwingiliano != UTAWALA_MWINGILIANO_HALI_INAENDELEA) {
+        rudisha r;
+    }
+    // Katika C ya asili, hii ingesasisha uelewano/uhusiano -- kwa
+    // sasa ni kishikilia mahali (placeholder), sawa na chanzo.
+    rudisha r;
+}
+
+CivMatokeo utawala_mwingiliano_maliza(UtawalaMwingiliano* m) {
+    CivMatokeo r;
+    r.hitilafu = CIV_SAWA;
+    r.ujumbe = 0;
+    kama (m == 0) {
+        r.hitilafu = CIV_HITILAFU_KIELEKEZI_TUPU;
+        r.ujumbe = "Mwingiliano tupu";
+        rudisha r;
+    }
+    m->hali_ya_mwingiliano = UTAWALA_MWINGILIANO_HALI_IMEMALIZIKA;
+    m->muda_wa_mwisho = civ_muda_sasa();
+    rudisha r;
+}
