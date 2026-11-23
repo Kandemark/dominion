@@ -1,3 +1,4 @@
+husisha { moduli/skrini/uanzishaji.swa }
 husisha { moduli/skrini/mkutano.swa }
 husisha { moduli/soko/masoko.swa }
 husisha { moduli/hifadhi/hifadhi.swa }
@@ -64,7 +65,8 @@ w0 wasifu_utambulisho(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h) {
     kama (mimi == 0) { rudisha; }
     n8 herufi[4];
     serikali_herufi_za_jina(mimi->jina, herufi);
-    sura_avatar(herufi, x + 50, y + 74, 32, SURA_LAFUDHI, 255);
+    kama (mchezaji_uso != 0) { uso_chora_duara(sura_t, mchezaji_uso, x + 50, y + 74, 32); }
+    sivyo { sura_avatar(herufi, x + 50, y + 74, 32, SURA_LAFUDHI, 255); }
     sura_rangi(SURA_MAANDISHI);
     sura_lebo_nene(mimi->jina, x + 96, y + 46, 20);
     n8 m[160];

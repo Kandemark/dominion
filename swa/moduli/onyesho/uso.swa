@@ -1,0 +1,374 @@
+husisha { moduli/onyesho/turubai.swa }
+
+// uso.swa -- nyuso za wahusika zinazochorwa kwa msimbo.
+//
+// Uso ni vigezo vichache (umbo la kichwa, rangi ya ngozi, mtindo na rangi ya
+// nywele, macho, nyusi, pua, mdomo, ndevu, miwani, mavazi) na huchorwa kwa
+// maumbo laini (duaradufu zenye kingo laini) kwenye kisanduku cha 100x100
+// kinachopanuliwa kwa ukubwa wowote. Picha ya mduara (avatar) hukatwa kwa
+// duara lenye kingo laini. Hakuna picha za nje: kila uso ni hesabu ya vigezo.
+
+muundo Uso {
+    n64 umbo;           // 0..3  mviringo, mrefu, mpana, wa mraba
+    n64 ngozi;          // 0..7
+    n64 nywele;         // 0..7  upara, fupi, upande, ndefu, za kipilipili, fundo, zinazopungua, kilemba
+    n64 rangi_ya_nywele;// 0..6
+    n64 macho;          // 0..3
+    n64 nyusi;          // 0..3
+    n64 pua;            // 0..3
+    n64 mdomo;          // 0..3
+    n64 ndevu;          // 0..5  hakuna, ndevu changa, masharubu, ndevu kamili, kidevu, za pembeni
+    n64 miwani;         // 0..1
+    n64 mavazi;         // 0..4  koti la zamani, suti, sare ya jeshi, joho, shati jeupe
+}
+
+n64 USO_SIFA = 11;
+
+n64 uso_kikomo(n64 sifa) {
+    kama (sifa == 0) { rudisha 4; }
+    kama (sifa == 1) { rudisha 8; }
+    kama (sifa == 2) { rudisha 8; }
+    kama (sifa == 3) { rudisha 7; }
+    kama (sifa == 8) { rudisha 6; }
+    kama (sifa == 9) { rudisha 2; }
+    kama (sifa == 10) { rudisha 5; }
+    rudisha 4;
+}
+
+n64* uso_sifa_ya(Uso* u, n64 sifa) {
+    kama (sifa == 0) { rudisha &u->umbo; }
+    kama (sifa == 1) { rudisha &u->ngozi; }
+    kama (sifa == 2) { rudisha &u->nywele; }
+    kama (sifa == 3) { rudisha &u->rangi_ya_nywele; }
+    kama (sifa == 4) { rudisha &u->macho; }
+    kama (sifa == 5) { rudisha &u->nyusi; }
+    kama (sifa == 6) { rudisha &u->pua; }
+    kama (sifa == 7) { rudisha &u->mdomo; }
+    kama (sifa == 8) { rudisha &u->ndevu; }
+    kama (sifa == 9) { rudisha &u->miwani; }
+    rudisha &u->mavazi;
+}
+
+// Badilisha sifa kwa hatua +1 / -1 (huzunguka).
+w0 uso_badilisha(Uso* u, n64 sifa, n64 hatua) {
+    n64* v = uso_sifa_ya(u, sifa);
+    n64 k = uso_kikomo(sifa);
+    v[0] = ((v[0] + hatua) % k + k) % k;
+}
+
+n64 uso_nasibu(n64 a, n64 b) {
+    n64 n = (a * 2654435761 + b * 40503 + 4057) & 4294967295;
+    n = ((n ^ (n >> 15)) * 2246822519) & 4294967295;
+    rudisha (n ^ (n >> 13)) & 4294967295;
+}
+
+// Uso kutoka mbegu; mavazi hufuata zama (mwaka).
+w0 uso_zalisha(Uso* u, n64 mbegu, n64 mwaka) {
+    n64 s = 0;
+    wakati (s < USO_SIFA) {
+        n64* v = uso_sifa_ya(u, s);
+        v[0] = uso_nasibu(mbegu, s + 1) % uso_kikomo(s);
+        s = s + 1;
+    }
+    kama (uso_nasibu(mbegu, 40) % 3 != 0) { u->miwani = 0; }
+    kama (mwaka < 1850) { u->mavazi = 0; } sivyo kama (u->mavazi == 0) { u->mavazi = 1; }
+}
+
+n64 uso_rangi_ya_ngozi(n64 i) {
+    kama (i == 0) { rudisha 16441284; }     // 0xFAE0C4
+    kama (i == 1) { rudisha 15905176; }     // 0xF2B098
+    kama (i == 2) { rudisha 14918799; }     // 0xE3A48F
+    kama (i == 3) { rudisha 13471327; }     // 0xCD8E5F
+    kama (i == 4) { rudisha 11431745; }     // 0xAE6E41
+    kama (i == 5) { rudisha 9134895; }      // 0x8B632F
+    kama (i == 6) { rudisha 7029794; }      // 0x6B4422
+    rudisha 4997140;                        // 0x4C4014
+}
+
+n64 uso_rangi_ya_nywele(n64 i) {
+    kama (i == 0) { rudisha 1644825; }      // 0x191919
+    kama (i == 1) { rudisha 3810592; }      // 0x3A2520
+    kama (i == 2) { rudisha 6967862; }      // 0x6A5236
+    kama (i == 3) { rudisha 9187110; }      // 0x8C2F26
+    kama (i == 4) { rudisha 14079352; }     // 0xD6D478 -- rangi ya ngano
+    kama (i == 5) { rudisha 10066329; }     // 0x999999
+    rudisha 15461355;                       // 0xEBEBEB
+}
+
+n64 uso_rangi_ya_mavazi(n64 i) {
+    kama (i == 0) { rudisha 3418707; }      // 0x342A53 koti la zamani
+    kama (i == 1) { rudisha 2368548; }      // 0x242424 suti
+    kama (i == 2) { rudisha 4214072; }      // 0x404D38 sare
+    kama (i == 3) { rudisha 9116191; }      // 0x8B1A1F joho
+    rudisha 15329769;                       // 0xE9E9E9 shati jeupe
+}
+
+n64 uso_changanya(n64 a, n64 b, n64 f) {
+    n64 r = (((a >> 16) & 255) * (255 - f) + ((b >> 16) & 255) * f) / 255;
+    n64 g = (((a >> 8) & 255) * (255 - f) + ((b >> 8) & 255) * f) / 255;
+    n64 c = ((a & 255) * (255 - f) + (b & 255) * f) / 255;
+    rudisha (r << 16) | (g << 8) | c;
+}
+
+n64 uso_kipeuo(n64 n) {
+    kama (n <= 0) { rudisha 0; }
+    n64 x = n;
+    n64 y = (x + 1) / 2;
+    wakati (y < x) { x = y; y = (x + n / x) / 2; }
+    rudisha x;
+}
+
+// Duaradufu iliyojazwa yenye kingo laini; vipimo kwa 1/256 ya pikseli.
+w0 uso_duaradufu(Turubai* t, n64 cx, n64 cy, n64 rx, n64 ry) {
+    kama (rx <= 0 || ry <= 0) { rudisha; }
+    n64 y0 = (cy - ry) >> 8;
+    n64 y1 = (cy + ry) >> 8;
+    n64 y = y0;
+    wakati (y <= y1) {
+        n64 dy = y * 256 + 128 - cy;
+        kama (dy < 0) { dy = 0 - dy; }
+        kama (dy < ry) {
+            // nusu upana kwa y hii: rx * sqrt(1 - (dy/ry)^2)
+            n64 q = 65536 - (dy * dy * 65536) / (ry * ry);
+            n64 hw = (rx * uso_kipeuo(q)) / 256;
+            n64 xa = cx - hw;
+            n64 xb = cx + hw;
+            n64 x = xa >> 8;
+            wakati (x <= (xb >> 8)) {
+                n64 kushoto = x * 256;
+                n64 funiko = 256;
+                kama (kushoto < xa) { funiko = 256 - (xa - kushoto); }
+                kama (kushoto + 256 > xb) { funiko = funiko - (kushoto + 256 - xb); }
+                kama (funiko > 0) { turubai_changanya(t, x, y, funiko); }
+                x = x + 1;
+            }
+        }
+        y = y + 1;
+    }
+}
+
+// Chora uso kwenye mstatili (x, y, ukubwa x ukubwa).
+w0 uso_chora(Turubai* t, Uso* u, n64 x, n64 y, n64 ukubwa) {
+    // kitu cha kisanduku cha 100x100 hadi pikseli*256
+    n64 k = (ukubwa * 256) / 100;
+    n64 ox = x * 256;
+    n64 oy = y * 256;
+    n64 ngozi = uso_rangi_ya_ngozi(u->ngozi);
+    n64 kivuli = uso_changanya(ngozi, 0, 40);
+    n64 nywele = uso_rangi_ya_nywele(u->rangi_ya_nywele);
+    n64 vazi = uso_rangi_ya_mavazi(u->mavazi);
+    // kila kitu hukaa ndani ya kisanduku (mabega huvuka chini)
+    n64 kx0 = t->kx0;
+    n64 ky0 = t->ky0;
+    n64 kx1 = t->kx1;
+    n64 ky1 = t->ky1;
+    kama (x > t->kx0) { t->kx0 = x; }
+    kama (y > t->ky0) { t->ky0 = y; }
+    kama (x + ukubwa < t->kx1) { t->kx1 = x + ukubwa; }
+    kama (y + ukubwa < t->ky1) { t->ky1 = y + ukubwa; }
+    // usuli
+    turubai_brashi(t, uso_changanya(vazi, 1316648, 170), 255);
+    turubai_jaza(t, x, y, ukubwa, ukubwa);
+    // nywele ndefu nyuma ya kichwa
+    turubai_brashi(t, nywele, 255);
+    kama (u->nywele == 3) { uso_duaradufu(t, ox + 50 * k, oy + 58 * k, 30 * k, 36 * k); }
+    // mabega na mavazi
+    turubai_brashi(t, vazi, 255);
+    uso_duaradufu(t, ox + 50 * k, oy + 112 * k, 48 * k, 34 * k);
+    // shingo
+    turubai_brashi(t, kivuli, 255);
+    uso_duaradufu(t, ox + 50 * k, oy + 74 * k, 10 * k, 14 * k);
+    // kola
+    kama (u->mavazi == 1 || u->mavazi == 0) {
+        turubai_brashi(t, 15790320, 255);
+        uso_duaradufu(t, ox + 44 * k, oy + 86 * k, 7 * k, 5 * k);
+        uso_duaradufu(t, ox + 56 * k, oy + 86 * k, 7 * k, 5 * k);
+        kama (u->mavazi == 1) { turubai_brashi(t, 9116191, 255); uso_duaradufu(t, ox + 50 * k, oy + 92 * k, 3 * k, 7 * k); }
+    }
+    kama (u->mavazi == 2) {
+        turubai_brashi(t, 11741210, 255);
+        uso_duaradufu(t, ox + 41 * k, oy + 87 * k, 6 * k, 3 * k);
+        uso_duaradufu(t, ox + 59 * k, oy + 87 * k, 6 * k, 3 * k);
+    }
+    // masikio
+    turubai_brashi(t, ngozi, 255);
+    uso_duaradufu(t, ox + 28 * k, oy + 50 * k, 5 * k, 7 * k);
+    uso_duaradufu(t, ox + 72 * k, oy + 50 * k, 5 * k, 7 * k);
+    // kichwa
+    n64 rx = 22 * k;
+    n64 ry = 28 * k;
+    kama (u->umbo == 1) { rx = 20 * k; ry = 30 * k; }
+    kama (u->umbo == 2) { rx = 25 * k; ry = 27 * k; }
+    kama (u->umbo == 3) { rx = 23 * k; ry = 28 * k; }
+    uso_duaradufu(t, ox + 50 * k, oy + 46 * k, rx, ry);
+    kama (u->umbo == 3) { uso_duaradufu(t, ox + 50 * k, oy + 60 * k, 20 * k, 14 * k); }
+    // nywele juu
+    turubai_brashi(t, nywele, 255);
+    kama (u->nywele == 1) { uso_duaradufu(t, ox + 50 * k, oy + 28 * k, rx + k, 13 * k); }
+    kama (u->nywele == 2) {
+        uso_duaradufu(t, ox + 50 * k, oy + 27 * k, rx + k, 14 * k);
+        uso_duaradufu(t, ox + 38 * k, oy + 32 * k, 10 * k, 8 * k);
+    }
+    kama (u->nywele == 3) { uso_duaradufu(t, ox + 50 * k, oy + 26 * k, rx + 2 * k, 14 * k); }
+    kama (u->nywele == 4) {
+        n64 i = 0;
+        wakati (i < 9) {
+            n64 px = 30 + i * 5;
+            n64 py = 24 + ((i * 7) % 3) * 3;
+            uso_duaradufu(t, ox + px * k, oy + py * k, 7 * k, 7 * k);
+            i = i + 1;
+        }
+    }
+    kama (u->nywele == 5) {
+        uso_duaradufu(t, ox + 50 * k, oy + 27 * k, rx + k, 13 * k);
+        uso_duaradufu(t, ox + 50 * k, oy + 15 * k, 8 * k, 7 * k);
+    }
+    kama (u->nywele == 6) {
+        uso_duaradufu(t, ox + 31 * k, oy + 38 * k, 5 * k, 10 * k);
+        uso_duaradufu(t, ox + 69 * k, oy + 38 * k, 5 * k, 10 * k);
+    }
+    kama (u->nywele == 7) {
+        turubai_brashi(t, uso_changanya(vazi, 16777215, 120), 255);
+        uso_duaradufu(t, ox + 50 * k, oy + 26 * k, rx + 4 * k, 15 * k);
+        turubai_brashi(t, uso_changanya(vazi, 0, 60), 255);
+        uso_duaradufu(t, ox + 50 * k, oy + 33 * k, rx + 3 * k, 3 * k);
+    }
+    // ndevu
+    turubai_brashi(t, nywele, 255);
+    kama (u->ndevu == 1) { turubai_brashi(t, nywele, 70); uso_duaradufu(t, ox + 50 * k, oy + 64 * k, 18 * k, 11 * k); }
+    kama (u->ndevu == 3) { uso_duaradufu(t, ox + 50 * k, oy + 66 * k, 19 * k, 12 * k); }
+    kama (u->ndevu == 4) { uso_duaradufu(t, ox + 50 * k, oy + 71 * k, 6 * k, 6 * k); }
+    kama (u->ndevu == 5) {
+        uso_duaradufu(t, ox + 31 * k, oy + 58 * k, 5 * k, 10 * k);
+        uso_duaradufu(t, ox + 69 * k, oy + 58 * k, 5 * k, 10 * k);
+    }
+    // macho
+    n64 mx = 40;
+    n64 my = 47;
+    n64 mrx = 4 * k;
+    n64 mry = 3 * k;
+    kama (u->macho == 1) { mry = 2 * k; }
+    kama (u->macho == 2) { mrx = 5 * k; mry = 4 * k; }
+    kama (u->macho == 3) { mx = 39; }
+    turubai_brashi(t, 16316664, 255);
+    uso_duaradufu(t, ox + mx * k, oy + my * k, mrx, mry);
+    uso_duaradufu(t, ox + (100 - mx) * k, oy + my * k, mrx, mry);
+    n64 mboni = (mry * 8) / 10;
+    n64 kope = (15 * k) / 10;
+    turubai_brashi(t, 2763306, 255);
+    uso_duaradufu(t, ox + mx * k, oy + my * k, mboni, mboni);
+    uso_duaradufu(t, ox + (100 - mx) * k, oy + my * k, mboni, mboni);
+    kama (u->macho == 3) {
+        turubai_brashi(t, kivuli, 255);
+        uso_duaradufu(t, ox + mx * k, oy + (my - 2) * k, mrx, kope);
+        uso_duaradufu(t, ox + (100 - mx) * k, oy + (my - 2) * k, mrx, kope);
+    }
+    // nyusi
+    turubai_brashi(t, uso_changanya(nywele, 0, 40), 255);
+    n64 ny = 40 - u->nyusi;
+    n64 unene = 12 + u->nyusi * 4;
+    uso_duaradufu(t, ox + mx * k, oy + ny * k, 6 * k, (unene * k) / 10);
+    uso_duaradufu(t, ox + (100 - mx) * k, oy + ny * k, 6 * k, (unene * k) / 10);
+    // pua
+    turubai_brashi(t, kivuli, 255);
+    n64 pr = 3 + u->pua;
+    uso_duaradufu(t, ox + 50 * k, oy + 56 * k, pr * k, 3 * k);
+    turubai_brashi(t, kivuli, 120);
+    uso_duaradufu(t, ox + 52 * k, oy + 50 * k, kope, (4 + u->pua) * k);
+    // masharubu
+    turubai_brashi(t, nywele, 255);
+    n64 sharubu = (25 * k) / 10;
+    kama (u->ndevu == 2 || u->ndevu == 3) { uso_duaradufu(t, ox + 50 * k, oy + 61 * k, 9 * k, sharubu); }
+    // mdomo
+    turubai_brashi(t, uso_changanya(ngozi, 9116191, 110), 255);
+    n64 mw = 7 + u->mdomo * 2;
+    uso_duaradufu(t, ox + 50 * k, oy + 65 * k, mw * k, 2 * k);
+    kama (u->mdomo == 3) { uso_duaradufu(t, ox + 50 * k, oy + 66 * k, (mw - 2) * k, kope); }
+    // miwani
+    kama (u->miwani) {
+        turubai_brashi(t, 2105376, 255);
+        n64 i = 0;
+        wakati (i < 2) {
+            n64 c = mx;
+            kama (i == 1) { c = 100 - mx; }
+            uso_duaradufu(t, ox + c * k, oy + my * k, 8 * k, 7 * k);
+            turubai_brashi(t, ngozi, 255);
+            uso_duaradufu(t, ox + c * k, oy + my * k, (68 * k) / 10, (58 * k) / 10);
+            turubai_brashi(t, 16316664, 255);
+            uso_duaradufu(t, ox + c * k, oy + my * k, mrx, mry);
+            turubai_brashi(t, 2763306, 255);
+            uso_duaradufu(t, ox + c * k, oy + my * k, mboni, mboni);
+            turubai_brashi(t, 2105376, 255);
+            i = i + 1;
+        }
+        uso_duaradufu(t, ox + 50 * k, oy + my * k, 4 * k, k);
+    }
+    t->kx0 = kx0;
+    t->ky0 = ky0;
+    t->kx1 = kx1;
+    t->ky1 = ky1;
+}
+
+// Avatar ya mduara: uso huchorwa kwenye turubai ya muda kisha hunakiliwa
+// ndani ya duara lenye kingo laini.
+Turubai* uso_akiba = 0;
+
+w0 uso_chora_duara(Turubai* t, Uso* u, n64 cx, n64 cy, n64 r) {
+    n64 s = r * 2;
+    kama (s <= 0) { rudisha; }
+    kama (uso_akiba == 0 || uso_akiba->upana < s) {
+        kama (uso_akiba != 0) { achilia uso_akiba->pikseli; achilia uso_akiba; }
+        uso_akiba = turubai_unda(s + 8, s + 8);
+    }
+    turubai_kata_yote(uso_akiba);
+    uso_chora(uso_akiba, u, 0, 0, s);
+    n64 r16 = r * 16;
+    n64 kushoto = cx - r;
+    n64 juu_ya = cy - r;
+    n64 j = 0;
+    wakati (j < s) {
+        n64 dy = j * 16 + 8 - r16;
+        n64 dy2 = dy * dy;
+        n64 ty = juu_ya + j;
+        n64 i = 0;
+        wakati (i < s) {
+            // umbali kutoka kitovu kwa 1/16 ya pikseli
+            n64 dx = i * 16 + 8 - r16;
+            n64 u2 = uso_kipeuo(dx * dx + dy2);
+            n64 funiko = r16 - u2;
+            kama (funiko > 0) {
+                n64 tx = kushoto + i;
+                kama (tx >= t->kx0 && tx < t->kx1 && ty >= t->ky0 && ty < t->ky1 && tx >= 0 && ty >= 0 && tx < t->upana && ty < t->kimo) {
+                    n64 a = funiko * 16;
+                    kama (a > 255) { a = 255; }
+                    n8* chanzo = uso_akiba->pikseli + j * uso_akiba->hatua + i * 4;
+                    n8* lengo = t->pikseli + ty * t->hatua + tx * 4;
+                    n64 baki = 255 - a;
+                    n64 c = 0;
+                    wakati (c < 3) {
+                        n64 juu = chanzo[c] & 255;
+                        n64 chini = lengo[c] & 255;
+                        lengo[c] = (juu * a + chini * baki) / 255;
+                        c = c + 1;
+                    }
+                }
+            }
+            i = i + 1;
+        }
+        j = j + 1;
+    }
+}
+
+n8* uso_jina_la_sifa(n64 sifa) {
+    kama (sifa == 0) { rudisha "Face"; }
+    kama (sifa == 1) { rudisha "Skin"; }
+    kama (sifa == 2) { rudisha "Hair"; }
+    kama (sifa == 3) { rudisha "Hair colour"; }
+    kama (sifa == 4) { rudisha "Eyes"; }
+    kama (sifa == 5) { rudisha "Brows"; }
+    kama (sifa == 6) { rudisha "Nose"; }
+    kama (sifa == 7) { rudisha "Mouth"; }
+    kama (sifa == 8) { rudisha "Beard"; }
+    kama (sifa == 9) { rudisha "Glasses"; }
+    rudisha "Dress";
+}

@@ -1,0 +1,113 @@
+husisha { moduli/skrini/uanzishaji.swa }
+
+// jaribio_uanzishaji.swa -- skrini tatu za mchezo mpya huchorwa na kubofya
+// kwake hufanya kazi: mwaka hubadilika ndani ya 1700..2000 na idadi ya mataifa
+// hufuata historia; taifa na cheo huchaguliwa; sifa za uso hubadilika; jina
+// la mchezaji huingia kwenye cheo chake.
+//   jaribio_uanzishaji <kiambishi cha fremu>   (huandika .mwaka, .taifa, .mhusika)
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+w0 andika_fremu(n8* njia, n8* kiambishi, Turubai* t) {
+    kama (njia == 0) { rudisha; }
+    n8 jina[256];
+    mfuatano_umbiza(jina, 256, "%s%s", njia, kiambishi, 0, 0, 0, 0);
+    n64 fd = mfumo_fungua(jina, 577, 420);
+    mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
+    mfumo_funga(fd);
+}
+
+// Bofya katikati ya kitufe cha kwanza chenye kitendo `k` (na hoja `hoja`, au yoyote ikiwa -999).
+n32 tafuta_kitufe(n64 k, n64 hoja, n64* px, n64* py) {
+    n64 i = 0;
+    wakati (i < bofya_idadi) {
+        n64 b = i * 6;
+        kama (bofya_maeneo[b + 4] == k && (hoja == -999 || bofya_maeneo[b + 5] == hoja)) {
+            px[0] = bofya_maeneo[b] + bofya_maeneo[b + 2] / 2;
+            py[0] = bofya_maeneo[b + 1] + bofya_maeneo[b + 3] / 2;
+            rudisha 1;
+        }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    n8* njia = 0;
+    kama (idadi_ya_hoja > 1) { njia = hoja_za_mstari[1]; }
+    Turubai* t = turubai_unda(1600, 900);
+    // 1: mwaka, kabla dunia haijajengwa
+    DuniaHalisi* d = dunia_halisi_pakia("rasilimali/dunia.bin");
+    historia_zalisha(d);
+    uanz_mwaka = 1900;
+    uanz_mwaka_chora(t, d);
+    n64 px = 0;
+    n64 py = 0;
+    thibitisha("kitufe +50", tafuta_kitufe(UZ_MWAKA, 50, &px, &py));
+    uanz_mwaka_bofya(px, py);
+    thibitisha("mwaka 1950", uanz_mwaka == 1950);
+    n64 n1950 = uanz_mataifa_ya(d, 1950);
+    n64 n1700 = uanz_mataifa_ya(d, 1700);
+    thibitisha("mataifa hupungua kwa miaka ya zamani", n1700 > 0 && n1700 < n1950);
+    uanz_mwaka = 2000;
+    uanz_mwaka_chora(t, d);
+    thibitisha("hakuna +10 baada ya 2000", tafuta_kitufe(UZ_MWAKA, 10, &px, &py) == 0);
+    uanz_mwaka = 1900;
+    uanz_mwaka_chora(t, d);
+    andika_fremu(njia, ".mwaka", t);
+    thibitisha("endelea", tafuta_kitufe(UZ_ENDELEA, -999, &px, &py) && uanz_mwaka_bofya(px, py) == 1);
+
+    // 2: taifa na cheo, kwenye mchezo uliojengwa kwa mwaka huo
+    tarehe_weka_mwaka_wa_mwanzo(uanz_mwaka);
+    dunia_halisi_ya_mchezo = d;
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    thibitisha("mchezo", r.hitilafu == CIV_SAWA);
+    thibitisha("dunia ileile imetumika", dunia_halisi_ya_mchezo == d && d->mwaka_wa_historia == 1900);
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    uanz_taifa = tm->faharisi_ya_taifa_la_mchezaji;
+    uanz_taifa_chora(g, t);
+    // chagua taifa la tatu kwenye orodha, kisha cheo cha pili
+    n64 lengo = uanz_mpangilio[2];
+    thibitisha("taifa kwenye orodha", tafuta_kitufe(UZ_TAIFA, lengo, &px, &py));
+    uanz_taifa_bofya(g, px, py);
+    thibitisha("taifa limechaguliwa", uanz_taifa == lengo);
+    uanz_taifa_chora(g, t);
+    Wahusika* w = skrini_mkutano_watu(g, uanz_taifa);
+    n64* vyeo = tenga(8 * 16);
+    n64 nv = uanz_vyeo(w, vyeo, 12);
+    thibitisha("vyeo vya kuanzia", nv >= 4 && wahusika_pata(w, vyeo[0])->ngazi >= wahusika_pata(w, vyeo[nv - 1])->ngazi);
+    thibitisha("cheo kwenye orodha", tafuta_kitufe(UZ_OFISI, vyeo[1], &px, &py));
+    uanz_taifa_bofya(g, px, py);
+    thibitisha("cheo kimechaguliwa", uanz_ofisi == vyeo[1]);
+    uanz_taifa_chora(g, t);
+    andika_fremu(njia, ".taifa", t);
+
+    // 3: mhusika
+    uanz_mhusika_chora(g, t);
+    n64 kabla = mchezaji_uso->nywele;
+    thibitisha("kitufe cha nywele", tafuta_kitufe(UZ_SIFA, 2 * 2 + 1, &px, &py));
+    uanz_mhusika_bofya(g, px, py);
+    thibitisha("nywele zimebadilika", mchezaji_uso->nywele == (kabla + 1) % uso_kikomo(2));
+    n8 jina_la_kwanza[48];
+    nakili_mfuatano(jina_la_kwanza, mchezaji_jina);
+    tafuta_kitufe(UZ_JINA, -999, &px, &py);
+    uanz_mhusika_bofya(g, px, py);
+    thibitisha("jina jipya", linganisha_mfuatano(jina_la_kwanza, mchezaji_jina) != 0);
+    uanz_mhusika_chora(g, t);
+    andika_fremu(njia, ".mhusika", t);
+    uanz_tumia(g);
+    thibitisha("jina la mchezaji kwenye cheo", linganisha_mfuatano(wahusika_pata(w, uanz_ofisi)->jina, mchezaji_jina) == 0);
+    kama (makosa > 0) {
+        andika("uanzishaji: makosa %d\n", makosa, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("uanzishaji: sawa (%s, mataifa %d mwaka %d)\n", mchezaji_jina, tm->idadi, uanz_mwaka, 0, 0, 0);
+    rudisha 0;
+}
