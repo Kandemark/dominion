@@ -16,6 +16,8 @@ w0 skrini_teknolojia_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 y = SKRINI_UPAU_WA_JUU + 25;
     n64 w = t->upana - x - 24;
     skrini_kichwa_fm(g, t, ui("Technology"), ui("World technology research."), x, y - 15);
+    jopo_weka_kituo(g, taifa);
+    jopo_wigo_chora(t->upana - 24, y - 1);
     y = y + 66;
     n64 gap = 16;
     n64 cw = (w - 3 * gap) / 4;
@@ -35,12 +37,12 @@ w0 skrini_teknolojia_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 pengo = 12;
     n64 panel_h = 6 * 48 + 62;
     n64 w_ramani = (w * 62) / 100;
-    jopo_nafasi(g, taifa, KIPIMO_TEKNOLOJIA, ui("WORLD RANKING  ·  TECHNOLOGY"), x + w_ramani + pengo, y, w - w_ramani - pengo, panel_h);
+    jopo_nafasi(g, taifa, KIPIMO_TEKNOLOJIA, ui("RANKING  ·  TECHNOLOGY"), x + w_ramani + pengo, y, w - w_ramani - pengo, panel_h);
     n64 y_chini = y + panel_h + pengo;
     n64 h_chini = t->kimo - y_chini - 24;
     n64 w4 = (w - 3 * pengo) / 4;
     jopo_mgawanyo(g, taifa, KIPIMO_TEKNOLOJIA, ui("DISTRIBUTION  ·  TECHNOLOGY"), x, y_chini, w4, h_chini);
-    jopo_mtawanyiko(g, taifa, KIPIMO_KWA_MTU, KIPIMO_TEKNOLOJIA, ui("EVERY NATION  ·  WEALTH / TECHNOLOGY"), x + (w4 + pengo), y_chini, w4, h_chini);
+    jopo_mtawanyiko(g, taifa, KIPIMO_KWA_MTU, KIPIMO_TEKNOLOJIA, ui("NATIONS  ·  WEALTH / TECHNOLOGY"), x + (w4 + pengo), y_chini, w4, h_chini);
     jopo_majirani(g, taifa, KIPIMO_TEKNOLOJIA, ui("NEIGHBOURS  ·  TECHNOLOGY"), x + 2 * (w4 + pengo), y_chini, w4, h_chini);
     jopo_kwa_utawala(g, taifa, KIPIMO_TEKNOLOJIA, ui("TECHNOLOGY BY FORM OF GOVERNMENT"), x + 3 * (w4 + pengo), y_chini, w - 3 * (w4 + pengo), h_chini);
     w = w_ramani;

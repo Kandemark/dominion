@@ -1,0 +1,688 @@
+husisha { moduli/skrini/katiba.swa }
+husisha { moduli/skrini/dunia.swa }
+
+// hifadhi.swa -- kuhifadhi na kupakia mchezo mzima katika nafasi.
+//
+// Nafasi N (1..5, na 0 ya kuhifadhi kwa otomatiki) ni saraka saves/nafasi_N:
+//   dunia.swad      mifumo 47 ya uigaji (mchezo_hifadhi ya mchezo.swa)
+//   dominion.hali   kila kitu ambacho Dominion huongeza juu yake:
+//                   historia ya pato ya kila taifa, dola za mataifa yote,
+//                   mti wa dola la mchezaji, wajumbe wa mabaraza, hoja, kazi
+//                   za msaidizi, sarafu, makampuni, matajiri, vielezo,
+//                   matukio, pochi, katiba (matoleo ya mataifa yote na kila
+//                   kigezo cha katiba ya mchezaji na historia yake), daftari
+//                   la maamuzi, kikasha, shajara na habari
+//   kumbukumbu      kumbukumbu ya mazungumzo ya AI (huandikwa moja kwa moja)
+//   maelezo         mstari mmoja: taifa, zamu, tarehe, cheo (kwa orodha ya nafasi)
+//
+// Faili la dominion.hali ni mkondo mmoja wa namba za baiti 8 (mpangilio wa
+// uandishi na usomaji ni mmoja), unaoandikwa na kusomwa kwa mara moja.
+// Kupakia kunahitaji dunia ileile: mchezo huanzishwa kawaida (kizalishaji
+// ni thabiti kwa mbegu) kisha hali hubandikwa juu yake.
+
+n64 HIFADHI_ALAMA = 1229803332;     // "DOMI"
+n64 HIFADHI_TOLEO = 1;
+n64 HIFADHI_NAFASI = 6;             // 0 otomatiki, 1..5 za mchezaji
+
+// ---------- mkondo ----------
+
+n8* mk_data = 0;
+n64 mk_urefu = 0;
+n64 mk_uwezo = 0;
+n64 mk_nafasi = 0;
+
+w0 mk_anza() {
+    kama (mk_data == 0) { mk_uwezo = 1048576; mk_data = tenga(mk_uwezo); }
+    mk_urefu = 0;
+    mk_nafasi = 0;
+}
+
+w0 mk_n64(n64 v) {
+    kama (mk_urefu + 8 > mk_uwezo) {
+        n64 mpya = mk_uwezo * 2;
+        n8* d = tenga(mpya);
+        nakili(d, mk_data, mk_urefu);
+        achilia mk_data;
+        mk_data = d;
+        mk_uwezo = mpya;
+    }
+    n64 i = 0;
+    wakati (i < 8) { mk_data[mk_urefu + i] = (v >> (i * 8)) & 255; i = i + 1; }
+    mk_urefu = mk_urefu + 8;
+}
+
+n64 mk_soma() {
+    kama (mk_nafasi + 8 > mk_urefu) { rudisha 0; }
+    n64 v = 0;
+    n64 i = 7;
+    wakati (i >= 0) { v = (v << 8) | (mk_data[mk_nafasi + i] & 255); i = i - 1; }
+    mk_nafasi = mk_nafasi + 8;
+    rudisha v;
+}
+
+// Mfuatano: urefu kisha baiti (kila baiti namba moja, ili mkondo ubaki rahisi).
+w0 mk_mfuatano(n8* s) {
+    kama (s == 0) { mk_n64(0 - 1); rudisha; }
+    n64 n = urefu_wa_mfuatano(s);
+    mk_n64(n);
+    n64 i = 0;
+    wakati (i < n) { mk_n64(s[i] & 255); i = i + 1; }
+}
+
+n8* mk_soma_mfuatano() {
+    n64 n = mk_soma();
+    kama (n < 0) { rudisha 0; }
+    n8* s = tenga(n + 1);
+    n64 i = 0;
+    wakati (i < n) { s[i] = mk_soma(); i = i + 1; }
+    s[n] = 0;
+    rudisha s;
+}
+
+// d64 huhifadhiwa kama milioni ya thamani (sampuli za pato ni milioni).
+w0 mk_d64(d64 v) { n64 x = v * 1000.0; mk_n64(x); }
+d64 mk_soma_d64() { n64 x = mk_soma(); d64 v = x; rudisha v / 1000.0; }
+
+n32 mk_andika_faili(n8* njia) {
+    n64 fd = mfumo_fungua(njia, 577, 420);
+    kama (fd < 0) { rudisha 0; }
+    mfumo_andika(fd, mk_data, mk_urefu);
+    mfumo_funga(fd);
+    rudisha 1;
+}
+
+n32 mk_soma_faili(n8* njia) {
+    n64 fd = mfumo_fungua(njia, 0, 0);
+    kama (fd < 0) { rudisha 0; }
+    n64 ukubwa = mfumo_tafuta_nafasi(fd, 0, 2);
+    mfumo_tafuta_nafasi(fd, 0, 0);
+    kama (mk_data == 0 || mk_uwezo < ukubwa) {
+        kama (mk_data != 0) { achilia mk_data; }
+        mk_uwezo = ukubwa + 8;
+        mk_data = tenga(mk_uwezo);
+    }
+    mk_urefu = mfumo_soma(fd, mk_data, ukubwa);
+    mfumo_funga(fd);
+    mk_nafasi = 0;
+    rudisha mk_urefu == ukubwa;
+}
+
+// ---------- njia ----------
+
+w0 hifadhi_saraka(n8* nje, n64 nafasi) {
+    mfuatano_umbiza(nje, 128, "saves/nafasi_%d", nafasi, 0, 0, 0, 0, 0);
+    mfumo_unda_saraka("saves", 493);
+    mfumo_unda_saraka(nje, 493);
+}
+
+w0 hifadhi_njia(n8* nje, n64 nafasi, n8* jina) {
+    n8 s[128];
+    hifadhi_saraka(s, nafasi);
+    mfuatano_umbiza(nje, 160, "%s/%s", s, jina, 0, 0, 0, 0);
+}
+
+// ---------- sehemu ----------
+
+w0 hifadhi_andika_dola(Dola* d) {
+    mk_n64(d->aina);
+    mk_n64(d->utulivu);
+    mk_n64(d->uhalali);
+    mk_n64(d->hazina);
+    mk_n64(d->muhula);
+    mk_n64(d->umri_wa_katiba);
+    mk_mfuatano(d->mkuu_wa_dola);
+    mk_mfuatano(d->mkuu_wa_serikali);
+    mk_mfuatano(d->haki_ya_kura);
+    mk_n64(d->vyama);
+    n64 c = 0;
+    wakati (c < d->vyama) { mk_n64(d->chama_serikalini[c]); c = c + 1; }
+}
+
+w0 hifadhi_soma_dola(Dola* d) {
+    d->aina = mk_soma();
+    d->utulivu = mk_soma();
+    d->uhalali = mk_soma();
+    d->hazina = mk_soma();
+    d->muhula = mk_soma();
+    d->umri_wa_katiba = mk_soma();
+    d->mkuu_wa_dola = mk_soma_mfuatano();
+    d->mkuu_wa_serikali = mk_soma_mfuatano();
+    d->haki_ya_kura = mk_soma_mfuatano();
+    n64 vyama = mk_soma();
+    n64 c = 0;
+    wakati (c < vyama) {
+        n64 v = mk_soma();
+        kama (c < d->vyama) { d->chama_serikalini[c] = v; }
+        c = c + 1;
+    }
+}
+
+w0 hifadhi_andika_historia(Mchezo* g, TaifaMfumo* tm) {
+    n64 t = 0;
+    wakati (t < tm->idadi) {
+        TakwimuHistoria* h = mchezo_pata_historia_ya_taifa(g, t);
+        n64 n = 0;
+        kama (h != 0) { n = h->idadi; }
+        mk_n64(n);
+        n64 i = 0;
+        wakati (i < n) { mk_d64(h->sampuli[i]); i = i + 1; }
+        t = t + 1;
+    }
+}
+
+w0 hifadhi_soma_historia(Mchezo* g, TaifaMfumo* tm) {
+    n64 t = 0;
+    wakati (t < tm->idadi) {
+        TakwimuHistoria* h = mchezo_pata_historia_ya_taifa(g, t);
+        n64 n = mk_soma();
+        kama (h != 0) { h->idadi = 0; }
+        n64 i = 0;
+        wakati (i < n) {
+            d64 v = mk_soma_d64();
+            kama (h != 0) { takwimu_historia_ongeza(h, v); }
+            i = i + 1;
+        }
+        t = t + 1;
+    }
+}
+
+w0 hifadhi_andika_wahusika(Wahusika* w) {
+    mk_n64(w->idadi);
+    n64 i = 0;
+    wakati (i < w->idadi) {
+        MhusikaWaDola* m = wahusika_pata(w, i);
+        mk_n64(m->kizazi);
+        mk_n64(m->msimamo);
+        mk_n64(m->mkutano);
+        mk_n64(m->mkutano_siku);
+        mk_n64(m->faharisi_ya_chama);
+        i = i + 1;
+    }
+}
+
+w0 hifadhi_soma_wahusika(Wahusika* w, Dola* d) {
+    n64 n = mk_soma();
+    n64 i = 0;
+    wakati (i < n) {
+        n64 kizazi = mk_soma();
+        n64 msimamo = mk_soma();
+        n64 mkutano = mk_soma();
+        n64 siku = mk_soma();
+        n64 chama = mk_soma();
+        MhusikaWaDola* m = wahusika_pata(w, i);
+        kama (m != 0) {
+            m->faharisi_ya_chama = chama;
+            kama (m->kizazi != kizazi) { m->kizazi = kizazi; wahusika_zalisha_mtu(w, d, i); }
+            m->msimamo = msimamo;
+            m->mkutano = mkutano;
+            m->mkutano_siku = siku;
+        }
+        i = i + 1;
+    }
+}
+
+w0 hifadhi_andika_nguvu() {
+    mk_n64(nguvu_mtaji);
+    mk_n64(nguvu_hatari);
+    mk_n64(nguvu_kashfa);
+    mk_n64(nguvu_mbunge_wa_mwisho);
+    mk_n64(nguvu_idadi);
+    n64 i = 0;
+    wakati (i < nguvu_idadi) {
+        Mbunge* m = nguvu_pata(i);
+        mk_n64(m->msimamo);
+        mk_n64(m->uaminifu);
+        mk_n64(m->tamaa);
+        mk_n64(m->ushawishi);
+        mk_n64(m->hongo);
+        mk_n64(m->jukumu);
+        mk_n64(m->chama);
+        i = i + 1;
+    }
+    mk_n64(nguvu_hoja_idadi);
+    i = 0;
+    wakati (i < nguvu_hoja_idadi) {
+        Hoja* h = nguvu_hoja_pata(i);
+        mk_n64(h->aina); mk_n64(h->baraza); mk_n64(h->mdhamini); mk_n64(h->upande);
+        mk_n64(h->zamu_ya_kura); mk_n64(h->hatua); mk_n64(h->ndiyo); mk_n64(h->hapana);
+        mk_n64(h->mbegu); mk_n64(h->kifungu); mk_n64(h->thamani); mk_n64(h->kigezo); mk_n64(h->imetumika);
+        i = i + 1;
+    }
+    mk_n64(nguvu_kazi_idadi);
+    i = 0;
+    wakati (i < nguvu_kazi_idadi) {
+        KaziYaMsaidizi* k = nguvu_kazi_pata(i);
+        mk_n64(k->aina); mk_n64(k->lengwa); mk_n64(k->hoja); mk_n64(k->zamu_ya_kumaliza); mk_n64(k->hatua);
+        i = i + 1;
+    }
+}
+
+w0 hifadhi_soma_nguvu() {
+    nguvu_mtaji = mk_soma();
+    nguvu_hatari = mk_soma();
+    nguvu_kashfa = mk_soma();
+    nguvu_mbunge_wa_mwisho = mk_soma();
+    n64 n = mk_soma();
+    n64 i = 0;
+    wakati (i < n) {
+        Mbunge* m = nguvu_pata(i);
+        n64 a = mk_soma(); n64 b = mk_soma(); n64 c = mk_soma(); n64 e = mk_soma(); n64 f = mk_soma(); n64 j = mk_soma(); n64 ch = mk_soma();
+        kama (m != 0) { m->msimamo = a; m->uaminifu = b; m->tamaa = c; m->ushawishi = e; m->hongo = f; m->jukumu = j; m->chama = ch; }
+        i = i + 1;
+    }
+    nguvu_hoja_idadi = 0;
+    n = mk_soma();
+    i = 0;
+    wakati (i < n) {
+        n64 aina = mk_soma(); n64 baraza = mk_soma(); n64 mdhamini = mk_soma(); n64 upande = mk_soma();
+        n64 h_i = nguvu_ongeza_hoja(aina, baraza, mdhamini, upande, 0);
+        Hoja* h = nguvu_hoja_pata(h_i);
+        h->zamu_ya_kura = mk_soma(); h->hatua = mk_soma(); h->ndiyo = mk_soma(); h->hapana = mk_soma();
+        h->mbegu = mk_soma(); h->kifungu = mk_soma(); h->thamani = mk_soma(); h->kigezo = mk_soma(); h->imetumika = mk_soma();
+        i = i + 1;
+    }
+    nguvu_kazi_idadi = 0;
+    n = mk_soma();
+    i = 0;
+    wakati (i < n) {
+        n64 aina = mk_soma(); n64 lengwa = mk_soma(); n64 hoja = mk_soma(); n64 zamu = mk_soma(); n64 hatua = mk_soma();
+        n64 kabla = nguvu_mtaji;
+        nguvu_mtaji = 100;
+        nguvu_kazi_mpya(aina, lengwa, hoja, zamu - 1);
+        nguvu_mtaji = kabla;
+        KaziYaMsaidizi* k = nguvu_kazi_pata(nguvu_kazi_idadi - 1);
+        kama (k != 0) { k->hatua = hatua; }
+        i = i + 1;
+    }
+}
+
+w0 hifadhi_andika_soko() {
+    mk_n64(soko_wiki);
+    mk_n64(soko_mataifa);
+    n64 t = 0;
+    wakati (t < soko_mataifa) {
+        Sarafu2* s = soko_sarafu_ya(t);
+        mk_n64(s->kiwango); mk_n64(s->nanga); mk_n64(s->kiwango_cha_nanga); mk_n64(s->akiba);
+        n64 w = 0;
+        wakati (w < SOKO_WIKI) { mk_n64(s->historia[w]); w = w + 1; }
+        mk_n64(soko_kielezo[t]);
+        w = 0;
+        wakati (w < SOKO_WIKI) { mk_n64(soko_kielezo_historia[t * SOKO_WIKI + w]); w = w + 1; }
+        t = t + 1;
+    }
+    mk_n64(soko_kampuni_idadi);
+    n64 i = 0;
+    wakati (i < soko_kampuni_idadi) {
+        Kampuni* c = soko_kampuni_pata(i);
+        mk_n64(c->bei); mk_n64(c->bei_ya_wiki); mk_n64(c->ujazo); mk_n64(c->mmiliki); mk_n64(c->hisa);
+        n64 w = 0;
+        wakati (w < SOKO_WIKI) { mk_n64(c->historia[w]); w = w + 1; }
+        i = i + 1;
+    }
+    mk_n64(soko_matajiri_idadi);
+    i = 0;
+    wakati (i < soko_matajiri_idadi) { Tajiri* tj = soko_tajiri_pata(i); mk_n64(tj->msimamo); i = i + 1; }
+    n64 s2 = 0;
+    wakati (s2 < SEKTA_IDADI) { mk_n64(soko_mshtuko_wa_sekta[s2]); s2 = s2 + 1; }
+    mk_n64(soko_matukio_yote);
+    mk_n64(soko_matukio_idadi);
+    i = 0;
+    wakati (i < soko_matukio_idadi) {
+        TukioLaTaifa* e = soko_tukio_pata(i);
+        mk_n64(e->taifa); mk_n64(e->aina); mk_n64(e->zamu); mk_n64(e->thamani);
+        i = i + 1;
+    }
+}
+
+w0 hifadhi_soma_soko() {
+    soko_wiki = mk_soma();
+    n64 n = mk_soma();
+    n64 t = 0;
+    wakati (t < n) {
+        Sarafu2* s = soko_sarafu_ya(t);
+        s->kiwango = mk_soma(); s->nanga = mk_soma(); s->kiwango_cha_nanga = mk_soma(); s->akiba = mk_soma();
+        n64 w = 0;
+        wakati (w < SOKO_WIKI) { s->historia[w] = mk_soma(); w = w + 1; }
+        soko_kielezo[t] = mk_soma();
+        w = 0;
+        wakati (w < SOKO_WIKI) { soko_kielezo_historia[t * SOKO_WIKI + w] = mk_soma(); w = w + 1; }
+        t = t + 1;
+    }
+    n = mk_soma();
+    n64 i = 0;
+    wakati (i < n) {
+        Kampuni* c = soko_kampuni_pata(i);
+        c->bei = mk_soma(); c->bei_ya_wiki = mk_soma(); c->ujazo = mk_soma(); c->mmiliki = mk_soma(); c->hisa = mk_soma();
+        n64 w = 0;
+        wakati (w < SOKO_WIKI) { c->historia[w] = mk_soma(); w = w + 1; }
+        i = i + 1;
+    }
+    n = mk_soma();
+    i = 0;
+    wakati (i < n) { Tajiri* tj = soko_tajiri_pata(i); tj->msimamo = mk_soma(); i = i + 1; }
+    n64 s2 = 0;
+    wakati (s2 < SEKTA_IDADI) { soko_mshtuko_wa_sekta[s2] = mk_soma(); s2 = s2 + 1; }
+    soko_matukio_yote = mk_soma();
+    soko_matukio_idadi = 0;
+    n = mk_soma();
+    i = 0;
+    n64 yote = soko_matukio_yote;
+    wakati (i < n) {
+        n64 a = mk_soma(); n64 b = mk_soma(); n64 c2 = mk_soma(); n64 d = mk_soma();
+        soko_tukio(a, b, c2, d);
+        i = i + 1;
+    }
+    soko_matukio_yote = yote;
+}
+
+w0 hifadhi_andika_pochi() {
+    Pochi* p = soko_pochi_pata();
+    mk_n64(p->taifa); mk_n64(p->fedha); mk_n64(p->dhahabu); mk_n64(p->mshahara);
+    mk_n64(p->mshauri); mk_n64(p->mshauri_ada); mk_mfuatano(p->mshauri_jina); mk_n64(p->faida_iliyopatikana);
+    mk_n64(p->idadi);
+    n64 i = 0;
+    wakati (i < p->idadi) { mk_n64(p->kampuni[i]); mk_n64(p->hisa[i]); mk_n64(p->gharama[i]); i = i + 1; }
+}
+
+w0 hifadhi_soma_pochi() {
+    Pochi* p = soko_pochi_pata();
+    p->taifa = mk_soma(); p->fedha = mk_soma(); p->dhahabu = mk_soma(); p->mshahara = mk_soma();
+    p->mshauri = mk_soma(); p->mshauri_ada = mk_soma(); p->mshauri_jina = mk_soma_mfuatano(); p->faida_iliyopatikana = mk_soma();
+    p->idadi = mk_soma();
+    n64 i = 0;
+    wakati (i < p->idadi) { p->kampuni[i] = mk_soma(); p->hisa[i] = mk_soma(); p->gharama[i] = mk_soma(); i = i + 1; }
+}
+
+w0 hifadhi_andika_hati() {
+    n64 t = 0;
+    mk_n64(HATI_MATAIFA_JUU);
+    wakati (t < HATI_MATAIFA_JUU) { mk_n64(hati_toleo_la(t)); t = t + 1; }
+    mk_n64(hati_taifa);
+    mk_n64(hati_idadi);
+    n64 i = 0;
+    wakati (i < hati_idadi) {
+        Kifungu* k = hati_pata(i);
+        mk_n64(k->p0); mk_n64(k->p1); mk_n64(k->p2); mk_n64(k->p3); mk_n64(k->hai); mk_n64(k->marekebisho);
+        i = i + 1;
+    }
+    mk_n64(hati_historia_idadi);
+    i = 0;
+    wakati (i < hati_historia_idadi * 4) { mk_n64(hati_historia[i]); i = i + 1; }
+}
+
+// Katiba husomwa baada ya kuzalishwa upya kwa dola na mti uliopakiwa.
+w0 hifadhi_soma_hati(Dola* d, Wahusika* w) {
+    n64 n = mk_soma();
+    n64 t = 0;
+    hati_ongeza_toleo(0 - 1);
+    wakati (t < n) {
+        n64 v = mk_soma();
+        kama (t < HATI_MATAIFA_JUU) { hati_matoleo[t] = v; }
+        t = t + 1;
+    }
+    n64 taifa = mk_soma();
+    hati_taifa = 0 - 1;
+    hati_hakikisha(d, w, taifa);
+    n = mk_soma();
+    n64 i = 0;
+    wakati (i < n) {
+        Kifungu* k = hati_pata(i);
+        n64 a = mk_soma(); n64 b = mk_soma(); n64 c = mk_soma(); n64 e = mk_soma(); n64 hai = mk_soma(); n64 m = mk_soma();
+        kama (k != 0) { k->p0 = a; k->p1 = b; k->p2 = c; k->p3 = e; k->hai = hai; k->marekebisho = m; }
+        i = i + 1;
+    }
+    n = mk_soma();
+    kama (hati_historia == 0) { hati_historia = tenga(8 * 4 * HATI_HISTORIA_JUU); }
+    hati_historia_idadi = 0;
+    i = 0;
+    wakati (i < n * 4) {
+        n64 v = mk_soma();
+        kama (i < HATI_HISTORIA_JUU * 4) { hati_historia[i] = v; }
+        i = i + 1;
+    }
+    hati_historia_idadi = n;
+    kama (hati_historia_idadi > HATI_HISTORIA_JUU) { hati_historia_idadi = HATI_HISTORIA_JUU; }
+}
+
+w0 hifadhi_andika_maamuzi() {
+    mk_n64(uamuzi_idadi);
+    n64 i = 0;
+    wakati (i < uamuzi_idadi) {
+        Uamuzi* u = uamuzi_pata(i);
+        mk_n64(u->aina); mk_n64(u->zamu); mk_n64(u->lengwa); mk_n64(u->kiasi); mk_n64(u->urafiki);
+        mk_n64(u->rushwa); mk_n64(u->mfuko); mk_n64(u->kodi); mk_n64(u->uungwaji); mk_n64(u->wiki);
+        i = i + 1;
+    }
+    mk_n64(uamuzi_rushwa_jumla);
+    mk_n64(uamuzi_kodi_jumla);
+}
+
+w0 hifadhi_soma_maamuzi() {
+    uamuzi_daftari = 0;
+    uamuzi_anzisha();
+    n64 n = mk_soma();
+    Uamuzi* u = tenga(ukubwa(Uamuzi));
+    n64 i = 0;
+    wakati (i < n) {
+        u->aina = mk_soma(); u->zamu = mk_soma(); u->lengwa = mk_soma(); u->kiasi = mk_soma(); u->urafiki = mk_soma();
+        u->rushwa = mk_soma(); u->mfuko = mk_soma(); u->kodi = mk_soma(); u->uungwaji = mk_soma(); u->wiki = mk_soma();
+        // dola tayari imepakiwa: athari za mara moja hazirudiwi kwake
+        uamuzi_ongeza(u, 0);
+        i = i + 1;
+    }
+    achilia u;
+    uamuzi_rushwa_jumla = mk_soma();
+    uamuzi_kodi_jumla = mk_soma();
+}
+
+w0 hifadhi_andika_kikasha_na_shajara() {
+    mk_n64(kikasha_idadi);
+    n64 i = 0;
+    wakati (i < kikasha_idadi) {
+        Ujumbe* u = kikasha_pata(i);
+        mk_n64(u->mtumaji); mk_n64(u->aina); mk_n64(u->zamu); mk_n64(u->siku); mk_n64(u->umesomwa);
+        mk_mfuatano(u->kichwa); mk_mfuatano(u->mwili);
+        i = i + 1;
+    }
+    mk_n64(kikasha_zamu_ya_mwisho);
+    mk_n64(kalenda_idadi);
+    i = 0;
+    wakati (i < kalenda_idadi) { mk_n64(kalenda_siku[i]); mk_n64(kalenda_saa[i]); mk_n64(kalenda_mtu[i]); i = i + 1; }
+}
+
+w0 hifadhi_soma_kikasha_na_shajara() {
+    kikasha_idadi = 0;
+    n64 n = mk_soma();
+    n64 i = 0;
+    wakati (i < n) {
+        n64 mtumaji = mk_soma(); n64 aina = mk_soma(); n64 zamu = mk_soma(); n64 siku = mk_soma(); n64 umesomwa = mk_soma();
+        n8* kichwa = mk_soma_mfuatano();
+        n8* mwili = mk_soma_mfuatano();
+        kikasha_ongeza(mtumaji, aina, zamu, siku, kichwa, mwili);
+        Ujumbe* u = kikasha_pata(kikasha_idadi - 1);
+        kama (u != 0) { u->umesomwa = umesomwa; }
+        i = i + 1;
+    }
+    kikasha_zamu_ya_mwisho = mk_soma();
+    kalenda_idadi = 0;
+    n = mk_soma();
+    i = 0;
+    wakati (i < n) {
+        n64 siku = mk_soma(); n64 saa = mk_soma(); n64 mtu = mk_soma();
+        kalenda_panga(siku, mtu);
+        kama (kalenda_idadi > 0) { kalenda_saa[kalenda_idadi - 1] = saa; }
+        i = i + 1;
+    }
+}
+
+w0 hifadhi_andika_habari() {
+    mk_n64(habari_idadi);
+    n64 i = 0;
+    wakati (i < habari_idadi) {
+        Habari* h = habari[i];
+        mk_n64(h->taifa); mk_n64(h->aina); mk_n64(h->zamu); mk_n64(h->uzito); mk_n64(h->umejibiwa);
+        mk_mfuatano(h->kichwa); mk_mfuatano(h->mwili);
+        i = i + 1;
+    }
+    mk_n64(habari_zamu_ya_mwisho);
+    mk_n64(habari_kiongozi);
+    mk_n64(habari_maamuzi_yaliyoonwa);
+    mk_n64(habari_zungusha);
+}
+
+w0 hifadhi_soma_habari() {
+    habari_idadi = 0;
+    n64 n = mk_soma();
+    n64 i = 0;
+    wakati (i < n) {
+        n64 taifa = mk_soma(); n64 aina = mk_soma(); n64 zamu = mk_soma(); n64 uzito = mk_soma(); n64 jibiwa = mk_soma();
+        n8* kichwa = mk_soma_mfuatano();
+        n8* mwili = mk_soma_mfuatano();
+        habari_ongeza(taifa, aina, zamu, uzito, kichwa, mwili);
+        Habari* hb = habari_mpya(0);
+        hb->umejibiwa = jibiwa;
+        i = i + 1;
+    }
+    habari_zamu_ya_mwisho = mk_soma();
+    habari_kiongozi = mk_soma();
+    habari_maamuzi_yaliyoonwa = mk_soma();
+    habari_zungusha = mk_soma();
+}
+
+// ---------- kuanzisha hali ya Dominion ----------
+
+// Hatua za kuanzisha zinazoshirikiwa na programu na majaribio: masoko,
+// pochi, katiba ya taifa la mchezaji na vigezo vyake kwa injini.
+w0 hifadhi_anzisha_dominion(Mchezo* g, n64 mwaka) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 mimi = tm->faharisi_ya_taifa_la_mchezaji;
+    soko_anzisha(g, mwaka);
+    soko_pochi_anzisha(mimi, 9);
+    hati_mwaka = mwaka;
+    kt_mikoa_taifa = 0 - 1;
+    kt_kusanya_mikoa(mimi);
+    hati_mikoa_idadi = kt_mikoa_idadi;
+    hati_mikoa_majina = kt_mkoa_jina;
+    hati_jina_la_sarafu = soko_sarafu_ya(mimi)->jina;
+    Dola* d = skrini_siasa_dola(g, mimi);
+    Wahusika* w = skrini_mkutano_watu(g, mimi);
+    // mchezo mpya huanza na siasa safi
+    nguvu_taifa = 0 - 1;
+    nguvu_hoja_idadi = 0;
+    nguvu_kazi_idadi = 0;
+    nguvu_mtaji = 40;
+    nguvu_hatari = 0;
+    nguvu_kashfa = 0;
+    nguvu_hakikisha(d, mimi);
+    hati_taifa = 0 - 1;
+    hati_hakikisha(d, w, mimi);
+    hati_tumia_kwa_injini(d);
+}
+
+// ---------- hifadhi na pakia ----------
+
+n64 HIFADHI_SAWA = 0;
+n64 HIFADHI_HAKUNA = 1;
+n64 HIFADHI_IMEHARIBIKA = 2;
+n64 HIFADHI_DUNIA_TOFAUTI = 3;
+
+n64 hifadhi_andika(Mchezo* g, n64 nafasi) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 mimi = tm->faharisi_ya_taifa_la_mchezaji;
+    n8 njia[160];
+    n8 jina[64];
+    // uigaji
+    mfuatano_umbiza(jina, 64, "nafasi_%d/dunia.swad", nafasi, 0, 0, 0, 0, 0);
+    hifadhi_saraka(njia, nafasi);
+    CivMatokeo r = mchezo_hifadhi(g, jina);
+    kama (r.hitilafu != CIV_SAWA) { rudisha HIFADHI_IMEHARIBIKA; }
+    // Dominion
+    mk_anza();
+    mk_n64(HIFADHI_ALAMA);
+    mk_n64(HIFADHI_TOLEO);
+    mk_n64(tm->idadi);
+    mk_n64(mimi);
+    mk_n64(g->zamu_ya_sasa);
+    mk_n64(TAREHE_MWAKA_WA_MWANZO);
+    mk_n64(mkutano_ofisi);
+    hifadhi_andika_historia(g, tm);
+    n64 t = 0;
+    wakati (t < tm->idadi) { hifadhi_andika_dola(skrini_siasa_dola(g, t)); t = t + 1; }
+    hifadhi_andika_wahusika(skrini_mkutano_watu(g, mimi));
+    hifadhi_andika_nguvu();
+    hifadhi_andika_soko();
+    hifadhi_andika_pochi();
+    hifadhi_andika_hati();
+    hifadhi_andika_maamuzi();
+    hifadhi_andika_kikasha_na_shajara();
+    hifadhi_andika_habari();
+    mk_n64(HIFADHI_ALAMA);
+    hifadhi_njia(njia, nafasi, "dominion.hali");
+    kama (mk_andika_faili(njia) == 0) { rudisha HIFADHI_IMEHARIBIKA; }
+    // maelezo ya nafasi
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, mimi);
+    n8 tarehe[64];
+    tarehe_maandishi(tarehe_siku_ya_zamu(g->zamu_ya_sasa), tarehe, 64);
+    n8* maelezo = tenga(256);
+    n64 n = mfuatano_umbiza(maelezo, 256, "%s|%d|%s\n", tn->jina, g->zamu_ya_sasa, tarehe, 0, 0, 0);
+    hifadhi_njia(njia, nafasi, "maelezo");
+    n64 fd = mfumo_fungua(njia, 577, 420);
+    kama (fd >= 0) { mfumo_andika(fd, maelezo, n); mfumo_funga(fd); }
+    achilia maelezo;
+    rudisha HIFADHI_SAWA;
+}
+
+// Pakia nafasi kwenye mchezo uliokwisha kuanzishwa na dunia ileile.
+n64 hifadhi_pakia(Mchezo* g, n64 nafasi) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n8 njia[160];
+    hifadhi_njia(njia, nafasi, "dominion.hali");
+    kama (mk_soma_faili(njia) == 0) { rudisha HIFADHI_HAKUNA; }
+    kama (mk_soma() != HIFADHI_ALAMA) { rudisha HIFADHI_IMEHARIBIKA; }
+    kama (mk_soma() != HIFADHI_TOLEO) { rudisha HIFADHI_IMEHARIBIKA; }
+    kama (mk_soma() != tm->idadi) { rudisha HIFADHI_DUNIA_TOFAUTI; }
+    n8 jina[64];
+    mfuatano_umbiza(jina, 64, "nafasi_%d/dunia.swad", nafasi, 0, 0, 0, 0, 0);
+    CivMatokeo r = mchezo_pakia(g, jina);
+    kama (r.hitilafu != CIV_SAWA) { rudisha HIFADHI_IMEHARIBIKA; }
+    n64 mimi = mk_soma();
+    tm->faharisi_ya_taifa_la_mchezaji = mimi;
+    g->zamu_ya_sasa = mk_soma();
+    tarehe_weka_mwaka_wa_mwanzo(mk_soma());
+    mkutano_ofisi = mk_soma();
+    hifadhi_soma_historia(g, tm);
+    n64 t = 0;
+    wakati (t < tm->idadi) { hifadhi_soma_dola(skrini_siasa_dola(g, t)); t = t + 1; }
+    Dola* d = skrini_siasa_dola(g, mimi);
+    Wahusika* w = skrini_mkutano_watu(g, mimi);
+    hifadhi_soma_wahusika(w, d);
+    nguvu_hakikisha(d, mimi);
+    hifadhi_soma_nguvu();
+    hifadhi_soma_soko();
+    hifadhi_soma_pochi();
+    hifadhi_soma_hati(d, w);
+    hati_tumia_kwa_injini(d);
+    hifadhi_soma_maamuzi();
+    hifadhi_soma_kikasha_na_shajara();
+    hifadhi_soma_habari();
+    kama (mk_soma() != HIFADHI_ALAMA) { rudisha HIFADHI_IMEHARIBIKA; }
+    // AI hukumbuka mazungumzo ya nafasi hii
+    mkutano_nafasi = nafasi;
+    kb_ufunguo = 0 - 1;
+    rudisha HIFADHI_SAWA;
+}
+
+// Maelezo ya nafasi kwa orodha: "Cheqing|12|25 March 1900", au tupu.
+w0 hifadhi_maelezo(n64 nafasi, n8* nje, n64 uwezo) {
+    nje[0] = 0;
+    n8 njia[160];
+    hifadhi_njia(njia, nafasi, "maelezo");
+    n64 fd = mfumo_fungua(njia, 0, 0);
+    kama (fd < 0) { rudisha; }
+    n64 n = mfumo_soma(fd, nje, uwezo - 1);
+    mfumo_funga(fd);
+    kama (n < 0) { n = 0; }
+    nje[n] = 0;
+    n64 i = 0;
+    wakati (i < n) { kama (nje[i] == 10 || nje[i] == 124) { nje[i] = 32; } i = i + 1; }
+}

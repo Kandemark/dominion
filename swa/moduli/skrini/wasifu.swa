@@ -1,5 +1,6 @@
 husisha { moduli/skrini/mkutano.swa }
 husisha { moduli/soko/masoko.swa }
+husisha { moduli/hifadhi/hifadhi.swa }
 
 // wasifu.swa -- ukurasa wa mchezaji: utambulisho, pochi (fedha za nyumbani,
 // dhahabu, hisa, thamani yote), hisa anazomiliki pamoja na faida au hasara,
@@ -9,6 +10,37 @@ n64 WS_UZA_ZOTE = 90;
 n64 WS_AJIRI = 91;
 n64 WS_FUKUZA = 92;
 n64 WS_KITUO = 93;
+n64 WS_HIFADHI = 94;            // hoja: nafasi
+n64 WS_PAKIA = 95;              // hoja: nafasi
+n8 wasifu_ujumbe[160];
+
+// Nafasi za kuhifadhi: 0 otomatiki, 1..5 za mchezaji.
+w0 wasifu_nafasi(n64 x, n64 y, n64 w, n64 h) {
+    sura_paneli(x, y, w, h, ui("SAVED GAMES"));
+    n64 yy = y + 36;
+    n8 m[160];
+    n8 jina[48];
+    n64 n = 0;
+    wakati (n < HIFADHI_NAFASI && yy + 30 < y + h) {
+        hifadhi_maelezo(n, m, 160);
+        kama (n == 0) { nakili_mfuatano(jina, ui("Autosave")); } sivyo { mfuatano_umbiza(jina, 48, ui("Slot %d"), n, 0, 0, 0, 0, 0); }
+        sura_safu(x + 8, yy - 4, w - 16, 30, n, 0);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kati(jina, x + 16, yy + 2, 12);
+        sura_rangi(SURA_HAFIFU);
+        turubai_kata(sura_t, x + 90, yy - 4, w - 260, 30);
+        kama (m[0] == 0) { sura_lebo(ui("empty"), x + 90, yy + 2, 11); } sivyo { sura_lebo(m, x + 90, yy + 2, 11); }
+        turubai_kata_yote(sura_t);
+        kama (n > 0) { serikali_kitufe(ui("Save"), x + w - 150, yy - 2, 0, 1, WS_HIFADHI, n); }
+        serikali_kitufe(ui("Load"), x + w - 80, yy - 2, 0, m[0] != 0, WS_PAKIA, n);
+        yy = yy + 32;
+        n = n + 1;
+    }
+    kama (wasifu_ujumbe[0] != 0) {
+        sura_rangi(SURA_LAFUDHI);
+        sura_lebo(wasifu_ujumbe, x + 16, yy + 4, 12);
+    }
+}
 
 // Jina la mgombea wa ushauri wa fani `fani` kwa taifa.
 w0 wasifu_jina_la_mgombea(n8* nje, n64 taifa, n64 fani) {
@@ -271,12 +303,15 @@ w0 skrini_wasifu_chora(Mchezo* g, Turubai* t, n64 taifa) {
     wasifu_pochi(g, x, y + 300 + pengo, w1, h - 300 - pengo);
     wasifu_hisa(g, x2, y, w2, (h * 60) / 100);
     wasifu_mtandao(g, nyumbani, x2, y + (h * 60) / 100 + pengo, w2, h - (h * 60) / 100 - pengo);
-    wasifu_washauri(g, nyumbani, x3, y, w3, h);
+    n64 h_washauri = (h * 58) / 100;
+    wasifu_washauri(g, nyumbani, x3, y, w3, h_washauri);
+    wasifu_nafasi(x3, y + h_washauri + pengo, w3, h - h_washauri - pengo);
 }
 
 // Bofya kwenye wasifu. Hurudisha 1 kwa kitendo; *kituo = 1 kufungua kituo.
 n32 skrini_wasifu_bofya(Mchezo* g, n64 px, n64 py, n64* kituo) {
     kituo[0] = 0;
+    wasifu_ujumbe[0] = 0;
     n64 hoja = 0;
     n64 k = bofya_tafuta(px, py, &hoja);
     kama (k == 0) { rudisha 0; }
@@ -291,5 +326,10 @@ n32 skrini_wasifu_bofya(Mchezo* g, n64 px, n64 py, n64* kituo) {
         soko_ajiri(hoja, soko_ada_ya_mshauri(hoja), jina);
     }
     kama (k == WS_FUKUZA) { soko_fukuza(); }
+    kama (k == WS_HIFADHI) {
+        kama (hifadhi_andika(g, hoja) == HIFADHI_SAWA) { mfuatano_umbiza(wasifu_ujumbe, 160, ui("Saved to slot %d."), hoja, 0, 0, 0, 0, 0); }
+        sivyo { nakili_mfuatano(wasifu_ujumbe, ui("The game could not be saved.")); }
+    }
+    kama (k == WS_PAKIA) { kituo[0] = 2 + hoja; }
     rudisha 1;
 }

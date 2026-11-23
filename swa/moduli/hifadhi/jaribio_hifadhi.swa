@@ -1,0 +1,113 @@
+husisha { moduli/hifadhi/hifadhi.swa }
+
+// jaribio_hifadhi.swa -- cheza wiki kadhaa (hongo, hoja, hisa, marekebisho ya
+// katiba, habari), hifadhi kwenye nafasi, anzisha mchezo mpya, pakia, na
+// thibitisha kwamba hali yote imerudi.
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+Mchezo* mchezo_mpya() {
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) { rudisha 0; }
+    hifadhi_anzisha_dominion(g, 1900);
+    rudisha g;
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    tarehe_weka_mwaka_wa_mwanzo(1900);
+    Mchezo* g = mchezo_mpya();
+    thibitisha("mchezo", g != 0);
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 mimi = tm->faharisi_ya_taifa_la_mchezaji;
+    Dola* d = skrini_siasa_dola(g, mimi);
+    Wahusika* w = skrini_mkutano_watu(g, mimi);
+    // vitendo
+    nguvu_mtaji = 90;
+    d->hazina = 70;
+    n64 mjumbe = nguvu_mwanzo[0] + 7;
+    nguvu_hongo(mjumbe, 20, d);
+    nguvu_kazi_mpya(KAZI_USHAWISHI, mjumbe + 1, 0, g->zamu_ya_sasa);
+    nguvu_ongeza_hoja(HOJA_KUSHUSHA_KODI, 0, mjumbe, 1, g->zamu_ya_sasa);
+    soko_nunua(soko_kampuni_mwanzo[mimi] + 2, 40);
+    Kifungu* ur = hati_tafuta(K_URAIA, 0 - 1);
+    n64 kifungu_ur = 0;
+    n64 i = 0;
+    wakati (i < hati_idadi) { kama (hati_pata(i) == ur) { kifungu_ur = i; } i = i + 1; }
+    hati_tumia(d, kifungu_ur, 0, 13, g->zamu_ya_sasa);
+    i = 0;
+    wakati (i < 6) {
+        mchezo_sasisha(g);
+        mchezo_maliza_zamu(g);
+        soko_wiki_moja(g, g->zamu_ya_sasa, 1);
+        soko_mataifa_hai(g, g->zamu_ya_sasa);
+        soko_pochi_wiki();
+        nguvu_zamu(d, w, mimi, g->zamu_ya_sasa);
+        hati_zamu(d, w, g->zamu_ya_sasa);
+        habari_zamu(g);
+        i = i + 1;
+    }
+    // kumbuka hali
+    n64 zamu = g->zamu_ya_sasa;
+    n64 utulivu = d->utulivu;
+    n64 mtaji = nguvu_mtaji;
+    n64 msimamo = nguvu_pata(mjumbe)->msimamo;
+    n64 hongo = nguvu_pata(mjumbe)->hongo;
+    n64 hoja = nguvu_hoja_idadi;
+    n64 bei = soko_kampuni_pata(5)->bei;
+    n64 kiwango = soko_sarafu_ya(3)->kiwango;
+    n64 fedha = soko_pochi_pata()->fedha;
+    n64 hisa = soko_pochi_pata()->idadi;
+    n64 habari_n = habari_idadi;
+    n64 kikasha_n = kikasha_idadi;
+    n64 matukio = soko_matukio_yote;
+    TakwimuHistoria* hh = mchezo_pata_historia_ya_taifa(g, 4);
+    n64 historia_n = hh->idadi;
+    thibitisha("hifadhi", hifadhi_andika(g, 99) == HIFADHI_SAWA);
+
+    // mchezo mpya, kisha pakia
+    Mchezo* g2 = mchezo_mpya();
+    thibitisha("mchezo wa pili", g2 != 0);
+    thibitisha("hali mpya ni tofauti", nguvu_pata(mjumbe)->hongo == 0);
+    thibitisha("pakia", hifadhi_pakia(g2, 99) == HIFADHI_SAWA);
+    Dola* d2 = skrini_siasa_dola(g2, mimi);
+    thibitisha("zamu", g2->zamu_ya_sasa == zamu);
+    thibitisha("utulivu", d2->utulivu == utulivu);
+    thibitisha("mtaji", nguvu_mtaji == mtaji);
+    thibitisha("msimamo wa mjumbe", nguvu_pata(mjumbe)->msimamo == msimamo);
+    thibitisha("hongo", nguvu_pata(mjumbe)->hongo == hongo);
+    thibitisha("hoja", nguvu_hoja_idadi == hoja);
+    thibitisha("bei ya kampuni", soko_kampuni_pata(5)->bei == bei);
+    thibitisha("kiwango cha sarafu", soko_sarafu_ya(3)->kiwango == kiwango);
+    thibitisha("fedha za pochi", soko_pochi_pata()->fedha == fedha);
+    thibitisha("hisa za pochi", soko_pochi_pata()->idadi == hisa);
+    thibitisha("katiba", hati_tafuta(K_URAIA, 0 - 1)->p0 == 13 && hati_historia_idadi == 1);
+    thibitisha("habari", habari_idadi == habari_n);
+    thibitisha("kikasha", kikasha_idadi == kikasha_n);
+    thibitisha("matukio", soko_matukio_yote == matukio);
+    thibitisha("historia ya pato", mchezo_pata_historia_ya_taifa(g2, 4)->idadi == historia_n);
+    n8 m[160];
+    hifadhi_maelezo(99, m, 160);
+    thibitisha("maelezo", tafuta_mfuatano(m, dunia_taifa_mfumo_pata_kwa_faharisi(tm, mimi)->jina) == 0);
+    thibitisha("nafasi tupu", hifadhi_pakia(g2, 5) == HIFADHI_HAKUNA || hifadhi_pakia(g2, 5) == HIFADHI_SAWA);
+    // jaribio halibaki kwenye saraka ya mchezaji
+    n8 njia[160];
+    hifadhi_njia(njia, 99, "dominion.hali");
+    mfumo_futa(njia);
+    hifadhi_njia(njia, 99, "dunia.swad");
+    mfumo_futa(njia);
+    hifadhi_njia(njia, 99, "maelezo");
+    mfumo_futa(njia);
+    kama (makosa > 0) {
+        andika("hifadhi: makosa %d\n", makosa, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("hifadhi: sawa, %s\n", m, 0, 0, 0, 0, 0);
+    rudisha 0;
+}
