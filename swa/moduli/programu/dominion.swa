@@ -629,7 +629,10 @@ w0 bofya_skrini(Mchezo* g, Hali* h, n64 skrini, n64 upana, n64 kimo, n64 px, n64
         kama (kitendo == JOPO_WIGO) { skrini_wigo = hoja; chafua_ukurasa(h); rudisha; }
     }
     kama (skrini == SKRINI_JESHI && skrini_jeshi_bofya(g, h->taifa, px, py)) { chafua_ukurasa(h); rudisha; }
-    kama (skrini == SKRINI_KATIBA && skrini_katiba_bofya(g, h->taifa, px, py)) { chafua_ukurasa(h); rudisha; }
+    kama (skrini == SKRINI_KATIBA) {
+        kumbuka_cheo_cha_mchezaji(g);
+        kama (skrini_katiba_bofya(g, h->taifa, px, py)) { baada_ya_mabadiliko_ya_utawala(g, h); chafua_ukurasa(h); rudisha; }
+    }
     kama (skrini == SKRINI_WASIFU) {
         n64 kituo = 0;
         kama (skrini_wasifu_bofya(g, px, py, &kituo)) {
@@ -840,7 +843,53 @@ w0 pakia_nafasi(Mchezo* g, Hali* h, n64 nafasi) {
     chafua_ukurasa(h);
 }
 
+// Cheo cha mchezaji kwa ngazi na tawi (kwa kumweka kwenye mti mpya dola ikibadilika aina).
+n64 ofisi_ngazi_ya_mwisho = 9;
+n64 ofisi_tawi_ya_mwisho = 0;
+
+w0 kumbuka_cheo_cha_mchezaji(Mchezo* g) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    MhusikaWaDola* m = wahusika_pata(skrini_mkutano_watu(g, tm->faharisi_ya_taifa_la_mchezaji), mkutano_ofisi);
+    kama (m != 0) { ofisi_ngazi_ya_mwisho = m->ngazi; ofisi_tawi_ya_mwisho = m->tawi; }
+}
+
+// Baada ya aina ya utawala ya mchezaji kubadilika: mti mpya, nyumba za
+// mamlaka mpya, katiba mpya, na mchezaji kwenye cheo cha ngazi na tawi lake.
+w0 baada_ya_mabadiliko_ya_utawala(Mchezo* g, Hali* h) {
+    kama (hati_utawala_umebadilika == 0) { rudisha; }
+    hati_utawala_umebadilika = 0;
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 mimi = tm->faharisi_ya_taifa_la_mchezaji;
+    Dola* d = skrini_siasa_dola(g, mimi);
+    Wahusika* w = skrini_mkutano_watu(g, mimi);
+    n64 bora = 0;
+    n64 alama_bora = -1;
+    n64 i = 0;
+    wakati (i < w->idadi) {
+        MhusikaWaDola* m = wahusika_pata(w, i);
+        n64 alama = -1;
+        kama (m->tawi != TAWI_OFISI && m->ngazi <= ofisi_ngazi_ya_mwisho) {
+            alama = 100 - (ofisi_ngazi_ya_mwisho - m->ngazi) * 10;
+            kama (m->tawi == ofisi_tawi_ya_mwisho) { alama = alama + 5; }
+        }
+        kama (alama > alama_bora) { alama_bora = alama; bora = i; }
+        i = i + 1;
+    }
+    mkutano_ofisi = bora;
+    MhusikaWaDola* mh = wahusika_pata(w, mkutano_ofisi);
+    kama (mh != 0 && mchezaji_jina != 0) {
+        kama (mh->jina == 0) { mh->jina = tenga(48); }
+        nakili_mfuatano(mh->jina, mchezaji_jina);
+    }
+    nguvu_hakikisha(d, mimi);
+    hati_rudisha_ya_mchezaji(d, w);
+    hati_tumia_kwa_injini(d);
+    chafua_msingi(h);
+    chafua_ukurasa(h);
+}
+
 w0 zamu_inayofuata(Mchezo* g, Hali* h) {
+    kumbuka_cheo_cha_mchezaji(g);
     mchezo_sasisha(g);
     mchezo_maliza_zamu(g);
     // maamuzi yaliyo hai (biashara, mikopo, vikwazo, vita...) hufanya kazi kila wiki
@@ -859,6 +908,7 @@ w0 zamu_inayofuata(Mchezo* g, Hali* h) {
     }
     // katiba: marekebisho yaliyopita barazani huthibitishwa (na kura ya maoni)
     hati_zamu(skrini_siasa_dola(g, tm->faharisi_ya_taifa_la_mchezaji), skrini_mkutano_watu(g, tm->faharisi_ya_taifa_la_mchezaji), g->zamu_ya_sasa);
+    baada_ya_mabadiliko_ya_utawala(g, h);
     // siasa ya wiki: kazi za msaidizi, kura za hoja, upinzani, kashfa
     nguvu_zamu(skrini_siasa_dola(g, tm->faharisi_ya_taifa_la_mchezaji), skrini_mkutano_watu(g, tm->faharisi_ya_taifa_la_mchezaji), tm->faharisi_ya_taifa_la_mchezaji, g->zamu_ya_sasa);
     habari_zamu(g);

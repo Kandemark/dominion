@@ -142,7 +142,10 @@ w0 hifadhi_andika_dola(Dola* d) {
 }
 
 w0 hifadhi_soma_dola(Dola* d) {
-    d->aina = mk_soma();
+    // dola iliyobadilika aina (marekebisho, mapinduzi) hujengwa upya kwanza
+    n64 aina = mk_soma();
+    kama (aina != d->aina) { dola_badilisha_aina(d, aina, 0); }
+    d->aina = aina;
     d->utulivu = mk_soma();
     d->uhalali = mk_soma();
     d->hazina = mk_soma();
@@ -728,7 +731,13 @@ n64 hifadhi_pakia(Mchezo* g, n64 nafasi) {
     mkutano_ofisi = mk_soma();
     hifadhi_soma_historia(g, tm);
     n64 t = 0;
-    wakati (t < tm->idadi) { hifadhi_soma_dola(skrini_siasa_dola(g, t)); t = t + 1; }
+    wakati (t < tm->idadi) {
+        Dola* dt = skrini_siasa_dola(g, t);
+        n64 kabla = dt->aina;
+        hifadhi_soma_dola(dt);
+        kama (dt->aina != kabla) { wahusika_futa_akiba(t); }
+        t = t + 1;
+    }
     Dola* d = skrini_siasa_dola(g, mimi);
     Wahusika* w = skrini_mkutano_watu(g, mimi);
     hifadhi_soma_wahusika(w, d);

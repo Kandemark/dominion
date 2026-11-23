@@ -215,6 +215,9 @@ muundo Dola {
     n64 utulivu;                // 0..100: utulivu wa kisiasa
     n64 uhalali;                // 0..100: uhalali wa serikali machoni mwa watu
     n64 hazina;                 // 0..100: hali ya hazina ya serikali
+    n8* cheo_cha_taifa;         // cheo cha taifa alichopewa wakati wa kuundwa (kwa kujenga upya)
+    n64 watu_wa_mwanzo;
+    n64 mbegu;
 }
 
 n64 dola_nasibu(n64 i, n64 mbegu) {
@@ -688,16 +691,11 @@ Dola* dola_unda(n64 mbegu, n8* cheo, n64 watu) {
     d->viti = tenga(8 * DOLA_MABARAZA_JUU * DOLA_VYAMA_JUU);
     weka_sifuri(d->chama_serikalini, 8 * DOLA_VYAMA_JUU);
     weka_sifuri(d->viti, 8 * DOLA_MABARAZA_JUU * DOLA_VYAMA_JUU);
+    d->cheo_cha_taifa = cheo;
+    d->watu_wa_mwanzo = watu;
+    d->mbegu = mbegu;
     d->aina = dola_aina_kwa_zama(dola_aina_kutoka_cheo(cheo, mbegu), dola_mwaka_wa_zama, mbegu);
-    // kanuni ya kipeuo cha tatu: viti vya baraza la wananchi ~ watu^(1/3)
-    n64 chini = dola_kipeuo_cha_tatu(watu);
-    kama (chini < 31) { chini = 31; }
-    kama (chini > 750) { chini = 750; }
-    dola_jenga_mabaraza(d, cheo, chini, mbegu);
-    dola_jenga_vyama(d, mbegu);
-    n64 b = 0;
-    wakati (b < d->mabaraza) { dola_gawa_viti(d, b, mbegu); b = b + 1; }
-    dola_unda_serikali(d);
+    dola_jenga_taasisi(d);
     d->umri_wa_dola = 12 + dola_nasibu(mbegu, 8) % 620;
     d->umri_wa_katiba = 1 + dola_nasibu(mbegu, 9) % 90;
     kama (d->umri_wa_katiba > d->umri_wa_dola) { d->umri_wa_katiba = d->umri_wa_dola; }
@@ -707,6 +705,65 @@ Dola* dola_unda(n64 mbegu, n8* cheo, n64 watu) {
     d->hazina = 25 + dola_nasibu(mbegu, 12) % 60;
     kama (d->aina == DOLA_SERIKALI_YA_MPITO || d->aina == DOLA_BILA_SERIKALI) { d->utulivu = 15 + dola_nasibu(mbegu, 10) % 30; }
     rudisha d;
+}
+
+// Mabaraza, vyama, viti na serikali kwa aina ya sasa ya dola.
+w0 dola_jenga_taasisi(Dola* d) {
+    // kanuni ya kipeuo cha tatu: viti vya baraza la wananchi ~ watu^(1/3)
+    n64 chini = dola_kipeuo_cha_tatu(d->watu_wa_mwanzo);
+    kama (chini < 31) { chini = 31; }
+    kama (chini > 750) { chini = 750; }
+    d->mabaraza = 0;
+    d->vyama = 0;
+    d->tawala = 0;
+    d->mkuu_wa_serikali = 0;
+    weka_sifuri(d->chama_serikalini, 8 * DOLA_VYAMA_JUU);
+    weka_sifuri(d->viti, 8 * DOLA_MABARAZA_JUU * DOLA_VYAMA_JUU);
+    dola_jenga_mabaraza(d, d->cheo_cha_taifa, chini, d->mbegu);
+    dola_jenga_vyama(d, d->mbegu);
+    n64 b = 0;
+    wakati (b < d->mabaraza) { dola_gawa_viti(d, b, d->mbegu); b = b + 1; }
+    dola_unda_serikali(d);
+}
+
+// Mwaka ambao aina ya utawala ilionekana kwa mara ya kwanza duniani; aina
+// inayoanzishwa kabla ya mwaka huo ni jaribio lisilo na mfano.
+n64 dola_aina_mwaka(n64 aina) {
+    kama (aina == DOLA_JAMHURI_YA_RAIS) { rudisha 1789; }
+    kama (aina == DOLA_JAMHURI_YA_SHIRIKISHO) { rudisha 1787; }
+    kama (aina == DOLA_JAMHURI_NUSU_RAIS) { rudisha 1870; }
+    kama (aina == DOLA_JAMHURI_YA_BUNGE) { rudisha 1789; }
+    kama (aina == DOLA_CHAMA_KIMOJA) { rudisha 1917; }
+    kama (aina == DOLA_UDIKTETA) { rudisha 1800; }
+    kama (aina == DOLA_UTAWALA_WA_WATAALAMU) { rudisha 1880; }
+    rudisha 0;
+}
+
+// Badilisha aina ya utawala ya dola: taasisi zote (mabaraza, vyama, viti,
+// vyeo vya juu) hujengwa upya kwa aina mpya, katika mwaka `mwaka` (vyama
+// hufuata itikadi za mwaka huo). Utulivu, uhalali na hazina hubaki, kisha
+// mabadiliko yenyewe hugharimu: zaidi ikiwa aina haijawahi kuonekana duniani.
+w0 dola_badilisha_aina(Dola* d, n64 aina, n64 mwaka) {
+    kama (d == 0 || aina < 0 || aina >= DOLA_AINA_IDADI || aina == d->aina) { rudisha; }
+    n64 utulivu = d->utulivu;
+    n64 uhalali = d->uhalali;
+    n64 hazina = d->hazina;
+    n64 zama = dola_mwaka_wa_zama;
+    dola_mwaka_wa_zama = mwaka;
+    d->aina = aina;
+    dola_jenga_taasisi(d);
+    dola_mwaka_wa_zama = zama;
+    d->utulivu = utulivu;
+    d->uhalali = uhalali;
+    d->hazina = hazina;
+    d->umri_wa_katiba = 0;
+    kama (mwaka > 0 && mwaka < dola_aina_mwaka(aina)) {
+        d->utulivu = dola_rekebisha(d->utulivu, 0 - 10);
+        d->uhalali = dola_rekebisha(d->uhalali, 0 - 15);
+    } sivyo {
+        d->utulivu = dola_rekebisha(d->utulivu, 0 - 4);
+        d->uhalali = dola_rekebisha(d->uhalali, 0 - 6);
+    }
 }
 
 // Akiba: dola moja kwa kila taifa, hujengwa mara ya kwanza inapoombwa.
