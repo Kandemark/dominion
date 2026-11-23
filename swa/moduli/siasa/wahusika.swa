@@ -381,6 +381,12 @@ Wahusika* wahusika_wa_taifa(n64 faharisi, Dola* d, n64 watu) {
     rudisha wahusika_akiba[faharisi];
 }
 
+// Mti wa dola ya taifa hujengwa upya (dola imebadilika aina).
+w0 wahusika_futa_akiba(n64 faharisi) {
+    kama (wahusika_akiba == 0 || faharisi < 0 || faharisi >= DOLA_AKIBA_UWEZO) { rudisha; }
+    wahusika_akiba[faharisi] = 0;
+}
+
 MhusikaWaDola* wahusika_pata(Wahusika* w, n64 i) {
     kama (w == 0 || i < 0 || i >= w->idadi) { rudisha 0; }
     rudisha w->watu[i];

@@ -1,0 +1,85 @@
+husisha { moduli/hifadhi/hifadhi.swa }
+
+// jaribio_utawala_mpya.swa -- mchezaji hubadilisha aina ya utawala kwa
+// marekebisho ya katiba, katika mwaka wowote: dola hujengwa upya (mabaraza,
+// vyama, vyeo), mti wa dola huzalishwa upya, aina isiyo na mfano kwa zama
+// zake hugharimu zaidi, na mabadiliko hubaki baada ya kuhifadhi na kupakia.
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+Mchezo* mchezo_wa(n64 mwaka) {
+    tarehe_weka_mwaka_wa_mwanzo(mwaka);
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) { rudisha 0; }
+    hifadhi_anzisha_dominion(g, mwaka);
+    rudisha g;
+}
+
+n64 kifungu_cha_dola() {
+    n64 i = 0;
+    wakati (i < hati_idadi) { kama (hati_pata(i)->aina == K_DOLA) { rudisha i; } i = i + 1; }
+    rudisha -1;
+}
+
+// Badilisha aina ya taifa la mchezaji; hurudisha uhalali uliopotea.
+n64 badilisha(Mchezo* g, n64 aina) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 mimi = tm->faharisi_ya_taifa_la_mchezaji;
+    Dola* d = skrini_siasa_dola(g, mimi);
+    d->uhalali = 80;
+    hati_tumia(d, kifungu_cha_dola(), 0, aina, g->zamu_ya_sasa);
+    rudisha 80 - d->uhalali;
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    Mchezo* g = mchezo_wa(1700);
+    thibitisha("mchezo 1700", g != 0);
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 mimi = tm->faharisi_ya_taifa_la_mchezaji;
+    Dola* d = skrini_siasa_dola(g, mimi);
+    thibitisha("si chama kimoja mwanzoni", d->aina != DOLA_CHAMA_KIMOJA);
+    Wahusika* kabla = skrini_mkutano_watu(g, mimi);
+    n64 hasara = badilisha(g, DOLA_CHAMA_KIMOJA);
+    thibitisha("aina mpya", d->aina == DOLA_CHAMA_KIMOJA);
+    thibitisha("vyama vimejengwa upya", d->vyama >= 1 && d->vyama <= 3 && d->chama_serikalini[0] == 1);
+    n64 vyama = d->vyama;
+    thibitisha("bendera ya mabadiliko", hati_utawala_umebadilika == 1);
+    thibitisha("katiba mpya bila daftari", hati_historia_idadi == 0 && hati_taifa < 0);
+    thibitisha("bila mfano: uhalali hupotea zaidi", hasara >= 15);
+    Wahusika* baadaye = skrini_mkutano_watu(g, mimi);
+    thibitisha("mti mpya", baadaye != kabla && baadaye->idadi > 0);
+    andika("1700: %s, mkuu %s, vyama %d, uhalali -%d\n", dola_aina_jina(d->aina), d->mkuu_wa_dola, d->vyama, hasara, 0, 0);
+    // hifadhi na pakia: aina na mabaraza hurudi
+    n64 mabaraza = d->mabaraza;
+    thibitisha("hifadhi", hifadhi_andika(g, 98) == HIFADHI_SAWA);
+    Mchezo* g2 = mchezo_wa(1700);
+    thibitisha("pakia", hifadhi_pakia(g2, 98) == HIFADHI_SAWA);
+    Dola* d2 = skrini_siasa_dola(g2, mimi);
+    andika("kupakia: aina %d mabaraza %d/%d vyama %d/%d\n", d2->aina, d2->mabaraza, mabaraza, d2->vyama, vyama, 0);
+    thibitisha("aina baada ya kupakia", d2->aina == DOLA_CHAMA_KIMOJA && d2->mabaraza == mabaraza && d2->vyama == vyama);
+    n8 njia[160];
+    hifadhi_njia(njia, 98, "dominion.hali"); mfumo_futa(njia);
+    hifadhi_njia(njia, 98, "dunia.swad"); mfumo_futa(njia);
+    hifadhi_njia(njia, 98, "maelezo"); mfumo_futa(njia);
+    // 1950: chama kimoja kina mfano, gharama ni ndogo
+    Mchezo* g3 = mchezo_wa(1950);
+    TaifaMfumo* tm3 = mchezo_pata_taifa(g3);
+    Dola* d3 = skrini_siasa_dola(g3, tm3->faharisi_ya_taifa_la_mchezaji);
+    n64 lengo = DOLA_CHAMA_KIMOJA;
+    kama (d3->aina == DOLA_CHAMA_KIMOJA) { lengo = DOLA_JAMHURI_YA_BUNGE; }
+    n64 hasara3 = badilisha(g3, lengo);
+    thibitisha("1950: gharama ndogo", hasara3 > 0 && hasara3 < hasara);
+    kama (makosa > 0) {
+        andika("utawala mpya: makosa %d\n", makosa, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("utawala mpya: sawa\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

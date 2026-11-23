@@ -215,6 +215,9 @@ muundo Dola {
     n64 utulivu;                // 0..100: utulivu wa kisiasa
     n64 uhalali;                // 0..100: uhalali wa serikali machoni mwa watu
     n64 hazina;                 // 0..100: hali ya hazina ya serikali
+    n8* cheo_cha_taifa;         // cheo cha taifa alichopewa wakati wa kuundwa (kwa kujenga upya)
+    n64 watu_wa_mwanzo;
+    n64 mbegu;
 }
 
 n64 dola_nasibu(n64 i, n64 mbegu) {
@@ -276,6 +279,41 @@ n64 dola_aina_kutoka_cheo(n8* cheo, n64 mbegu) {
     rudisha DOLA_SERIKALI_YA_MPITO;
 }
 
+// Zama: aina ya utawala hufuata mwaka wa kuanza mchezo. Huwekwa na mchezo
+// (mchezo.swa) kabla dola za mataifa hazijaundwa; 0 = bila marekebisho.
+n64 dola_mwaka_wa_zama = 0;
+
+// Badilisha aina isiyowezekana kwa zama zake kuwa ya kale iliyo karibu nayo:
+// jamhuri za rais kabla ya 1789 ni jamhuri za wafanyabiashara au jumuiya za
+// waungwana; shirikisho kabla ya 1787 ni muungano wa dola; chama kimoja kabla
+// ya 1917 ni udikteta au ufalme kamili; udikteta kabla ya 1800 ni ufalme
+// kamili; falme za katiba ni chache kabla ya 1780; baada ya 1950 falme kamili
+// nyingi na milki nyingi zimekuwa falme za katiba au dola za chama kimoja.
+n64 dola_aina_kwa_zama(n64 aina, n64 mwaka, n64 mbegu) {
+    kama (mwaka <= 0) { rudisha aina; }
+    n64 k = dola_nasibu(mbegu, 77) % 100;
+    kama (mwaka < 1789 && (aina == DOLA_JAMHURI_YA_RAIS || aina == DOLA_JAMHURI_NUSU_RAIS || aina == DOLA_JAMHURI_YA_BUNGE)) {
+        kama (k < 55) { rudisha DOLA_JAMHURI_YA_WAFANYABIASHARA; }
+        rudisha DOLA_JUMUIYA_YA_WAUNGWANA;
+    }
+    kama (mwaka < 1870 && aina == DOLA_JAMHURI_NUSU_RAIS) { rudisha DOLA_JAMHURI_YA_BUNGE; }
+    kama (mwaka < 1787 && aina == DOLA_JAMHURI_YA_SHIRIKISHO) { rudisha DOLA_MUUNGANO_WA_DOLA; }
+    kama (mwaka < 1917 && aina == DOLA_CHAMA_KIMOJA) {
+        kama (mwaka < 1850 || k < 40) { rudisha DOLA_UFALME_KAMILI; }
+        rudisha DOLA_UDIKTETA;
+    }
+    kama (mwaka < 1800 && aina == DOLA_UDIKTETA) { rudisha DOLA_UFALME_KAMILI; }
+    kama (mwaka < 1780 && aina == DOLA_UFALME_WA_KATIBA && k < 70) { rudisha DOLA_UFALME_KAMILI; }
+    kama (mwaka < 1880 && aina == DOLA_UTAWALA_WA_WATAALAMU && k < 50) { rudisha DOLA_JAMHURI_YA_WAFANYABIASHARA; }
+    kama (mwaka >= 1950 && aina == DOLA_UFALME_KAMILI && k < 60) { rudisha DOLA_UFALME_WA_KATIBA; }
+    kama (mwaka >= 1920 && aina == DOLA_MILKI) {
+        kama (k < 50) { rudisha DOLA_UFALME_WA_KATIBA; }
+        kama (k < 75) { rudisha DOLA_CHAMA_KIMOJA; }
+    }
+    kama (mwaka >= 1960 && aina == DOLA_JUMUIYA_YA_WAUNGWANA) { rudisha DOLA_JAMHURI_YA_BUNGE; }
+    rudisha aina;
+}
+
 w0 dola_ongeza_baraza(Dola* d, n8* jina, n64 viti, n64 kukaa, n64 uteuzi) {
     kama (d->mabaraza >= DOLA_MABARAZA_JUU) { rudisha; }
     n64 b = d->mabaraza;
@@ -287,8 +325,39 @@ w0 dola_ongeza_baraza(Dola* d, n8* jina, n64 viti, n64 kukaa, n64 uteuzi) {
     d->mabaraza = b + 1;
 }
 
+// Mwaka ambao itikadi inaanza kuwa na vyama vyake.
+n64 itikadi_mwaka(n64 i) {
+    kama (i == ITIKADI_UKOMUNISTI) { rudisha 1848; }
+    kama (i == ITIKADI_UJAMAA) { rudisha 1840; }
+    kama (i == ITIKADI_DEMOKRASIA_YA_KIJAMII || i == ITIKADI_DEMOKRASIA_YA_KIDINI) { rudisha 1870; }
+    kama (i == ITIKADI_KIJANI) { rudisha 1970; }
+    kama (i == ITIKADI_ULIBERALI) { rudisha 1790; }
+    kama (i == ITIKADI_UTAIFA) { rudisha 1800; }
+    kama (i == ITIKADI_UFASHISTI) { rudisha 1919; }
+    kama (i == ITIKADI_UANAKI || i == ITIKADI_UMAARUFU) { rudisha 1850; }
+    kama (i == ITIKADI_UTAALAMU) { rudisha 1900; }
+    kama (i == ITIKADI_VYAMA_VYA_WAFANYAKAZI) { rudisha 1890; }
+    rudisha 0;
+}
+
+// Itikadi ya zamani inayochukua nafasi ya itikadi ambayo haijazaliwa.
+n64 itikadi_kwa_zama(n64 i, n64 mwaka) {
+    n64 hatua = 0;
+    wakati (mwaka > 0 && mwaka < itikadi_mwaka(i) && hatua < 4) {
+        kama (i == ITIKADI_UKOMUNISTI || i == ITIKADI_UJAMAA || i == ITIKADI_DEMOKRASIA_YA_KIJAMII || i == ITIKADI_VYAMA_VYA_WAFANYAKAZI || i == ITIKADI_UANAKI || i == ITIKADI_UMAARUFU) { i = ITIKADI_WAKULIMA; }
+        sivyo kama (i == ITIKADI_KIJANI) { i = ITIKADI_MILA; }
+        sivyo kama (i == ITIKADI_ULIBERALI || i == ITIKADI_UTAALAMU) { i = ITIKADI_UHURU_BINAFSI; }
+        sivyo kama (i == ITIKADI_DEMOKRASIA_YA_KIDINI) { i = ITIKADI_UKLERO; }
+        sivyo kama (i == ITIKADI_UTAIFA) { i = ITIKADI_UKANDA; }
+        sivyo kama (i == ITIKADI_UFASHISTI) { i = ITIKADI_UTAIFA; }
+        hatua = hatua + 1;
+    }
+    rudisha i;
+}
+
 w0 dola_ongeza_chama(Dola* d, n64 itikadi, n64 mbegu) {
     kama (d->vyama >= DOLA_VYAMA_JUU) { rudisha; }
+    itikadi = itikadi_kwa_zama(itikadi, dola_mwaka_wa_zama);
     n64 c = 0;
     wakati (c < d->vyama) {
         kama (d->chama_itikadi[c] == itikadi) { rudisha; }       // itikadi moja, chama kimoja
@@ -622,16 +691,11 @@ Dola* dola_unda(n64 mbegu, n8* cheo, n64 watu) {
     d->viti = tenga(8 * DOLA_MABARAZA_JUU * DOLA_VYAMA_JUU);
     weka_sifuri(d->chama_serikalini, 8 * DOLA_VYAMA_JUU);
     weka_sifuri(d->viti, 8 * DOLA_MABARAZA_JUU * DOLA_VYAMA_JUU);
-    d->aina = dola_aina_kutoka_cheo(cheo, mbegu);
-    // kanuni ya kipeuo cha tatu: viti vya baraza la wananchi ~ watu^(1/3)
-    n64 chini = dola_kipeuo_cha_tatu(watu);
-    kama (chini < 31) { chini = 31; }
-    kama (chini > 750) { chini = 750; }
-    dola_jenga_mabaraza(d, cheo, chini, mbegu);
-    dola_jenga_vyama(d, mbegu);
-    n64 b = 0;
-    wakati (b < d->mabaraza) { dola_gawa_viti(d, b, mbegu); b = b + 1; }
-    dola_unda_serikali(d);
+    d->cheo_cha_taifa = cheo;
+    d->watu_wa_mwanzo = watu;
+    d->mbegu = mbegu;
+    d->aina = dola_aina_kwa_zama(dola_aina_kutoka_cheo(cheo, mbegu), dola_mwaka_wa_zama, mbegu);
+    dola_jenga_taasisi(d);
     d->umri_wa_dola = 12 + dola_nasibu(mbegu, 8) % 620;
     d->umri_wa_katiba = 1 + dola_nasibu(mbegu, 9) % 90;
     kama (d->umri_wa_katiba > d->umri_wa_dola) { d->umri_wa_katiba = d->umri_wa_dola; }
@@ -641,6 +705,65 @@ Dola* dola_unda(n64 mbegu, n8* cheo, n64 watu) {
     d->hazina = 25 + dola_nasibu(mbegu, 12) % 60;
     kama (d->aina == DOLA_SERIKALI_YA_MPITO || d->aina == DOLA_BILA_SERIKALI) { d->utulivu = 15 + dola_nasibu(mbegu, 10) % 30; }
     rudisha d;
+}
+
+// Mabaraza, vyama, viti na serikali kwa aina ya sasa ya dola.
+w0 dola_jenga_taasisi(Dola* d) {
+    // kanuni ya kipeuo cha tatu: viti vya baraza la wananchi ~ watu^(1/3)
+    n64 chini = dola_kipeuo_cha_tatu(d->watu_wa_mwanzo);
+    kama (chini < 31) { chini = 31; }
+    kama (chini > 750) { chini = 750; }
+    d->mabaraza = 0;
+    d->vyama = 0;
+    d->tawala = 0;
+    d->mkuu_wa_serikali = 0;
+    weka_sifuri(d->chama_serikalini, 8 * DOLA_VYAMA_JUU);
+    weka_sifuri(d->viti, 8 * DOLA_MABARAZA_JUU * DOLA_VYAMA_JUU);
+    dola_jenga_mabaraza(d, d->cheo_cha_taifa, chini, d->mbegu);
+    dola_jenga_vyama(d, d->mbegu);
+    n64 b = 0;
+    wakati (b < d->mabaraza) { dola_gawa_viti(d, b, d->mbegu); b = b + 1; }
+    dola_unda_serikali(d);
+}
+
+// Mwaka ambao aina ya utawala ilionekana kwa mara ya kwanza duniani; aina
+// inayoanzishwa kabla ya mwaka huo ni jaribio lisilo na mfano.
+n64 dola_aina_mwaka(n64 aina) {
+    kama (aina == DOLA_JAMHURI_YA_RAIS) { rudisha 1789; }
+    kama (aina == DOLA_JAMHURI_YA_SHIRIKISHO) { rudisha 1787; }
+    kama (aina == DOLA_JAMHURI_NUSU_RAIS) { rudisha 1870; }
+    kama (aina == DOLA_JAMHURI_YA_BUNGE) { rudisha 1789; }
+    kama (aina == DOLA_CHAMA_KIMOJA) { rudisha 1917; }
+    kama (aina == DOLA_UDIKTETA) { rudisha 1800; }
+    kama (aina == DOLA_UTAWALA_WA_WATAALAMU) { rudisha 1880; }
+    rudisha 0;
+}
+
+// Badilisha aina ya utawala ya dola: taasisi zote (mabaraza, vyama, viti,
+// vyeo vya juu) hujengwa upya kwa aina mpya, katika mwaka `mwaka` (vyama
+// hufuata itikadi za mwaka huo). Utulivu, uhalali na hazina hubaki, kisha
+// mabadiliko yenyewe hugharimu: zaidi ikiwa aina haijawahi kuonekana duniani.
+w0 dola_badilisha_aina(Dola* d, n64 aina, n64 mwaka) {
+    kama (d == 0 || aina < 0 || aina >= DOLA_AINA_IDADI || aina == d->aina) { rudisha; }
+    n64 utulivu = d->utulivu;
+    n64 uhalali = d->uhalali;
+    n64 hazina = d->hazina;
+    n64 zama = dola_mwaka_wa_zama;
+    dola_mwaka_wa_zama = mwaka;
+    d->aina = aina;
+    dola_jenga_taasisi(d);
+    dola_mwaka_wa_zama = zama;
+    d->utulivu = utulivu;
+    d->uhalali = uhalali;
+    d->hazina = hazina;
+    d->umri_wa_katiba = 0;
+    kama (mwaka > 0 && mwaka < dola_aina_mwaka(aina)) {
+        d->utulivu = dola_rekebisha(d->utulivu, 0 - 10);
+        d->uhalali = dola_rekebisha(d->uhalali, 0 - 15);
+    } sivyo {
+        d->utulivu = dola_rekebisha(d->utulivu, 0 - 4);
+        d->uhalali = dola_rekebisha(d->uhalali, 0 - 6);
+    }
 }
 
 // Akiba: dola moja kwa kila taifa, hujengwa mara ya kwanza inapoombwa.

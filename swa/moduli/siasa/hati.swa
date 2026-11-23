@@ -197,6 +197,7 @@ n64 hati_sehemu_ya_aina(n64 k) {
 // Jina la kigezo i cha aina k, au 0 ikiwa aina haina kigezo hicho.
 n8* hati_jina_la_kigezo(n64 k, n64 i) {
     kama (i == 0) {
+        kama (k == K_DOLA) { rudisha ui("Form of government"); }
         kama (k == K_URAIA) { rudisha ui("Years of residence"); }
         kama (k == K_HAKI) { rudisha ui("Limitation (0 none, 1 by law, 2 by decree)"); }
         kama (k == K_MKUU_UTEUZI) { rudisha ui("Selection (0 hereditary, 1 people, 2 legislature, 3 council)"); }
@@ -293,6 +294,7 @@ n64 hati_kigezo_chini(n64 k, n64 i) {
 
 n64 hati_kigezo_juu(n64 k, n64 i) {
     kama (hati_jina_la_kigezo(k, i) == 0) { rudisha 0; }
+    kama (k == K_DOLA) { rudisha DOLA_AINA_IDADI - 1; }
     kama (k == K_MGAWANYO) { rudisha 2; }
     kama (k == K_SIFA_YA_CHEO) { kama (i == 0) { rudisha 80; } rudisha 40; }
     kama (k == K_MAHAKAMA_NDOGO) { rudisha 15; }
@@ -1464,9 +1466,30 @@ n64 HATI_HISTORIA_JUU = 256;
 n64* hati_historia = 0;         // [kifungu, kigezo (-1 kufuta), thamani, zamu]
 n64 hati_historia_idadi = 0;
 
+// Aina ya utawala imebadilika kwa marekebisho: programu huweka mchezaji
+// kwenye cheo sawa cha mti mpya na kuuzima (angalia programu/dominion.swa).
+n64 hati_utawala_umebadilika = 0;
+
 w0 hati_tumia(Dola* d, n64 kifungu, n64 kigezo, n64 thamani, n64 zamu) {
     Kifungu* k = hati_pata(kifungu);
     kama (k == 0) { rudisha; }
+    // aina mpya ya utawala: dola hujengwa upya, na katiba mpya huanza bila
+    // daftari la marekebisho ya katiba iliyotangulia
+    kama (k->aina == K_DOLA && kigezo == 0) {
+        n64 mwaka = 0;
+        n64 mwezi = 0;
+        n64 siku = 0;
+        tarehe_ya_siku(tarehe_siku_ya_zamu(zamu), &mwaka, &mwezi, &siku);
+        n64 taifa = hati_taifa;
+        dola_badilisha_aina(d, thamani, mwaka);
+        wahusika_futa_akiba(taifa);
+        nguvu_taifa = 0 - 1;
+        hati_ongeza_toleo(taifa);
+        hati_historia_idadi = 0;
+        hati_taifa = 0 - 1;
+        hati_utawala_umebadilika = 1;
+        rudisha;
+    }
     kama (kigezo < 0) { k->hai = 0; }
     kama (kigezo == 0) { k->p0 = thamani; }
     kama (kigezo == 1) { k->p1 = thamani; }
