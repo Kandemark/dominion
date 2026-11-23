@@ -76,7 +76,16 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     n64 kielezo = dunia_taifa_mfumo_pata_kwa_faharisi(tm, mimi)->kielezo_cha_kijeshi;
     n8 jina_la_kikosi[96];
     vk_jina(vk_pata(vk_idadi - 1), 1900, jina_la_kikosi, 96);
+    // mhusika wa mchezaji
+    mchezaji_jina = tenga(48);
+    nakili_mfuatano(mchezaji_jina, "Tari Mbeyo");
+    mchezaji_uso = tenga(ukubwa(Uso));
+    uso_zalisha(mchezaji_uso, 77, 1900);
+    n64 nywele = mchezaji_uso->nywele;
+    n64 ndevu = mchezaji_uso->ndevu;
     thibitisha("hifadhi", hifadhi_andika(g, 99) == HIFADHI_SAWA);
+    mchezaji_jina = 0;
+    mchezaji_uso = 0;
 
     // mchezo mpya, kisha pakia
     Mchezo* g2 = mchezo_mpya();
@@ -99,6 +108,8 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     thibitisha("kikasha", kikasha_idadi == kikasha_n);
     thibitisha("matukio", soko_matukio_yote == matukio);
     thibitisha("historia ya pato", mchezo_pata_historia_ya_taifa(g2, 4)->idadi == historia_n);
+    thibitisha("jina la mchezaji", mchezaji_jina != 0 && linganisha_mfuatano(mchezaji_jina, "Tari Mbeyo") == 0);
+    thibitisha("uso wa mchezaji", mchezaji_uso != 0 && mchezaji_uso->nywele == nywele && mchezaji_uso->ndevu == ndevu);
     thibitisha("vikosi", vk_idadi == vikosi);
     thibitisha("askari wa mchezaji", vk_jumla[mimi] == askari);
     thibitisha("uhamasishaji", vk_uhamasishaji[mimi] == VK_SEHEMU);

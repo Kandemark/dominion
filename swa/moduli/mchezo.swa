@@ -890,7 +890,11 @@ CivMatokeo mchezo_anzisha(Mchezo* g, MchezoUsanidi* usanidi) {
     DuniaRamani* ramani_mpya = dunia_ramani_unda(360, 180, MCHEZO_MBEGU_YA_DUNIA);
     // dunia iliyokubaliwa (rasilimali/dunia.bin) ikiwepo ndiyo jiografia na
     // mataifa ya uigaji; atlasi ya kelele hubaki kwa mbegu za sifa tu
-    dunia_halisi_ya_mchezo = dunia_halisi_pakia("rasilimali/dunia.bin");
+    // dunia iliyokwisha kupakiwa (skrini ya mwaka ya mchezo mpya) hutumika
+    // ikiwa bado haijapangwa kwa mwaka; la sivyo hupakiwa upya
+    kama (dunia_halisi_ya_mchezo == 0 || dunia_halisi_ya_mchezo->mwaka_wa_historia != 0) {
+        dunia_halisi_ya_mchezo = dunia_halisi_pakia("rasilimali/dunia.bin");
+    }
     // mipaka ya mwaka wa kuanza: mataifa ambayo hayajazaliwa ni sehemu ya wazazi wao
     dunia_halisi_kwa_mwaka(dunia_halisi_ya_mchezo, TAREHE_MWAKA_WA_MWANZO);
     kama (dunia_halisi_ya_mchezo != 0) { dunia_halisi_jaza_ramani(ramani_mpya, dunia_halisi_ya_mchezo); }

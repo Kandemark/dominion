@@ -1,0 +1,19 @@
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/onyesho/uso.swa }
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    Turubai* t = turubai_unda(960, 400);
+    turubai_brashi(t, 1316648, 255);
+    turubai_jaza(t, 0, 0, 960, 400);
+    Uso u;
+    n64 i = 0;
+    wakati (i < 12) {
+        uso_zalisha(&u, i * 31 + 7, 1850 + i * 12);
+        kama (i < 6) { uso_chora(t, &u, 10 + i * 158, 10, 150); }
+        sivyo { uso_chora_duara(t, &u, 85 + (i - 6) * 158, 280, 70); }
+        i = i + 1;
+    }
+    n64 fd = mfumo_fungua(hoja_za_mstari[1], 577, 420);
+    mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
+    mfumo_funga(fd);
+    rudisha 0;
+}

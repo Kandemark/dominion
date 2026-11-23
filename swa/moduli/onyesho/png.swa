@@ -1,0 +1,546 @@
+husisha { moduli/onyesho/turubai.swa }
+husisha { msingi/maktaba/faili.swa }
+
+// png.swa -- kisimbuaji cha PNG kwa Swa, bila maktaba ya nje.
+//
+//   DEFLATE (RFC 1951)  vizuizi vilivyohifadhiwa, Huffman isiyobadilika na
+//                       Huffman inayobadilika; jedwali la kusimbua kwa haraka
+//                       la biti 9, kisha njia ya biti kwa biti kwa misimbo mirefu
+//   zlib (RFC 1950)     kichwa cha baiti 2 hurukwa; adler-32 haikaguliwi
+//   PNG                 kina cha biti 8 (na 1/2/4 kwa rangi ya jedwali na kijivu),
+//                       aina za rangi 0 kijivu, 2 RGB, 3 jedwali (PLTE na tRNS),
+//                       4 kijivu+alfa, 6 RGBA; vichujio vyote vitano (None, Sub,
+//                       Up, Average, Paeth); bila interlace (Adam7 hukataliwa)
+//
+// Picha husimbuliwa kuwa RGBA ya baiti 8 kwa kila rangi, kisha huchorwa kwenye
+// Turubai kwa kupanua au kubana (bilinear) pamoja na alfa.
+
+muundo Picha {
+    n64 upana;
+    n64 kimo;
+    n8* rgba;           // upana * kimo * 4
+}
+
+// ---------- DEFLATE ----------
+
+muundo PngBiti {
+    n8* data;
+    n64 urefu;
+    n64 nafasi;         // baiti
+    n64 akiba;          // biti zilizobaki
+    n64 idadi;          // idadi ya biti kwenye akiba
+    n64 kosa;
+}
+
+n64 png_biti(PngBiti* b, n64 n) {
+    wakati (b->idadi < n) {
+        kama (b->nafasi >= b->urefu) { b->kosa = 1; rudisha 0; }
+        b->akiba = b->akiba | ((b->data[b->nafasi] & 255) << b->idadi);
+        b->nafasi = b->nafasi + 1;
+        b->idadi = b->idadi + 8;
+    }
+    n64 v = b->akiba & ((1 << n) - 1);
+    b->akiba = b->akiba >> n;
+    b->idadi = b->idadi - n;
+    rudisha v;
+}
+
+// Huffman ya kanuni: idadi ya misimbo kwa kila urefu na alama kwa mpangilio,
+// pamoja na jedwali la haraka la biti 9: [biti 9 zilizogeuzwa] -> alama*16 + urefu.
+muundo PngHuffman {
+    n64* idadi;         // [16]
+    n64* alama;         // [288]
+    n64* haraka;        // [512]
+}
+
+PngHuffman* png_huffman_unda() {
+    PngHuffman* h = tenga(ukubwa(PngHuffman));
+    h->idadi = tenga(8 * 16);
+    h->alama = tenga(8 * 320);
+    h->haraka = tenga(8 * 512);
+    rudisha h;
+}
+
+w0 png_huffman_achilia(PngHuffman* h) {
+    achilia h->idadi;
+    achilia h->alama;
+    achilia h->haraka;
+    achilia h;
+}
+
+// Jenga kutoka urefu wa misimbo; hurudisha 0 ikiwa urefu haufai.
+n32 png_huffman_jenga(PngHuffman* h, n64* urefu, n64 n) {
+    n64 i = 0;
+    wakati (i < 16) { h->idadi[i] = 0; i = i + 1; }
+    i = 0;
+    wakati (i < n) { h->idadi[urefu[i]] = h->idadi[urefu[i]] + 1; i = i + 1; }
+    h->idadi[0] = 0;
+    n64* mwanzo = tenga(8 * 16);
+    mwanzo[1] = 0;
+    i = 1;
+    wakati (i < 15) { mwanzo[i + 1] = mwanzo[i] + h->idadi[i]; i = i + 1; }
+    i = 0;
+    wakati (i < n) {
+        kama (urefu[i] != 0) {
+            h->alama[mwanzo[urefu[i]]] = i;
+            mwanzo[urefu[i]] = mwanzo[urefu[i]] + 1;
+        }
+        i = i + 1;
+    }
+    achilia mwanzo;
+    // jedwali la haraka: kila msimbo wa urefu <= 9, katika kila nafasi ya biti zilizobaki
+    i = 0;
+    wakati (i < 512) { h->haraka[i] = 0; i = i + 1; }
+    n64 msimbo = 0;
+    n64 k = 0;
+    n64 l = 1;
+    wakati (l <= 9) {
+        n64 c = 0;
+        wakati (c < h->idadi[l]) {
+            // biti za msimbo hupokelewa kuanzia ya juu: geuza ili zilingane na mkondo
+            n64 geuzwa = 0;
+            n64 j = 0;
+            wakati (j < l) { kama ((msimbo >> j) & 1) { geuzwa = geuzwa | (1 << (l - 1 - j)); } j = j + 1; }
+            n64 hatua = 1 << l;
+            n64 x = geuzwa;
+            wakati (x < 512) { h->haraka[x] = h->alama[k] * 16 + l; x = x + hatua; }
+            msimbo = msimbo + 1;
+            k = k + 1;
+            c = c + 1;
+        }
+        msimbo = msimbo << 1;
+        l = l + 1;
+    }
+    rudisha 1;
+}
+
+// Soma alama moja.
+n64 png_alama(PngBiti* b, PngHuffman* h) {
+    // njia ya haraka: biti 9 zikiwepo kwenye akiba
+    wakati (b->idadi < 9 && b->nafasi < b->urefu) {
+        b->akiba = b->akiba | ((b->data[b->nafasi] & 255) << b->idadi);
+        b->nafasi = b->nafasi + 1;
+        b->idadi = b->idadi + 8;
+    }
+    kama (b->idadi >= 9) {
+        n64 e = h->haraka[b->akiba & 511];
+        kama (e != 0) {
+            n64 l = e & 15;
+            b->akiba = b->akiba >> l;
+            b->idadi = b->idadi - l;
+            rudisha e >> 4;
+        }
+    }
+    // biti kwa biti (misimbo mirefu, au mwisho wa mkondo)
+    n64 msimbo = 0;
+    n64 kwanza = 0;
+    n64 faharisi = 0;
+    n64 l = 1;
+    wakati (l < 16) {
+        msimbo = msimbo | png_biti(b, 1);
+        kama (b->kosa) { rudisha -1; }
+        n64 c = h->idadi[l];
+        kama (msimbo - c < kwanza) { rudisha h->alama[faharisi + (msimbo - kwanza)]; }
+        faharisi = faharisi + c;
+        kwanza = (kwanza + c) << 1;
+        msimbo = msimbo << 1;
+        l = l + 1;
+    }
+    b->kosa = 1;
+    rudisha -1;
+}
+
+n64* png_urefu_msingi = 0;      // urefu wa msingi wa alama 257..285
+n64* png_urefu_ziada = 0;
+n64* png_umbali_msingi = 0;
+n64* png_umbali_ziada = 0;
+
+w0 png_majedwali() {
+    kama (png_urefu_msingi != 0) { rudisha; }
+    png_urefu_msingi = tenga(8 * 29);
+    png_urefu_ziada = tenga(8 * 29);
+    png_umbali_msingi = tenga(8 * 30);
+    png_umbali_ziada = tenga(8 * 30);
+    n64 i = 0;
+    n64 msingi = 3;
+    wakati (i < 28) {
+        n64 ziada = 0;
+        kama (i >= 8) { ziada = (i - 4) / 4; }
+        png_urefu_msingi[i] = msingi;
+        png_urefu_ziada[i] = ziada;
+        msingi = msingi + (1 << ziada);
+        i = i + 1;
+    }
+    png_urefu_msingi[28] = 258;
+    png_urefu_ziada[28] = 0;
+    i = 0;
+    msingi = 1;
+    wakati (i < 30) {
+        n64 ziada = 0;
+        kama (i >= 4) { ziada = (i - 2) / 2; }
+        png_umbali_msingi[i] = msingi;
+        png_umbali_ziada[i] = ziada;
+        msingi = msingi + (1 << ziada);
+        i = i + 1;
+    }
+}
+
+// Mkondo wa zlib -> baiti; hurudisha urefu au -1. `nje` lazima liwe na nafasi `uwezo`.
+n64 png_inflate(n8* data, n64 urefu, n8* nje, n64 uwezo) {
+    png_majedwali();
+    PngBiti b;
+    b.data = data;
+    b.urefu = urefu;
+    b.nafasi = 2;           // kichwa cha zlib
+    b.akiba = 0;
+    b.idadi = 0;
+    b.kosa = 0;
+    PngHuffman* herufi = png_huffman_unda();
+    PngHuffman* umbali = png_huffman_unda();
+    n64* urefu_wa = tenga(8 * 320);
+    n64 n = 0;
+    n64 mwisho = 0;
+    wakati (mwisho == 0 && b.kosa == 0) {
+        mwisho = png_biti(&b, 1);
+        n64 aina = png_biti(&b, 2);
+        kama (aina == 0) {
+            // kilichohifadhiwa: tupa biti za baiti iliyoanzwa, na rudisha baiti
+            // nzima zilizokwisha kusomwa kwenye akiba
+            b.nafasi = b.nafasi - b.idadi / 8;
+            b.akiba = 0;
+            b.idadi = 0;
+            kama (b.nafasi + 4 > b.urefu) { b.kosa = 1; endelea; }
+            n64 len = (data[b.nafasi] & 255) | ((data[b.nafasi + 1] & 255) << 8);
+            b.nafasi = b.nafasi + 4;
+            kama (b.nafasi + len > b.urefu || n + len > uwezo) { b.kosa = 1; endelea; }
+            nakili(nje + n, data + b.nafasi, len);
+            n = n + len;
+            b.nafasi = b.nafasi + len;
+            endelea;
+        }
+        kama (aina == 1) {
+            n64 i = 0;
+            wakati (i < 288) {
+                n64 l = 8;
+                kama (i >= 144 && i < 256) { l = 9; }
+                kama (i >= 256 && i < 280) { l = 7; }
+                urefu_wa[i] = l;
+                i = i + 1;
+            }
+            png_huffman_jenga(herufi, urefu_wa, 288);
+            i = 0;
+            wakati (i < 30) { urefu_wa[i] = 5; i = i + 1; }
+            png_huffman_jenga(umbali, urefu_wa, 30);
+        } sivyo kama (aina == 2) {
+            n64 nh = png_biti(&b, 5) + 257;
+            n64 nd = png_biti(&b, 5) + 1;
+            n64 nc = png_biti(&b, 4) + 4;
+            n64* mpangilio = tenga(8 * 19);
+            mpangilio[0] = 16; mpangilio[1] = 17; mpangilio[2] = 18; mpangilio[3] = 0; mpangilio[4] = 8;
+            mpangilio[5] = 7; mpangilio[6] = 9; mpangilio[7] = 6; mpangilio[8] = 10; mpangilio[9] = 5;
+            mpangilio[10] = 11; mpangilio[11] = 4; mpangilio[12] = 12; mpangilio[13] = 3; mpangilio[14] = 13;
+            mpangilio[15] = 2; mpangilio[16] = 14; mpangilio[17] = 1; mpangilio[18] = 15;
+            n64 i = 0;
+            wakati (i < 19) { urefu_wa[i] = 0; i = i + 1; }
+            i = 0;
+            wakati (i < nc) { urefu_wa[mpangilio[i]] = png_biti(&b, 3); i = i + 1; }
+            achilia mpangilio;
+            PngHuffman* misimbo = png_huffman_unda();
+            png_huffman_jenga(misimbo, urefu_wa, 19);
+            i = 0;
+            wakati (i < nh + nd && b.kosa == 0) {
+                n64 s = png_alama(&b, misimbo);
+                kama (s < 0) { b.kosa = 1; }
+                sivyo kama (s < 16) { urefu_wa[i] = s; i = i + 1; }
+                sivyo {
+                    n64 rudia = 0;
+                    n64 thamani = 0;
+                    kama (s == 16) { kama (i == 0) { b.kosa = 1; } sivyo { thamani = urefu_wa[i - 1]; } rudia = 3 + png_biti(&b, 2); }
+                    kama (s == 17) { rudia = 3 + png_biti(&b, 3); }
+                    kama (s == 18) { rudia = 11 + png_biti(&b, 7); }
+                    kama (i + rudia > nh + nd) { b.kosa = 1; }
+                    wakati (rudia > 0 && b.kosa == 0) { urefu_wa[i] = thamani; i = i + 1; rudia = rudia - 1; }
+                }
+            }
+            png_huffman_achilia(misimbo);
+            png_huffman_jenga(herufi, urefu_wa, nh);
+            png_huffman_jenga(umbali, urefu_wa + nh, nd);
+        } sivyo { b.kosa = 1; endelea; }
+        // alama za kizuizi
+        n32 bado = 1;
+        wakati (bado && b.kosa == 0) {
+            n64 s = png_alama(&b, herufi);
+            kama (s < 0) { b.kosa = 1; }
+            sivyo kama (s < 256) {
+                kama (n >= uwezo) { b.kosa = 1; } sivyo { nje[n] = s; n = n + 1; }
+            } sivyo kama (s == 256) { bado = 0; }
+            sivyo {
+                s = s - 257;
+                kama (s >= 29) { b.kosa = 1; endelea; }
+                n64 len = png_urefu_msingi[s] + png_biti(&b, png_urefu_ziada[s]);
+                n64 ds = png_alama(&b, umbali);
+                kama (ds < 0 || ds >= 30) { b.kosa = 1; endelea; }
+                n64 umb = png_umbali_msingi[ds] + png_biti(&b, png_umbali_ziada[ds]);
+                kama (umb > n || n + len > uwezo) { b.kosa = 1; endelea; }
+                n64 k = 0;
+                wakati (k < len) { nje[n] = nje[n - umb]; n = n + 1; k = k + 1; }
+            }
+        }
+    }
+    achilia urefu_wa;
+    png_huffman_achilia(herufi);
+    png_huffman_achilia(umbali);
+    kama (b.kosa) { rudisha -1; }
+    rudisha n;
+}
+
+// ---------- PNG ----------
+
+n64 png_u32(n8* d, n64 o) {
+    rudisha ((d[o] & 255) << 24) | ((d[o + 1] & 255) << 16) | ((d[o + 2] & 255) << 8) | (d[o + 3] & 255);
+}
+
+n64 png_paeth(n64 a, n64 b, n64 c) {
+    n64 p = a + b - c;
+    n64 pa = p - a;
+    kama (pa < 0) { pa = 0 - pa; }
+    n64 pb = p - b;
+    kama (pb < 0) { pb = 0 - pb; }
+    n64 pc = p - c;
+    kama (pc < 0) { pc = 0 - pc; }
+    kama (pa <= pb && pa <= pc) { rudisha a; }
+    kama (pb <= pc) { rudisha b; }
+    rudisha c;
+}
+
+// Simbua PNG kutoka kumbukumbu; 0 ikiwa haifai.
+Picha* png_simbua(n8* d, n64 urefu) {
+    kama (urefu < 33 || (d[0] & 255) != 137 || d[1] != 80 || d[2] != 78 || d[3] != 71) { rudisha 0; }
+    n64 upana = 0;
+    n64 kimo = 0;
+    n64 kina = 0;
+    n64 aina = 0;
+    n64 interlace = 0;
+    n8* paleti = tenga(256 * 4);
+    n64 i = 0;
+    wakati (i < 256) { paleti[i * 4] = 0; paleti[i * 4 + 1] = 0; paleti[i * 4 + 2] = 0; paleti[i * 4 + 3] = 255; i = i + 1; }
+    n64 idat_urefu = 0;
+    n64 o = 8;
+    wakati (o + 8 <= urefu) {
+        n64 len = png_u32(d, o);
+        kama (o + 12 + len > urefu) { o = urefu; endelea; }
+        n64 t = o + 4;
+        kama (d[t] == 73 && d[t + 1] == 72 && d[t + 2] == 68 && d[t + 3] == 82) {       // IHDR
+            upana = png_u32(d, o + 8);
+            kimo = png_u32(d, o + 12);
+            kina = d[o + 16] & 255;
+            aina = d[o + 17] & 255;
+            interlace = d[o + 20] & 255;
+        }
+        kama (d[t] == 80 && d[t + 1] == 76 && d[t + 2] == 84 && d[t + 3] == 69) {       // PLTE
+            i = 0;
+            wakati (i < len / 3 && i < 256) {
+                paleti[i * 4] = d[o + 8 + i * 3];
+                paleti[i * 4 + 1] = d[o + 8 + i * 3 + 1];
+                paleti[i * 4 + 2] = d[o + 8 + i * 3 + 2];
+                i = i + 1;
+            }
+        }
+        kama (d[t] == 116 && d[t + 1] == 82 && d[t + 2] == 78 && d[t + 3] == 83 && aina == 3) {  // tRNS
+            i = 0;
+            wakati (i < len && i < 256) { paleti[i * 4 + 3] = d[o + 8 + i]; i = i + 1; }
+        }
+        kama (d[t] == 73 && d[t + 1] == 68 && d[t + 2] == 65 && d[t + 3] == 84) { idat_urefu = idat_urefu + len; }
+        o = o + 12 + len;
+    }
+    kama (upana <= 0 || kimo <= 0 || upana > 16384 || kimo > 16384 || interlace != 0) { achilia paleti; rudisha 0; }
+    n64 rangi_kwa_pikseli = 1;
+    kama (aina == 2) { rangi_kwa_pikseli = 3; }
+    kama (aina == 4) { rangi_kwa_pikseli = 2; }
+    kama (aina == 6) { rangi_kwa_pikseli = 4; }
+    n32 kina_kidogo = (aina == 3 || aina == 0) && (kina == 1 || kina == 2 || kina == 4);
+    kama (kina != 8 && kina_kidogo == 0) { achilia paleti; rudisha 0; }
+    // unganisha IDAT
+    n8* z = tenga(idat_urefu + 8);
+    n64 zn = 0;
+    o = 8;
+    wakati (o + 8 <= urefu) {
+        n64 len = png_u32(d, o);
+        kama (o + 12 + len > urefu) { o = urefu; endelea; }
+        n64 t = o + 4;
+        kama (d[t] == 73 && d[t + 1] == 68 && d[t + 2] == 65 && d[t + 3] == 84) { nakili(z + zn, d + o + 8, len); zn = zn + len; }
+        o = o + 12 + len;
+    }
+    n64 biti_kwa_pikseli = kina * rangi_kwa_pikseli;
+    n64 mstari = (upana * biti_kwa_pikseli + 7) / 8;
+    n64 hatua = (biti_kwa_pikseli + 7) / 8;           // baiti za pikseli iliyotangulia kwa vichujio
+    n64 ghafi_urefu = (mstari + 1) * kimo;
+    n8* ghafi = tenga(ghafi_urefu + 8);
+    n64 kweli = png_inflate(z, zn, ghafi, ghafi_urefu);
+    achilia z;
+    kama (kweli != ghafi_urefu) { achilia ghafi; achilia paleti; rudisha 0; }
+    // vichujio, mstari kwa mstari (mstari uliotangulia ni sifuri kwa wa kwanza)
+    n8* juu = tenga(mstari + 8);
+    weka_sifuri(juu, mstari + 8);
+    Picha* p = tenga(ukubwa(Picha));
+    p->upana = upana;
+    p->kimo = kimo;
+    p->rgba = tenga(upana * kimo * 4);
+    n64 y = 0;
+    wakati (y < kimo) {
+        n8* s = ghafi + y * (mstari + 1);
+        n64 kichujio = s[0] & 255;
+        n8* r = s + 1;
+        n64 x = 0;
+        wakati (x < mstari) {
+            n64 a = 0;
+            kama (x >= hatua) { a = r[x - hatua] & 255; }
+            n64 b = juu[x] & 255;
+            n64 c = 0;
+            kama (x >= hatua) { c = juu[x - hatua] & 255; }
+            n64 v = r[x] & 255;
+            kama (kichujio == 1) { v = v + a; }
+            kama (kichujio == 2) { v = v + b; }
+            kama (kichujio == 3) { v = v + (a + b) / 2; }
+            kama (kichujio == 4) { v = v + png_paeth(a, b, c); }
+            r[x] = v & 255;
+            x = x + 1;
+        }
+        // pikseli za mstari huu kuwa RGBA
+        x = 0;
+        wakati (x < upana) {
+            n64 rr = 0;
+            n64 gg = 0;
+            n64 bb = 0;
+            n64 aa = 255;
+            kama (kina == 8) {
+                n64 q = x * rangi_kwa_pikseli;
+                kama (aina == 0) { rr = r[q] & 255; gg = rr; bb = rr; }
+                kama (aina == 2) { rr = r[q] & 255; gg = r[q + 1] & 255; bb = r[q + 2] & 255; }
+                kama (aina == 3) { n64 k = r[q] & 255; rr = paleti[k * 4] & 255; gg = paleti[k * 4 + 1] & 255; bb = paleti[k * 4 + 2] & 255; aa = paleti[k * 4 + 3] & 255; }
+                kama (aina == 4) { rr = r[q] & 255; gg = rr; bb = rr; aa = r[q + 1] & 255; }
+                kama (aina == 6) { rr = r[q] & 255; gg = r[q + 1] & 255; bb = r[q + 2] & 255; aa = r[q + 3] & 255; }
+            } sivyo {
+                // kina 1/2/4: pikseli kadhaa kwa baiti, kuanzia biti za juu
+                n64 biti = x * kina;
+                n64 thamani = ((r[biti / 8] & 255) >> (8 - kina - (biti % 8))) & ((1 << kina) - 1);
+                kama (aina == 3) { rr = paleti[thamani * 4] & 255; gg = paleti[thamani * 4 + 1] & 255; bb = paleti[thamani * 4 + 2] & 255; aa = paleti[thamani * 4 + 3] & 255; }
+                sivyo { rr = (thamani * 255) / ((1 << kina) - 1); gg = rr; bb = rr; }
+            }
+            n64 m = (y * upana + x) * 4;
+            p->rgba[m] = rr;
+            p->rgba[m + 1] = gg;
+            p->rgba[m + 2] = bb;
+            p->rgba[m + 3] = aa;
+            x = x + 1;
+        }
+        nakili(juu, r, mstari);
+        y = y + 1;
+    }
+    achilia juu;
+    achilia ghafi;
+    achilia paleti;
+    rudisha p;
+}
+
+// Pakia PNG kutoka faili; 0 ikiwa haipo au haifai.
+Picha* png_pakia(n8* njia) {
+    n64 uwezo = 48 * 1024 * 1024;
+    n8* data = tenga(uwezo);
+    n64 n = faili_soma_yote(njia, data, uwezo);
+    kama (n <= 0) { achilia data; rudisha 0; }
+    Picha* p = png_simbua(data, n);
+    achilia data;
+    rudisha p;
+}
+
+w0 picha_achilia(Picha* p) {
+    kama (p == 0) { rudisha; }
+    achilia p->rgba;
+    achilia p;
+}
+
+// Chora picha kwenye mstatili (x, y, w, h) wa turubai kwa bilinear na alfa.
+// `giza` 0..255 huifanya picha kuwa nyeusi zaidi (kwa maandishi juu yake).
+w0 picha_chora(Turubai* t, Picha* p, n64 x, n64 y, n64 w, n64 h, n64 giza) {
+    kama (p == 0 || w <= 0 || h <= 0) { rudisha; }
+    n64 j = 0;
+    wakati (j < h) {
+        n64 ty = y + j;
+        kama (ty >= t->ky0 && ty < t->ky1 && ty >= 0 && ty < t->kimo) {
+            // nukta ya picha kwa biti 8 za sehemu
+            n64 sy = ((j * 2 + 1) * p->kimo * 128) / h - 128;
+            kama (sy < 0) { sy = 0; }
+            n64 y0 = sy >> 8;
+            n64 fy = sy & 255;
+            n64 y1 = y0 + 1;
+            kama (y1 >= p->kimo) { y1 = p->kimo - 1; }
+            n64 i = 0;
+            wakati (i < w) {
+                n64 tx = x + i;
+                kama (tx >= t->kx0 && tx < t->kx1 && tx >= 0 && tx < t->upana) {
+                    n64 sx = ((i * 2 + 1) * p->upana * 128) / w - 128;
+                    kama (sx < 0) { sx = 0; }
+                    n64 x0 = sx >> 8;
+                    n64 fx = sx & 255;
+                    n64 x1 = x0 + 1;
+                    kama (x1 >= p->upana) { x1 = p->upana - 1; }
+                    n64 a00 = (y0 * p->upana + x0) * 4;
+                    n64 a01 = (y0 * p->upana + x1) * 4;
+                    n64 a10 = (y1 * p->upana + x0) * 4;
+                    n64 a11 = (y1 * p->upana + x1) * 4;
+                    n64 rangi[4];
+                    n64 c = 0;
+                    wakati (c < 4) {
+                        n64 v0 = (p->rgba[a00 + c] & 255) * (256 - fx) + (p->rgba[a01 + c] & 255) * fx;
+                        n64 v1 = (p->rgba[a10 + c] & 255) * (256 - fx) + (p->rgba[a11 + c] & 255) * fx;
+                        rangi[c] = (v0 * (256 - fy) + v1 * fy) >> 16;
+                        c = c + 1;
+                    }
+                    n64 alfa = rangi[3];
+                    kama (alfa > 0) {
+                        n64 r = (rangi[0] * (255 - giza)) / 255;
+                        n64 g = (rangi[1] * (255 - giza)) / 255;
+                        n64 b = (rangi[2] * (255 - giza)) / 255;
+                        n64 o = ty * t->hatua + tx * 4;
+                        kama (alfa < 255) {
+                            n64 br = t->pikseli[o + 2] & 255;
+                            n64 bg = t->pikseli[o + 1] & 255;
+                            n64 bb = t->pikseli[o] & 255;
+                            r = (r * alfa + br * (255 - alfa)) / 255;
+                            g = (g * alfa + bg * (255 - alfa)) / 255;
+                            b = (b * alfa + bb * (255 - alfa)) / 255;
+                        }
+                        t->pikseli[o] = b;
+                        t->pikseli[o + 1] = g;
+                        t->pikseli[o + 2] = r;
+                        t->pikseli[o + 3] = 255;
+                    }
+                }
+                i = i + 1;
+            }
+        }
+        j = j + 1;
+    }
+}
+
+// Chora picha ikijaza mstatili wote bila kupotoka (sehemu za pembeni hukatwa).
+w0 picha_chora_jaza(Turubai* t, Picha* p, n64 x, n64 y, n64 w, n64 h, n64 giza) {
+    kama (p == 0) { rudisha; }
+    n64 pw = w;
+    n64 ph = (p->kimo * w) / p->upana;
+    kama (ph < h) { ph = h; pw = (p->upana * h) / p->kimo; }
+    n64 kx0 = t->kx0;
+    n64 ky0 = t->ky0;
+    n64 kx1 = t->kx1;
+    n64 ky1 = t->ky1;
+    kama (x > t->kx0) { t->kx0 = x; }
+    kama (y > t->ky0) { t->ky0 = y; }
+    kama (x + w < t->kx1) { t->kx1 = x + w; }
+    kama (y + h < t->ky1) { t->ky1 = y + h; }
+    picha_chora(t, p, x + (w - pw) / 2, y + (h - ph) / 2, pw, ph, giza);
+    t->kx0 = kx0;
+    t->ky0 = ky0;
+    t->kx1 = kx1;
+    t->ky1 = ky1;
+}

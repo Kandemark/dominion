@@ -1,6 +1,7 @@
 husisha { moduli/skrini/katiba.swa }
 husisha { moduli/skrini/dunia.swa }
 husisha { moduli/jeshi/vikosi.swa }
+husisha { moduli/skrini/uanzishaji.swa }
 
 // hifadhi.swa -- kuhifadhi na kupakia mchezo mzima katika nafasi.
 //
@@ -23,7 +24,7 @@ husisha { moduli/jeshi/vikosi.swa }
 // ni thabiti kwa mbegu) kisha hali hubandikwa juu yake.
 
 n64 HIFADHI_ALAMA = 1229803332;     // "DOMI"
-n64 HIFADHI_TOLEO = 2;
+n64 HIFADHI_TOLEO = 3;
 n64 HIFADHI_NAFASI = 6;             // 0 otomatiki, 1..5 za mchezaji
 
 // ---------- mkondo ----------
@@ -686,6 +687,11 @@ n64 hifadhi_andika(Mchezo* g, n64 nafasi) {
     hifadhi_andika_kikasha_na_shajara();
     hifadhi_andika_habari();
     hifadhi_andika_vikosi();
+    // mhusika wa mchezaji: jina na uso
+    mk_mfuatano(mchezaji_jina);
+    mk_n64(mchezaji_uso != 0);
+    n64 s = 0;
+    wakati (s < USO_SIFA) { n64 v = 0; kama (mchezaji_uso != 0) { v = uso_sifa_ya(mchezaji_uso, s)[0]; } mk_n64(v); s = s + 1; }
     mk_n64(HIFADHI_ALAMA);
     hifadhi_njia(njia, nafasi, "dominion.hali");
     kama (mk_andika_faili(njia) == 0) { rudisha HIFADHI_IMEHARIBIKA; }
@@ -736,6 +742,12 @@ n64 hifadhi_pakia(Mchezo* g, n64 nafasi) {
     hifadhi_soma_kikasha_na_shajara();
     hifadhi_soma_habari();
     hifadhi_soma_vikosi(g);
+    mchezaji_jina = mk_soma_mfuatano();
+    n64 ana_uso = mk_soma();
+    kama (ana_uso && mchezaji_uso == 0) { mchezaji_uso = tenga(ukubwa(Uso)); }
+    n64 s = 0;
+    wakati (s < USO_SIFA) { n64 v = mk_soma(); kama (ana_uso) { uso_sifa_ya(mchezaji_uso, s)[0] = v; } s = s + 1; }
+    kama (ana_uso == 0) { mchezaji_uso = 0; }
     kama (mk_soma() != HIFADHI_ALAMA) { rudisha HIFADHI_IMEHARIBIKA; }
     // AI hukumbuka mazungumzo ya nafasi hii
     mkutano_nafasi = nafasi;

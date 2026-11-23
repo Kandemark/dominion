@@ -16,6 +16,7 @@ husisha { moduli/skrini/dunia.swa }
 husisha { moduli/skrini/wasifu.swa }
 husisha { moduli/skrini/katiba.swa }
 husisha { moduli/hifadhi/hifadhi.swa }
+husisha { moduli/skrini/uanzishaji.swa }
 husisha { moduli/onyesho/wayland/dirisha.swa }
 
 // dominion.swa -- programu ya mchezo: dirisha la Wayland, mchezo halisi,
@@ -423,6 +424,7 @@ w0 chora_sanduku_la_mtu(Mchezo* g, Turubai* t, Hali* h) {
     turubai_brashi(t, SURA_PANELI_JUU, 255);
     turubai_duara(t, x + 24, 32, 15);
     n8 herufi[4];
+    kama (mchezaji_uso != 0) { uso_chora_duara(t, mchezaji_uso, x + 24, 32, 15); }
     herufi[0] = mimi->jina[0];
     herufi[1] = 0;
     n64 i = 0;
@@ -430,7 +432,7 @@ w0 chora_sanduku_la_mtu(Mchezo* g, Turubai* t, Hali* h) {
     kama (mimi->jina[i] == 32) { herufi[1] = mimi->jina[i + 1]; herufi[2] = 0; }
     n64 wh = maandishi_upana(sura_nene, herufi, 12);
     turubai_brashi(t, SURA_MAANDISHI, 255);
-    maandishi_chora(t, sura_nene, herufi, x + 24 - wh / 2, 25, 12);
+    kama (mchezaji_uso == 0) { maandishi_chora(t, sura_nene, herufi, x + 24 - wh / 2, 25, 12); }
     turubai_kata(t, x, 10, w_ - 34, 44);
     sura_rangi(SURA_MAANDISHI);
     sura_lebo_kati(mimi->jina, x + 48, 14, 13);
@@ -1093,6 +1095,46 @@ w0 kuwasha_subiri_mchezaji(Dirisha* d, Turubai* t) {
     }
 }
 
+// ---------- mchezo mpya: mwaka, taifa na cheo, mhusika ----------
+
+// Skrini moja ya uanzishaji mpaka mchezaji aendelee (1) au arudi (-1).
+// skrini: 0 mwaka, 1 taifa, 2 mhusika.
+n64 uanz_kitanzi(Dirisha* d, Turubai* t, Mchezo* g, n64 skrini) {
+    n64 mx = 0;
+    n64 my = 0;
+    n32 haja = 1;
+    wakati (d->imefungwa == 0) {
+        kama (haja && kuwasha_subiri_fremu(d)) {
+            turubai_funga(t, dirisha_bafa(d), d->hatua, d->upana, d->kimo);
+            kama (skrini == 0) { uanz_mwaka_chora(t, dunia_halisi_ya_mchezo); }
+            kama (skrini == 1) { uanz_taifa_chora(g, t); }
+            kama (skrini == 2) { uanz_mhusika_chora(g, t); }
+            dirisha_onyesha(d);
+            haja = 0;
+        }
+        dirisha_soma(d, 16);
+        wakati (dirisha_tukio(d)) {
+            kama (d->t_aina == DIRISHA_MWENDO) { mx = d->t_a; my = d->t_b; }
+            kama (d->t_aina == DIRISHA_KITUFE && d->t_a == KITUFE_KUSHOTO && d->t_b == 1) {
+                n64 r = 0;
+                kama (skrini == 0) { r = uanz_mwaka_bofya(mx, my); }
+                kama (skrini == 1) { r = uanz_taifa_bofya(g, mx, my); }
+                kama (skrini == 2) { r = uanz_mhusika_bofya(g, mx, my); }
+                haja = 1;
+                kama (r != 0) { rudisha r; }
+            }
+            kama (d->t_aina == DIRISHA_KIBODI && d->t_b == 1) {
+                kama (d->t_a == 28) { rudisha 1; }                    // Enter
+                kama (d->t_a == KEY_ESC && skrini > 0) { rudisha 0 - 1; }
+                kama (skrini == 0 && d->t_a == KEY_LEFT && uanz_mwaka > 1700) { uanz_mwaka = uanz_mwaka - 10; haja = 1; }
+                kama (skrini == 0 && d->t_a == KEY_RIGHT && uanz_mwaka < 2000) { uanz_mwaka = uanz_mwaka + 10; haja = 1; }
+            }
+            kama (d->t_aina == DIRISHA_UKUBWA) { haja = 1; }
+        }
+    }
+    rudisha 0;
+}
+
 n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     n64 fremu_upeo = 0;
     n8* dampo = 0;
@@ -1152,6 +1194,16 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     n32 onyesha_kuwasha = 1;
     kama (fremu_upeo > 0) { onyesha_kuwasha = 0; }
     kama (onyesha_kuwasha) { kuwasha_nembo_ya_studio(d, t); }
+    // mchezo mpya: mwaka wa kuanza huchaguliwa kabla dunia haijajengwa
+    kama (onyesha_kuwasha) {
+        dunia_halisi_ya_mchezo = dunia_halisi_pakia("rasilimali/dunia.bin");
+        kama (dunia_halisi_ya_mchezo != 0) {
+            historia_zalisha(dunia_halisi_ya_mchezo);
+            uanz_mwaka = TAREHE_MWAKA_WA_MWANZO;
+            uanz_kitanzi(d, t, 0, 0);
+            tarehe_weka_mwaka_wa_mwanzo(uanz_mwaka);
+        }
+    }
 
     kuwasha_kupakia(d, t, 60, ui("Convening the assembly"), 0, 0);
     Mchezo* g = mchezo_unda();
@@ -1161,6 +1213,22 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     CivMatokeo r = mchezo_anzisha(g, &usanidi);
     kama (r.hitilafu != CIV_SAWA) { andika_kosa("mchezo_anzisha imeshindwa\n", 0, 0, 0, 0, 0, 0); rudisha 1; }
     mipangilio_tumia_lugha(g, maneno_lugha);
+    // taifa, cheo na mhusika (mchezo halisi pekee; majaribio huruka)
+    n32 ameanzisha = 0;
+    kama (onyesha_kuwasha) {
+        TaifaMfumo* tmu = mchezo_pata_taifa(g);
+        uanz_taifa = tmu->faharisi_ya_taifa_la_mchezaji;
+        uanz_ofisi = 0;
+        n64 hatua_ya_uanz = 1;
+        wakati (hatua_ya_uanz >= 1 && hatua_ya_uanz <= 2 && d->imefungwa == 0) {
+            n64 jibu = uanz_kitanzi(d, t, g, hatua_ya_uanz);
+            kama (jibu == 1) { hatua_ya_uanz = hatua_ya_uanz + 1; }
+            sivyo kama (jibu == -1 && hatua_ya_uanz > 1) { hatua_ya_uanz = hatua_ya_uanz - 1; }
+        }
+        tmu->faharisi_ya_taifa_la_mchezaji = uanz_taifa;
+        mkutano_ofisi = uanz_ofisi;
+        ameanzisha = 1;
+    }
     kuwasha_kupakia(d, t, 620, ui("Drawing the borders"), 0, 0);
 
     Hali* h = tenga(ukubwa(Hali));
@@ -1176,6 +1244,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     h->taifa = tm->faharisi_ya_taifa_la_mchezaji;
     // masoko, pochi na katiba ya taifa la mchezaji (hifadhi/hifadhi.swa)
     hifadhi_anzisha_dominion(g, TAREHE_MWAKA_WA_MWANZO);
+    kama (ameanzisha) { uanz_tumia(g); }
     // daftari la maamuzi ya nafasi ya hifadhi: maamuzi ya zamani hurudi kazini
     n8* njia_ya_maamuzi = tenga(128);
     uamuzi_njia(njia_ya_maamuzi, 128, mkutano_nafasi);
@@ -1209,7 +1278,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     }
     kuwasha_kupakia(d, t, 860, ui("Taking the census"), 0, 0);
     kuwasha_kupakia(d, t, 1000, ui("Swearing in the cabinet"), 0, 0);
-    kama (onyesha_kuwasha) { kuwasha_subiri_mchezaji(d, t); }
+    kama (onyesha_kuwasha && ameanzisha == 0) { kuwasha_subiri_mchezaji(d, t); }
     kama (bandika_mwanzoni) {
         // majaribio: bandika taifa la mchezaji katikati na ufungue droo yake
         h->bandika_taifa = h->taifa;

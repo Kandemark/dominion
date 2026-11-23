@@ -1,0 +1,59 @@
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/onyesho/png.swa }
+
+// jaribio_png.swa -- kisimbuaji cha PNG dhidi ya picha za majaribio
+// (rasilimali/majaribio/png): kila aina ya kizuizi cha DEFLATE (kilichohifadhiwa
+// na vizuizi kadhaa, Huffman isiyobadilika, Huffman inayobadilika), kila kichujio
+// cha mstari (mistari hupokezana vichujio 0..4), IDAT iliyogawanywa vipande viwili,
+// na kila aina ya rangi (RGB, RGBA, jedwali la biti 4 lenye tRNS, kijivu, kijivu
+// na alfa, kijivu cha biti 1). Hesabu ya ukaguzi ni jumla ya kila baiti ya RGBA
+// mara (faharisi % 251 + 1), modulo 2^32, kama ilivyohesabiwa picha zilipoundwa.
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+w0 kagua(n8* faili, n64 upana, n64 kimo, n64 hesabu) {
+    n8 njia[160];
+    mfuatano_umbiza(njia, 160, "rasilimali/majaribio/png/%s", faili, 0, 0, 0, 0, 0);
+    Picha* p = png_pakia(njia);
+    kama (p == 0) { andika("SHINDWA: %s haikusimbuliwa\n", faili, 0, 0, 0, 0, 0); makosa = makosa + 1; rudisha; }
+    n64 s = 0;
+    n64 i = 0;
+    wakati (i < p->upana * p->kimo * 4) {
+        s = (s + (p->rgba[i] & 255) * (i % 251 + 1)) & 4294967295;
+        i = i + 1;
+    }
+    n32 sawa = p->upana == upana && p->kimo == kimo && s == hesabu;
+    kama (sawa == 0) { andika("SHINDWA: %s %dx%d hesabu %d (inatarajiwa %d)\n", faili, p->upana, p->kimo, s, hesabu, 0); makosa = makosa + 1; }
+    sivyo { andika("%s %dx%d sawa\n", faili, upana, kimo, 0, 0, 0); }
+    picha_achilia(p);
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    kagua("rgb.png", 64, 48, 238396560);
+    kagua("rgba.png", 33, 17, 32828330);
+    kagua("paleti.png", 21, 10, 13399201);
+    kagua("kijivu.png", 300, 300, 2927138008);
+    kagua("kijivu_alfa.png", 16, 16, 15885552);
+    kagua("biti.png", 13, 7, 4809555);
+    // si PNG: hukataliwa bila kuanguka
+    n8* takataka = tenga(64);
+    n64 i = 0;
+    wakati (i < 64) { takataka[i] = i * 7; i = i + 1; }
+    thibitisha("takataka hukataliwa", png_simbua(takataka, 64) == 0);
+    thibitisha("faili lisilokuwepo", png_pakia("rasilimali/majaribio/png/hakuna.png") == 0);
+    // kuchora: picha ya RGBA hupanuliwa kwenye turubai bila kuvuka mipaka
+    Picha* p = png_pakia("rasilimali/majaribio/png/rgba.png");
+    Turubai* t = turubai_unda(200, 120);
+    picha_chora_jaza(t, p, 10, 10, 180, 100, 60);
+    thibitisha("mchoro", p != 0 && (t->pikseli[(60 * t->hatua + 100 * 4) + 3] & 255) == 255);
+    kama (makosa > 0) {
+        andika("png: makosa %d\n", makosa, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("png: sawa\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

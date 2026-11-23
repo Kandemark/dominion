@@ -1,4 +1,5 @@
 husisha { moduli/onyesho/vipengele.swa }
+husisha { moduli/onyesho/png.swa }
 
 // mandhari.swa -- mandhari ya mapinduzi nyuma ya skrini ya kupakia: umati
 // wenye bendera juu mbele ya jengo la bunge, anga la jioni lenye moshi.
@@ -10,7 +11,14 @@ husisha { moduli/onyesho/vipengele.swa }
 // ni ileile kila mara. Huchorwa mara moja kwa kila ukubwa wa dirisha na
 // kuhifadhiwa; fremu zinazofuata hunakili tu.
 
+// Sanaa ya kweli ikiwepo: rasilimali/sanaa/kupakia.png (angalia
+// rasilimali/sanaa/README.md) huchorwa badala ya mchoro wa msimbo, ikijaza
+// skrini bila kupotoka. Isipokuwepo, mchoro wa msimbo hubaki.
+n8* mandhari_njia_ya_sanaa() { rudisha "rasilimali/sanaa/kupakia.png"; }
+
 Turubai* mandhari_akiba = 0;
+Picha* mandhari_picha = 0;
+n32 mandhari_picha_imejaribiwa = 0;
 
 n64 mandhari_nasibu(n64 i, n64 mbegu) {
     n64 n = (i * 2654435761 + mbegu * 40503 + 12345) & 4294967295;
@@ -180,7 +188,12 @@ w0 mandhari_mapinduzi(Turubai* t, n64 pazia) {
     }
     kama (mandhari_akiba == 0) {
         mandhari_akiba = turubai_unda(t->upana, t->kimo);
-        mandhari_chora_mapinduzi(mandhari_akiba);
+        kama (mandhari_picha_imejaribiwa == 0) {
+            mandhari_picha_imejaribiwa = 1;
+            mandhari_picha = png_pakia(mandhari_njia_ya_sanaa());
+        }
+        kama (mandhari_picha != 0) { picha_chora_jaza(mandhari_akiba, mandhari_picha, 0, 0, t->upana, t->kimo, 0); }
+        sivyo { mandhari_chora_mapinduzi(mandhari_akiba); }
     }
     n64 j = 0;
     wakati (j < t->kimo) {
