@@ -32,7 +32,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
             n64 k = kata_gridi[g];
             kama (k < 0) { bila_kata = bila_kata + 1; }
             sivyo {
-                kama (kata_taifa[k] != m || kata_mkoa[k] != (d->mikoa[g] & 255)) { inavuka = inavuka + 1; }
+                kama (kata_taifa[k] != m || kata_mkoa[k] != dh_mkoa(d, g)) { inavuka = inavuka + 1; }
                 kama (k >= kata_za_makazi) { ardhi_ya_mwituni = ardhi_ya_mwituni + 1; }
             }
         }

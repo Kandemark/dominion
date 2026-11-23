@@ -1,0 +1,113 @@
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { moduli/dunia/historia_ya_mipaka.swa }
+
+// jaribio_historia_ya_mipaka.swa -- mipaka hubadilika kwa mwaka wa kuanza:
+// mwaka 2000 una mataifa yote ya ramani; idadi hupanda kadiri mwaka unavyosonga;
+// kila mzazi ni mkongwe kuliko mtoto; kila taifa lililopo linamiliki mji wake
+// mkuu; historia ni ileile kila inapozalishwa; taifa lililopo miaka miwili ni
+// lilelile (jina na namba ya asili).
+
+n64 makosa = 0;
+n8* mji_mbaya_asili = 0;        // [taifa la asili]: mji mkuu wake si wake hata kwenye ramani ya asili
+
+n32 mji_ni_wake(DuniaHalisi* d, n64 t) {
+    n64 dy = -2;
+    wakati (dy <= 2) {
+        n64 dx = -2;
+        wakati (dx <= 2) {
+            n64 yy = d->mji_y[t] + dy;
+            n64 xx = (d->mji_x[t] + dx + d->upana) % d->upana;
+            kama (yy >= 0 && yy < d->kimo && dh_u16(d->wamiliki, 2 * (yy * d->upana + xx)) == t) { rudisha 1; }
+            dx = dx + 1;
+        }
+        dy = dy + 1;
+    }
+    rudisha 0;
+}
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+DuniaHalisi* dunia_ya(n64 mwaka) {
+    DuniaHalisi* d = dunia_halisi_pakia("rasilimali/dunia.bin");
+    kama (d == 0) { rudisha 0; }
+    kama (mwaka > 0) { dunia_halisi_kwa_mwaka(d, mwaka); }
+    rudisha d;
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    DuniaHalisi* asili = dunia_ya(0);
+    thibitisha("dunia", asili != 0);
+    kama (asili == 0) { rudisha 1; }
+    n64 N = asili->mataifa;
+    mji_mbaya_asili = tenga(N);
+    n64 q = 0;
+    wakati (q < N) { mji_mbaya_asili[q] = mji_ni_wake(asili, q) == 0; q = q + 1; }
+    n64 kabla = 0;
+    n64 mwaka = 1700;
+    wakati (mwaka <= 2000) {
+        DuniaHalisi* d = dunia_ya(mwaka);
+        n64 n = d->mataifa;
+        andika("%d: mataifa %d\n", mwaka, n, 0, 0, 0, 0);
+        thibitisha("idadi haipungui kwa miaka", n >= kabla);
+        kabla = n;
+        // kila pikseli ina mmiliki halali, na kila taifa linamiliki mji wake mkuu
+        n64 px = d->upana * d->kimo;
+        n64 mbaya = 0;
+        n64 g = 0;
+        wakati (g < px) { n64 m = dh_u16(d->wamiliki, 2 * g); kama (m != 65535 && m >= n) { mbaya = mbaya + 1; } g = g + 1; }
+        thibitisha("wamiliki halali", mbaya == 0);
+        // mji mkuu (au pikseli jirani, kwa miji ya pwani) ni wa taifa lake;
+        // mataifa machache yana kasoro hii kwenye data ya ramani yenyewe, na
+        // kupanga kwa mwaka hakupaswi kuongeza mengine
+        n64 bila_mji = 0;
+        n64 t = 0;
+        wakati (t < n) {
+            kama (mji_ni_wake(d, t) == 0 && mji_mbaya_asili[dunia_asili(t)] == 0) {
+                bila_mji = bila_mji + 1;
+                andika("  mji mkuu wa %s si wake\n", dh_jina(d->data, d->jina[t]), 0, 0, 0, 0, 0);
+            }
+            t = t + 1;
+        }
+        thibitisha("kila taifa linamiliki mji wake mkuu", bila_mji == 0);
+        mwaka = mwaka + 50;
+    }
+    thibitisha("mwaka 2000 una mataifa yote", kabla == N);
+    // wazazi ni wakongwe kuliko watoto
+    n64 mzunguko = 0;
+    n64 i = 0;
+    wakati (i < N) {
+        n64 m = historia_mzazi[i];
+        kama (m >= 0 && historia_mwaka_wa_uhuru[m] >= historia_mwaka_wa_uhuru[i]) { mzunguko = mzunguko + 1; }
+        i = i + 1;
+    }
+    thibitisha("mzazi ni mkongwe kuliko mtoto", mzunguko == 0);
+    // 1700 ina mataifa machache, lakini si dunia ya milki mbili
+    DuniaHalisi* d1700 = dunia_ya(1700);
+    thibitisha("1700: kati ya asilimia 20 na 75", d1700->mataifa * 100 >= N * 20 && d1700->mataifa * 100 <= N * 75);
+    // historia ni ileile kila mara
+    DuniaHalisi* a = dunia_ya(1900);
+    n64 n1 = a->mataifa;
+    n64 asili_ya_tano = dunia_asili(5);
+    DuniaHalisi* b = dunia_ya(1900);
+    thibitisha("historia ni thabiti", b->mataifa == n1 && dunia_asili(5) == asili_ya_tano);
+    // taifa lililopo 1900 lipo 1950 likiwa na jina lilelile
+    n8 jina[96];
+    nakili_mfuatano(jina, dh_jina(b->data, b->jina[5]));
+    DuniaHalisi* c = dunia_ya(1950);
+    n64 pata = -1;
+    n64 t = 0;
+    wakati (t < c->mataifa) { kama (dunia_asili(t) == asili_ya_tano) { pata = t; } t = t + 1; }
+    thibitisha("taifa lile lile 1950", pata >= 0 && linganisha_mfuatano(dh_jina(c->data, c->jina[pata]), jina) == 0);
+    n8 maelezo[160];
+    historia_maelezo(c, pata, maelezo, 160);
+    andika("%s: %s\n", jina, maelezo, 0, 0, 0, 0);
+    thibitisha("maelezo ya historia", maelezo[0] != 0);
+    kama (makosa > 0) {
+        andika("historia ya mipaka: makosa %d\n", makosa, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("historia ya mipaka: sawa\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

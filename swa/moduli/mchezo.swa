@@ -171,6 +171,8 @@
 
 husisha { msingi/msingi_civ.swa }
 husisha { msingi/lugha_dominion.swa }
+husisha { moduli/dunia/historia_ya_mipaka.swa }
+husisha { moduli/injini/tarehe.swa }
 husisha { moduli/utamaduni/kitambulisho.swa }
 husisha { moduli/utamaduni/kuenea.swa }
 husisha { moduli/utamaduni/itikadi.swa }
@@ -889,6 +891,8 @@ CivMatokeo mchezo_anzisha(Mchezo* g, MchezoUsanidi* usanidi) {
     // dunia iliyokubaliwa (rasilimali/dunia.bin) ikiwepo ndiyo jiografia na
     // mataifa ya uigaji; atlasi ya kelele hubaki kwa mbegu za sifa tu
     dunia_halisi_ya_mchezo = dunia_halisi_pakia("rasilimali/dunia.bin");
+    // mipaka ya mwaka wa kuanza: mataifa ambayo hayajazaliwa ni sehemu ya wazazi wao
+    dunia_halisi_kwa_mwaka(dunia_halisi_ya_mchezo, TAREHE_MWAKA_WA_MWANZO);
     kama (dunia_halisi_ya_mchezo != 0) { dunia_halisi_jaza_ramani(ramani_mpya, dunia_halisi_ya_mchezo); }
     sivyo { dunia_atlasi_jaza_ramani(ramani_mpya, atlasi, miji); }
     mchezo_weka_ramani(g, ramani_mpya);

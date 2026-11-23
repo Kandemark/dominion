@@ -1032,8 +1032,11 @@ w0 hati_kusanya_wilaya(n64 taifa) {
     }
 }
 
+DuniaHalisi* hati_wilaya_dunia = 0;
+
 w0 hati_kusanya_wilaya_kwa_ngazi(n64 taifa) {
-    kama (hati_wilaya_taifa == taifa && hati_wilaya_jina != 0) { rudisha; }
+    kama (hati_wilaya_taifa == taifa && hati_wilaya_jina != 0 && hati_wilaya_dunia == dunia_halisi_ya_mchezo) { rudisha; }
+    hati_wilaya_dunia = dunia_halisi_ya_mchezo;
     kama (hati_wilaya_jina == 0) {
         hati_wilaya_jina = tenga(8 * HATI_WILAYA_JUU);
         hati_wilaya_mkoa = tenga(8 * HATI_WILAYA_JUU);
@@ -1071,7 +1074,7 @@ w0 hati_kusanya_wilaya_kwa_ngazi(n64 taifa) {
                 hati_wilaya_watu[w] = dh_u32(p, o + 4);
                 hati_wilaya_x[w] = px;
                 hati_wilaya_y[w] = py;
-                n64 kit = d->mikoa[pix] & 255;
+                n64 kit = dh_mkoa(d, pix);
                 hati_wilaya_mkoa[w] = 0 - 1;
                 n64 r = 0;
                 wakati (r < hati_mikoa_idadi && hati_mikoa_kitambulisho != 0) { kama (hati_mikoa_kitambulisho[r] == kit) { hati_wilaya_mkoa[w] = r; } r = r + 1; }
@@ -1089,7 +1092,7 @@ w0 hati_kusanya_wilaya_kwa_ngazi(n64 taifa) {
             n64 px = (dh_u16(p, o + 2) / 8) % d->upana;
             n64 pix = py * d->upana + px;
             kama (dh_u16(d->wamiliki, pix * 2) == taifa) {
-                n64 kit = d->mikoa[pix] & 255;
+                n64 kit = dh_mkoa(d, pix);
                 n64 bora = 0 - 1;
                 n64 umbali_bora = 0;
                 n64 w = 0;

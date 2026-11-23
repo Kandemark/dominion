@@ -600,7 +600,8 @@ w0 vk_anzisha(Mchezo* g) {
     vk_alama = vk_safu(n);
     vk_aina_watu = vk_safu(n * VK_AINA);
     vk_kt_mwanzo = vk_safu(n + 1);
-    kama (vk_miji == 0) { vk_kusanya_miji(n); }
+    // miji ya nyumbani na bandari: kila mchezo mpya (dunia na idadi ya mataifa vinaweza kubadilika)
+    vk_kusanya_miji(n);
     n64 mwaka = vk_mwaka(g->zamu_ya_sasa);
     n64 t = 0;
     wakati (t < n) {

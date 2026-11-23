@@ -1,3 +1,4 @@
+husisha { moduli/dunia/historia_ya_mipaka.swa }
 husisha { moduli/skrini/muhtasari.swa }
 husisha { moduli/onyesho/dunia_halisi.swa }
 
@@ -220,12 +221,13 @@ DuniaHalisi* skrini_dunia_pata() {
 // Idadi ya mikoa ya taifa (kitambulisho tofauti cha mkoa kwenye ardhi yake).
 n64 skrini_dunia_mikoa_ya(DuniaHalisi* d, n64 taifa) {
     kata_hakikisha(d);
-    n8* ipo = tenga(256);
-    weka_sifuri(ipo, 256);
+    n8* ipo = tenga(65536);
+    weka_sifuri(ipo, 65536);
     n64 n = 0;
     n64 k = 0;
     wakati (k < kata_idadi) {
-        kama (kata_taifa[k] == taifa && ipo[kata_mkoa[k] & 255] == 0) { ipo[kata_mkoa[k] & 255] = 1; n = n + 1; }
+        n64 r = kata_mkoa[k] & 65535;
+        kama (kata_taifa[k] == taifa && ipo[r] == 0) { ipo[r] = 1; n = n + 1; }
         k = k + 1;
     }
     achilia ipo;
@@ -267,7 +269,18 @@ w0 skrini_dunia_paneli(Turubai* t, DuniaHalisi* d, n64 taifa) {
     n8 namba[32];
     mfuatano_umbiza(chombo, 96, ui("Capital: %s"), dh_jina(p, d->mji_jina[taifa]), 0, 0, 0, 0, 0);
     sura_lebo(chombo, px, py, 13);
-    py = py + 34;
+    py = py + 20;
+    // historia: uhuru wake, na mataifa yajayo yaliyo ndani yake mwaka huu
+    n8 historia[160];
+    historia_maelezo(d, taifa, historia, 160);
+    kama (historia[0] != 0) { sura_lebo(historia, px, py, 12); py = py + 18; }
+    n64 watoto = historia_watoto_wa(taifa);
+    kama (watoto > 0) {
+        mfuatano_umbiza(historia, 160, ui("Rules the lands of %d later nations"), watoto, 0, 0, 0, 0, 0);
+        sura_lebo(historia, px, py, 12);
+        py = py + 18;
+    }
+    py = py + 14;
     // takwimu kutoka makazi yake
     n64 watu = 0;
     n64 idadi[4];
