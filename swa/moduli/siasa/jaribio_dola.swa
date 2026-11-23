@@ -55,6 +55,26 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     }
     andika("mabaraza 0:%d 1:%d 2:%d 3:%d 4:%d\n", kwa_idadi[0], kwa_idadi[1], kwa_idadi[2], kwa_idadi[3], kwa_idadi[4], 0);
     kama (kwa_idadi[0] == 0 || kwa_idadi[1] == 0 || kwa_idadi[2] == 0) { andika("SHINDWA: aina za mabaraza hazitofautiani\n", 0, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+    // zama: 1750 haina jamhuri za rais, chama kimoja wala shirikisho; 1960 ina chama kimoja
+    n64 marufuku = 0;
+    n64 chama = 0;
+    dola_mwaka_wa_zama = 1750;
+    n64 m = 0;
+    wakati (m < 600) {
+        Dola* a1 = dola_unda(m, "Republic of Zama", 9000000);
+        Dola* a2 = dola_unda(m, "People's Republic of Zama", 9000000);
+        Dola* a3 = dola_unda(m, "Federation of Zama", 9000000);
+        n64 c = 0;
+        wakati (c < a1->vyama) { kama (itikadi_mwaka(a1->chama_itikadi[c]) > 1750) { marufuku = marufuku + 1; } c = c + 1; }
+        kama (a1->aina == DOLA_JAMHURI_YA_RAIS || a1->aina == DOLA_JAMHURI_NUSU_RAIS || a2->aina == DOLA_CHAMA_KIMOJA || a3->aina == DOLA_JAMHURI_YA_SHIRIKISHO) { marufuku = marufuku + 1; }
+        m = m + 1;
+    }
+    dola_mwaka_wa_zama = 1960;
+    m = 0;
+    wakati (m < 200) { kama (dola_unda(m, "People's Republic of Zama", 9000000)->aina == DOLA_CHAMA_KIMOJA) { chama = chama + 1; } m = m + 1; }
+    dola_mwaka_wa_zama = 0;
+    kama (marufuku > 0) { andika("SHINDWA: aina za utawala za baadaye mwaka 1750: %d\n", marufuku, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+    kama (chama == 0) { andika("SHINDWA: hakuna chama kimoja mwaka 1960\n", 0, 0, 0, 0, 0, 0); makosa = makosa + 1; }
     kama (makosa == 0) { andika("dola: sawa\n", 0, 0, 0, 0, 0, 0); rudisha 0; }
     rudisha 1;
 }

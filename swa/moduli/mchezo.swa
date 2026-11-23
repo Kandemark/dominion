@@ -173,6 +173,7 @@ husisha { msingi/msingi_civ.swa }
 husisha { msingi/lugha_dominion.swa }
 husisha { moduli/dunia/historia_ya_mipaka.swa }
 husisha { moduli/injini/tarehe.swa }
+husisha { moduli/siasa/dola.swa }
 husisha { moduli/utamaduni/kitambulisho.swa }
 husisha { moduli/utamaduni/kuenea.swa }
 husisha { moduli/utamaduni/itikadi.swa }
@@ -897,6 +898,8 @@ CivMatokeo mchezo_anzisha(Mchezo* g, MchezoUsanidi* usanidi) {
     }
     // mipaka ya mwaka wa kuanza: mataifa ambayo hayajazaliwa ni sehemu ya wazazi wao
     dunia_halisi_kwa_mwaka(dunia_halisi_ya_mchezo, TAREHE_MWAKA_WA_MWANZO);
+    // aina za utawala za mwaka huo (siasa/dola.swa)
+    dola_mwaka_wa_zama = TAREHE_MWAKA_WA_MWANZO;
     kama (dunia_halisi_ya_mchezo != 0) { dunia_halisi_jaza_ramani(ramani_mpya, dunia_halisi_ya_mchezo); }
     sivyo { dunia_atlasi_jaza_ramani(ramani_mpya, atlasi, miji); }
     mchezo_weka_ramani(g, ramani_mpya);

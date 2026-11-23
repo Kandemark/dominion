@@ -234,7 +234,7 @@ n64 skrini_dunia_mikoa_ya(DuniaHalisi* d, n64 taifa) {
     rudisha n;
 }
 
-w0 skrini_dunia_paneli(Turubai* t, DuniaHalisi* d, n64 taifa) {
+w0 skrini_dunia_paneli(Mchezo* g, Turubai* t, DuniaHalisi* d, n64 taifa) {
     kama (SKRINI_RAMANI_PANELI == 0) { rudisha; }       // droo imefungwa
     n64 x = t->upana - SKRINI_RAMANI_PANELI;
     n64 y = SKRINI_UPAU_WA_JUU + 1;
@@ -297,6 +297,10 @@ w0 skrini_dunia_paneli(Turubai* t, DuniaHalisi* d, n64 taifa) {
         }
         i = i + 1;
     }
+    // watu wa uigaji (ndio wanaotumika kila mahali); makazi ya ramani ni sehemu iliyo mijini na vijijini vilivyochorwa
+    TaifaNchi* tn = 0;
+    kama (g != 0) { tn = dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), taifa); }
+    kama (tn != 0) { watu = tn->idadi_ya_watu; }
     sura_namba_fupi(namba, watu);
     skrini_safu_ya_taarifa(ui("Population"), namba, px, py, pw);
     py = py + 26;
@@ -420,7 +424,7 @@ w0 skrini_dunia_chora(Mchezo* g, Turubai* t, DuniaHalisi* d, n64 kitovu_x, n64 k
     skrini_akiba_y = kitovu_y;
     skrini_akiba_kipimo = kipimo;
     skrini_ramani_vidhibiti_chora(t);
-    skrini_dunia_paneli(t, d, taifa);
+    skrini_dunia_paneli(g, t, d, taifa);
 }
 
 // Chora skrini ya ramani. (kitovu_x, kitovu_y) ni nukta ya dunia ya
@@ -503,7 +507,7 @@ n32 skrini_ramani_hakikisho(Mchezo* g, Turubai* t, n64 kitovu_x, n64 kitovu_y, n
         j = j + 1;
     }
     skrini_ramani_vidhibiti_chora(t);
-    kama (skrini_dunia != 0) { skrini_dunia_paneli(t, skrini_dunia, taifa); }
+    kama (skrini_dunia != 0) { skrini_dunia_paneli(g, t, skrini_dunia, taifa); }
     sivyo { skrini_ramani_paneli(g, t, taifa); }
     rudisha 1;
 }
