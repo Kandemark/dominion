@@ -237,6 +237,15 @@ w0 vk_nafasi_kwa_maneno(n8* nje, n64 n) {
 
 // Jina kamili: "3rd Kahijer Infantry Division", "2nd Fleet".
 w0 vk_jina(Kikosi* k, n64 mwaka, n8* nje, n64 uwezo) {
+    // lugha nyingine: "Division d'infanterie n° 3, Curnuch" (mpangilio wa maneno
+    // ya Kiingereza haufai: kiambishi cha nafasi na mji kabla ya aina)
+    kama (maneno_lugha != 0) {
+        n8* mji_wa = "";
+        kama (vk_miji != 0 && k->nyumbani >= 0 && k->nyumbani < vk_miji_idadi[k->taifa] && k->aina != VK_MANOWARI && k->aina != VK_ANGA) { mji_wa = vk_miji[k->taifa * VK_MIJI + k->nyumbani]; }
+        kama (mji_wa[0] != 0) { mfuatano_umbiza(nje, uwezo, ui("ord|%s no. %d, %s"), vk_jina_la_aina(k->aina, mwaka), k->nambari, mji_wa, 0, 0, 0); }
+        sivyo { mfuatano_umbiza(nje, uwezo, ui("ord|%s no. %d"), vk_jina_la_aina(k->aina, mwaka), k->nambari, 0, 0, 0, 0); }
+        rudisha;
+    }
     n8 nafasi[16];
     vk_nafasi_kwa_maneno(nafasi, k->nambari);
     n8* mji = 0;

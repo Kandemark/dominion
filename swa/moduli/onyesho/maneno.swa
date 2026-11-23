@@ -1,3 +1,4 @@
+husisha { moduli/onyesho/maneno_ziada.swa }
 husisha { msingi/maktaba/kumbukumbu.swa }
 husisha { msingi/maktaba/mfuatano.swa }
 
@@ -24,7 +25,7 @@ n64 MANENO_KISWAHILI = 1;
 n64 MANENO_KIFARANSA = 2;
 n64 MANENO_LUGHA_IDADI = 3;
 
-n64 MANENO_UWEZO = 1024;         // nafasi za jedwali (kipeo cha 2)
+n64 MANENO_UWEZO = 4096;         // nafasi za jedwali (kipeo cha 2)
 
 n64 maneno_lugha = 0;
 n64* maneno_funguo = 0;          // viashiria vya funguo (Kiingereza)
@@ -323,6 +324,7 @@ w0 maneno_jaza() {
     maneno_sajili("In the round", "Duara", "En cercle");
     maneno_sajili("Opposing benches", "Pande zinazotazamana", "Bancs opposés");
     maneno_sajili("Classroom", "Darasa", "Salle de classe");
+    maneno_jaza_ziada();
 }
 
 // Jina la lugha kwa lugha yenyewe (halitafsiriwi).

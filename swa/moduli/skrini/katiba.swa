@@ -279,12 +279,14 @@ w0 skrini_katiba_mkaguzi(Dola* d, Wahusika* w, n8* taifa, n32 ni_lako, n64 x, n6
             kama (hati_kigezo_juu(k->aina, p) >= 50) { hatua = 5; }
             serikali_kitufe("<", xp, yy, 0, pendekezo - hatua >= hati_kigezo_chini(k->aina, p), KB_PUNGUZA, p);
             mfuatano_umbiza(m, 200, "%d", pendekezo, 0, 0, 0, 0, 0);
-            kama (k->aina == K_DOLA && p == 0) { nakili_mfuatano(m, dola_aina_jina(pendekezo)); }
             kama (pendekezo != sasa) { sura_rangi(SURA_LAFUDHI); } sivyo { sura_rangi(SURA_MAANDISHI); }
-            sura_lebo_nene(m, xp + 36, yy + 3, 13);
+            // aina ya utawala: jina lake kando ya vitufe, si namba
+            kama (k->aina == K_DOLA && p == 0) { sura_lebo_nene(dola_aina_jina(pendekezo), xp - (wk * 54) / 100 + 16, yy + 22, 12); }
+            sivyo { sura_lebo_nene(m, xp + 36, yy + 3, 13); }
             serikali_kitufe(">", xp + 76, yy, 0, pendekezo + hatua <= hati_kigezo_juu(k->aina, p), KB_ONGEZA, p);
             kama (pendekezo != sasa) { serikali_kitufe(ui("Propose"), x + wk - 86, yy, 1, nguvu_mtaji >= GHARAMA_MAREKEBISHO, KB_PENDEKEZA, p); }
             yy = yy + 30;
+            kama (k->aina == K_DOLA && p == 0) { yy = yy + 18; }
         }
         p = p + 1;
     }
