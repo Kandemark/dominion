@@ -21,10 +21,6 @@ n64 KT_FX = 2;
 n64 KT_WATU = 3;
 n64 KT_MAKRO = 4;
 
-n64 WIGO_MKOA = 0;
-n64 WIGO_TAIFA = 1;
-n64 WIGO_DUNIA = 2;
-
 // vitendo vya kubofya
 n64 KT_TABO = 70;
 n64 KT_WIGO = 71;
@@ -41,7 +37,6 @@ n64 KT_DHAHABU_UZA = 81;
 n64 KT_MKOA = 82;
 
 n64 kt_tabo = 0;
-n64 skrini_wigo = 1;            // wigo wa kurasa: 0 mkoa, 1 taifa, 2 dunia
 n64 kt_kampuni = -1;
 n64 kt_ukurasa = 0;
 n64 kt_panga = 0;               // 0 mtaji, 1 badiliko la wiki, 2 ujazo
@@ -1161,6 +1156,7 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     skrini_upau_wa_juu(g, t);
     skrini_urambazaji(t, 1);
     kama (soko_sarafu_ya(taifa) == 0) { rudisha; }
+    jopo_weka_kituo(g, taifa);
     kama (kt_kampuni < 0 || soko_kampuni_pata(kt_kampuni) == 0) { kt_kampuni = soko_kampuni_mwanzo[taifa]; }
     kama (skrini_wigo != WIGO_DUNIA && soko_kampuni_pata(kt_kampuni)->taifa != taifa) { kt_kampuni = soko_kampuni_mwanzo[taifa]; }
     n64 x = SKRINI_UPANA_WA_PEMBENI + 8;

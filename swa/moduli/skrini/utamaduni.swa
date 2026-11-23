@@ -20,6 +20,8 @@ w0 skrini_utamaduni_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 y = SKRINI_UPAU_WA_JUU + 25;
     n64 w = t->upana - x - 24;
     skrini_kichwa_fm(g, t, ui("Culture"), ui("Identity, faith and ideas across the world."), x, y - 15);
+    jopo_weka_kituo(g, taifa);
+    jopo_wigo_chora(t->upana - 24, y - 1);
     y = y + 66;
     n64 gap = 16;
     n64 cw = (w - 3 * gap) / 4;

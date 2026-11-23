@@ -16,6 +16,8 @@ w0 skrini_jeshi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 y = SKRINI_UPAU_WA_JUU + 25;
     n64 w = t->upana - x - 24;
     skrini_kichwa_fm(g, t, ui("Military"), ui("Strength among the nations, commanders, neighbours and forces."), x, y - 15);
+    jopo_weka_kituo(g, taifa);
+    jopo_wigo_chora(t->upana - 24, y - 1);
     y = y + 66;
     n64 total_units = 0;
     n64 total_strength = 0;

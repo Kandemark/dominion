@@ -297,6 +297,8 @@ w0 skrini_siasa_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n8 maelezo_ya_siasa[128];
     mfuatano_umbiza(maelezo_ya_siasa, 128, "%s  ·  %s", tn->jina, dola_aina_jina(d->aina), 0, 0, 0, 0);
     skrini_kichwa_fm(g, t, ui("Politics"), maelezo_ya_siasa, x, y - 15);
+    jopo_weka_kituo(g, taifa);
+    jopo_wigo_chora(t->upana - 24, y - 1);
     y = y + 62;
 
     n64 safuwima = w / 4;
@@ -328,8 +330,8 @@ w0 skrini_siasa_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 h_kushoto = t->kimo - 24 - yl;
     kama (h_kushoto > 160) {
         n64 nusu = (wl - pengo) / 2;
-        jopo_nafasi(g, taifa, KIPIMO_UTULIVU, ui("WORLD RANKING  ·  STABILITY"), x, yl, nusu, h_kushoto);
-        jopo_mtawanyiko(g, taifa, KIPIMO_UTULIVU, KIPIMO_UHALALI, ui("EVERY NATION  ·  STABILITY / LEGITIMACY"), x + nusu + pengo, yl, wl - nusu - pengo, h_kushoto);
+        jopo_nafasi(g, taifa, KIPIMO_UTULIVU, ui("RANKING  ·  STABILITY"), x, yl, nusu, h_kushoto);
+        jopo_mtawanyiko(g, taifa, KIPIMO_UTULIVU, KIPIMO_UHALALI, ui("NATIONS  ·  STABILITY / LEGITIMACY"), x + nusu + pengo, yl, wl - nusu - pengo, h_kushoto);
     }
     n64 h_vyama = 60 + d->vyama * 34;
     kama (d->vyama == 0) { h_vyama = 70; }

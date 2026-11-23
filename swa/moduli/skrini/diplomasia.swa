@@ -40,6 +40,8 @@ w0 skrini_diplomasia_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 w = t->upana - x - 24;
 
     skrini_kichwa_fm(g, t, ui("Diplomacy"), tn->jina, x, y - 15);
+    jopo_weka_kituo(g, taifa);
+    jopo_wigo_chora(t->upana - 24, y - 1);
     y = y + 62;
 
     // majirani na uhusiano wao, yamepangwa kwa imani (juu kwanza)
@@ -108,7 +110,7 @@ w0 skrini_diplomasia_chora(Mchezo* g, Turubai* t, n64 taifa) {
         n64 w4 = (w - 3 * 12) / 4;
         jopo_majirani(g, taifa, KIPIMO_PATO, ui("NEIGHBOURS  ·  GDP"), x, y_chini, w4, h_chini);
         jopo_majirani(g, taifa, KIPIMO_JESHI, ui("NEIGHBOURS  ·  MILITARY"), x + w4 + 12, y_chini, w4, h_chini);
-        jopo_mtawanyiko(g, taifa, KIPIMO_PATO, KIPIMO_JESHI, ui("EVERY NATION  ·  GDP / MILITARY"), x + 2 * (w4 + 12), y_chini, w4, h_chini);
+        jopo_mtawanyiko(g, taifa, KIPIMO_PATO, KIPIMO_JESHI, ui("NATIONS  ·  GDP / MILITARY"), x + 2 * (w4 + 12), y_chini, w4, h_chini);
         jopo_majirani(g, taifa, KIPIMO_UTULIVU, ui("NEIGHBOURS  ·  STABILITY"), x + 3 * (w4 + 12), y_chini, w - 3 * (w4 + 12), h_chini);
     }
     n8 kichwa[64];

@@ -25,6 +25,25 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
         mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
         mfumo_funga(fd);
     }
-    andika("zamu %d, mataifa %d\n", g->zamu_ya_sasa, mchezo_pata_taifa(g)->idadi, 0, 0, 0, 0);
+    // wigo: dunia = mataifa yote, mkoa = taifa na majirani wa nchi kavu,
+    // wenzake = taifa na wenye pato la nafasi 15 juu au chini yake
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 mimi = tm->faharisi_ya_taifa_la_mchezaji;
+    n64 makosa = 0;
+    skrini_wigo = WIGO_DUNIA;
+    jopo_weka_kituo(g, mimi);
+    kama (jopo_kundi_idadi != tm->idadi) { andika("SHINDWA: wigo wa dunia %d\n", jopo_kundi_idadi, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+    skrini_wigo = WIGO_MKOA;
+    jopo_weka_kituo(g, mimi);
+    n64 majirani = 1;
+    i = 0;
+    wakati (i < tm->idadi) { kama (i != mimi && dunia_atlasi_mpaka(mimi, i) > 0) { majirani = majirani + 1; } i = i + 1; }
+    kama (jopo_kundi_idadi != majirani || jopo_inafaa(mimi) == 0) { andika("SHINDWA: wigo wa mkoa %d / %d\n", jopo_kundi_idadi, majirani, 0, 0, 0, 0); makosa = makosa + 1; }
+    kama (kipimo_nafasi(g, mimi, KIPIMO_JESHI) > majirani) { andika("SHINDWA: nafasi ndani ya mkoa\n", 0, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+    skrini_wigo = WIGO_TAIFA;
+    jopo_weka_kituo(g, mimi);
+    kama (jopo_kundi_idadi < 16 || jopo_kundi_idadi > 31 || jopo_inafaa(mimi) == 0) { andika("SHINDWA: wigo wa wenzake %d\n", jopo_kundi_idadi, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+    kama (makosa > 0) { rudisha 1; }
+    andika("zamu %d, mataifa %d, mkoa %d\n", g->zamu_ya_sasa, tm->idadi, majirani, 0, 0, 0);
     rudisha 0;
 }
