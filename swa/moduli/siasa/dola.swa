@@ -1,3 +1,4 @@
+husisha { moduli/dunia/asili.swa }
 husisha { msingi/maktaba/kumbukumbu.swa }
 husisha { msingi/maktaba/mfuatano.swa }
 husisha { moduli/onyesho/maneno.swa }
@@ -652,7 +653,8 @@ Dola* dola_ya_taifa(n64 faharisi, n8* cheo, n64 watu) {
         dola_akiba = tenga(8 * DOLA_AKIBA_UWEZO);
         weka_sifuri(dola_akiba, 8 * DOLA_AKIBA_UWEZO);
     }
-    kama (dola_akiba[faharisi] == 0) { dola_akiba[faharisi] = dola_unda(faharisi, cheo, watu); }
+    // mbegu ni namba ya asili ya taifa: dola ileile kwa kila mwaka wa kuanza
+    kama (dola_akiba[faharisi] == 0) { dola_akiba[faharisi] = dola_unda(dunia_asili(faharisi), cheo, watu); }
     rudisha dola_akiba[faharisi];
 }
 

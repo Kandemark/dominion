@@ -1,0 +1,313 @@
+husisha { moduli/dunia/asili.swa }
+husisha { moduli/onyesho/dunia_halisi.swa }
+husisha { moduli/onyesho/maneno.swa }
+
+// historia_ya_mipaka.swa -- mipaka ya dunia kwa mwaka wowote 1700..2000.
+//
+// Ramani iliyokubaliwa ina mataifa 232 ya mwisho wa karne. Historia yake
+// huzalishwa kwa kanuni kutoka ramani yenyewe, si kuandikwa kwa mkono:
+//
+//   mwaka wa kuzaliwa   kila taifa hupata mwaka wa uhuru wake. Kiini cha
+//                       eneo (taifa lenye watu wengi kuliko majirani wake
+//                       wote, au kati ya makubwa ya dunia) ni la zamani
+//                       (kabla ya 1700). Mengine huzaliwa kwa mawimbi
+//                       yanayotegemea latitudo: kanda za joto hupata uhuru
+//                       hasa 1945-1975 (mwisho wa makoloni) au 1800-1830;
+//                       kanda za wastani 1815-1880, 1918-1923 (kuvunjika
+//                       kwa milki) na 1990-1993; kanda za baridi 1905-1950.
+//   mzazi               taifa lililolitawala kabla ya uhuru: jirani mkongwe
+//                       zaidi mwenye mpaka mrefu na watu wengi; kwa visiwa
+//                       na makoloni ya kanda za joto, dola kubwa ya mbali
+//                       iliyo karibu zaidi kati ya milki kongwe za dunia.
+//                       Mzazi daima ni mkongwe kuliko mtoto, kwa hiyo hakuna
+//                       mzunguko.
+//
+// Mwaka Y: taifa ambalo halijazaliwa ni sehemu ya mzazi wake (na mzazi wa
+// mzazi, mpaka anayeishi). Gridi ya wamiliki, makazi, migogoro na jedwali la
+// mataifa hupangwa upya kabla mchezo haujayatumia, hivyo mfumo wote huona
+// mataifa ya mwaka huo pekee.
+
+n64* historia_mwaka_wa_uhuru = 0;   // [taifa la asili]
+n64* historia_mzazi = 0;            // [taifa la asili]: mzazi wa asili, au -1
+n64 historia_mataifa_ya_asili = 0;
+n64 historia_mwaka = 0;             // mwaka uliotumika; 0 = ramani ya asili
+n64* historia_jina_la_asili = 0;    // [taifa la asili]: mwanzo wa jina kwenye data
+
+n64 historia_nasibu(n64 a, n64 b) {
+    n64 n = (a * 2654435761 + b * 40503 + 977) & 4294967295;
+    n = ((n ^ (n >> 15)) * 2246822519) & 4294967295;
+    n = ((n ^ (n >> 13)) * 3266489917) & 4294967295;
+    rudisha (n ^ (n >> 16)) & 4294967295;
+}
+
+// Zalisha mwaka wa uhuru na mzazi wa kila taifa la asili.
+w0 historia_zalisha(DuniaHalisi* d) {
+    n64 N = d->mataifa;
+    historia_mataifa_ya_asili = N;
+    historia_mwaka_wa_uhuru = tenga(8 * N);
+    historia_mzazi = tenga(8 * N);
+    historia_jina_la_asili = tenga(8 * N);
+    n64* watu = tenga(8 * N);
+    weka_sifuri(watu, 8 * N);
+    n64* mpaka = tenga(8 * N * N);
+    weka_sifuri(mpaka, 8 * N * N);
+    n8* p = d->data;
+    n64 i = 0;
+    wakati (i < N) { historia_jina_la_asili[i] = d->jina[i]; i = i + 1; }
+    i = 0;
+    wakati (i < d->idadi_makazi) {
+        n64 m = dh_u16(p, d->makazi[i] + 10);
+        kama (m < N) { watu[m] = watu[m] + dh_u32(p, d->makazi[i] + 4); }
+        i = i + 1;
+    }
+    // urefu wa mipaka ya nchi kavu kati ya kila jozi
+    n64 W = d->upana;
+    n64 H = d->kimo;
+    n64 y = 0;
+    wakati (y < H) {
+        n64 x = 0;
+        wakati (x < W) {
+            n64 g = y * W + x;
+            n64 a = dh_u16(d->wamiliki, 2 * g);
+            kama (a < N) {
+                n64 gx = y * W + (x + 1) % W;
+                n64 b = dh_u16(d->wamiliki, 2 * gx);
+                kama (b < N && b != a) { mpaka[a * N + b] = mpaka[a * N + b] + 1; mpaka[b * N + a] = mpaka[b * N + a] + 1; }
+                kama (y + 1 < H) {
+                    n64 c = dh_u16(d->wamiliki, 2 * (g + W));
+                    kama (c < N && c != a) { mpaka[a * N + c] = mpaka[a * N + c] + 1; mpaka[c * N + a] = mpaka[c * N + a] + 1; }
+                }
+            }
+            x = x + 1;
+        }
+        y = y + 1;
+    }
+    // nafasi ya watu duniani
+    n64* nafasi = tenga(8 * N);
+    i = 0;
+    wakati (i < N) {
+        n64 r = 0;
+        n64 j = 0;
+        wakati (j < N) { kama (watu[j] > watu[i]) { r = r + 1; } j = j + 1; }
+        nafasi[i] = r;
+        i = i + 1;
+    }
+    // mwaka wa uhuru
+    i = 0;
+    wakati (i < N) {
+        n32 kiini = 1;
+        n64 majirani = 0;
+        n64 j = 0;
+        wakati (j < N) {
+            kama (mpaka[i * N + j] > 0) {
+                majirani = majirani + 1;
+                kama (watu[j] > watu[i]) { kiini = 0; }
+            }
+            j = j + 1;
+        }
+        kama (majirani == 0) { kiini = 0; }                 // kisiwa: si kiini kwa majirani
+        n64 r = historia_nasibu(i, 1) % 1000;
+        n64 lat = 90 - (d->mji_y[i] * 180) / H;
+        kama (lat < 0) { lat = 0 - lat; }
+        n64 mwaka = 0;
+        kama (kiini || nafasi[i] < (N * 12) / 100 || r < 120) { mwaka = 1500 + historia_nasibu(i, 2) % 190; }
+        sivyo kama (lat < 23) {
+            n64 w = historia_nasibu(i, 3) % 100;
+            kama (w < 65) { mwaka = 1945 + historia_nasibu(i, 4) % 31; }
+            sivyo kama (w < 85) { mwaka = 1800 + historia_nasibu(i, 5) % 31; }
+            sivyo { mwaka = 1500 + historia_nasibu(i, 6) % 190; }
+        }
+        sivyo kama (lat < 55) {
+            n64 w = historia_nasibu(i, 7) % 100;
+            kama (w < 40) { mwaka = 1815 + historia_nasibu(i, 8) % 66; }
+            sivyo kama (w < 70) { mwaka = 1918 + historia_nasibu(i, 9) % 6; }
+            sivyo kama (w < 80) { mwaka = 1990 + historia_nasibu(i, 10) % 4; }
+            sivyo { mwaka = 1700 + historia_nasibu(i, 11) % 291; }
+        }
+        sivyo {
+            kama (historia_nasibu(i, 12) % 2 == 0) { mwaka = 1500 + historia_nasibu(i, 13) % 190; }
+            sivyo { mwaka = 1905 + historia_nasibu(i, 14) % 46; }
+        }
+        historia_mwaka_wa_uhuru[i] = mwaka;
+        i = i + 1;
+    }
+    // milki kongwe za dunia: watu wengi na kabla ya 1700 (kwa makoloni ya mbali)
+    n64* milki = tenga(8 * 16);
+    n64 milki_idadi = 0;
+    n64 r = 0;
+    wakati (r < N && milki_idadi < 16) {
+        i = 0;
+        wakati (i < N) {
+            kama (nafasi[i] == r && historia_mwaka_wa_uhuru[i] < 1700 && milki_idadi < 16) { milki[milki_idadi] = i; milki_idadi = milki_idadi + 1; }
+            i = i + 1;
+        }
+        r = r + 1;
+    }
+    kama (milki_idadi > 10) { milki_idadi = 10; }
+    // wazazi
+    i = 0;
+    wakati (i < N) {
+        historia_mzazi[i] = -1;
+        kama (historia_mwaka_wa_uhuru[i] >= 1700) {
+            n64 lat = 90 - (d->mji_y[i] * 180) / H;
+            kama (lat < 0) { lat = 0 - lat; }
+            n64 bora = -1;
+            n64 alama_bora = 0;
+            n64 j = 0;
+            wakati (j < N) {
+                kama (mpaka[i * N + j] > 0 && historia_mwaka_wa_uhuru[j] < historia_mwaka_wa_uhuru[i]) {
+                    n64 alama = mpaka[i * N + j] * (1 + watu[j] / 100000);
+                    kama (alama > alama_bora) { alama_bora = alama; bora = j; }
+                }
+                j = j + 1;
+            }
+            // koloni la dola ya mbali: kisiwa, au kanda ya joto iliyopata uhuru baada ya 1945
+            n32 koloni = bora < 0 || (lat < 23 && historia_mwaka_wa_uhuru[i] >= 1945 && historia_nasibu(i, 20) % 100 < 60);
+            kama (koloni && milki_idadi > 0) {
+                n64 karibu = -1;
+                n64 umbali_bora = 0;
+                n64 k = 0;
+                wakati (k < milki_idadi) {
+                    n64 m = milki[k];
+                    kama (m != i && historia_mwaka_wa_uhuru[m] < historia_mwaka_wa_uhuru[i]) {
+                        n64 dx = d->mji_x[m] - d->mji_x[i];
+                        kama (dx < 0) { dx = 0 - dx; }
+                        kama (dx > W / 2) { dx = W - dx; }
+                        n64 dy = d->mji_y[m] - d->mji_y[i];
+                        n64 u = dx * dx + dy * dy;
+                        kama (karibu < 0 || u < umbali_bora) { karibu = m; umbali_bora = u; }
+                    }
+                    k = k + 1;
+                }
+                kama (karibu >= 0) { bora = karibu; }
+            }
+            kama (bora < 0) { historia_mwaka_wa_uhuru[i] = 1500 + historia_nasibu(i, 2) % 190; }   // hakuna mzazi mkongwe: ni la zamani
+            historia_mzazi[i] = bora;
+        }
+        i = i + 1;
+    }
+    achilia milki;
+    achilia nafasi;
+    achilia mpaka;
+    achilia watu;
+}
+
+// Mmiliki wa eneo la taifa la asili t katika mwaka Y.
+n64 historia_mmiliki(n64 t, n64 mwaka) {
+    n64 hatua = 0;
+    wakati (t >= 0 && historia_mwaka_wa_uhuru[t] > mwaka && historia_mzazi[t] >= 0 && hatua < 64) {
+        t = historia_mzazi[t];
+        hatua = hatua + 1;
+    }
+    rudisha t;
+}
+
+// Panga dunia upya kwa mwaka Y: mataifa ambayo hayajazaliwa huunganishwa na
+// wazazi wao, na mataifa yaliyopo hupata namba mpya 0..n-1.
+w0 dunia_halisi_kwa_mwaka(DuniaHalisi* d, n64 mwaka) {
+    kama (d == 0 || d->mwaka_wa_historia != 0) { rudisha; }
+    historia_zalisha(d);
+    d->mwaka_wa_historia = mwaka;
+    historia_mwaka = mwaka;
+    n64 N = d->mataifa;
+    n64* mpya = tenga(8 * N);          // [asili]: namba mpya ya mmiliki wake mwaka huu
+    n64* asili = tenga(8 * N);         // [mpya]: namba ya asili
+    n64 n = 0;
+    n64 i = 0;
+    wakati (i < N) {
+        kama (historia_mmiliki(i, mwaka) == i) { mpya[i] = n; asili[n] = i; n = n + 1; } sivyo { mpya[i] = -1; }
+        i = i + 1;
+    }
+    i = 0;
+    wakati (i < N) { kama (mpya[i] < 0) { mpya[i] = mpya[historia_mmiliki(i, mwaka)]; } i = i + 1; }
+    // gridi ya wamiliki
+    n64 px = d->upana * d->kimo;
+    n64 g = 0;
+    wakati (g < px) {
+        n64 m = dh_u16(d->wamiliki, 2 * g);
+        kama (m < N) {
+            n64 v = mpya[m];
+            d->wamiliki[2 * g] = v & 255;
+            d->wamiliki[2 * g + 1] = (v >> 8) & 255;
+        }
+        g = g + 1;
+    }
+    // makazi
+    n8* p = d->data;
+    i = 0;
+    wakati (i < d->idadi_makazi) {
+        n64 o = d->makazi[i] + 10;
+        n64 m = dh_u16(p, o);
+        kama (m < N) { p[o] = mpya[m] & 255; p[o + 1] = (mpya[m] >> 8) & 255; }
+        i = i + 1;
+    }
+    // migogoro: madai kati ya sehemu za taifa moja hufutwa
+    n8* hai = tenga(d->idadi_migogoro + 1);
+    i = 0;
+    wakati (i < d->idadi_migogoro) {
+        n64 a = mpya[d->mg_p[i]];
+        n64 b = mpya[d->mg_q[i]];
+        d->mg_p[i] = a;
+        d->mg_q[i] = b;
+        hai[i] = a != b;
+        i = i + 1;
+    }
+    g = 0;
+    wakati (g < px) {
+        n64 k = d->migogoro[g] & 255;
+        kama (k > 0 && hai[k - 1] == 0) { d->migogoro[g] = 0; }
+        g = g + 1;
+    }
+    achilia hai;
+    // jedwali la mataifa
+    n64* rangi = tenga(8 * n);
+    n64* jina = tenga(8 * n);
+    n64* mji_y = tenga(8 * n);
+    n64* mji_x = tenga(8 * n);
+    n64* mji_jina = tenga(8 * n);
+    i = 0;
+    wakati (i < n) {
+        n64 a = asili[i];
+        rangi[i] = d->rangi[a];
+        jina[i] = d->jina[a];
+        mji_y[i] = d->mji_y[a];
+        mji_x[i] = d->mji_x[a];
+        mji_jina[i] = d->mji_jina[a];
+        i = i + 1;
+    }
+    d->rangi = rangi;
+    d->jina = jina;
+    d->mji_y = mji_y;
+    d->mji_x = mji_x;
+    d->mji_jina = mji_jina;
+    d->mataifa = n;
+    dunia_asili_ya = asili;
+    dunia_asili_idadi = n;
+    achilia mpya;
+}
+
+// Kwa skrini: "Independent since 1867, from Hucha", au tupu kwa taifa la zamani.
+w0 historia_maelezo(DuniaHalisi* d, n64 taifa, n8* nje, n64 uwezo) {
+    nje[0] = 0;
+    kama (historia_mwaka_wa_uhuru == 0 || d == 0) { rudisha; }
+    n64 a = dunia_asili(taifa);
+    kama (a < 0 || a >= historia_mataifa_ya_asili) { rudisha; }
+    n64 y = historia_mwaka_wa_uhuru[a];
+    kama (y < 1700) { mfuatano_umbiza(nje, uwezo, "%s", ui("A state since before 1700"), 0, 0, 0, 0, 0); rudisha; }
+    n64 m = historia_mzazi[a];
+    kama (m < 0) { mfuatano_umbiza(nje, uwezo, ui("Independent since %d"), y, 0, 0, 0, 0, 0); rudisha; }
+    mfuatano_umbiza(nje, uwezo, ui("Independent since %d, from %s"), y, dh_jina(d->data, historia_jina_la_asili[m]), 0, 0, 0, 0);
+}
+
+// Mataifa ya asili yaliyo ndani ya taifa hili mwaka huu (yatazaliwa baadaye).
+n64 historia_watoto_wa(n64 taifa) {
+    kama (historia_mwaka_wa_uhuru == 0) { rudisha 0; }
+    n64 a = dunia_asili(taifa);
+    n64 n = 0;
+    n64 i = 0;
+    wakati (i < historia_mataifa_ya_asili) {
+        kama (i != a && historia_mmiliki(i, historia_mwaka) == a) { n = n + 1; }
+        i = i + 1;
+    }
+    rudisha n;
+}

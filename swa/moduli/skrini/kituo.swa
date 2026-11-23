@@ -166,7 +166,7 @@ w0 kt_kusanya_mikoa(n64 taifa) {
         n64 pix = py * d->upana + px;
         n64 mmiliki = dh_u16(d->wamiliki, pix * 2);
         kama (mmiliki == taifa) {
-            n64 mkoa = d->mikoa[pix] & 255;
+            n64 mkoa = dh_mkoa(d, pix);
             n64 k = 0;
             n64 pata = 0 - 1;
             wakati (k < kt_mikoa_idadi) { kama (kt_mkoa_kitambulisho[k] == mkoa) { pata = k; } k = k + 1; }

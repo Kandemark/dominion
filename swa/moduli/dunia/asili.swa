@@ -1,0 +1,15 @@
+// asili.swa -- utambulisho wa asili wa kila taifa.
+//
+// Ramani ina mataifa yote ya mwaka 2000. Mchezo ukianza mwaka wa mapema,
+// mataifa ambayo hayajazaliwa bado huunganishwa na mataifa yaliyoyazaa
+// (dunia/historia_ya_mipaka.swa), na mataifa yaliyobaki hupangwa upya kwa
+// namba mpya. Sifa za kila taifa (aina ya utawala, vielezo) huzalishwa kwa
+// mbegu ya namba yake ya asili, ili taifa liwe lilelile kwa kila mwaka wa kuanza.
+
+n64* dunia_asili_ya = 0;        // [taifa la sasa]: namba ya asili kwenye data ya ramani
+n64 dunia_asili_idadi = 0;
+
+n64 dunia_asili(n64 taifa) {
+    kama (dunia_asili_ya == 0 || taifa < 0 || taifa >= dunia_asili_idadi) { rudisha taifa; }
+    rudisha dunia_asili_ya[taifa];
+}

@@ -23,7 +23,10 @@ muundo DuniaHalisi {
     n64* sehemu;            // mwanzo wa kila sehemu (1..11)
     n8* ardhi;              // 0 bahari, 1 ardhi, 2 ziwa, 3 barafu (upana * kimo)
     n8* wamiliki;           // u16 kwa pikseli (0xFFFF = hakuna)
-    n8* mikoa;              // u8 kwa pikseli (0xFF = hakuna)
+    n8* mikoa;              // u16 kwa pikseli: kitambulisho cha mkoa cha dunia nzima (0xFFFF = hakuna)
+    n64 idadi_mikoa;
+    n64* mkoa_asili;
+    n64 mwaka_wa_historia;  // mwaka ambao mipaka ilipangwa (dunia/historia_ya_mipaka.swa); 0 = ya asili        // [mkoa]: taifa la asili lililokuwa na mkoa huo kwenye data
     n64 mataifa;
     n64* rangi;             // 0xRRGGBB
     n64* jina;              // mwanzo wa jina (urefu u8 + baiti) ndani ya data
@@ -52,6 +55,9 @@ muundo DuniaHalisi {
 }
 
 n64 dh_u8(n8* d, n64 o) { rudisha d[o] & 255; }
+
+// Kitambulisho cha mkoa (cha dunia nzima) cha pikseli g, au 65535.
+n64 dh_mkoa(DuniaHalisi* d, n64 g) { rudisha (d->mikoa[2 * g] & 255) | ((d->mikoa[2 * g + 1] & 255) << 8); }
 n64 dh_u16(n8* d, n64 o) { rudisha (d[o] & 255) | ((d[o + 1] & 255) << 8); }
 n64 dh_u32(n8* d, n64 o) {
     rudisha (d[o] & 255) | ((d[o + 1] & 255) << 8) | ((d[o + 2] & 255) << 16) | ((d[o + 3] & 255) << 24);
@@ -148,6 +154,7 @@ DuniaHalisi* dunia_halisi_pakia(n8* njia) {
         rudisha 0;
     }
     DuniaHalisi* d = tenga(ukubwa(DuniaHalisi));
+    weka_sifuri(d, ukubwa(DuniaHalisi));
     d->data = data;
     d->urefu = n;
     d->upana = dh_u32(data, 8);
@@ -164,10 +171,10 @@ DuniaHalisi* dunia_halisi_pakia(n8* njia) {
     n64 px = d->upana * d->kimo;
     d->ardhi = tenga(px);
     d->wamiliki = tenga(2 * px);
-    d->mikoa = tenga(px);
+    n8* mikoa8 = tenga(px);
     dh_rle(d, d->sehemu[1], d->ardhi, 1);
     dh_rle(d, d->sehemu[3], d->wamiliki, 2);
-    dh_rle(d, d->sehemu[4], d->mikoa, 1);
+    dh_rle(d, d->sehemu[4], mikoa8, 1);
     // jedwali la mataifa
     n64 o = d->sehemu[5];
     d->mataifa = dh_u16(data, o);
@@ -191,6 +198,35 @@ DuniaHalisi* dunia_halisi_pakia(n8* njia) {
         o = o + 1 + dh_u8(data, o);
         i = i + 1;
     }
+    // mikoa: data huhifadhi namba ya mkoa ndani ya taifa lake (u8); hapa
+    // kila jozi (taifa, mkoa) hupata kitambulisho kimoja cha dunia nzima (u16),
+    // ili mikoa ibaki tofauti hata mataifa yakiunganishwa kwa mwaka wa historia
+    n64* ramani_ya_mkoa = tenga(8 * (d->mataifa + 1) * 256);
+    n64 qm = 0;
+    wakati (qm < (d->mataifa + 1) * 256) { ramani_ya_mkoa[qm] = -1; qm = qm + 1; }
+    d->mikoa = tenga(2 * px);
+    d->mkoa_asili = tenga(8 * 65536);
+    d->idadi_mikoa = 0;
+    n64 gg = 0;
+    wakati (gg < px) {
+        n64 r = mikoa8[gg] & 255;
+        n64 m = dh_u16(d->wamiliki, 2 * gg);
+        n64 id = 65535;
+        kama (r != 255 && m < d->mataifa) {
+            n64 ufunguo = m * 256 + r;
+            kama (ramani_ya_mkoa[ufunguo] < 0 && d->idadi_mikoa < 65535) {
+                ramani_ya_mkoa[ufunguo] = d->idadi_mikoa;
+                d->mkoa_asili[d->idadi_mikoa] = m;
+                d->idadi_mikoa = d->idadi_mikoa + 1;
+            }
+            id = ramani_ya_mkoa[ufunguo];
+        }
+        d->mikoa[2 * gg] = id & 255;
+        d->mikoa[2 * gg + 1] = (id >> 8) & 255;
+        gg = gg + 1;
+    }
+    achilia ramani_ya_mkoa;
+    achilia mikoa8;
     // mito
     o = d->sehemu[6];
     d->idadi_mito = dh_u32(data, o);
@@ -374,7 +410,7 @@ w0 dunia_halisi_chora_msingi(DuniaHalisi* d, Turubai* t, n64 x0, n64 y0, n64 kip
             n64 m = dh_u16(d->wamiliki, 2 * g);
             kama (m == 65535 || a == 0 || a == 2) { m = 0 - 1; }
             dh_wamiliki_skrini[k] = m;
-            mkoa[k] = d->mikoa[g] & 255;
+            mkoa[k] = dh_mkoa(d, g);
             dh_kata_skrini[k] = -1;
             kama (kata && m >= 0) { dh_kata_skrini[k] = kata_gridi[g]; }
             dh_mgogoro_skrini[k] = d->migogoro[g] & 255;
@@ -927,6 +963,7 @@ w0 dunia_halisi_chora(DuniaHalisi* d, Turubai* t, n64 x0, n64 y0, n64 kipimo,
 // kuhitajika; ni hesabu tupu juu ya data ya dunia, hakuna faili jipya.
 
 n32* kata_gridi = 0;            // [pikseli]: kata, au -1 (bahari na ardhi isiyo na mwenyewe)
+DuniaHalisi* kata_dunia = 0;    // dunia ambayo kata zake zimehesabiwa
 n64 kata_idadi = 0;
 n64 kata_za_makazi = 0;         // kata 0..kata_za_makazi-1 zina makazi; zinazofuata ni za mwituni
 n32* kata_makazi = 0;           // faharisi ya makazi, au -1
@@ -965,7 +1002,12 @@ w0 kata_sukuma(n64* data, n64* idadi, n64* uwezo, n64 b, n64 g) {
 }
 
 w0 kata_hakikisha(DuniaHalisi* d) {
-    kama (kata_gridi != 0 || d == 0) { rudisha; }
+    kama (d == 0 || (kata_gridi != 0 && kata_dunia == d)) { rudisha; }
+    kama (kata_gridi != 0) {
+        achilia kata_gridi; achilia kata_makazi; achilia kata_taifa; achilia kata_mkoa;
+        achilia kata_eneo; achilia kata_mwinuko; achilia kata_barafu; achilia kata_watu;
+    }
+    kata_dunia = d;
     n64 W = d->upana;
     n64 H = d->kimo;
     n64 px = W * H;
@@ -1006,7 +1048,7 @@ w0 kata_hakikisha(DuniaHalisi* d) {
             n64 k = kata_idadi;
             kata_makazi[k] = i;
             kata_taifa[k] = m;
-            kata_mkoa[k] = d->mikoa[g] & 255;
+            kata_mkoa[k] = dh_mkoa(d, g);
             kata_watu[k] = dh_u32(p, o + 4);
             kata_gridi[g] = k;
             umbali[g] = 0;
@@ -1043,7 +1085,7 @@ w0 kata_hakikisha(DuniaHalisi* d) {
         n64 k0 = kata_gridi[g0];
         n8* wm = d->wamiliki;
         n64 m0 = (wm[2 * g0] & 255) | ((wm[2 * g0 + 1] & 255) << 8);
-        n64 r0 = d->mikoa[g0] & 255;
+        n64 r0 = (d->mikoa[2 * g0] & 255) | ((d->mikoa[2 * g0 + 1] & 255) << 8);
         n64 y0 = g0 / W;
         n64 x0 = g0 - y0 * W;
         n64 e0 = mw[(y0 / 2) * nusu_w + x0 / 2] & 255;
@@ -1056,7 +1098,7 @@ w0 kata_hakikisha(DuniaHalisi* d) {
             kama (y1 >= 0 && y1 < H) {
                 n64 g1 = y1 * W + x1;
                 n64 a1 = ardhi[g1] & 255;
-                kama ((a1 == 1 || a1 == 3) && (d->mikoa[g1] & 255) == r0 && ((wm[2 * g1] & 255) | ((wm[2 * g1 + 1] & 255) << 8)) == m0) {
+                kama ((a1 == 1 || a1 == 3) && ((d->mikoa[2 * g1] & 255) | ((d->mikoa[2 * g1 + 1] & 255) << 8)) == r0 && ((wm[2 * g1] & 255) | ((wm[2 * g1 + 1] & 255) << 8)) == m0) {
                     n64 mteremko = (mw[(y1 / 2) * nusu_w + x1 / 2] & 255) - e0;
                     kama (mteremko < 0) { mteremko = 0 - mteremko; }
                     mteremko = mteremko * 2;
@@ -1089,15 +1131,16 @@ w0 kata_hakikisha(DuniaHalisi* d) {
     achilia ndoo_idadi;
     achilia ndoo_uwezo;
     // ardhi isiyofikiwa: kata moja ya mwituni kwa kila (taifa, mkoa)
-    n32* mwitu = tenga(4 * 65536 * 4);
-    weka_sifuri(mwitu, 4 * 65536 * 4);
+    // kata moja ya mwituni kwa kila mkoa (mkoa ni wa taifa moja tu)
+    n32* mwitu = tenga(4 * 65536);
+    weka_sifuri(mwitu, 4 * 65536);
     g = 0;
     wakati (g < px) {
         kama (kata_gridi[g] < 0 && kata_ardhi_ya(d, g)) {
             n64 m = dh_u16(d->wamiliki, 2 * g);
             kama (m != 65535) {
-                n64 r = d->mikoa[g] & 255;
-                n64 ufunguo = ((m & 1023) << 8) | r;
+                n64 r = dh_mkoa(d, g);
+                n64 ufunguo = r;
                 kama (mwitu[ufunguo] == 0 && kata_idadi < uwezo) {
                     n64 k = kata_idadi;
                     kata_makazi[k] = -1;

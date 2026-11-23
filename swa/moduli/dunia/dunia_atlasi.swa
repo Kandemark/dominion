@@ -1,3 +1,4 @@
+husisha { moduli/dunia/asili.swa }
 husisha { msingi/maktaba/mfuatano.swa }
 husisha { moduli/dunia/taifa.swa }
 husisha { moduli/dunia/ramani.swa }
@@ -473,7 +474,7 @@ w0 dunia_halisi_unda_mataifa(TaifaMfumo* m, DuniaRamani* r, DuniaHalisi* d, Atla
 // Thamani 0..(upeo-1) inayotegemea taifa na chumvi -- sifa za kila taifa
 // ni za kudumu kwa mbegu ile ile.
 n32 dunia_atlasi_sifa(Atlasi* a, n64 taifa, n64 chumvi, n64 upeo) {
-    rudisha atlasi_heshi(taifa, chumvi, a->mbegu + 4242) % upeo;
+    rudisha atlasi_heshi(dunia_asili(taifa), chumvi, a->mbegu + 4242) % upeo;
 }
 
 // Unda mataifa ya mchezo kutoka atlasi, na uweke mmiliki wa kila kipande
