@@ -140,7 +140,7 @@ w0 skrini_ramani_paneli(Mchezo* g, Turubai* t, n64 taifa) {
     skrini_safu_ya_taarifa(ui("Area"), chombo, px, py, pw);
     py = py + 26;
     sura_namba(namba, tn->idadi_ya_mgawanyo);
-    skrini_safu_ya_taarifa(ui("Provinces"), namba, px, py, pw);
+    skrini_safu_ya_taarifa(ui("Regions"), namba, px, py, pw);
     py = py + 26;
     n64 lugha = mj->lugha_ya_taifa[taifa];
     mfuatano_umbiza(chombo, 64, "%s (%s)", lugha_jina(lugha), lugha_familia_jina(lugha_familia(lugha)), 0, 0, 0, 0);
@@ -217,6 +217,21 @@ DuniaHalisi* skrini_dunia_pata() {
     rudisha skrini_dunia;
 }
 
+// Idadi ya mikoa ya taifa (kitambulisho tofauti cha mkoa kwenye ardhi yake).
+n64 skrini_dunia_mikoa_ya(DuniaHalisi* d, n64 taifa) {
+    kata_hakikisha(d);
+    n8* ipo = tenga(256);
+    weka_sifuri(ipo, 256);
+    n64 n = 0;
+    n64 k = 0;
+    wakati (k < kata_idadi) {
+        kama (kata_taifa[k] == taifa && ipo[kata_mkoa[k] & 255] == 0) { ipo[kata_mkoa[k] & 255] = 1; n = n + 1; }
+        k = k + 1;
+    }
+    achilia ipo;
+    rudisha n;
+}
+
 w0 skrini_dunia_paneli(Turubai* t, DuniaHalisi* d, n64 taifa) {
     kama (SKRINI_RAMANI_PANELI == 0) { rudisha; }       // droo imefungwa
     n64 x = t->upana - SKRINI_RAMANI_PANELI;
@@ -288,6 +303,13 @@ w0 skrini_dunia_paneli(Turubai* t, DuniaHalisi* d, n64 taifa) {
     py = py + 26;
     sura_namba(namba, bandari);
     skrini_safu_ya_taarifa(ui("Ports"), namba, px, py, pw);
+    py = py + 26;
+    // ngazi za utawala: mikoa (regions) na kata (provinces)
+    sura_namba(namba, skrini_dunia_mikoa_ya(d, taifa));
+    skrini_safu_ya_taarifa(ui("Regions"), namba, px, py, pw);
+    py = py + 26;
+    sura_namba(namba, kata_za_taifa(d, taifa));
+    skrini_safu_ya_taarifa(ui("Provinces"), namba, px, py, pw);
     py = py + 40;
     sura_kichwa_cha_safuwima(ui("LARGEST CITIES"), px, py, 0);
     py = py + 24;

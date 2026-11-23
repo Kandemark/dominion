@@ -397,7 +397,7 @@ w0 skrini_katiba_mihimili(Dola* d, Wahusika* w, n64 x, n64 y, n64 wk) {
     mfuatano_umbiza(m, 96, ui("High Court, %d justices"), NGUVU_BENCHI, 0, 0, 0, 0, 0);
     skrini_katiba_mhimili(ui("Judiciary"), m, serikali_idadi_ya_tawi(w, TAWI_MAHAKAMA) + NGUVU_BENCHI, 11032472, x + 2 * (bw + 10), y, bw);
     skrini_katiba_mhimili(ui("Armed forces"), ui("Commander-in-Chief"), serikali_idadi_ya_tawi(w, TAWI_JESHI), SURA_HASI, x + 3 * (bw + 10), y, bw);
-    skrini_katiba_mhimili(ui("Provinces"), ui("Governors and chiefs"), serikali_idadi_ya_tawi(w, TAWI_MIKOA), SURA_CHANYA, x + 4 * (bw + 10), y, wk - 4 * (bw + 10));
+    skrini_katiba_mhimili(ui("Regions"), ui("Governors and chiefs"), serikali_idadi_ya_tawi(w, TAWI_MIKOA), SURA_CHANYA, x + 4 * (bw + 10), y, wk - 4 * (bw + 10));
 }
 
 w0 skrini_katiba_mhimili(n8* jina, n8* mkuu, n64 idadi, n64 rangi, n64 x, n64 y, n64 w) {

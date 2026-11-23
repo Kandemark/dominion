@@ -115,7 +115,7 @@ n8* katiba_sababu_ya_ombi(MhusikaWaDola* m, n64 zamu) {
     kama (m->tawi == TAWI_BUNGE) { kama (k) { rudisha ui("wants your support for a bill"); } rudisha ui("brings a complaint from the chamber"); }
     kama (m->tawi == TAWI_MAHAKAMA) { kama (k) { rudisha ui("warns of a case against the government"); } rudisha ui("asks for more judges"); }
     kama (m->tawi == TAWI_JESHI) { kama (k) { rudisha ui("requests funds for the forces"); } rudisha ui("reports unrest in the ranks"); }
-    kama (m->tawi == TAWI_MIKOA) { kama (k) { rudisha ui("pleads for relief for the province"); } rudisha ui("reports a dispute over land"); }
+    kama (m->tawi == TAWI_MIKOA) { kama (k) { rudisha ui("pleads for relief for the region"); } rudisha ui("reports a dispute over land"); }
     kama (k) { rudisha ui("seeks a decision on the budget"); }
     rudisha ui("asks for a private word");
 }
