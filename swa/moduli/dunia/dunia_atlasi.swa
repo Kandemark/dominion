@@ -364,7 +364,7 @@ w0 dunia_halisi_unda_mataifa(TaifaMfumo* m, DuniaRamani* r, DuniaHalisi* d, Atla
                 kama (dh_u16(p, o + 10) == i && dh_u8(p, o + 8) == ng) {
                     TaifaMgawanyo* g = dunia_taifa_pata_mgawanyo(t, t->idadi_ya_mgawanyo);
                     n8* gj = tenga(80);
-                    unganisha_mfuatano(gj, "Province of ", dh_jina(p, o + 12));
+                    unganisha_mfuatano(gj, "Region of ", dh_jina(p, o + 12));
                     g->jina = gj;
                     n8* gid = tenga(24);
                     mfuatano_umbiza(gid, 24, "mkoa_%d", c, 0, 0, 0, 0, 0);

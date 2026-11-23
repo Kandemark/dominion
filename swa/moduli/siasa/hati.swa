@@ -55,13 +55,13 @@ n8* sehemu_jina(n64 s) {
     kama (s == 4) { rudisha ui("The Legislature"); }
     kama (s == 5) { rudisha ui("The Judiciary"); }
     kama (s == 6) { rudisha ui("Defence and Security"); }
-    kama (s == 7) { rudisha ui("Provinces and Local Government"); }
+    kama (s == 7) { rudisha ui("Regions and Local Government"); }
     kama (s == 8) { rudisha ui("Public Finance"); }
     kama (s == 9) { rudisha ui("Elections and Political Parties"); }
     kama (s == 10) { rudisha ui("States of Emergency"); }
     kama (s == 11) { rudisha ui("Amendment of this Constitution"); }
     kama (s == 12) { rudisha ui("Transitional and Final Provisions"); }
-    kama (s == 13) { rudisha ui("First Schedule: Provinces and Districts"); }
+    kama (s == 13) { rudisha ui("First Schedule: Regions and Districts"); }
     kama (s == 14) { rudisha ui("Second Schedule: Electoral Constituencies"); }
     kama (s == 15) { rudisha ui("Third Schedule: Oaths of Office"); }
     rudisha ui("Fourth Schedule: Division of Revenue");
@@ -220,7 +220,7 @@ n8* hati_jina_la_kigezo(n64 k, n64 i) {
         kama (k == K_TUME) { rudisha ui("Commissioners"); }
         kama (k == K_VYAMA) { rudisha ui("Several parties (1 yes)"); }
         kama (k == K_DHARURA) { rudisha ui("Duration (days)"); }
-        kama (k == K_MGAWANYO) { rudisha ui("Level (0 national, 1 shared, 2 provincial)"); }
+        kama (k == K_MGAWANYO) { rudisha ui("Level (0 national, 1 shared, 2 regional)"); }
         kama (k == K_SIFA_YA_CHEO) { rudisha ui("Minimum age"); }
         kama (k == K_MAHAKAMA_NDOGO) { rudisha ui("Judges on each bench"); }
         kama (k == K_TAASISI) { rudisha ui("Term of its head (years)"); }
@@ -240,7 +240,7 @@ n8* hati_jina_la_kigezo(n64 k, n64 i) {
         kama (k == K_MAJESHI) { rudisha ui("Ceiling (thousands)"); }
         kama (k == K_LAZIMA_JESHI) { rudisha ui("Months of service (0 none)"); }
         kama (k == K_BARAZA_ULINZI) { rudisha ui("Members"); }
-        kama (k == K_POLISI) { rudisha ui("Level (0 national, 1 provincial)"); }
+        kama (k == K_POLISI) { rudisha ui("Level (0 national, 1 regional)"); }
         kama (k == K_MKOA_MTENDAJI) { rudisha ui("Executive members"); }
         kama (k == K_MGAO_JUMLA) { rudisha ui("Share of revenue (%)"); }
         kama (k == K_MGAO_MKOA) { rudisha ui("Share (per thousand)"); }
@@ -1616,7 +1616,7 @@ n8* hati_baraza(Dola* d, n64 b) {
 
 n8* hati_jina_la_mkoa(n64 r) {
     kama (hati_mikoa_majina != 0 && r >= 0 && r < hati_mikoa_idadi && hati_mikoa_majina[r] != 0) { rudisha hati_mikoa_majina[r]; }
-    rudisha ui("the province");
+    rudisha ui("the region");
 }
 
 w0 hati_herufi_kubwa_ya_kwanza(n8* s) {
@@ -1649,7 +1649,7 @@ w0 hati_andika_jumla(Kifungu* k, n64 i, Dola* d, n8* taifa, n8* nje, n64 uwezo) 
         mfuatano_umbiza(nje, uwezo, ui("Sovereignty belongs to %s."), chanzo, 0, 0, 0, 0, 0);
     }
     kama (t == K_ENEO) {
-        kama (k->p0 > 0) { mfuatano_umbiza(nje, uwezo, ui("The territory of %s comprises %d provinces, whose boundaries may be altered only in the manner of an amendment to this Constitution."), taifa, k->p0, 0, 0, 0, 0); }
+        kama (k->p0 > 0) { mfuatano_umbiza(nje, uwezo, ui("The territory of %s comprises %d regions, whose boundaries may be altered only in the manner of an amendment to this Constitution."), taifa, k->p0, 0, 0, 0, 0); }
         sivyo { mfuatano_umbiza(nje, uwezo, ui("The territory of %s is that held by it on the day this Constitution came into force."), taifa, 0, 0, 0, 0, 0); }
     }
     kama (t == K_SARAFU) {
@@ -1745,20 +1745,20 @@ w0 hati_andika_mengine(Kifungu* k, n64 i, Dola* d, Wahusika* w, n8* taifa, n8* n
     MhusikaWaDola* m = wahusika_pata(w, k->mada);
     kama (t == K_MGAWANYO) {
         n8* nani = ui("is reserved to the national legislature");
-        kama (k->p0 == 1) { nani = ui("is shared: the provinces may legislate so far as national law does not provide"); }
-        kama (k->p0 >= 2) { nani = ui("belongs to the provinces, within the limits of this Constitution"); }
+        kama (k->p0 == 1) { nani = ui("is shared: the regions may legislate so far as national law does not provide"); }
+        kama (k->p0 >= 2) { nani = ui("belongs to the regions, within the limits of this Constitution"); }
         mfuatano_umbiza(nje, uwezo, ui("The power to make laws on %s %s."), eneo_la_sera(k->mada), nani, 0, 0, 0, 0);
     }
     kama (t == K_SIFA_YA_CHEO && m != 0) { mfuatano_umbiza(nje, uwezo, ui("No person may hold the office of %s unless a citizen of at least %d years' standing who has reached the age of %d, and no holder may engage in trade or receive any other salary."), m->cheo, k->p1, k->p0, 0, 0, 0); }
     kama (t == K_MAHAKAMA_NDOGO) {
         n8* jina = ui("Magistrates' Courts");
         kama (k->mada == 0) { jina = ui("Court of Appeal"); }
-        kama (k->mada == 1) { jina = ui("Provincial Courts"); }
+        kama (k->mada == 1) { jina = ui("Regional Courts"); }
         kama (k->mada == 2) { jina = ui("District Courts"); }
         mfuatano_umbiza(nje, uwezo, ui("There are established the %s, each sitting with %d judges, whose decisions may be appealed to the court above it."), jina, k->p0, 0, 0, 0, 0);
     }
     kama (t == K_TAASISI) { mfuatano_umbiza(nje, uwezo, ui("There is established a %s, independent in the exercise of its functions, whose head is appointed for %d years and may be removed only as a justice of the High Court."), taasisi_jina(k->mada), k->p0, 0, 0, 0, 0); }
-    kama (t == K_MKOA_BARAZA) { mfuatano_umbiza(nje, uwezo, ui("The Province of %s has a council of %d members, elected for the term of the national legislature, which makes laws for the province within its powers."), hati_jina_la_mkoa(k->mada), k->p0, 0, 0, 0, 0); }
+    kama (t == K_MKOA_BARAZA) { mfuatano_umbiza(nje, uwezo, ui("The Region of %s has a council of %d members, elected for the term of the national legislature, which makes laws for the region within its powers."), hati_jina_la_mkoa(k->mada), k->p0, 0, 0, 0, 0); }
     kama (t == K_MAHAKAMA) { mfuatano_umbiza(nje, uwezo, ui("The judicial power of %s is vested in a High Court of %d justices and in such lower courts as the law establishes."), taifa, k->p0, 0, 0, 0, 0); }
     kama (t == K_JAJI_MUDA) { mfuatano_umbiza(nje, uwezo, ui("A justice holds office until the age of %d, and his or her salary may not be reduced while in office."), k->p0, 0, 0, 0, 0, 0); }
     kama (t == K_JAJI_KUONDOLEWA) { mfuatano_umbiza(nje, uwezo, ui("A justice may be removed only for proved misconduct or incapacity, by resolution of %d per cent of the members of the legislature."), k->p0, 0, 0, 0, 0, 0); }
@@ -1774,7 +1774,7 @@ w0 hati_andika_mengine(Kifungu* k, n64 i, Dola* d, Wahusika* w, n8* taifa, n8* n
     kama (t == K_MKOA) {
         n8* gavana = ui("appointed by the head of state");
         kama (k->p0) { gavana = ui("elected by its inhabitants"); }
-        mfuatano_umbiza(nje, uwezo, ui("There is established the Province of %s, administered by a governor %s, with a council for its local affairs."), hati_jina_la_mkoa(k->mada), gavana, 0, 0, 0, 0);
+        mfuatano_umbiza(nje, uwezo, ui("There is established the Region of %s, administered by a governor %s, with a council for its local affairs."), hati_jina_la_mkoa(k->mada), gavana, 0, 0, 0, 0);
     }
     kama (t == K_BAJETI) { mfuatano_umbiza(nje, uwezo, ui("The government %s lay the estimates of revenue and expenditure before the legislature in month %d of every year; no money may be spent except as appropriated by law."), hati_lazima(i), k->p0, 0, 0, 0, 0); }
     kama (t == K_KODI) { mfuatano_umbiza(nje, uwezo, "%s", ui("No tax or duty may be imposed, altered or abolished except by law."), 0, 0, 0, 0, 0); }
@@ -1950,18 +1950,18 @@ w0 hati_andika_kina(Kifungu* k, n64 i, Dola* d, Wahusika* w, n8* taifa, n8* nje,
     }
     kama (t == K_BARAZA_ULINZI) { mfuatano_umbiza(nje, uwezo, ui("A Defence Council of %d members, chaired by the %s and including the commanders of the forces, advises on all matters of defence."), k->p0, hati_mkuu(d), 0, 0, 0, 0); }
     kama (t == K_POLISI) {
-        kama (k->p0) { mfuatano_umbiza(nje, uwezo, "%s", ui("Each province maintains its own police; a national police deals with offences against the state and crimes crossing provincial boundaries."), 0, 0, 0, 0, 0); }
+        kama (k->p0) { mfuatano_umbiza(nje, uwezo, "%s", ui("Each region maintains its own police; a national police deals with offences against the state and crimes crossing regional boundaries."), 0, 0, 0, 0, 0); }
         sivyo { mfuatano_umbiza(nje, uwezo, "%s", ui("There is one national police service, under a commissioner appointed by the head of government."), 0, 0, 0, 0, 0); }
     }
     kama (t == K_UJASUSI) {
         kama (k->p0) { mfuatano_umbiza(nje, uwezo, "%s", ui("The intelligence service acts only within the law and reports in confidence to a committee of the legislature."), 0, 0, 0, 0, 0); }
         sivyo { mfuatano_umbiza(nje, uwezo, ui("The intelligence service answers to the %s alone."), hati_mkuu(d), 0, 0, 0, 0, 0); }
     }
-    kama (t == K_MKOA_MTENDAJI) { mfuatano_umbiza(nje, uwezo, ui("The executive power of the Province of %s is exercised by the governor with an executive committee of %d members."), hati_jina_la_mkoa(k->mada), k->p0, 0, 0, 0, 0); }
-    kama (t == K_MGAO_JUMLA) { mfuatano_umbiza(nje, uwezo, ui("Not less than %d per cent of the revenue raised nationally in each year %s be divided among the provinces as set out in the Fourth Schedule."), k->p0, hati_lazima(i), 0, 0, 0, 0); }
+    kama (t == K_MKOA_MTENDAJI) { mfuatano_umbiza(nje, uwezo, ui("The executive power of the Region of %s is exercised by the governor with an executive committee of %d members."), hati_jina_la_mkoa(k->mada), k->p0, 0, 0, 0, 0); }
+    kama (t == K_MGAO_JUMLA) { mfuatano_umbiza(nje, uwezo, ui("Not less than %d per cent of the revenue raised nationally in each year %s be divided among the regions as set out in the Fourth Schedule."), k->p0, hati_lazima(i), 0, 0, 0, 0); }
     kama (t == K_UCHAGUZI_TAREHE) { mfuatano_umbiza(nje, uwezo, ui("General elections are held in month %d of the year in which the term of the legislature ends, and the date %s be published at least %d days before."), k->p0, hati_lazima(i), k->p1, 0, 0, 0); }
     kama (t == K_UCHAGUZI_MIGOGORO) { mfuatano_umbiza(nje, uwezo, ui("A petition disputing an election is heard by the High Court, which %s decide it within %d days of its filing."), hati_lazima(i), k->p0, 0, 0, 0, 0); }
-    kama (t == K_MGAO_MKOA) { mfuatano_umbiza(nje, uwezo, ui("The Province of %s receives %d.%d per cent of the provincial share."), hati_jina_la_mkoa(k->mada), k->p0 / 10, k->p0 % 10, 0, 0, 0); }
+    kama (t == K_MGAO_MKOA) { mfuatano_umbiza(nje, uwezo, ui("The Region of %s receives %d.%d per cent of the regional share."), hati_jina_la_mkoa(k->mada), k->p0 / 10, k->p0 % 10, 0, 0, 0); }
     kama (t == K_WILAYA) {
         n8* jina = ui("the district");
         kama (k->mada >= 0 && k->mada < hati_wilaya_idadi) { jina = hati_wilaya_jina[k->mada]; }
@@ -2085,7 +2085,7 @@ n8* hati_kazi_ya_cheo(n8* cheo, n64 aina) {
     kama (tafuta_mfuatano(cheo, "Master of") == 0) { rudisha ui("speaks for the guild in the councils of state and governs its members"); }
     kama (tafuta_mfuatano(cheo, "District Commissioner") == 0) { rudisha ui("represents the national government in the district and oversees its administration"); }
     kama (tafuta_mfuatano(cheo, "Village") == 0) { rudisha ui("keeps the peace of the village and settles its minor disputes"); }
-    kama (tafuta_mfuatano(cheo, "Governor") >= 0) { rudisha ui("represents the national government in the province and heads its administration"); }
+    kama (tafuta_mfuatano(cheo, "Governor") >= 0) { rudisha ui("represents the national government in the region and heads its administration"); }
     kama (aina == K_KAZI_BUNGE) { rudisha ui("performs the functions assigned by the standing orders of the chamber"); }
     kama (aina == K_KAZI_MAHAKAMA) { rudisha ui("performs the judicial functions assigned by law"); }
     kama (aina == K_KAZI_JESHI) { rudisha ui("performs the military duties assigned by the Defence Council"); }
@@ -2160,10 +2160,10 @@ w0 hati_kichwa_cha_ibara(n64 i, Dola* d, Wahusika* w, n8* nje, n64 uwezo) {
     kama (t == K_BARAZA_ULINZI) { jina = ui("Defence Council"); }
     kama (t == K_POLISI) { jina = ui("Police"); }
     kama (t == K_UJASUSI) { jina = ui("Intelligence Service"); }
-    kama (t == K_MGAO_JUMLA) { jina = ui("Revenue of the Provinces"); }
+    kama (t == K_MGAO_JUMLA) { jina = ui("Revenue of the Regions"); }
     kama (t == K_UCHAGUZI_TAREHE) { jina = ui("General Elections"); }
     kama (t == K_UCHAGUZI_MIGOGORO) { jina = ui("Election Petitions"); }
-    kama (t == K_MGAO_MKOA) { jina = ui("Shares of the Provinces"); }
+    kama (t == K_MGAO_MKOA) { jina = ui("Shares of the Regions"); }
     kama (t == K_WILAYA) { jina = hati_jina_la_mkoa(k->p0); }
     kama (t == K_JIMBO && k->mada >= 0 && k->mada < hati_wilaya_idadi) { jina = hati_jina_la_mkoa(hati_wilaya_mkoa[k->mada]); }
     kama (t == K_KIAPO && m != 0) { jina = m->cheo; }

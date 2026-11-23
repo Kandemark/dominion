@@ -331,10 +331,21 @@ n64 dh_pinda(n64 x, n64 y, n64 mbegu, n64 ukubwa) {
     rudisha ((atlasi_tabaka(x, y, mbegu, 3) - 32768) * ukubwa) / 32768;
 }
 
+// Ukuzaji ambapo mipaka ya kata huonekana (kipimo: pikseli za dunia * 256 kwa pikseli ya skrini).
+n64 DH_KIPIMO_CHA_KATA = 96;
+n64* dh_kata_skrini = 0;        // kata ya kila pikseli ya skrini, au -1 (ikiwa imekuzwa vya kutosha)
+n64 dh_kata_skrini_ipo = 0;
+
 w0 dunia_halisi_chora_msingi(DuniaHalisi* d, Turubai* t, n64 x0, n64 y0, n64 kipimo) {
     n64 w = t->upana;
     n64 h = t->kimo;
     n64 n = w * h;
+    // kata huhesabiwa mara ya kwanza ramani inapokuzwa hadi kiwango chake
+    n32 kata = kipimo <= DH_KIPIMO_CHA_KATA;
+    kama (kata) { kata_hakikisha(d); }
+    kama (dh_kata_skrini != 0) { achilia dh_kata_skrini; }
+    dh_kata_skrini = tenga(8 * n);
+    dh_kata_skrini_ipo = kata;
     kama (dh_wamiliki_skrini != 0) { achilia dh_wamiliki_skrini; }
     dh_wamiliki_skrini = tenga(8 * n);
     kama (dh_mgogoro_skrini != 0) { achilia dh_mgogoro_skrini; }
@@ -364,6 +375,8 @@ w0 dunia_halisi_chora_msingi(DuniaHalisi* d, Turubai* t, n64 x0, n64 y0, n64 kip
             kama (m == 65535 || a == 0 || a == 2) { m = 0 - 1; }
             dh_wamiliki_skrini[k] = m;
             mkoa[k] = d->mikoa[g] & 255;
+            dh_kata_skrini[k] = -1;
+            kama (kata && m >= 0) { dh_kata_skrini[k] = kata_gridi[g]; }
             dh_mgogoro_skrini[k] = d->migogoro[g] & 255;
             kama (m < 0) { dh_mgogoro_skrini[k] = 0; }
             kama (a == 1 || a == 3) { pwani[k] = mbali; } sivyo { pwani[k] = 0; }
@@ -390,6 +403,11 @@ w0 dunia_halisi_chora_msingi(DuniaHalisi* d, Turubai* t, n64 x0, n64 y0, n64 kip
                 kama ((i > 0 && dh_wamiliki_skrini[k - 1] == m && mkoa[k - 1] != mkoa[k])
                     || (j > 0 && dh_wamiliki_skrini[k - w] == m && mkoa[k - w] != mkoa[k])) {
                     mkoa_m[k] = 1;
+                }
+                // mpaka wa kata ndani ya mkoa mmoja: mstari mwembamba hafifu
+                sivyo kama (kata && ((i > 0 && dh_wamiliki_skrini[k - 1] == m && dh_kata_skrini[k - 1] != dh_kata_skrini[k])
+                    || (j > 0 && dh_wamiliki_skrini[k - w] == m && dh_kata_skrini[k - w] != dh_kata_skrini[k]))) {
+                    mkoa_m[k] = 2;
                 }
             }
             i = i + 1;
@@ -436,6 +454,7 @@ w0 dunia_halisi_chora_msingi(DuniaHalisi* d, Turubai* t, n64 x0, n64 y0, n64 kip
                         rangi = atlasi_changanya_rangi(rangi, d->rangi[m], (f * 150) >> 8);
                     }
                     kama (mkoa_m[k] == 1 && ((i + j) / 3) % 3 != 0) { rangi = atlasi_changanya_rangi(rangi, 7891036, 120); }
+                    kama (mkoa_m[k] == 2) { rangi = atlasi_changanya_rangi(rangi, 7891036, 55); }
                     n64 mg = dh_mgogoro_skrini[k];
                     kama (mg > 0) {
                         // mistari ya rangi mbili za wadai, na ukingo wa nukta nyekundu-kahawia
@@ -894,4 +913,255 @@ w0 dunia_halisi_chora(DuniaHalisi* d, Turubai* t, n64 x0, n64 y0, n64 kipimo,
     dunia_halisi_chora_vekta(d, t, x0, y0, kipimo);
     dunia_halisi_chora_majina(d, t, x0, y0, kipimo, nene, kawaida, serifu);
     dunia_halisi_chora_mito_majina(d, t, x0, y0, kipimo, serifu);
+}
+
+// ---------- kata: mikoa midogo ya ramani ----------
+//
+// Kila makazi ya ramani (majiji makuu, majiji, miji, vijiji -- zaidi ya
+// 64,000) ni makao ya kata. Ardhi hugawiwa kwa kata kwa mafuriko yenye
+// gharama ya ardhi (Dial: ndoo za gharama ndogo): kupanda au kushuka mlima
+// ni ghali, hivyo kata hufuata mabonde na matuta. Kata haivuki mpaka wa
+// taifa wala wa mkoa, kwa hiyo kata zote hukaa ndani ya mkoa mmoja.
+// Ardhi ya taifa au mkoa usio na makazi yoyote hupata kata moja ya mwituni
+// kwa kila jozi (taifa, mkoa). Huzalishwa mara moja, wakati wa kwanza
+// kuhitajika; ni hesabu tupu juu ya data ya dunia, hakuna faili jipya.
+
+n32* kata_gridi = 0;            // [pikseli]: kata, au -1 (bahari na ardhi isiyo na mwenyewe)
+n64 kata_idadi = 0;
+n64 kata_za_makazi = 0;         // kata 0..kata_za_makazi-1 zina makazi; zinazofuata ni za mwituni
+n32* kata_makazi = 0;           // faharisi ya makazi, au -1
+n32* kata_taifa = 0;
+n32* kata_mkoa = 0;
+n32* kata_eneo = 0;             // pikseli
+n32* kata_mwinuko = 0;          // wastani wa mwinuko (0..255)
+n32* kata_barafu = 0;           // pikseli za barafu
+n64* kata_watu = 0;
+
+n64 kata_mwinuko_wa(DuniaHalisi* d, n64 g) {
+    kama (d->sehemu[12] == 0) { rudisha 0; }
+    n64 gy = g / d->upana;
+    n64 gx = g % d->upana;
+    rudisha dh_u8(d->data, d->sehemu[12] + (gy / 2) * (d->upana / 2) + (gx / 2));
+}
+
+n32 kata_ardhi_ya(DuniaHalisi* d, n64 g) {
+    n64 a = d->ardhi[g] & 255;
+    rudisha a == 1 || a == 3;
+}
+
+// Ongeza pikseli g kwenye ndoo b (safu hukua mara mbili ikijaa).
+w0 kata_sukuma(n64* data, n64* idadi, n64* uwezo, n64 b, n64 g) {
+    kama (idadi[b] >= uwezo[b]) {
+        n64 mpya = uwezo[b] * 2;
+        n32* d2 = tenga(4 * mpya);
+        nakili(d2, data[b], 4 * idadi[b]);
+        achilia data[b];
+        data[b] = d2;
+        uwezo[b] = mpya;
+    }
+    n32* s = data[b];
+    s[idadi[b]] = g;
+    idadi[b] = idadi[b] + 1;
+}
+
+w0 kata_hakikisha(DuniaHalisi* d) {
+    kama (kata_gridi != 0 || d == 0) { rudisha; }
+    n64 W = d->upana;
+    n64 H = d->kimo;
+    n64 px = W * H;
+    n8* p = d->data;
+    kata_gridi = tenga(4 * px);
+    n32* umbali = tenga(4 * px);
+    n64 g = 0;
+    wakati (g < px) { kata_gridi[g] = -1; umbali[g] = 2147483647; g = g + 1; }
+    // ndoo za Dial: gharama ya ukingo ni 5 (sawa), 7 (mshazari) + mteremko 0..20.
+    // Kila ndoo ni safu inayokua: pikseli inaweza kuingia tena umbali wake
+    // ukipungua (nakala ya zamani hurukwa ikitolewa).
+    n64 NDOO = 32;
+    n64* ndoo_data = tenga(8 * NDOO);       // n32* kwa kila ndoo
+    n64* ndoo_idadi = tenga(8 * NDOO);
+    n64* ndoo_uwezo = tenga(8 * NDOO);
+    n64 b = 0;
+    wakati (b < NDOO) { ndoo_uwezo[b] = 65536; ndoo_data[b] = tenga(4 * 65536); ndoo_idadi[b] = 0; b = b + 1; }
+    n64 n = d->idadi_makazi;
+    n64 uwezo = n + 4096;
+    kata_makazi = tenga(4 * uwezo);
+    kata_taifa = tenga(4 * uwezo);
+    kata_mkoa = tenga(4 * uwezo);
+    kata_eneo = tenga(4 * uwezo);
+    kata_mwinuko = tenga(4 * uwezo);
+    kata_barafu = tenga(4 * uwezo);
+    kata_watu = tenga(8 * uwezo);
+    // mbegu: kila makazi kwenye pikseli halali ya ardhi yenye mwenyewe
+    kata_idadi = 0;
+    n64 hai = 0;
+    n64 i = 0;
+    wakati (i < n) {
+        n64 o = d->makazi[i];
+        n64 y = (dh_u16(p, o) / 8) % H;
+        n64 x = (dh_u16(p, o + 2) / 8) % W;
+        g = y * W + x;
+        n64 m = dh_u16(d->wamiliki, 2 * g);
+        kama (kata_ardhi_ya(d, g) && m != 65535 && kata_gridi[g] < 0) {
+            n64 k = kata_idadi;
+            kata_makazi[k] = i;
+            kata_taifa[k] = m;
+            kata_mkoa[k] = d->mikoa[g] & 255;
+            kata_watu[k] = dh_u32(p, o + 4);
+            kata_gridi[g] = k;
+            umbali[g] = 0;
+            kata_sukuma(ndoo_data, ndoo_idadi, ndoo_uwezo, 0, g);
+            hai = hai + 1;
+            kata_idadi = k + 1;
+        }
+        i = i + 1;
+    }
+    kata_za_makazi = kata_idadi;
+    // mafuriko: majirani 8 (gharama 5 sawa, 7 mshazari) na mwinuko wa nusu-azimio
+    n64* jdx = tenga(8 * 8);
+    n64* jdy = tenga(8 * 8);
+    n64* jgharama = tenga(8 * 8);
+    jdx[0] = 1; jdy[0] = 0; jdx[1] = -1; jdy[1] = 0; jdx[2] = 0; jdy[2] = 1; jdx[3] = 0; jdy[3] = -1;
+    jdx[4] = 1; jdy[4] = 1; jdx[5] = -1; jdy[5] = 1; jdx[6] = 1; jdy[6] = -1; jdx[7] = -1; jdy[7] = -1;
+    n64 q = 0;
+    wakati (q < 8) { jgharama[q] = 5; kama (q >= 4) { jgharama[q] = 7; } q = q + 1; }
+    n8* ardhi = d->ardhi;
+    n64 nusu_w = W / 2;
+    n8* mw = d->data + d->sehemu[12];
+    kama (d->sehemu[12] == 0) { mw = tenga(nusu_w * (H / 2 + 1)); weka_sifuri(mw, nusu_w * (H / 2 + 1)); }
+    n64 sasa = 0;
+    n64 tupu_mfululizo = 0;
+    wakati (hai > 0 && tupu_mfululizo < NDOO) {
+        n64 ndoo = sasa % NDOO;
+        kama (ndoo_idadi[ndoo] == 0) { sasa = sasa + 1; tupu_mfululizo = tupu_mfululizo + 1; endelea; }
+        tupu_mfululizo = 0;
+        n32* safu = ndoo_data[ndoo];
+        n64 g0 = safu[ndoo_idadi[ndoo] - 1];
+        ndoo_idadi[ndoo] = ndoo_idadi[ndoo] - 1;
+        hai = hai - 1;
+        kama (umbali[g0] != sasa) { endelea; }          // nakala ya zamani kwenye ndoo
+        n64 k0 = kata_gridi[g0];
+        n8* wm = d->wamiliki;
+        n64 m0 = (wm[2 * g0] & 255) | ((wm[2 * g0 + 1] & 255) << 8);
+        n64 r0 = d->mikoa[g0] & 255;
+        n64 y0 = g0 / W;
+        n64 x0 = g0 - y0 * W;
+        n64 e0 = mw[(y0 / 2) * nusu_w + x0 / 2] & 255;
+        n64 jirani = 0;
+        wakati (jirani < 8) {
+            n64 y1 = y0 + jdy[jirani];
+            n64 x1 = x0 + jdx[jirani];
+            kama (x1 < 0) { x1 = x1 + W; }
+            kama (x1 >= W) { x1 = x1 - W; }          // dunia huzunguka mashariki-magharibi
+            kama (y1 >= 0 && y1 < H) {
+                n64 g1 = y1 * W + x1;
+                n64 a1 = ardhi[g1] & 255;
+                kama ((a1 == 1 || a1 == 3) && (d->mikoa[g1] & 255) == r0 && ((wm[2 * g1] & 255) | ((wm[2 * g1 + 1] & 255) << 8)) == m0) {
+                    n64 mteremko = (mw[(y1 / 2) * nusu_w + x1 / 2] & 255) - e0;
+                    kama (mteremko < 0) { mteremko = 0 - mteremko; }
+                    mteremko = mteremko * 2;
+                    kama (mteremko > 20) { mteremko = 20; }
+                    n64 mpya = sasa + jgharama[jirani] + mteremko;
+                    kama (mpya < umbali[g1]) {
+                        umbali[g1] = mpya;
+                        kata_gridi[g1] = k0;
+                        n64 nd = mpya & 31;                  // mpya % NDOO (NDOO = 32)
+                        kama (ndoo_idadi[nd] >= ndoo_uwezo[nd]) { kata_sukuma(ndoo_data, ndoo_idadi, ndoo_uwezo, nd, g1); }
+                        sivyo {
+                            n32* sn = ndoo_data[nd];
+                            sn[ndoo_idadi[nd]] = g1;
+                            ndoo_idadi[nd] = ndoo_idadi[nd] + 1;
+                        }
+                        hai = hai + 1;
+                    }
+                }
+            }
+            jirani = jirani + 1;
+        }
+    }
+    achilia umbali;
+    achilia jdx;
+    achilia jdy;
+    achilia jgharama;
+    b = 0;
+    wakati (b < NDOO) { achilia ndoo_data[b]; b = b + 1; }
+    achilia ndoo_data;
+    achilia ndoo_idadi;
+    achilia ndoo_uwezo;
+    // ardhi isiyofikiwa: kata moja ya mwituni kwa kila (taifa, mkoa)
+    n32* mwitu = tenga(4 * 65536 * 4);
+    weka_sifuri(mwitu, 4 * 65536 * 4);
+    g = 0;
+    wakati (g < px) {
+        kama (kata_gridi[g] < 0 && kata_ardhi_ya(d, g)) {
+            n64 m = dh_u16(d->wamiliki, 2 * g);
+            kama (m != 65535) {
+                n64 r = d->mikoa[g] & 255;
+                n64 ufunguo = ((m & 1023) << 8) | r;
+                kama (mwitu[ufunguo] == 0 && kata_idadi < uwezo) {
+                    n64 k = kata_idadi;
+                    kata_makazi[k] = -1;
+                    kata_taifa[k] = m;
+                    kata_mkoa[k] = r;
+                    kata_watu[k] = 0;
+                    kata_idadi = k + 1;
+                    mwitu[ufunguo] = k + 1;
+                }
+                kata_gridi[g] = mwitu[ufunguo] - 1;
+            }
+        }
+        g = g + 1;
+    }
+    achilia mwitu;
+    // eneo, mwinuko na barafu
+    i = 0;
+    wakati (i < kata_idadi) { kata_eneo[i] = 0; kata_mwinuko[i] = 0; kata_barafu[i] = 0; i = i + 1; }
+    n64* jumla_mw = tenga(8 * kata_idadi);
+    weka_sifuri(jumla_mw, 8 * kata_idadi);
+    g = 0;
+    wakati (g < px) {
+        n64 k = kata_gridi[g];
+        kama (k >= 0) {
+            kata_eneo[k] = kata_eneo[k] + 1;
+            jumla_mw[k] = jumla_mw[k] + kata_mwinuko_wa(d, g);
+            kama ((d->ardhi[g] & 255) == 3) { kata_barafu[k] = kata_barafu[k] + 1; }
+        }
+        g = g + 1;
+    }
+    i = 0;
+    wakati (i < kata_idadi) { kama (kata_eneo[i] > 0) { kata_mwinuko[i] = jumla_mw[i] / kata_eneo[i]; } i = i + 1; }
+    achilia jumla_mw;
+}
+
+// Kata ya pikseli ya dunia (gx, gy), au -1.
+n64 kata_ya(DuniaHalisi* d, n64 gx, n64 gy) {
+    kata_hakikisha(d);
+    kama (kata_gridi == 0 || gy < 0 || gy >= d->kimo) { rudisha -1; }
+    rudisha kata_gridi[gy * d->upana + ((gx % d->upana) + d->upana) % d->upana];
+}
+
+// Jina la kata: makao yake, au eneo la mwituni kwa sura ya ardhi yake.
+w0 kata_jina(DuniaHalisi* d, n64 k, n8* nje, n64 uwezo) {
+    nje[0] = 0;
+    kama (k < 0 || k >= kata_idadi) { rudisha; }
+    kama (kata_makazi[k] >= 0) {
+        nakili_mfuatano(nje, dh_jina(d->data, d->makazi[kata_makazi[k]] + 12));
+        rudisha;
+    }
+    n8* aina = "Wilds";
+    kama (kata_barafu[k] * 2 > kata_eneo[k]) { aina = "Icefields"; }
+    sivyo kama (kata_mwinuko[k] > 170) { aina = "Highlands"; }
+    sivyo kama (kata_mwinuko[k] < 40) { aina = "Lowlands"; }
+    n8* taifa = "";
+    kama (kata_taifa[k] >= 0 && kata_taifa[k] < d->mataifa) { taifa = dh_jina(d->data, d->jina[kata_taifa[k]]); }
+    mfuatano_umbiza(nje, uwezo, "%s %s", taifa, aina, 0, 0, 0, 0);
+}
+
+// Idadi ya kata za taifa t.
+n64 kata_za_taifa(DuniaHalisi* d, n64 t) {
+    kata_hakikisha(d);
+    n64 n = 0;
+    n64 i = 0;
+    wakati (i < kata_idadi) { kama (kata_taifa[i] == t) { n = n + 1; } i = i + 1; }
+    rudisha n;
 }

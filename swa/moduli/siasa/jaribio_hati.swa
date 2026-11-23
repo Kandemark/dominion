@@ -56,7 +56,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     wakati (i < hati_idadi) {
         hati_andika(i, r, wr, "Test", m, 2048);
         kama (m[0] == 0) { yote_yana_maandishi = 0; andika("SHINDWA: kifungu %d (aina %d) hakina maandishi\n", i, hati_pata(i)->aina, 0, 0, 0, 0); }
-        kama (tafuta_mfuatano(m, "Province of Gamma") >= 0) { jina_la_mkoa = 1; }
+        kama (tafuta_mfuatano(m, "Region of Gamma") >= 0) { jina_la_mkoa = 1; }
         i = i + 1;
     }
     thibitisha("kila kifungu kina maandishi", yote_yana_maandishi);

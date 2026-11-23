@@ -330,7 +330,7 @@ w0 wahusika_jenga_mengine(Wahusika* w, Dola* d, n64 mkuu) {
     // muungano wa kabila una machifu wa koo wanaorithi
     n64 ujazaji = UJAZAJI_KUTEULIWA;
     n64 mteuzi = mkuu;
-    n8* cheo = ui("Provincial Governor");
+    n8* cheo = ui("Regional Governor");
     kama (a == DOLA_JAMHURI_YA_SHIRIKISHO || a == DOLA_MUUNGANO_WA_DOLA) { ujazaji = UJAZAJI_KUCHAGULIWA; mteuzi = 0 - 1; cheo = ui("State Governor"); }
     kama (a == DOLA_MUUNGANO_WA_KABILA) { ujazaji = UJAZAJI_KURITHI; mteuzi = 0 - 1; cheo = ui("Clan Chief"); }
     n64 i = 0;

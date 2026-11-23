@@ -159,7 +159,7 @@ n8* itikadi_jina_la_chama(n64 i, n64 namna) {
     kama (i == ITIKADI_UTAALAMU) { kama (namna) { rudisha ui("Institute Bloc"); } rudisha ui("Technical Directorate"); }
     kama (i == ITIKADI_UMAARUFU) { kama (namna) { rudisha ui("Common People's League"); } rudisha ui("People's Movement"); }
     kama (i == ITIKADI_UJESHI) { kama (namna) { rudisha ui("Veterans' League"); } rudisha ui("Officers' Bloc"); }
-    kama (i == ITIKADI_UKANDA) { kama (namna) { rudisha ui("League of the Regions"); } rudisha ui("Provincial Alliance"); }
+    kama (i == ITIKADI_UKANDA) { kama (namna) { rudisha ui("League of the Regions"); } rudisha ui("Regional Alliance"); }
     kama (i == ITIKADI_VYAMA_VYA_WAFANYAKAZI) { kama (namna) { rudisha ui("General Confederation of Labour"); } rudisha ui("Syndicalist Congress"); }
     kama (i == ITIKADI_MILA) { kama (namna) { rudisha ui("Elders' Circle"); } rudisha ui("Council of Clans"); }
     rudisha ui("Independents");
@@ -176,7 +176,7 @@ n64 UTEUZI_WA_KIJESHI = 5;
 n8* dola_uteuzi_jina(n64 u) {
     kama (u == UTEUZI_KUTEULIWA) { rudisha ui("Appointed"); }
     kama (u == UTEUZI_KURITHI) { rudisha ui("Hereditary"); }
-    kama (u == UTEUZI_KWA_MIKOA) { rudisha ui("Chosen by the provinces"); }
+    kama (u == UTEUZI_KWA_MIKOA) { rudisha ui("Chosen by the regions"); }
     kama (u == UTEUZI_WA_KIDINI) { rudisha ui("Seated by the clergy"); }
     kama (u == UTEUZI_WA_KIJESHI) { rudisha ui("Named by the high command"); }
     rudisha ui("Directly elected");

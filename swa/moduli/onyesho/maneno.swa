@@ -115,7 +115,8 @@ w0 maneno_jaza() {
     maneno_sajili("row|GDP", "Pato ghafi", "PIB");
     maneno_sajili("GDP rank", "Nafasi kwa pato", "Rang (PIB)");
     maneno_sajili("Area", "Eneo", "Superficie");
-    maneno_sajili("Provinces", "Mikoa", "Provinces");
+    maneno_sajili("Provinces", "Kata", "Provinces");
+    maneno_sajili("Regions", "Mikoa", "Régions");
     maneno_sajili("Language", "Lugha", "Langue");
     maneno_sajili("INDICATORS", "VIASHIRIA", "INDICATEURS");
     maneno_sajili("LARGEST CITIES", "MIJI MIKUBWA", "PLUS GRANDES VILLES");
