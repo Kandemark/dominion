@@ -36,6 +36,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     nguvu_kazi_mpya(KAZI_USHAWISHI, mjumbe + 1, 0, g->zamu_ya_sasa);
     nguvu_ongeza_hoja(HOJA_KUSHUSHA_KODI, 0, mjumbe, 1, g->zamu_ya_sasa);
     soko_nunua(soko_kampuni_mwanzo[mimi] + 2, 40);
+    vk_weka_uhamasishaji(mimi, VK_SEHEMU);
     Kifungu* ur = hati_tafuta(K_URAIA, 0 - 1);
     n64 kifungu_ur = 0;
     n64 i = 0;
@@ -51,6 +52,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
         nguvu_zamu(d, w, mimi, g->zamu_ya_sasa);
         hati_zamu(d, w, g->zamu_ya_sasa);
         habari_zamu(g);
+        vk_zamu(g, g->zamu_ya_sasa);
         i = i + 1;
     }
     // kumbuka hali
@@ -69,6 +71,11 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     n64 matukio = soko_matukio_yote;
     TakwimuHistoria* hh = mchezo_pata_historia_ya_taifa(g, 4);
     n64 historia_n = hh->idadi;
+    n64 vikosi = vk_idadi;
+    n64 askari = vk_jumla[mimi];
+    n64 kielezo = dunia_taifa_mfumo_pata_kwa_faharisi(tm, mimi)->kielezo_cha_kijeshi;
+    n8 jina_la_kikosi[96];
+    vk_jina(vk_pata(vk_idadi - 1), 1900, jina_la_kikosi, 96);
     thibitisha("hifadhi", hifadhi_andika(g, 99) == HIFADHI_SAWA);
 
     // mchezo mpya, kisha pakia
@@ -92,6 +99,14 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     thibitisha("kikasha", kikasha_idadi == kikasha_n);
     thibitisha("matukio", soko_matukio_yote == matukio);
     thibitisha("historia ya pato", mchezo_pata_historia_ya_taifa(g2, 4)->idadi == historia_n);
+    thibitisha("vikosi", vk_idadi == vikosi);
+    thibitisha("askari wa mchezaji", vk_jumla[mimi] == askari);
+    thibitisha("uhamasishaji", vk_uhamasishaji[mimi] == VK_SEHEMU);
+    n8 jina2[96];
+    vk_jina(vk_pata(vk_idadi - 1), 1900, jina2, 96);
+    thibitisha("jina la kikosi", linganisha_mfuatano(jina2, jina_la_kikosi) == 0);
+    vk_zamu(g2, g2->zamu_ya_sasa);
+    thibitisha("kielezo baada ya kupakia", dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g2), mimi)->kielezo_cha_kijeshi > 0 && kielezo > 0);
     n8 m[160];
     hifadhi_maelezo(99, m, 160);
     thibitisha("maelezo", tafuta_mfuatano(m, dunia_taifa_mfumo_pata_kwa_faharisi(tm, mimi)->jina) == 0);

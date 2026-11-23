@@ -1,5 +1,6 @@
 husisha { moduli/skrini/katiba.swa }
 husisha { moduli/skrini/dunia.swa }
+husisha { moduli/jeshi/vikosi.swa }
 
 // hifadhi.swa -- kuhifadhi na kupakia mchezo mzima katika nafasi.
 //
@@ -11,7 +12,8 @@ husisha { moduli/skrini/dunia.swa }
 //                   za msaidizi, sarafu, makampuni, matajiri, vielezo,
 //                   matukio, pochi, katiba (matoleo ya mataifa yote na kila
 //                   kigezo cha katiba ya mchezaji na historia yake), daftari
-//                   la maamuzi, kikasha, shajara na habari
+//                   la maamuzi, kikasha, shajara, habari na majeshi ya
+//                   mataifa yote (vikosi, uhamasishaji, vita, hasara)
 //   kumbukumbu      kumbukumbu ya mazungumzo ya AI (huandikwa moja kwa moja)
 //   maelezo         mstari mmoja: taifa, zamu, tarehe, cheo (kwa orodha ya nafasi)
 //
@@ -21,7 +23,7 @@ husisha { moduli/skrini/dunia.swa }
 // ni thabiti kwa mbegu) kisha hali hubandikwa juu yake.
 
 n64 HIFADHI_ALAMA = 1229803332;     // "DOMI"
-n64 HIFADHI_TOLEO = 1;
+n64 HIFADHI_TOLEO = 2;
 n64 HIFADHI_NAFASI = 6;             // 0 otomatiki, 1..5 za mchezaji
 
 // ---------- mkondo ----------
@@ -549,6 +551,65 @@ w0 hifadhi_soma_habari() {
     habari_zungusha = mk_soma();
 }
 
+w0 hifadhi_andika_vikosi() {
+    mk_n64(vk_mataifa);
+    n64 t = 0;
+    wakati (t < vk_mataifa) {
+        mk_n64(vk_uhamasishaji[t]); mk_n64(vk_tahadhari_hadi[t]); mk_n64(vk_alama_awali[t]); mk_n64(vk_kielezo_awali[t]);
+        mk_n64(vk_hasara[t]); mk_n64(vk_vita_adui[t]); mk_n64(vk_vita_tangu[t]); mk_n64(vk_watu_lengo[t]);
+        n64 a = 0;
+        wakati (a < VK_AINA) { mk_n64(vk_nambari_ijayo[t * VK_AINA + a]); a = a + 1; }
+        t = t + 1;
+    }
+    mk_n64(vk_idadi);
+    n64 i = 0;
+    wakati (i < vk_idadi) {
+        Kikosi* k = vk_pata(i);
+        mk_n64(k->taifa); mk_n64(k->aina); mk_n64(k->nambari); mk_n64(k->nyumbani); mk_n64(k->watu);
+        mk_n64(k->juu); mk_n64(k->vifaa); mk_n64(k->morali); mk_n64(k->uzoefu); mk_n64(k->zamu);
+        i = i + 1;
+    }
+}
+
+// Majeshi husomwa juu ya yale yaliyoundwa na vk_anzisha (miji na bandari
+// hutoka kwenye dunia ileile).
+w0 hifadhi_soma_vikosi(Mchezo* g) {
+    n64 n = mk_soma();
+    n64 t = 0;
+    wakati (t < n) {
+        n64 u = mk_soma(); n64 th = mk_soma(); n64 aw = mk_soma(); n64 ka = mk_soma();
+        n64 ha = mk_soma(); n64 ad = mk_soma(); n64 ta = mk_soma(); n64 le = mk_soma();
+        kama (t < vk_mataifa) {
+            vk_uhamasishaji[t] = u; vk_tahadhari_hadi[t] = th; vk_alama_awali[t] = aw; vk_kielezo_awali[t] = ka;
+            vk_hasara[t] = ha; vk_vita_adui[t] = ad; vk_vita_tangu[t] = ta; vk_watu_lengo[t] = le;
+        }
+        n64 a = 0;
+        wakati (a < VK_AINA) {
+            n64 v = mk_soma();
+            kama (t < vk_mataifa) { vk_nambari_ijayo[t * VK_AINA + a] = v; }
+            a = a + 1;
+        }
+        t = t + 1;
+    }
+    n64 i = 0;
+    wakati (i < vk_idadi) { achilia vk_orodha[i]; i = i + 1; }
+    vk_idadi = 0;
+    n = mk_soma();
+    i = 0;
+    wakati (i < n) {
+        n64 taifa = mk_soma(); n64 aina = mk_soma(); n64 nambari = mk_soma(); n64 nyumbani = mk_soma(); n64 watu = mk_soma();
+        n64 juu = mk_soma(); n64 vifaa = mk_soma(); n64 morali = mk_soma(); n64 uzoefu = mk_soma(); n64 zamu = mk_soma();
+        kama (taifa >= 0 && taifa < vk_mataifa) {
+            n64 ijayo = vk_nambari_ijayo[taifa * VK_AINA + aina];
+            Kikosi* k = vk_ongeza(taifa, aina, juu, watu, zamu);
+            vk_nambari_ijayo[taifa * VK_AINA + aina] = ijayo;
+            k->nambari = nambari; k->nyumbani = nyumbani; k->vifaa = vifaa; k->morali = morali; k->uzoefu = uzoefu;
+        }
+        i = i + 1;
+    }
+    vk_hesabu(vk_mwaka(g->zamu_ya_sasa));
+}
+
 // ---------- kuanzisha hali ya Dominion ----------
 
 // Hatua za kuanzisha zinazoshirikiwa na programu na majaribio: masoko,
@@ -577,6 +638,8 @@ w0 hifadhi_anzisha_dominion(Mchezo* g, n64 mwaka) {
     hati_taifa = 0 - 1;
     hati_hakikisha(d, w, mimi);
     hati_tumia_kwa_injini(d);
+    // majeshi ya kudumu ya mataifa yote
+    vk_anzisha(g);
 }
 
 // ---------- hifadhi na pakia ----------
@@ -616,6 +679,7 @@ n64 hifadhi_andika(Mchezo* g, n64 nafasi) {
     hifadhi_andika_maamuzi();
     hifadhi_andika_kikasha_na_shajara();
     hifadhi_andika_habari();
+    hifadhi_andika_vikosi();
     mk_n64(HIFADHI_ALAMA);
     hifadhi_njia(njia, nafasi, "dominion.hali");
     kama (mk_andika_faili(njia) == 0) { rudisha HIFADHI_IMEHARIBIKA; }
@@ -665,6 +729,7 @@ n64 hifadhi_pakia(Mchezo* g, n64 nafasi) {
     hifadhi_soma_maamuzi();
     hifadhi_soma_kikasha_na_shajara();
     hifadhi_soma_habari();
+    hifadhi_soma_vikosi(g);
     kama (mk_soma() != HIFADHI_ALAMA) { rudisha HIFADHI_IMEHARIBIKA; }
     // AI hukumbuka mazungumzo ya nafasi hii
     mkutano_nafasi = nafasi;

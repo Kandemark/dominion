@@ -587,6 +587,7 @@ w0 bofya_skrini(Mchezo* g, Hali* h, n64 skrini, n64 upana, n64 kimo, n64 px, n64
         kama (kitendo == JOPO_FUNGUA) { h->taifa = hoja; chafua_ukurasa(h); rudisha; }
         kama (kitendo == JOPO_WIGO) { skrini_wigo = hoja; chafua_ukurasa(h); rudisha; }
     }
+    kama (skrini == SKRINI_JESHI && skrini_jeshi_bofya(g, h->taifa, px, py)) { chafua_ukurasa(h); rudisha; }
     kama (skrini == SKRINI_KATIBA && skrini_katiba_bofya(g, h->taifa, px, py)) { chafua_ukurasa(h); rudisha; }
     kama (skrini == SKRINI_WASIFU) {
         n64 kituo = 0;
@@ -816,6 +817,8 @@ w0 zamu_inayofuata(Mchezo* g, Hali* h) {
     // siasa ya wiki: kazi za msaidizi, kura za hoja, upinzani, kashfa
     nguvu_zamu(skrini_siasa_dola(g, tm->faharisi_ya_taifa_la_mchezaji), skrini_mkutano_watu(g, tm->faharisi_ya_taifa_la_mchezaji), tm->faharisi_ya_taifa_la_mchezaji, g->zamu_ya_sasa);
     habari_zamu(g);
+    // majeshi: kuajiri, vifaa, ari, uhamasishaji na vita
+    vk_zamu(g, g->zamu_ya_sasa);
     // kuhifadhi kwa otomatiki kila wiki nne
     kama (g->zamu_ya_sasa % 4 == 0) { hifadhi_andika(g, 0); }
     sasisha_kikasha(g);
