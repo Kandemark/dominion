@@ -77,10 +77,16 @@ n64* vk_hasara = 0;             // askari waliopotea vitani tangu mwanzo
 n64* vk_vita_adui = 0;          // taifa la adui, au -1
 n64* vk_vita_tangu = 0;
 n64* vk_watu_lengo = 0;         // lengo la wiki iliyopita (kwa skrini)
+n64* vk_watu_wa_mwanzo = 0;     // watu wa taifa mwanzoni (kwa vikomo thabiti vya katiba)
 n64* vk_nambari_ijayo = 0;      // [taifa * VK_AINA + aina]
 n64* vk_miji_idadi = 0;
 n8** vk_miji = 0;               // [taifa * VK_MIJI + k]
 n64* vk_miji_watu = 0;
+
+// vikwazo vya katiba ya taifa la mchezaji (siasa/hati.swa huviweka)
+n64* vk_kikomo_cha_katiba = 0;  // [aina]: kikomo cha askari wakati wa amani (maelfu); 0 = hakuna
+n64 vk_huduma_ya_lazima = -1; // miezi ya jeshi la lazima; -1 = katiba haijasema
+n64 vk_taifa_la_katiba = -1;
 
 // hesabu za wiki (zinazojengwa upya kila wiki)
 n64* vk_jumla = 0;              // askari wa taifa
@@ -350,6 +356,23 @@ w0 vk_safisha() {
 
 // ---------- hali ya taifa ----------
 
+// Askari wa tawi `aina` wakati wa amani kutoka sifa zisizobadilika za taifa
+// (watu wa mwanzo, kielezo cha mwanzo, aina ya utawala, zama): msingi wa
+// vikomo vya katiba, ambavyo havipaswi kuyumba kila katiba inapozalishwa.
+n64 vk_tawi_la_msingi(n64 t, n64 aina_ya_dola, n64 aina, n64 mwaka) {
+    kama (t < 0 || t >= vk_mataifa) { rudisha 0; }
+    n64 kiwango = 40 + vk_bana(vk_kielezo_awali[t] - 60, 0, 400) / 4;
+    kama (aina_ya_dola == DOLA_UTAWALA_WA_KIJESHI || aina_ya_dola == DOLA_UDIKTETA || aina_ya_dola == DOLA_CHAMA_KIMOJA) { kiwango = (kiwango * 15) / 10; }
+    kama (aina_ya_dola == DOLA_UFALME_KAMILI || aina_ya_dola == DOLA_MILKI) { kiwango = (kiwango * 12) / 10; }
+    n64 jumla = (vk_watu_wa_mwanzo[t] / 10000) * kiwango;
+    kama (jumla < 500) { jumla = 500; }
+    n64 jumla_ya_sehemu = 0;
+    n64 a = 0;
+    wakati (a < VK_AINA) { jumla_ya_sehemu = jumla_ya_sehemu + vk_sehemu(a, mwaka, vk_bandari[t]); a = a + 1; }
+    kama (jumla_ya_sehemu <= 0) { rudisha 0; }
+    rudisha (jumla * vk_sehemu(aina, mwaka, vk_bandari[t])) / jumla_ya_sehemu;
+}
+
 // Askari wanaolengwa na taifa kwa sasa.
 n64 vk_lengo(Mchezo* g, n64 t) {
     TaifaMfumo* tm = mchezo_pata_taifa(g);
@@ -370,6 +393,13 @@ n64 vk_lengo(Mchezo* g, n64 t) {
     n64 lengo = (tn->idadi_ya_watu / 10000) * kiwango;
     n64 juu = (tn->idadi_ya_watu * 8) / 100;
     kama (lengo > juu) { lengo = juu; }
+    // katiba: vikomo vya matawi (wakati wa amani tu)
+    kama (t == vk_taifa_la_katiba && vk_kikomo_cha_katiba != 0 && vk_vita_adui[t] < 0) {
+        n64 kikomo = 0;
+        n64 a = 0;
+        wakati (a < VK_AINA) { kikomo = kikomo + vk_kikomo_cha_katiba[a] * 1000; a = a + 1; }
+        kama (kikomo > 0 && lengo > kikomo) { lengo = kikomo; }
+    }
     kama (lengo < 500) { lengo = 500; }
     rudisha lengo;
 }
@@ -564,6 +594,7 @@ w0 vk_anzisha(Mchezo* g) {
     vk_vita_adui = vk_safu(n);
     vk_vita_tangu = vk_safu(n);
     vk_watu_lengo = vk_safu(n);
+    vk_watu_wa_mwanzo = vk_safu(n);
     vk_nambari_ijayo = vk_safu(n * VK_AINA);
     vk_jumla = vk_safu(n);
     vk_alama = vk_safu(n);
@@ -575,6 +606,7 @@ w0 vk_anzisha(Mchezo* g) {
     wakati (t < n) {
         TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, t);
         vk_kielezo_awali[t] = tn->kielezo_cha_kijeshi;
+        vk_watu_wa_mwanzo[t] = tn->idadi_ya_watu;
         vk_vita_adui[t] = 0 - 1;
         vk_vita_tangu[t] = 0 - 1;
         n64 lengo = vk_lengo(g, t);
@@ -737,6 +769,11 @@ w0 vk_zamu(Mchezo* g, n64 zamu) {
         kama (sasa < lengo) {
             n64 kasi = lengo / 50;
             kama (vk_uhamasishaji[t] >= VK_SEHEMU) { kasi = lengo / 20; }
+            // jeshi la lazima hujaza safu haraka; bila hilo kuajiri ni kwa hiari
+            kama (t == vk_taifa_la_katiba && vk_huduma_ya_lazima >= 0) {
+                kama (vk_huduma_ya_lazima == 0) { kasi = (kasi * 6) / 10; }
+                sivyo { kasi = (kasi * (12 + vk_huduma_ya_lazima)) / 24; }
+            }
             kama (kasi < 100) { kasi = 100; }
             n64 ajiri = lengo - sasa;
             kama (ajiri > kasi) { ajiri = kasi; }

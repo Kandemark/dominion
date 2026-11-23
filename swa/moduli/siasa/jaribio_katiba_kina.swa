@@ -1,0 +1,161 @@
+husisha { moduli/hifadhi/hifadhi.swa }
+
+// jaribio_katiba_kina.swa -- katiba kamili kwenye dunia halisi: kila taifa
+// hupata wilaya kutoka miji ya ramani, majimbo yanayogawa viti vyote vya
+// baraza la chini, kiapo cha kila cheo, mgao wa mapato unaojumlisha mgao
+// wote; vikomo vya majeshi hutoka kwenye majeshi halisi na hufungwa na injini.
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+n64 hesabu_aina(n64 aina) {
+    n64 n = 0;
+    n64 i = 0;
+    wakati (i < hati_idadi) { kama (hati_pata(i)->aina == aina) { n = n + 1; } i = i + 1; }
+    rudisha n;
+}
+
+// Tengeneza katiba ya taifa t kama skrini inavyofanya.
+w0 zalisha_ya(Mchezo* g, n64 t) {
+    kt_mikoa_taifa = 0 - 1;
+    kt_kusanya_mikoa(t);
+    hati_mikoa_idadi = kt_mikoa_idadi;
+    hati_mikoa_majina = kt_mkoa_jina;
+    hati_mikoa_kitambulisho = kt_mkoa_kitambulisho;
+    hati_watu_wa_taifa = dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), t)->idadi_ya_watu;
+    hati_jina_la_sarafu = soko_sarafu_ya(t)->jina;
+    hati_taifa = 0 - 1;
+    hati_hakikisha(skrini_siasa_dola(g, t), skrini_mkutano_watu(g, t), t);
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    tarehe_weka_mwaka_wa_mwanzo(1950);
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    thibitisha("mchezo", r.hitilafu == CIV_SAWA);
+    hifadhi_anzisha_dominion(g, 1950);
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 mimi = tm->faharisi_ya_taifa_la_mchezaji;
+
+    // kila taifa: vifungu, wilaya na majimbo
+    n64 jumla = 0;
+    n64 kubwa = 0;
+    n64 taifa_kubwa = 0;
+    n64 bila_wilaya = 0;
+    n64 majimbo_mabaya = 0;
+    n64 t = 0;
+    wakati (t < tm->idadi) {
+        zalisha_ya(g, t);
+        jumla = jumla + hati_idadi;
+        kama (hati_idadi > kubwa) { kubwa = hati_idadi; taifa_kubwa = t; }
+        kama (hesabu_aina(K_WILAYA) == 0) {
+            bila_wilaya = bila_wilaya + 1;
+            andika("bila wilaya: %s, watu %d\n", dunia_taifa_mfumo_pata_kwa_faharisi(tm, t)->jina, dunia_taifa_mfumo_pata_kwa_faharisi(tm, t)->idadi_ya_watu, 0, 0, 0, 0);
+        }
+        // majimbo hugawa viti vyote vya baraza la chini
+        Dola* d = skrini_siasa_dola(g, t);
+        kama (hesabu_aina(K_JIMBO) > 0) {
+            n64 viti = 0;
+            n64 i = 0;
+            wakati (i < hati_idadi) { Kifungu* k = hati_pata(i); kama (k->aina == K_JIMBO) { viti = viti + k->p0; } i = i + 1; }
+            kama (viti != d->baraza_viti[0]) { majimbo_mabaya = majimbo_mabaya + 1; }
+        }
+        t = t + 1;
+    }
+    andika("mataifa %d: vifungu %d kwa wastani, kubwa zaidi %d (%s)\n", tm->idadi, jumla / tm->idadi, kubwa, dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa_kubwa)->jina, 0, 0);
+    thibitisha("kila taifa lina wilaya", bila_wilaya == 0);
+    thibitisha("majimbo hugawa viti vyote", majimbo_mabaya == 0);
+    thibitisha("katiba ndefu: wastani zaidi ya vifungu 300", jumla / tm->idadi > 300);
+
+    // taifa la mchezaji kwa undani
+    zalisha_ya(g, mimi);
+    Dola* d = skrini_siasa_dola(g, mimi);
+    Wahusika* w = skrini_mkutano_watu(g, mimi);
+    andika("%s: vifungu %d, ibara %d, wilaya %d, mji mkuu %s\n", dunia_taifa_mfumo_pata_kwa_faharisi(tm, mimi)->jina, hati_idadi, hati_ibara_idadi, hati_wilaya_idadi, hati_mji_mkuu, 0);
+    thibitisha("mji mkuu", hati_mji_mkuu != 0 && hesabu_aina(K_ALAMA) > 0);
+    thibitisha("kiapo kwa kila cheo", hesabu_aina(K_KIAPO) > 10);
+    thibitisha("haki zina mipaka au dharura", hesabu_aina(K_HAKI_DHARURA) == hesabu_aina(K_HAKI));
+    thibitisha("njia za uraia", hesabu_aina(K_URAIA_NJIA) == 8);
+    thibitisha("matawi ya jeshi", hesabu_aina(K_MAJESHI) >= 3);
+    n64 mgao = 0;
+    n64 i = 0;
+    wakati (i < hati_idadi) { Kifungu* k = hati_pata(i); kama (k->aina == K_MGAO_MKOA) { mgao = mgao + k->p0; } i = i + 1; }
+    kama (hati_mikoa_idadi > 0) { thibitisha("mgao wa mikoa ni karibu elfu moja", mgao >= 990 && mgao <= 1000); }
+    // kila kifungu kina maandishi
+    n8* m = tenga(2048);
+    n64 tupu = 0;
+    i = 0;
+    wakati (i < hati_idadi) {
+        hati_andika(i, d, w, dunia_taifa_mfumo_pata_kwa_faharisi(tm, mimi)->jina, m, 2048);
+        kama (m[0] == 0) { tupu = tupu + 1; andika("tupu: aina %d\n", hati_pata(i)->aina, 0, 0, 0, 0, 0); }
+        i = i + 1;
+    }
+    thibitisha("kila kifungu kina maandishi", tupu == 0);
+    // mfano mmoja wa kila aina mpya (hoja ya kwanza "-v" huonyesha)
+    kama (idadi_ya_hoja > 1) {
+        n64 aina = K_HAKI_MIPAKA;
+        wakati (aina < K_AINA_IDADI) {
+            i = 0;
+            n32 bado = 1;
+            wakati (i < hati_idadi && bado) {
+                kama (hati_pata(i)->aina == aina) {
+                    hati_andika(i, d, w, dunia_taifa_mfumo_pata_kwa_faharisi(tm, mimi)->jina, m, 2048);
+                    andika("[%d] %s\n", aina, m, 0, 0, 0, 0);
+                    bado = 0;
+                }
+                i = i + 1;
+            }
+            aina = aina + 1;
+        }
+    }
+
+    // katiba hufunga jeshi: punguza kikomo cha jeshi la nchi kavu, jeshi hupungua
+    hati_tumia_kwa_injini(d);
+    thibitisha("vikomo vimesomwa", vk_taifa_la_katiba == mimi && vk_kikomo_cha_katiba[VK_MIGUU] > 0);
+    n64 kabla = vk_jumla[mimi];
+    i = 0;
+    wakati (i < hati_idadi) {
+        Kifungu* k = hati_pata(i);
+        kama (k->aina == K_MAJESHI) { hati_tumia(d, i, 0, 1, g->zamu_ya_sasa); }
+        i = i + 1;
+    }
+    hati_tumia_kwa_injini(d);
+    n64 wiki = 0;
+    wakati (wiki < 30) { mchezo_sasisha(g); mchezo_maliza_zamu(g); vk_zamu(g, g->zamu_ya_sasa); wiki = wiki + 1; }
+    andika("kikomo cha katiba: askari %d -> %d (lengo %d)\n", kabla, vk_jumla[mimi], vk_watu_lengo[mimi], 0, 0, 0);
+    thibitisha("lengo limefungwa na katiba", vk_watu_lengo[mimi] <= VK_AINA * 1000);
+    thibitisha("jeshi limepungua", vk_jumla[mimi] < kabla);
+
+    // marekebisho hubaki baada ya kusoma katiba ya taifa jingine
+    n64 marekebisho = hati_historia_idadi;
+    zalisha_ya(g, (mimi + 1) % tm->idadi);
+    thibitisha("taifa jingine halina marekebisho yetu", hati_tafuta(K_MAJESHI, VK_MIGUU) == 0 || hati_tafuta(K_MAJESHI, VK_MIGUU)->p0 != 1 || hati_tafuta(K_MAJESHI, VK_MIGUU)->marekebisho == 0);
+    hati_rudisha_ya_mchezaji(d, w);
+    thibitisha("katiba ya mchezaji imerudi", hati_taifa == mimi);
+    thibitisha("marekebisho yamerudiwa", hati_tafuta(K_MAJESHI, VK_MIGUU)->p0 == 1 && hati_tafuta(K_MAJESHI, VK_MIGUU)->marekebisho == 1);
+    thibitisha("daftari halijapotea", hati_historia_idadi == marekebisho && marekebisho > 0);
+    zalisha_ya(g, (mimi + 2) % tm->idadi);
+    hati_zamu(d, w, g->zamu_ya_sasa);
+    thibitisha("zamu hurudisha katiba ya mchezaji", hati_taifa == mimi);
+
+    // kasi: katiba ya taifa kubwa zaidi huzalishwa haraka
+    zalisha_ya(g, taifa_kubwa);
+    Turubai* tb = turubai_unda(1600, 900);
+    sura_anzisha(tb);
+    kb_ufunguo = 0 - 1;
+    kb_panga(skrini_siasa_dola(g, taifa_kubwa), skrini_mkutano_watu(g, taifa_kubwa), dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa_kubwa)->jina, 640, 620);
+    andika("kubwa zaidi: vifungu %d, wilaya %d, kurasa %d, mistari %d\n", hati_idadi, hati_wilaya_idadi, kb_kurasa, kb_mistari, 0, 0);
+    thibitisha("mistari yote imeingia", kb_mistari < KB_MISTARI_JUU);
+
+    kama (makosa > 0) {
+        andika("katiba kina: makosa %d\n", makosa, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("katiba kina: sawa\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

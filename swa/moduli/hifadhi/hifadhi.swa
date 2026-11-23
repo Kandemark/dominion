@@ -424,6 +424,8 @@ w0 hifadhi_soma_hati(Dola* d, Wahusika* w) {
     }
     n64 taifa = mk_soma();
     hati_taifa = 0 - 1;
+    hati_taifa_la_mchezaji = taifa;
+    hati_historia_idadi = 0;            // daftari jipya husomwa hapa chini; usirudie la zamani
     hati_hakikisha(d, w, taifa);
     n = mk_soma();
     n64 i = 0;
@@ -624,6 +626,8 @@ w0 hifadhi_anzisha_dominion(Mchezo* g, n64 mwaka) {
     kt_kusanya_mikoa(mimi);
     hati_mikoa_idadi = kt_mikoa_idadi;
     hati_mikoa_majina = kt_mkoa_jina;
+    hati_mikoa_kitambulisho = kt_mkoa_kitambulisho;
+    hati_watu_wa_taifa = dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), mimi)->idadi_ya_watu;
     hati_jina_la_sarafu = soko_sarafu_ya(mimi)->jina;
     Dola* d = skrini_siasa_dola(g, mimi);
     Wahusika* w = skrini_mkutano_watu(g, mimi);
@@ -635,11 +639,13 @@ w0 hifadhi_anzisha_dominion(Mchezo* g, n64 mwaka) {
     nguvu_hatari = 0;
     nguvu_kashfa = 0;
     nguvu_hakikisha(d, mimi);
+    // majeshi kwanza: vikomo vya katiba hutoka kwenye majeshi ya mwanzo
+    vk_anzisha(g);
     hati_taifa = 0 - 1;
+    hati_taifa_la_mchezaji = mimi;
+    hati_historia_idadi = 0;
     hati_hakikisha(d, w, mimi);
     hati_tumia_kwa_injini(d);
-    // majeshi ya kudumu ya mataifa yote
-    vk_anzisha(g);
 }
 
 // ---------- hifadhi na pakia ----------
