@@ -1,0 +1,153 @@
+husisha { moduli/jeshi/vikosi.swa }
+
+// jaribio_vikosi.swa -- majeshi ya kudumu: kila taifa lina vikosi vya zama
+// zake, uhamasishaji huongeza askari na hula hazina, vita huleta hasara pande
+// zote mbili, na kielezo cha kijeshi hufuata nguvu halisi.
+
+n64 makosa = 0;
+
+w0 thibitisha(n8* jina, n32 sawa) {
+    kama (sawa == 0) { andika("SHINDWA: %s\n", jina, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+}
+
+Mchezo* mchezo_mpya(n64 mwaka) {
+    tarehe_weka_mwaka_wa_mwanzo(mwaka);
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) { rudisha 0; }
+    vk_anzisha(g);
+    rudisha g;
+}
+
+n64 aina_za_taifa(n64 t, n64 aina) {
+    n64 n = 0;
+    n64 i = 0;
+    wakati (i < vk_idadi) { Kikosi* k = vk_pata(i); kama (k->taifa == t && k->aina == aina) { n = n + 1; } i = i + 1; }
+    rudisha n;
+}
+
+n64 aina_duniani(n64 aina) {
+    n64 n = 0;
+    n64 i = 0;
+    wakati (i < vk_idadi) { kama (vk_pata(i)->aina == aina) { n = n + 1; } i = i + 1; }
+    rudisha n;
+}
+
+w0 wiki(Mchezo* g, n64 n) {
+    n64 i = 0;
+    wakati (i < n) {
+        mchezo_sasisha(g);
+        mchezo_maliza_zamu(g);
+        vk_zamu(g, g->zamu_ya_sasa);
+        i = i + 1;
+    }
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    // zama za 1750: hakuna deraya wala anga, vikosi vidogo
+    Mchezo* g = mchezo_mpya(1750);
+    thibitisha("mchezo 1750", g != 0);
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 bila_jeshi = 0;
+    n64 t = 0;
+    wakati (t < tm->idadi) { kama (vk_jumla[t] <= 0) { bila_jeshi = bila_jeshi + 1; } t = t + 1; }
+    thibitisha("kila taifa lina jeshi (1750)", bila_jeshi == 0);
+    thibitisha("hakuna deraya 1750", aina_duniani(VK_DERAYA) == 0);
+    thibitisha("hakuna anga 1750", aina_duniani(VK_ANGA) == 0);
+    thibitisha("farasi 1750", aina_duniani(VK_FARASI) > 0);
+    thibitisha("manowari kwa mataifa ya pwani", aina_duniani(VK_MANOWARI) > 0);
+    Kikosi* k0 = vk_pata(0);
+    thibitisha("kikosi cha 1750 ni kidogo", k0->juu <= 2000);
+    n8 jina[96];
+    vk_jina(k0, 1750, jina, 96);
+    andika("1750: vikosi %d, mfano: %s\n", vk_idadi, jina, 0, 0, 0, 0);
+    n64 vikosi_1750 = vk_idadi;
+    wiki(g, 4);
+    thibitisha("1750: wiki nne bila kuvunja jeshi", vk_idadi * 10 >= vikosi_1750 * 9);
+
+    // zama za 1950: deraya, anga, hakuna farasi
+    g = mchezo_mpya(1950);
+    thibitisha("mchezo 1950", g != 0);
+    tm = mchezo_pata_taifa(g);
+    thibitisha("deraya 1950", aina_duniani(VK_DERAYA) > 0);
+    thibitisha("anga 1950", aina_duniani(VK_ANGA) > 0);
+    thibitisha("hakuna farasi 1950", aina_duniani(VK_FARASI) == 0);
+    n64 mimi = tm->faharisi_ya_taifa_la_mchezaji;
+    n64 kielezo_mwanzo = dunia_taifa_mfumo_pata_kwa_faharisi(tm, mimi)->kielezo_cha_kijeshi;
+    thibitisha("kielezo cha mwanzo kimehifadhiwa", vk_kielezo_awali[mimi] == kielezo_mwanzo);
+    n64 askari_mwanzo = vk_jumla[mimi];
+    n64 vikosi_mwanzo = 0;
+    n64 i = 0;
+    wakati (i < vk_idadi) { kama (vk_pata(i)->taifa == mimi) { vikosi_mwanzo = vikosi_mwanzo + 1; } i = i + 1; }
+    andika("1950: vikosi %d; mchezaji ana askari %d katika vikosi %d\n", vk_idadi, askari_mwanzo, vikosi_mwanzo, 0, 0, 0);
+
+    // wiki za amani: jeshi hubaki karibu na lengo
+    wiki(g, 8);
+    thibitisha("amani: askari karibu na lengo", vk_jumla[mimi] * 10 >= vk_watu_lengo[mimi] * 8 && vk_jumla[mimi] * 10 <= vk_watu_lengo[mimi] * 12);
+
+    // uhamasishaji kamili: askari huongezeka, hazina hupungua
+    Dola* d = skrini_siasa_dola(g, mimi);
+    d->hazina = 80;
+    n64 hazina_kabla = d->hazina;
+    n64 askari_kabla = vk_jumla[mimi];
+    vk_weka_uhamasishaji(mimi, VK_KAMILI);
+    wiki(g, 12);
+    thibitisha("uhamasishaji huongeza askari", vk_jumla[mimi] > (askari_kabla * 15) / 10);
+    thibitisha("uhamasishaji hula hazina", d->hazina < hazina_kabla);
+    n64 kielezo_baada = dunia_taifa_mfumo_pata_kwa_faharisi(tm, mimi)->kielezo_cha_kijeshi;
+    thibitisha("kielezo hufuata nguvu", kielezo_baada > kielezo_mwanzo);
+    andika("uhamasishaji: askari %d -> %d, kielezo %d -> %d, hazina %d -> %d\n", askari_kabla, vk_jumla[mimi], kielezo_mwanzo, kielezo_baada, hazina_kabla, d->hazina);
+
+    // majirani huingia tahadhari
+    n64 jirani = 0 - 1;
+    t = 0;
+    wakati (t < tm->idadi) { kama (t != mimi && dunia_atlasi_mpaka(mimi, t) > 0) { jirani = t; } t = t + 1; }
+    kama (jirani >= 0) { thibitisha("jirani yuko tahadhari", vk_uhamasishaji[jirani] >= VK_TAHADHARI); }
+
+    // vita na jirani: hasara pande zote mbili, adui huhamasisha kikamilifu
+    kama (jirani >= 0) {
+        Uamuzi u;
+        u.aina = UAMUZI_VITA; u.zamu = g->zamu_ya_sasa; u.lengwa = jirani; u.kiasi = 0; u.urafiki = 0 - 20;
+        u.rushwa = 0; u.mfuko = 0; u.kodi = 0; u.uungwaji = 0; u.wiki = 0;
+        uamuzi_ongeza(&u, d);
+        wiki(g, 6);
+        thibitisha("vita: adui", vk_vita_adui[mimi] == jirani && vk_vita_adui[jirani] == mimi);
+        thibitisha("vita: adui amehamasisha", vk_uhamasishaji[jirani] == VK_KAMILI);
+        thibitisha("vita: hasara zetu", vk_hasara[mimi] > 0);
+        thibitisha("vita: hasara zao", vk_hasara[jirani] > 0);
+        thibitisha("vita: haiwezi kushuka chini ya sehemu", 1);
+        vk_weka_uhamasishaji(mimi, VK_AMANI);
+        thibitisha("vita: uhamasishaji haushuki", vk_uhamasishaji[mimi] == VK_SEHEMU);
+        andika("vita na %s: hasara %d / %d\n", dunia_taifa_mfumo_pata_kwa_faharisi(tm, jirani)->jina, vk_hasara[mimi], vk_hasara[jirani], 0, 0, 0);
+        // amani
+        u.aina = UAMUZI_AMANI; u.zamu = g->zamu_ya_sasa; u.urafiki = 5;
+        uamuzi_ongeza(&u, d);
+        wiki(g, 1);
+        thibitisha("amani: vita vimeisha", vk_vita_adui[mimi] < 0 && vk_vita_adui[jirani] < 0);
+    }
+
+    // kurudi amani: jeshi hupunguzwa
+    vk_weka_uhamasishaji(mimi, VK_AMANI);
+    n64 askari_vitani = vk_jumla[mimi];
+    wiki(g, 20);
+    thibitisha("amani: jeshi hupunguzwa", vk_jumla[mimi] < askari_vitani);
+
+    // majina: "3rd Kahijer Infantry Division"
+    n64* orodha = tenga(8 * VK_JUU_KWA_TAIFA);
+    n64 n = vk_vya_taifa(mimi, orodha, VK_JUU_KWA_TAIFA);
+    thibitisha("orodha ya vikosi", n > 0);
+    vk_jina(vk_pata(orodha[0]), 1950, jina, 96);
+    thibitisha("jina lina aina", tafuta_mfuatano(jina, "Division") >= 0 || tafuta_mfuatano(jina, "Brigade") >= 0);
+    n64 utayari = vk_utayari_wa_taifa(mimi);
+    thibitisha("utayari 0..100", utayari > 0 && utayari <= 100);
+    andika("mfano: %s, utayari %d%%\n", jina, utayari, 0, 0, 0, 0);
+
+    kama (makosa > 0) {
+        andika("vikosi: makosa %d\n", makosa, 0, 0, 0, 0, 0);
+        rudisha 1;
+    }
+    andika("vikosi: sawa\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}
