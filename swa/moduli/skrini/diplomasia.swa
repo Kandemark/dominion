@@ -1,17 +1,19 @@
 husisha { moduli/dunia/historia_ya_mipaka.swa }
 husisha { moduli/jeshi/vikosi.swa }
 husisha { moduli/skrini/jopo.swa }
+husisha { moduli/skrini/terminali.swa }
+husisha { moduli/soko/masoko.swa }
 
 
-// diplomasia.swa -- skrini ya mahusiano ya taifa na dunia inayolizunguka:
-//   vigae      majirani wa nchi kavu, mataifa ndani ya km 1,500, marafiki,
-//              wapinzani, washirika wa biashara (na biashara ya wiki), vita
-//   jedwali    mataifa 16 yaliyo karibu zaidi kwa umbali wa miji mikuu: umbali,
-//              uhusiano na imani, urafiki wa uamuzi, biashara, pato, jeshi,
-//              hali ya jeshi (uhamasishaji), mgogoro wa mpaka, na historia
-//              (mtawala wa zamani au koloni la zamani)
-//   kulia      migogoro ya mipaka na mikataba/maamuzi yaliyo hai
-//   chini      nafasi ndani ya wigo kwa pato, jeshi na utulivu, na mtawanyiko
+// diplomasia.swa -- kituo cha mambo ya nje (FRGN): ukurasa wa Diplomacy
+// kama kituo (skrini/terminali.swa).
+//   1 DESK       maelezo ya mambo ya nje (uhuru, majirani, marafiki,
+//                wapinzani, biashara, vita), mataifa yaliyo karibu zaidi
+//                (umbali, uhusiano na urafiki, biashara, pato, jeshi,
+//                uhamasishaji, utulivu, historia na migogoro), migogoro ya
+//                mipaka, makubaliano na hatua, na mizani ya pato na jeshi
+//   2 RELATIONS  mataifa yote ya wigo kwa umbali au urafiki, kwa kurasa
+// Uhusiano ni wa mfumo wa diplomasia na wa maamuzi ya mchezaji (akili/uamuzi).
 
 n8* skrini_jina_la_kiwango(n32 k) {
     kama (k == DIPLOMASIA_KIWANGO_VITA) { rudisha ui("War"); }
@@ -61,138 +63,332 @@ n8* diplomasia_historia(n64 a, n64 b) {
     rudisha "";
 }
 
-// Jedwali la mataifa yaliyo karibu zaidi.
-w0 diplomasia_jedwali(Mchezo* g, Turubai* t, n64 taifa, n64* orodha, n64* umbali, n64 n, n64 x, n64 y, n64 wt, n64 h_juu) {
+n64 DP_TABO = 140;
+n64 DP_PANGA = 141;
+n64 DP_UKURASA = 142;
+n64 dp_tabo = 0;
+n64 dp_panga = 0;               // 0 umbali, 1 urafiki, 2 pato, 3 jeshi
+n64 dp_ukurasa = 0;
+
+// Uhusiano wa taifa na j: jina na rangi (vita, uadui, urafiki, umoja, kati).
+n8* dp_uhusiano(Mchezo* g, n64 taifa, n64 j, n64* rangi) {
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     DiplomasiaMfumo* ds = mchezo_pata_diplomasia(g);
-    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
-    n8 m[64];
-    sura_paneli(x, y, wt, h_juu, ui("NEAREST NATIONS"));
-    n64 c0 = x + 16;
-    n64 c1 = x + (wt * 26) / 100;
-    n64 c2 = x + (wt * 34) / 100;
-    n64 c3 = x + (wt * 50) / 100;
-    n64 c4 = x + (wt * 61) / 100;
-    n64 c5 = x + (wt * 71) / 100;
-    n64 c6 = x + (wt * 79) / 100;
-    n64 c7 = x + (wt * 88) / 100;
-    n64 yk = y + 34;
-    sura_kichwa_cha_safuwima(ui("NATION"), c0, yk, 0);
-    sura_kichwa_cha_safuwima(ui("KM"), c1, yk, 0);
-    sura_kichwa_cha_safuwima(ui("RELATION"), c2, yk, 0);
-    sura_kichwa_cha_safuwima(ui("TRADE/WK"), c3, yk, 0);
-    sura_kichwa_cha_safuwima(ui("GDP"), c4, yk, 0);
-    sura_kichwa_cha_safuwima(ui("MIL"), c5, yk, 0);
-    sura_kichwa_cha_safuwima(ui("POSTURE"), c6, yk, 0);
-    sura_kichwa_cha_safuwima(ui("NOTES"), c7, yk, 0);
-    n64 safu = (h_juu - 60) / 26;
+    n8* jina = ui("Neutral");
+    rangi[0] = SURA_HAFIFU;
+    DiplomasiaUhusiano* rel = 0;
+    kama (ds != 0) { rel = diplomasia_pata_kwa_taifa(ds, dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa)->kitambulisho, dunia_taifa_mfumo_pata_kwa_faharisi(tm, j)->kitambulisho); }
+    kama (rel != 0) { jina = skrini_jina_la_kiwango(rel->kiwango_cha_uhusiano); rangi[0] = skrini_rangi_ya_kiwango(rel->kiwango_cha_uhusiano); }
+    n64 ur = diplomasia_urafiki(j);
+    kama (ur > 20) { jina = ui("Friendly"); rangi[0] = SURA_CHANYA; }
+    kama (ur < -20) { jina = ui("Hostile"); rangi[0] = SURA_HASI; }
+    kama (vk_mataifa > 0 && taifa < vk_mataifa && vk_vita_adui[taifa] == j) { jina = ui("War"); rangi[0] = SURA_HASI; }
+    rudisha jina;
+}
+
+w0 dp_amri(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w) {
+    n8 m[160];
+    n8* kazi = "DESK";
+    kama (dp_tabo == 1) { kazi = "REL"; }
+    n8* wigo = "NATION";
+    kama (skrini_wigo == WIGO_MKOA) { wigo = "REGION"; }
+    kama (skrini_wigo == WIGO_DUNIA) { wigo = "WORLD"; }
+    mfuatano_umbiza(m, 160, "%s <FRGN> %s %s <GO>", soko_sarafu_ya(taifa)->msimbo, kazi, wigo, 0, 0, 0);
+    n64 bx = kt_amri(m, x, y, w);
+    bx = bx + kt_kitufe(ui("1 DESK"), bx, y + 5, dp_tabo == 0, DP_TABO, 0) + 4;
+    kt_kitufe(ui("2 RELATIONS"), bx, y + 5, dp_tabo == 1, DP_TABO, 1);
+    kt_wigo(x + w, y, JOPO_WIGO);
+}
+
+// Mstari unaopita: mataifa ya karibu, uhusiano na urafiki wao.
+w0 dp_mstari(Mchezo* g, n64 taifa, n64* orodha, n64 n, n64 x, n64 y, n64 w) {
+    n64 xx = kt_mstari_anza(x, y, w);
     n64 r = 0;
-    wakati (r < safu && r < n) {
+    wakati (r < n && xx < x + w) {
         n64 j = orodha[r];
+        n64 rangi = 0;
+        n8* jina = dp_uhusiano(g, taifa, j, &rangi);
+        kt_maandishi(soko_sarafu_ya(j)->msimbo, xx, y + 5, 12, SURA_BAHARI);
+        xx = xx + maandishi_upana(sura_mono, soko_sarafu_ya(j)->msimbo, 12) + 6;
+        kt_maandishi(jina, xx, y + 5, 12, rangi);
+        xx = xx + maandishi_upana(sura_mono, jina, 12) + 6;
+        n8 b[24];
+        kt_badiliko(b, diplomasia_urafiki(j));
+        kt_maandishi(b, xx, y + 5, 12, kt_rangi_ya_badiliko(diplomasia_urafiki(j)));
+        xx = xx + maandishi_upana(sura_mono, b, 12) + 22;
+        r = r + 1;
+    }
+    kt_mstari_maliza();
+}
+
+// FRGN DES.
+w0 dp_maelezo(Mchezo* g, n64 taifa, n64* orodha, n64* umbali, n64 n, n64 x, n64 y, n64 w, n64 h) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
+    n8 k[96];
+    mfuatano_umbiza(k, 96, "%s <FRGN> DES", soko_sarafu_ya(taifa)->msimbo, 0, 0, 0, 0, 0);
+    kt_paneli(x, y, w, h, k);
+    kt_nene(tn->jina, x + 12, y + 32, 18, SURA_MAANDISHI);
+    n8 maelezo[160];
+    historia_maelezo(dunia_halisi_ya_mchezo, taifa, maelezo, 160);
+    turubai_kata(sura_t, x + 12, y + 52, w - 24, 18);
+    kt_maandishi(maelezo, x + 12, y + 56, 11, SURA_BAHARI);
+    turubai_kata_yote(sura_t);
+    n64 majirani = 0;
+    n64 karibu = 0;
+    n64 marafiki = 0;
+    n64 wapinzani = 0;
+    n64 washirika = 0;
+    n64 biashara = 0;
+    n64 migogoro = 0;
+    n64 r = 0;
+    wakati (r < n) {
+        n64 j = orodha[r];
+        kama (dunia_atlasi_mpaka(taifa, j) > 0) { majirani = majirani + 1; }
+        kama (umbali[r] <= 3000) { karibu = karibu + 1; }
+        kama (diplomasia_urafiki(j) > 20) { marafiki = marafiki + 1; }
+        kama (diplomasia_urafiki(j) < -20) { wapinzani = wapinzani + 1; }
+        kama (diplomasia_biashara(j) > 0) { washirika = washirika + 1; biashara = biashara + diplomasia_biashara(j); }
+        kama (diplomasia_mgogoro(taifa, j)) { migogoro = migogoro + 1; }
+        r = r + 1;
+    }
+    n64 ww = w - 24;
+    n64 yy = y + 80;
+    n8 m[96];
+    sura_namba(m, majirani);
+    kt_thamani(ui("LAND NEIGHBOURS"), m, x + 12, yy, ww, SURA_MAANDISHI);
+    sura_namba(m, karibu);
+    kt_thamani(ui("NATIONS WITHIN 3,000 KM"), m, x + 12, yy + 17, ww, SURA_MAANDISHI);
+    kama (n > 0) { mfuatano_umbiza(m, 96, "%s, %d km", dunia_taifa_mfumo_pata_kwa_faharisi(tm, orodha[0])->jina, umbali[0], 0, 0, 0, 0); kt_thamani(ui("NEAREST CAPITAL"), m, x + 12, yy + 34, ww, SURA_MAANDISHI); }
+    sura_namba(m, marafiki);
+    kt_thamani(ui("FRIENDLY NATIONS"), m, x + 12, yy + 51, ww, SURA_CHANYA);
+    sura_namba(m, wapinzani);
+    kt_thamani(ui("HOSTILE NATIONS"), m, x + 12, yy + 68, ww, SURA_HASI);
+    sura_namba(m, washirika);
+    kt_thamani(ui("TRADE PARTNERS"), m, x + 12, yy + 85, ww, SURA_MAANDISHI);
+    mfuatano_umbiza(m, 96, ui("%d million"), biashara, 0, 0, 0, 0, 0);
+    kt_thamani(ui("TRADE PER WEEK"), m, x + 12, yy + 102, ww, SURA_MAANDISHI);
+    sura_namba(m, migogoro);
+    kt_thamani(ui("BORDER DISPUTES"), m, x + 12, yy + 119, ww, SURA_MAANDISHI);
+    kama (vk_mataifa > 0 && vk_vita_adui[taifa] >= 0) { kt_thamani(ui("AT WAR WITH"), dunia_taifa_mfumo_pata_kwa_faharisi(tm, vk_vita_adui[taifa])->jina, x + 12, yy + 136, ww, SURA_HASI); }
+    sivyo { kt_thamani(ui("AT WAR WITH"), ui("No one"), x + 12, yy + 136, ww, SURA_HAFIFU); }
+    n64 hai = 0;
+    n64 i = 0;
+    wakati (i < uamuzi_idadi) { Uamuzi* ud = uamuzi_pata(i); kama (ud->lengwa >= 0 && (ud->wiki == 0 || uamuzi_uko_hai(ud, g->zamu_ya_sasa))) { hai = hai + 1; } i = i + 1; }
+    sura_namba(m, hai);
+    kt_thamani(ui("MEASURES IN FORCE"), m, x + 12, yy + 153, ww, SURA_MAANDISHI);
+}
+
+// Jedwali la mataifa: DESK (karibu zaidi) au RELATIONS (wigo, kwa mpangilio).
+w0 dp_jedwali(Mchezo* g, n64 taifa, n64* orodha, n64* umbali, n64 n, n64 x, n64 y, n64 w, n64 h, n32 pana) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n8 k[96];
+    kama (pana) { mfuatano_umbiza(k, 96, ui("RELATIONS  %s"), jopo_jina_la_wigo(), 0, 0, 0, 0, 0); }
+    sivyo { nakili_mfuatano(k, ui("NEAREST NATIONS")); }
+    kt_paneli(x, y, w, h, k);
+    kama (pana) {
+        n64 px = x + w - 8;
+        px = px - maandishi_upana(sura_mono_nene, ui("MIL"), 11) - 16;
+        kt_kitufe(ui("MIL"), px, y + 6, dp_panga == 3, DP_PANGA, 3);
+        px = px - maandishi_upana(sura_mono_nene, ui("GDP"), 11) - 20;
+        kt_kitufe(ui("GDP"), px, y + 6, dp_panga == 2, DP_PANGA, 2);
+        px = px - maandishi_upana(sura_mono_nene, ui("FRIEND"), 11) - 20;
+        kt_kitufe(ui("FRIEND"), px, y + 6, dp_panga == 1, DP_PANGA, 1);
+        px = px - maandishi_upana(sura_mono_nene, "KM", 11) - 20;
+        kt_kitufe("KM", px, y + 6, dp_panga == 0, DP_PANGA, 0);
+        kt_maandishi_kulia(ui("SORT"), px - 8, y + 9, 11, SURA_HAFIFU);
+    }
+    n64 c_jina = x + 52;
+    n64 c_km = x + (w * 22) / 100;
+    n64 c_uh = c_km + 10;
+    n64 c1 = x + (w * 34) / 100;
+    n64 hatua = (w * 54) / 600;
+    n64 c_aina = 0;
+    n64 c_noti = x + w - (w * 10) / 100;
+    kama (pana) {
+        c_km = x + (w * 18) / 100;
+        c_uh = c_km + 10;
+        c1 = x + (w * 26) / 100;
+        hatua = (w * 42) / 700;
+        c_aina = c1 + 7 * hatua + 24;
+        c_noti = x + w - (w * 12) / 100;
+    }
+    n64 yh = y + 32;
+    kama (pana) { yh = y + 38; }
+    kt_kichwa("CCY", x + 12, yh);
+    kt_kichwa(ui("NATION"), c_jina, yh);
+    kt_kichwa_kulia("KM", c_km, yh);
+    kt_kichwa(ui("RELATION"), c_uh, yh);
+    kt_kichwa_kulia(ui("FRIEND"), c1 + hatua, yh);
+    kt_kichwa_kulia(ui("TRADE/WK"), c1 + 2 * hatua, yh);
+    kt_kichwa_kulia(ui("GDP"), c1 + 3 * hatua, yh);
+    kt_kichwa_kulia(ui("MIL"), c1 + 4 * hatua, yh);
+    kt_kichwa_kulia(ui("POSTURE"), c1 + 5 * hatua, yh);
+    kt_kichwa_kulia(ui("STAB"), c1 + 6 * hatua, yh);
+    kama (pana) {
+        kt_kichwa_kulia(ui("LEGIT"), c1 + 7 * hatua, yh);
+        kt_kichwa(ui("FORM"), c_aina, yh);
+    }
+    kt_kichwa(ui("NOTES"), c_noti, yh);
+    n64 safu_h = 18;
+    n64 kwa_ukurasa = (h - 50) / safu_h;
+    n64 mwanzo = 0;
+    kama (pana) {
+        kwa_ukurasa = (h - 80) / safu_h;
+        kama (dp_ukurasa * kwa_ukurasa >= n) { dp_ukurasa = 0; }
+        mwanzo = dp_ukurasa * kwa_ukurasa;
+    }
+    n8 m[64];
+    n64 r = 0;
+    wakati (r < kwa_ukurasa && mwanzo + r < n) {
+        n64 j = orodha[mwanzo + r];
         TaifaNchi* tj = dunia_taifa_mfumo_pata_kwa_faharisi(tm, j);
-        n64 ry = yk + 20 + r * 26;
-        sura_safu(x + 8, ry - 4, wt - 16, 24, r, 0);
-        bofya_ongeza(x + 8, ry - 4, wt - 16, 24, JOPO_FUNGUA, j);
-        turubai_brashi(t, tj->rangi, 255);
-        turubai_duara(t, c0 + 5, ry + 7, 4);
-        sura_rangi(SURA_MAANDISHI);
-        turubai_kata(t, c0 + 14, ry - 4, c1 - c0 - 20, 24);
-        sura_lebo(tj->jina, c0 + 14, ry, 12);
-        turubai_kata_yote(t);
-        sura_namba(m, umbali[r]);
-        sura_rangi(SURA_HAFIFU);
-        sura_lebo(m, c1, ry + 1, 11);
-        // uhusiano: kiwango cha mfumo wa diplomasia (ikiwa upo) na urafiki wa maamuzi
-        DiplomasiaUhusiano* rel = diplomasia_pata_kwa_taifa(ds, tn->kitambulisho, tj->kitambulisho);
-        n64 ur = diplomasia_urafiki(j);
-        n64 rangi = SURA_HAFIFU;
-        n8* jina_la_uh = ui("Neutral");
-        kama (rel != 0) { jina_la_uh = skrini_jina_la_kiwango(rel->kiwango_cha_uhusiano); rangi = skrini_rangi_ya_kiwango(rel->kiwango_cha_uhusiano); }
-        kama (ur > 20) { jina_la_uh = ui("Friendly"); rangi = SURA_CHANYA; }
-        kama (ur < -20) { jina_la_uh = ui("Hostile"); rangi = SURA_HASI; }
-        kama (vk_mataifa > 0 && taifa < vk_mataifa && vk_vita_adui[taifa] == j) { jina_la_uh = ui("War"); rangi = SURA_HASI; }
-        sura_rangi(rangi);
-        sura_lebo(jina_la_uh, c2, ry, 11);
-        sura_pau(c2 + 66, ry + 6, c3 - c2 - 80, 4, (ur + 100) * 5, rangi);
+        Dola* dj = skrini_siasa_dola(g, j);
+        n64 ry = yh + 16 + r * safu_h;
+        kt_safu(x + 2, ry - 2, w - 4, safu_h, r, 0);
+        bofya_ongeza(x + 2, ry - 2, w - 4, safu_h, JOPO_FUNGUA, j);
+        kt_maandishi(soko_sarafu_ya(j)->msimbo, x + 12, ry, 11, SURA_BAHARI);
+        turubai_kata(sura_t, c_jina, ry - 2, c_km - 46 - c_jina, safu_h);
+        kt_maandishi(tj->jina, c_jina, ry, 11, SURA_MAANDISHI);
+        turubai_kata_yote(sura_t);
+        kama (dunia_atlasi_mpaka(taifa, j) > 0) { kt_maandishi_kulia(ui("LAND"), c_km, ry, 11, SURA_LAFUDHI); }
+        sivyo { sura_namba(m, umbali[mwanzo + r]); kt_maandishi_kulia(m, c_km, ry, 11, SURA_HAFIFU); }
+        n64 rangi = 0;
+        n8* uh = dp_uhusiano(g, taifa, j, &rangi);
+        kt_maandishi(uh, c_uh, ry, 11, rangi);
+        kt_badiliko(m, diplomasia_urafiki(j));
+        kt_maandishi_kulia(m, c1 + hatua, ry, 11, kt_rangi_ya_badiliko(diplomasia_urafiki(j)));
         sura_namba(m, diplomasia_biashara(j));
-        sura_rangi(SURA_MAANDISHI);
-        sura_lebo(m, c3, ry + 1, 11);
+        kt_maandishi_kulia(m, c1 + 2 * hatua, ry, 11, SURA_MAANDISHI);
         sura_namba_fupi(m, skrini_pato_la_taifa(tj));
-        sura_lebo(m, c4, ry + 1, 11);
+        kt_maandishi_kulia(m, c1 + 3 * hatua, ry, 11, SURA_MAANDISHI);
         sura_namba(m, tj->kielezo_cha_kijeshi);
-        sura_lebo(m, c5, ry + 1, 11);
+        kt_maandishi_kulia(m, c1 + 4 * hatua, ry, 11, SURA_MAANDISHI);
         n64 u = 0;
         kama (vk_mataifa > 0 && j < vk_mataifa) { u = vk_uhamasishaji[j]; }
-        kama (u > 0) { sura_rangi(SURA_HASI); } sivyo { sura_rangi(SURA_HAFIFU); }
-        sura_lebo(vk_jina_fupi_la_uhamasishaji(u), c6, ry + 1, 11);
+        kama (u > 0) { kt_maandishi_kulia(vk_jina_fupi_la_uhamasishaji(u), c1 + 5 * hatua, ry, 11, SURA_HASI); }
+        sivyo { kt_maandishi_kulia(vk_jina_fupi_la_uhamasishaji(u), c1 + 5 * hatua, ry, 11, SURA_HAFIFU); }
+        sura_namba(m, hs_pata(j, HS_UTULIVU, 0));
+        kt_maandishi_kulia(m, c1 + 6 * hatua, ry, 11, SURA_MAANDISHI);
+        kama (pana) {
+            sura_namba(m, hs_pata(j, HS_UHALALI, 0));
+            kt_maandishi_kulia(m, c1 + 7 * hatua, ry, 11, SURA_MAANDISHI);
+            kama (dj != 0) {
+                turubai_kata(sura_t, c_aina, ry - 2, c_noti - c_aina - 12, safu_h);
+                kt_maandishi(dola_aina_jina(dj->aina), c_aina, ry, 11, SURA_HAFIFU);
+                turubai_kata_yote(sura_t);
+            }
+        }
         n8* noti = diplomasia_historia(taifa, j);
         kama (diplomasia_mgogoro(taifa, j)) { noti = ui("Border dispute"); }
-        sura_rangi(SURA_HAFIFU);
-        turubai_kata(t, c7, ry - 4, x + wt - 16 - c7, 24);
-        sura_lebo(noti, c7, ry + 1, 11);
-        turubai_kata_yote(t);
+        turubai_kata(sura_t, c_noti, ry - 2, x + w - 8 - c_noti, safu_h);
+        kt_maandishi(noti, c_noti, ry, 10, SURA_HAFIFU);
+        turubai_kata_yote(sura_t);
         r = r + 1;
+    }
+    kama (pana) {
+        n64 kurasa = (n + kwa_ukurasa - 1) / kwa_ukurasa;
+        kama (kurasa < 1) { kurasa = 1; }
+        mfuatano_umbiza(m, 64, ui("%d NATIONS  PAGE %d/%d"), n, dp_ukurasa + 1, kurasa, 0, 0, 0);
+        kt_maandishi(m, x + 12, y + h - 20, 10, SURA_HAFIFU);
+        kama (dp_ukurasa > 0) { kt_kitufe("<PREV", x + w - 124, y + h - 24, 0, DP_UKURASA, 0 - 1); }
+        kama (dp_ukurasa + 1 < kurasa) { kt_kitufe("NEXT>", x + w - 62, y + h - 24, 0, DP_UKURASA, 1); }
     }
 }
 
-// Migogoro ya mipaka na mikataba iliyo hai.
-w0 diplomasia_kulia(Mchezo* g, Turubai* t, n64 taifa, n64 xr, n64 y, n64 wr, n64 h_juu) {
+// Migogoro ya mipaka karibu nasi.
+w0 dp_migogoro(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h) {
     TaifaMfumo* tm = mchezo_pata_taifa(g);
-    n64 N = tm->idadi;
-    n64 gap = 12;
-    // kulia: migogoro na mikataba
-    n64 h_mig = h_juu / 2 - gap / 2;
-    sura_paneli(xr, y, wr, h_mig, ui("BORDER DISPUTES"));
+    kt_paneli(x, y, w, h, ui("BORDER DISPUTES  WITHIN 3,000 KM"));
     DuniaHalisi* dh = dunia_halisi_ya_mchezo;
-    n64 yy = y + 38;
-    n64 idadi = 0;
+    n64 yh = y + 30;
+    kt_kichwa(ui("PARTIES"), x + 12, yh);
+    kt_kichwa_kulia(ui("KM FROM US"), x + w - 12, yh);
+    n64 ry = yh + 16;
+    n64 r = 0;
     kama (dh != 0) {
         n64 i = 0;
-        wakati (i < dh->idadi_migogoro && yy + 22 < y + h_mig) {
+        wakati (i < dh->idadi_migogoro && ry + 18 < y + h) {
             n64 a = dh->mg_p[i];
             n64 c = dh->mg_q[i];
             n32 wetu = a == taifa || c == taifa;
-            n32 karibu_nasi = jopo_umbali(taifa, a) <= 3000 || jopo_umbali(taifa, c) <= 3000;
-            kama (a != c && (wetu || karibu_nasi) && a < N && c < N) {
-                n8 mstari[160];
-                mfuatano_umbiza(mstari, 160, "%s  /  %s", dunia_taifa_mfumo_pata_kwa_faharisi(tm, a)->jina, dunia_taifa_mfumo_pata_kwa_faharisi(tm, c)->jina, 0, 0, 0, 0);
-                kama (wetu) { sura_rangi(SURA_HASI); } sivyo { sura_rangi(SURA_MAANDISHI); }
-                turubai_kata(t, xr, yy, wr - 16, 22);
-                sura_lebo(mstari, xr + 16, yy, 11);
-                turubai_kata_yote(t);
-                yy = yy + 22;
-                idadi = idadi + 1;
+            n64 u = jopo_umbali(taifa, a);
+            kama (jopo_umbali(taifa, c) < u) { u = jopo_umbali(taifa, c); }
+            kama (a != c && a < tm->idadi && c < tm->idadi && (wetu || u <= 3000)) {
+                kt_safu(x + 2, ry - 2, w - 4, 18, r, wetu);
+                n8 m[160];
+                mfuatano_umbiza(m, 160, "%s / %s", dunia_taifa_mfumo_pata_kwa_faharisi(tm, a)->jina, dunia_taifa_mfumo_pata_kwa_faharisi(tm, c)->jina, 0, 0, 0, 0);
+                turubai_kata(sura_t, x + 12, ry - 2, w - 90, 18);
+                kama (wetu) { kt_maandishi(m, x + 12, ry, 11, SURA_HASI); } sivyo { kt_maandishi(m, x + 12, ry, 11, SURA_MAANDISHI); }
+                turubai_kata_yote(sura_t);
+                kama (wetu) { kt_maandishi_kulia(ui("OURS"), x + w - 12, ry, 11, SURA_HASI); }
+                sivyo { sura_namba(m, u); kt_maandishi_kulia(m, x + w - 12, ry, 11, SURA_HAFIFU); }
+                ry = ry + 18;
+                r = r + 1;
             }
             i = i + 1;
         }
     }
-    kama (idadi == 0) { sura_rangi(SURA_HAFIFU); sura_lebo(ui("No disputed borders nearby."), xr + 16, yy, 11); }
-    n64 ya = y + h_mig + gap;
-    n64 h_mk = h_juu - h_mig - gap;
-    sura_paneli(xr, ya, wr, h_mk, ui("AGREEMENTS AND MEASURES"));
-    yy = ya + 38;
-    idadi = 0;
+    kama (r == 0) { kt_maandishi(ui("No disputed borders nearby."), x + 12, ry + 4, 11, SURA_HAFIFU); }
+}
+
+// Makubaliano na hatua zilizo hai.
+w0 dp_makubaliano(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    kt_paneli(x, y, w, h, ui("AGREEMENTS AND MEASURES"));
+    n64 yh = y + 30;
+    kt_kichwa(ui("MEASURE"), x + 12, yh);
+    kt_kichwa(ui("WITH"), x + (w * 50) / 100, yh);
+    kt_kichwa_kulia(ui("LEFT"), x + w - 12, yh);
+    n64 ry = yh + 16;
+    n64 r = 0;
+    n8 m[64];
     n64 i = uamuzi_idadi - 1;
-    wakati (i >= 0 && yy + 22 < ya + h_mk) {
+    wakati (i >= 0 && ry + 18 < y + h) {
         Uamuzi* ud = uamuzi_pata(i);
-        kama (ud->lengwa >= 0 && ud->lengwa < N && (ud->wiki == 0 || uamuzi_uko_hai(ud, g->zamu_ya_sasa))) {
-            n8 mstari[160];
-            mfuatano_umbiza(mstari, 160, "%s  ·  %s", uamuzi_aina_jina(ud->aina), dunia_taifa_mfumo_pata_kwa_faharisi(tm, ud->lengwa)->jina, 0, 0, 0, 0);
-            sura_rangi(SURA_MAANDISHI);
-            turubai_kata(t, xr, yy, wr - 70, 22);
-            sura_lebo(mstari, xr + 16, yy, 11);
-            turubai_kata_yote(t);
-            kama (ud->wiki > 0) {
-                mfuatano_umbiza(mstari, 160, ui("%d wk left"), ud->zamu + ud->wiki - g->zamu_ya_sasa, 0, 0, 0, 0, 0);
-                sura_rangi(SURA_HAFIFU);
-                sura_lebo_kulia(mstari, xr + wr - 16, yy, 10);
-            }
-            yy = yy + 22;
-            idadi = idadi + 1;
+        kama (ud->lengwa >= 0 && ud->lengwa < tm->idadi && (ud->wiki == 0 || uamuzi_uko_hai(ud, g->zamu_ya_sasa))) {
+            kt_safu(x + 2, ry - 2, w - 4, 18, r, 0);
+            turubai_kata(sura_t, x + 12, ry - 2, (w * 50) / 100 - 18, 18);
+            kt_maandishi(uamuzi_aina_jina(ud->aina), x + 12, ry, 11, SURA_MAANDISHI);
+            turubai_kata(sura_t, x + (w * 50) / 100, ry - 2, (w * 50) / 100 - 60, 18);
+            kt_maandishi(dunia_taifa_mfumo_pata_kwa_faharisi(tm, ud->lengwa)->jina, x + (w * 50) / 100, ry, 11, SURA_HAFIFU);
+            turubai_kata_yote(sura_t);
+            kama (ud->wiki > 0) { mfuatano_umbiza(m, 64, ui("%dw"), ud->zamu + ud->wiki - g->zamu_ya_sasa, 0, 0, 0, 0, 0); } sivyo { nakili_mfuatano(m, ui("OPEN")); }
+            kt_maandishi_kulia(m, x + w - 12, ry, 11, SURA_HAFIFU);
+            ry = ry + 18;
+            r = r + 1;
         }
         i = i - 1;
     }
-    kama (idadi == 0) { sura_rangi(SURA_HAFIFU); sura_lebo(ui("No agreements in force. Ask the Adviser to negotiate one."), xr + 16, yy, 11); }
+    kama (r == 0) { kt_maandishi(ui("No agreements in force. Ask the Adviser to negotiate one."), x + 12, ry + 4, 11, SURA_HAFIFU); }
+}
+
+// Mataifa yote isipokuwa hili, yamepangwa kwa dp_panga; DESK hutumia umbali.
+n64 dp_orodha(Mchezo* g, n64 taifa, n32 wigo, n64 panga, n64* orodha, n64* umbali) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 n = 0;
+    n64 b = 0;
+    wakati (b < tm->idadi) {
+        kama (b != taifa && (wigo == 0 || jopo_inafaa(b))) {
+            n64 u = jopo_umbali(taifa, b);
+            n64 ufunguo = dp_ufunguo_wa(g, taifa, panga, b);
+            n64 p = n;
+            wakati (p > 0 && dp_ufunguo_wa(g, taifa, panga, orodha[p - 1]) > ufunguo) { orodha[p] = orodha[p - 1]; umbali[p] = umbali[p - 1]; p = p - 1; }
+            orodha[p] = b;
+            umbali[p] = u;
+            n = n + 1;
+        }
+        b = b + 1;
+    }
+    rudisha n;
+}
+
+n64 dp_ufunguo_wa(Mchezo* g, n64 taifa, n64 panga, n64 b) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    kama (panga == 1) { rudisha 0 - diplomasia_urafiki(b); }
+    kama (panga == 2) { rudisha 0 - skrini_pato_la_taifa(dunia_taifa_mfumo_pata_kwa_faharisi(tm, b)) / 1000000; }
+    kama (panga == 3) { rudisha 0 - dunia_taifa_mfumo_pata_kwa_faharisi(tm, b)->kielezo_cha_kijeshi; }
+    rudisha jopo_umbali(taifa, b);
 }
 
 w0 skrini_diplomasia_chora(Mchezo* g, Turubai* t, n64 taifa) {
@@ -203,78 +399,46 @@ w0 skrini_diplomasia_chora(Mchezo* g, Turubai* t, n64 taifa) {
     skrini_upau_wa_juu(g, t);
     skrini_urambazaji(t, 4);
     TaifaMfumo* tm = mchezo_pata_taifa(g);
-    DiplomasiaMfumo* ds = mchezo_pata_diplomasia(g);
-    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
-    kama (tn == 0 || ds == 0) { rudisha; }
-    n64 x = SKRINI_UPANA_WA_PEMBENI + 25;
-    n64 y = SKRINI_UPAU_WA_JUU + 25;
-    n64 w = t->upana - x - 24;
-    n8 maelezo[160];
-    historia_maelezo(dunia_halisi_ya_mchezo, taifa, maelezo, 160);
-    kama (maelezo[0] == 0) { nakili_mfuatano(maelezo, tn->jina); }
-    skrini_kichwa_fm(g, t, ui("Diplomacy"), maelezo, x, y - 15);
+    kama (dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa) == 0 || soko_sarafu_ya(taifa) == 0) { rudisha; }
     jopo_weka_kituo(g, taifa);
-    jopo_wigo_chora(t->upana - 24, y - 1);
-    y = y + 50;
-    // mataifa yote kwa umbali
-    n64 N = tm->idadi;
-    n64* orodha = tenga(8 * N + 8);
-    n64* umbali = tenga(8 * N + 8);
-    n64 n = 0;
-    n64 majirani = 0;
-    n64 karibu = 0;
-    n64 marafiki = 0;
-    n64 wapinzani = 0;
-    n64 washirika = 0;
-    n64 biashara = 0;
-    n64 b = 0;
-    wakati (b < N) {
-        kama (b != taifa) {
-            n64 u = jopo_umbali(taifa, b);
-            n64 p = n;
-            wakati (p > 0 && umbali[p - 1] > u) { orodha[p] = orodha[p - 1]; umbali[p] = umbali[p - 1]; p = p - 1; }
-            orodha[p] = b;
-            umbali[p] = u;
-            n = n + 1;
-            kama (dunia_atlasi_mpaka(taifa, b) > 0) { majirani = majirani + 1; }
-            kama (u <= 3000) { karibu = karibu + 1; }
-            kama (diplomasia_urafiki(b) > 20) { marafiki = marafiki + 1; }
-            kama (diplomasia_urafiki(b) < -20) { wapinzani = wapinzani + 1; }
-            kama (diplomasia_biashara(b) > 0) { washirika = washirika + 1; biashara = biashara + diplomasia_biashara(b); }
-        }
-        b = b + 1;
+    n64 x = SKRINI_UPANA_WA_PEMBENI + 8;
+    n64 y = SKRINI_UPAU_WA_JUU + 6;
+    n64 w = t->upana - x - 8;
+    n64* orodha = tenga(8 * tm->idadi + 8);
+    n64* umbali = tenga(8 * tm->idadi + 8);
+    n64 n = dp_orodha(g, taifa, 0, 0, orodha, umbali);
+    dp_amri(g, taifa, x, y, w);
+    y = y + 32;
+    dp_mstari(g, taifa, orodha, n, x, y, w);
+    y = y + 28;
+    n64 h = t->kimo - y - 8;
+    n64 p = 6;
+    kama (dp_tabo == 1) {
+        n = dp_orodha(g, taifa, 1, dp_panga, orodha, umbali);
+        dp_jedwali(g, taifa, orodha, umbali, n, x, y, w, h, 1);
+    } sivyo {
+        n64 w1 = (w * 24) / 100;
+        n64 w3 = (w * 26) / 100;
+        n64 w2 = w - w1 - w3 - 2 * p;
+        n64 x2 = x + w1 + p;
+        n64 x3 = x2 + w2 + p;
+        n64 h_des = 270;
+        dp_maelezo(g, taifa, orodha, umbali, n, x, y, w1, h_des);
+        jopo_nafasi(g, taifa, KIPIMO_PATO, ui("GDP"), x, y + h_des + p, w1, h - h_des - p);
+        dp_jedwali(g, taifa, orodha, umbali, n, x2, y, w2, h, 0);
+        n64 h_mg = (h * 45) / 100;
+        dp_migogoro(g, taifa, x3, y, w3, h_mg);
+        dp_makubaliano(g, taifa, x3, y + h_mg + p, w3, h - h_mg - p);
     }
-    // vigae sita
-    n64 gap = 12;
-    n64 cw = (w - 5 * gap) / 6;
-    n8 m[64];
-    sura_namba(m, majirani);
-    sura_kadi(x, y, cw, ui("LAND NEIGHBOURS"), m, 0);
-    sura_namba(m, karibu);
-    sura_kadi(x + (cw + gap), y, cw, ui("WITHIN 3,000 KM"), m, 0);
-    sura_namba(m, marafiki);
-    sura_kadi(x + 2 * (cw + gap), y, cw, ui("FRIENDLY"), m, 0);
-    sura_namba(m, wapinzani);
-    sura_kadi(x + 3 * (cw + gap), y, cw, ui("HOSTILE"), m, 0);
-    mfuatano_umbiza(m, 64, "%d  ·  %dM", washirika, biashara, 0, 0, 0, 0);
-    sura_kadi(x + 4 * (cw + gap), y, cw, ui("TRADE PARTNERS"), m, 0);
-    nakili_mfuatano(m, ui("At peace"));
-    kama (vk_mataifa > 0 && taifa < vk_mataifa && vk_vita_adui[taifa] >= 0) { nakili_mfuatano(m, dunia_taifa_mfumo_pata_kwa_faharisi(tm, vk_vita_adui[taifa])->jina); }
-    sura_kadi(x + 5 * (cw + gap), y, cw, ui("WAR"), m, 0);
-    y = y + 104;
-    // jedwali la mataifa yaliyo karibu
-    n64 wt = (w * 68) / 100;
-    n64 h_juu = ((t->kimo - y - 24) * 64) / 100;
-    diplomasia_jedwali(g, t, taifa, orodha, umbali, n, x, y, wt, h_juu);
-    diplomasia_kulia(g, t, taifa, x + wt + gap, y, w - wt - gap, h_juu);
-    // chini: majirani na dunia
-    n64 y_chini = y + h_juu + gap;
-    n64 h_chini = t->kimo - y_chini - 24;
-    n64 w4 = (w - 3 * gap) / 4;
-    jopo_nafasi(g, taifa, KIPIMO_PATO, ui("GDP"), x, y_chini, w4, h_chini);
-    jopo_nafasi(g, taifa, KIPIMO_JESHI, ui("Military"), x + (w4 + gap), y_chini, w4, h_chini);
-    jopo_mtawanyiko(g, taifa, KIPIMO_PATO, KIPIMO_JESHI, ui("GDP / Military"), x + 2 * (w4 + gap), y_chini, w4, h_chini);
-    jopo_nafasi(g, taifa, KIPIMO_UTULIVU, ui("Stability"), x + 3 * (w4 + gap), y_chini, w - 3 * (w4 + gap), h_chini);
     achilia orodha;
     achilia umbali;
+}
+
+n32 skrini_diplomasia_bofya(n64 px, n64 py) {
+    n64 hoja = 0;
+    n64 k = bofya_tafuta(px, py, &hoja);
+    kama (k == DP_TABO) { dp_tabo = hoja; dp_ukurasa = 0; rudisha 1; }
+    kama (k == DP_PANGA) { dp_panga = hoja; dp_ukurasa = 0; rudisha 1; }
+    kama (k == DP_UKURASA) { dp_ukurasa = dp_ukurasa + hoja; kama (dp_ukurasa < 0) { dp_ukurasa = 0; } rudisha 1; }
+    rudisha 0;
 }

@@ -16,9 +16,11 @@ You govern one of 232 nations on a hand-built world, starting in any year from 1
 - **People who talk back:** with an AI provider switched on, every official answers in character (name, party, temperament, attitude to you) and the Adviser weighs what you intend. Each exchange carries measured consequences for the person's attitude and the nation's stability, legitimacy and treasury, and is remembered.
 - **Decisions the engine owns:** when a conversation concludes something (a trade deal, a loan, sanctions, a tax change, a crackdown), the AI only emits one short line of parameters. The engine reads it, clamps every number, records it in the save's decision ledger and applies it week by week until it expires. A small local model is enough.
 - **Time:** one turn is one week from 1 January of the start year. Continue advances one week, one month, three months, or until the next event that needs you. A calendar of cabinet meetings, sittings, press briefings and your own appointments, and an inbox of requests and warnings every week.
-- **The World page:** a press feed generated from the simulation (economies growing or shrinking, a new largest economy, unrest, your own agreements) where every report can be answered through the Adviser, plus rankings with sparklines, movers, forms of government, ruling blocs, an instability watch, your relations, the decision ledger and a heatmap of the great powers.
+- **The World page:** a press feed generated from the simulation (economies growing or shrinking, a new largest economy, unrest, your own agreements) where every report can be answered through the Adviser, plus rankings with sparklines, movers, forms of government, ruling blocs and an instability watch.
 - **A currency for every nation:** eight great powers on the gold standard, other currencies pegged to a power (with reserves that can run out and break the peg) or floating. Every page shows a nation's figures in its own currency, so a billion in one nation is not a billion in another.
 - **Markets and money:** every nation has a stock exchange of 4 to 40 listed companies from the industries of the start year, an index, and the industrialists and oligarchs who own them. The Economy page is a market terminal: command line, ticker tape, equity monitor, order ticket, sectors, movers, rich list, every world currency, cross rates, a gold desk, and a region / nation / world scope. Meet any tycoon in person.
+- **Faces from the peoples of the world:** every official, member, magnate and adviser has a portrait drawn from the peoples of their nation (generated from the world: skin, hair, eyes, features and build vary by region, with minorities from neighbours), aged to their real age and dressed for their office and era. Your own face can only take looks found in your nation.
+- **Decisions that cannot wait:** meeting requests and the week's diary must be answered (meet or decline, attend or skip) before time moves on.
 - **Your own person:** a Profile with a wallet (cash, gold, shares and dividends, the salary of your office), profit and loss, personal advisers you hire (financial, political, security, press), and the people you have paid.
 - **A generated constitution:** every nation's constitution is produced by rules from its own institutions: every office, ministry, chamber, committee and province, the rights its form of government and era admit, the division of powers, the courts, finance, elections, emergency and amendment. It is laid out as a paginated book of parts, articles and numbered clauses, and its numbers (vote thresholds, delays, veto and override, terms) drive the politics engine. Amend any parameter or repeal any clause by that constitution's own procedure; other nations amend theirs, so constitutions evolve.
 - **Nations that live:** every nation moves every week on its own: stability, legitimacy and treasury follow its economy, and strikes, protests, coups, elections, devaluations and market sell-offs happen and reach the news.
@@ -27,15 +29,19 @@ You govern one of 232 nations on a hand-built world, starting in any year from 1
 | | |
 |---|---|
 | ![Overview dashboard](docs/picha/muhtasari.png) | ![World ranking](docs/picha/dunia.png) |
-| **Overview:** the nation at a glance | **World:** every nation, ranked |
-| ![Politics](docs/picha/siasa.png) | ![Government](docs/picha/serikali.png) |
-| **Politics:** chambers, parties, constitution | **Government:** houses of power, every member, motions and odds |
-| ![Calendar](docs/picha/kalenda.png) | ![Inbox](docs/picha/kikasha.png) |
-| **Calendar:** the state's diary | **Inbox:** requests, diary, warnings |
-| ![Economy](docs/picha/uchumi.png) | ![Military](docs/picha/jeshi.png) |
-| **Economy:** the market terminal | **Military:** rankings, commanders, neighbours |
-| ![Constitution](docs/picha/katiba.png) | ![Profile](docs/picha/wasifu.png) |
-| **Constitution:** the document, arms of government, amendments | **Profile:** wallet, portfolio, advisers |
+| **Overview:** the nation at a glance | **World:** press, rankings, forms of government, instability |
+| ![Politics terminal](docs/picha/siasa.png) | ![Government](docs/picha/serikali.png) |
+| **Politics:** a government terminal: chambers, parties, cabinet, motions, wire | **Government:** houses of power, every office holder with a face |
+| ![Military terminal](docs/picha/jeshi.png) | ![Diplomacy terminal](docs/picha/diplomasia.png) |
+| **Military:** forces, order of battle, balance of forces | **Diplomacy:** nearest nations, disputes, agreements |
+| ![Economy](docs/picha/uchumi.png) | ![Calendar](docs/picha/kalenda.png) |
+| **Economy:** the market terminal | **Calendar:** the state's diary, week by week |
+| ![Constitution](docs/picha/katiba.png) | ![Inbox](docs/picha/kikasha.png) |
+| **Constitution:** the document, arms of government, amendments | **Inbox:** requests, diary, warnings |
+| ![Culture](docs/picha/utamaduni.png) | ![Technology](docs/picha/teknolojia.png) |
+| **Culture:** cultural rights, outlook, rankings | **Technology:** twelve fields ranked against every nation |
+| ![Profile](docs/picha/wasifu.png) | ![Portraits](docs/picha/nyuso.png) |
+| **Profile:** wallet, portfolio, advisers, saves | **Portraits:** officials of six nations, north to south, drawn from each nation's peoples |
 
 ## Requirements
 

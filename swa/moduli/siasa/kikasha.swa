@@ -24,6 +24,7 @@ muundo Ujumbe {
     n8* kichwa;
     n8* mwili;
     n64 umesomwa;
+    n64 jibu;               // ombi la mkutano: 0 halijajibiwa, 1 amekubali, 2 amekataa
 }
 
 n64 kikasha_idadi = 0;
@@ -46,6 +47,7 @@ w0 kikasha_ongeza(n64 mtumaji, n64 aina, n64 zamu, n64 siku, n8* kichwa, n8* mwi
     u->kichwa = kichwa;
     u->mwili = mwili;
     u->umesomwa = 0;
+    u->jibu = 0;
     kikasha[kikasha_idadi] = u;
     kikasha_idadi = kikasha_idadi + 1;
 }

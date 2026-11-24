@@ -1,3 +1,4 @@
+husisha { moduli/skrini/nyuso.swa }
 husisha { moduli/skrini/mkutano.swa }
 husisha { moduli/onyesho/chati_kadi.swa }
 
@@ -138,7 +139,8 @@ w0 skrini_kikasha_chora(Mchezo* g, Turubai* t, n64 taifa) {
         }
         n8* jina = ui("Unknown");
         kama (m != 0) { jina = m->jina; }
-        kikasha_avatar(jina, x + 36, ry + 30, 16, 3754873);
+        kama (m != 0) { ny_chora_mhusika(t, m, d, taifa, ny_mwaka_wa_zamu(g->zamu_ya_sasa), x + 36, ry + 30, 17); }
+        sivyo { kikasha_avatar(ui("Unknown"), x + 36, ry + 30, 16, 3754873); }
         n8 tarehe[48];
         tarehe_maandishi_mafupi(u->siku, tarehe, 48);
         sura_rangi(SURA_HAFIFU);
@@ -180,7 +182,7 @@ w0 skrini_kikasha_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_rangi(SURA_MAANDISHI);
     sura_lebo_nene(u->kichwa, xr + 24, y + 54, 22);
     kama (m != 0) {
-        kikasha_avatar(m->jina, xr + 44, y + 120, 20, 3754873);
+        ny_chora_mhusika(t, m, d, taifa, ny_mwaka_wa_zamu(g->zamu_ya_sasa), xr + 44, y + 120, 22);
         sura_rangi(SURA_MAANDISHI);
         sura_lebo_kati(m->jina, xr + 76, y + 104, 14);
         n8* chama = ui("No party");

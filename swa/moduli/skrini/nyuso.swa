@@ -1,0 +1,342 @@
+husisha { moduli/onyesho/uso.swa }
+husisha { moduli/dunia/dunia_atlasi.swa }
+husisha { moduli/siasa/wahusika.swa }
+husisha { moduli/siasa/dola.swa }
+husisha { moduli/injini/tarehe.swa }
+
+// nyuso.swa -- jamii za watu wa dunia na nyuso zinazolingana nazo.
+//
+// Dunia haina data ya makabila, kwa hiyo jamii huzalishwa kutoka dunia
+// yenyewe: dunia hugawanywa katika maeneo 8 x 5, na kila eneo ni jamii moja
+// yenye sura yake (wigo wa rangi ya ngozi, aina na rangi za nywele, rangi na
+// umbo la macho, upana wa pua, ujazo wa midomo, wingi wa ndevu, umbo la
+// mwili). Sura hutokana na latitudo ya eneo na mbegu yake. Ni sura tu: jamii
+// haina tabia, uwezo wala mwelekeo wowote wa kisiasa.
+//
+// Kila taifa lina mchanganyiko: jamii ya eneo la mji wake mkuu (sehemu kubwa)
+// na jamii za mataifa matatu yaliyo karibu zaidi (wachache). Kila afisa
+// huchaguliwa jamii kutoka mchanganyiko huo, kisha sura yake ndani ya jamii.
+// Mhariri wa uso wa mchezaji huruhusu sura zilizopo kwenye taifa lake tu.
+
+Uso* mchezaji_uso = 0;          // uso wa mchezaji (0 = bado hajaunda)
+
+n64 NY_X = 8;
+n64 NY_Y = 5;
+n64 NY_MCHANGANYIKO = 4;
+
+n64 ny_jamii_ya_taifa(n64 taifa) {
+    DuniaHalisi* d = dunia_halisi_ya_mchezo;
+    kama (d == 0 || taifa < 0 || taifa >= d->mataifa) { rudisha 0; }
+    n64 cx = (d->mji_x[taifa] * NY_X) / d->upana;
+    n64 cy = (d->mji_y[taifa] * NY_Y) / d->kimo;
+    kama (cx >= NY_X) { cx = NY_X - 1; }
+    kama (cy >= NY_Y) { cy = NY_Y - 1; }
+    rudisha cy * NY_X + cx;
+}
+
+// 0..1 kwa mbegu ya jamii na sifa.
+d64 ny_nasibu(n64 jamii, n64 sifa) {
+    d64 v = uso_d(uso_nasibu(jamii * 977 + 31, sifa) % 1000);
+    rudisha v / 1000.0;
+}
+
+// Latitudo ya eneo: 0 ikweta .. 1 ncha.
+d64 ny_latitudo(n64 jamii) {
+    n64 cy = jamii / NY_X;
+    d64 kati = (uso_d(cy) + 0.5) / uso_d(NY_Y);
+    rudisha uso_kamili(kati - 0.5) * 2.0;
+}
+
+// Kitovu cha rangi ya ngozi ya jamii (0..11).
+d64 ny_ngozi_kati(n64 jamii) {
+    d64 l = ny_latitudo(jamii);
+    d64 v = 10.5 * (1.0 - l) * (1.0 - 0.25 * l) + (ny_nasibu(jamii, 1) - 0.5) * 4.0;
+    kama (v < 0.0) { v = 0.0; }
+    kama (v > 11.0) { v = 11.0; }
+    rudisha v;
+}
+
+d64 ny_p_kipilipili(n64 jamii) {
+    d64 n = ny_ngozi_kati(jamii);
+    kama (n > 6.0) { rudisha uso_bana((n - 6.0) / 5.0 * (0.45 + 0.55 * ny_nasibu(jamii, 2))); }
+    rudisha 0.04 * ny_nasibu(jamii, 2);
+}
+
+d64 ny_p_nywele_nyepesi(n64 jamii) {
+    d64 l = ny_latitudo(jamii);
+    kama (l < 0.45 || ny_ngozi_kati(jamii) > 5.0) { rudisha 0.0; }
+    rudisha uso_bana((l - 0.45) * 1.6 * ny_nasibu(jamii, 3));
+}
+
+d64 ny_p_macho_mepesi(n64 jamii) {
+    d64 l = ny_latitudo(jamii);
+    kama (l < 0.4 || ny_ngozi_kati(jamii) > 5.5) { rudisha 0.0; }
+    rudisha uso_bana((l - 0.4) * 1.5 * ny_nasibu(jamii, 4));
+}
+
+d64 ny_p_kope_moja(n64 jamii) {
+    kama (ny_nasibu(jamii, 5) < 0.3) { rudisha 0.6 + 0.4 * ny_nasibu(jamii, 6); }
+    rudisha 0.03 * ny_nasibu(jamii, 6);
+}
+
+d64 ny_pua_kati(n64 jamii) { rudisha uso_bana((ny_ngozi_kati(jamii) - 2.0) / 9.0 * 0.6 + ny_nasibu(jamii, 7) * 0.4) * 3.0; }
+d64 ny_mdomo_kati(n64 jamii) { rudisha uso_bana((ny_ngozi_kati(jamii) - 3.0) / 8.0 * 0.5 + ny_nasibu(jamii, 8) * 0.5) * 3.0; }
+d64 ny_p_ndevu(n64 jamii) { rudisha 0.25 + 0.65 * ny_nasibu(jamii, 9); }
+d64 ny_unene_kati(n64 jamii) { rudisha 0.6 + 1.6 * ny_nasibu(jamii, 10); }
+
+// Mchanganyiko wa taifa: jamii na uzito wake (jumla 100).
+w0 ny_mchanganyiko(n64 taifa, n64* jamii, n64* uzito) {
+    DuniaHalisi* d = dunia_halisi_ya_mchezo;
+    n64 k = 0;
+    wakati (k < NY_MCHANGANYIKO) { jamii[k] = 0 - 1; uzito[k] = 0; k = k + 1; }
+    jamii[0] = ny_jamii_ya_taifa(taifa);
+    uzito[0] = 100;
+    kama (d == 0 || taifa < 0 || taifa >= d->mataifa) { rudisha; }
+    // mataifa matatu ya karibu zaidi yenye jamii tofauti
+    n64 n = 1;
+    wakati (n < NY_MCHANGANYIKO) {
+        n64 bora = 0 - 1;
+        n64 bora_u = 0;
+        n64 i = 0;
+        wakati (i < d->mataifa) {
+            n64 j = ny_jamii_ya_taifa(i);
+            n32 ipo = 0;
+            n64 q = 0;
+            wakati (q < n) { kama (jamii[q] == j) { ipo = 1; } q = q + 1; }
+            kama (ipo == 0) {
+                n64 dx = d->mji_x[i] - d->mji_x[taifa];
+                kama (dx < 0) { dx = 0 - dx; }
+                kama (dx > d->upana / 2) { dx = d->upana - dx; }
+                n64 dy = d->mji_y[i] - d->mji_y[taifa];
+                n64 u = dx * dx + dy * dy;
+                kama (bora < 0 || u < bora_u) { bora = i; bora_u = u; }
+            }
+            i = i + 1;
+        }
+        kama (bora < 0) { rudisha; }
+        jamii[n] = ny_jamii_ya_taifa(bora);
+        uzito[n] = 7;
+        uzito[0] = uzito[0] - 7;
+        n = n + 1;
+    }
+}
+
+// Chagua jamii ya mtu kutoka mchanganyiko wa taifa.
+n64 ny_chagua_jamii(n64 taifa, n64 mbegu) {
+    n64* jamii = tenga(8 * NY_MCHANGANYIKO);
+    n64* uzito = tenga(8 * NY_MCHANGANYIKO);
+    ny_mchanganyiko(taifa, jamii, uzito);
+    n64 r = uso_nasibu(mbegu, 101) % 100;
+    n64 chaguo = jamii[0];
+    n64 jumla = 0;
+    n64 k = 0;
+    wakati (k < NY_MCHANGANYIKO) {
+        jumla = jumla + uzito[k];
+        kama (jamii[k] >= 0 && r < jumla) { chaguo = jamii[k]; k = NY_MCHANGANYIKO; }
+        k = k + 1;
+    }
+    achilia jamii;
+    achilia uzito;
+    rudisha chaguo;
+}
+
+d64 ny_nasibu_ya(n64 mbegu, n64 sifa) {
+    d64 v = uso_d(uso_nasibu(mbegu, sifa + 200) % 1000);
+    rudisha v / 1000.0;
+}
+
+n64 ny_bana(d64 v, n64 juu) {
+    n64 n = v + 0.5;
+    kama (v < 0.0) { n = 0; }
+    kama (n > juu) { n = juu; }
+    rudisha n;
+}
+
+// Uso wa mtu wa jamii `jamii`. jinsia: 0 mwanamume, 1 mwanamke. umri: miaka.
+w0 ny_zalisha_kwa_jamii(Uso* u, n64 jamii, n64 mbegu, n64 mwaka, n64 jinsia, n64 umri, n64 mavazi) {
+    weka_sifuri(u, ukubwa(Uso));
+    u->jinsia = jinsia;
+    u->umri = (umri - 20) / 10;
+    kama (umri < 20) { u->umri = 0; }
+    kama (u->umri > 5) { u->umri = 5; }
+    u->mavazi = mavazi;
+    u->umbo = uso_nasibu(mbegu, 1) % 4;
+    d64 g = (ny_nasibu_ya(mbegu, 2) + ny_nasibu_ya(mbegu, 3) - 1.0) * 2.2;
+    u->ngozi = ny_bana(ny_ngozi_kati(jamii) + g, 11);
+    u->nyusi = uso_nasibu(mbegu, 4) % 4;
+    u->pua = ny_bana(ny_pua_kati(jamii) + (ny_nasibu_ya(mbegu, 5) - 0.5) * 1.8, 3);
+    u->mdomo = ny_bana(ny_mdomo_kati(jamii) + (ny_nasibu_ya(mbegu, 6) - 0.5) * 1.8, 3);
+    u->unene = ny_bana(ny_unene_kati(jamii) + (ny_nasibu_ya(mbegu, 7) - 0.5) * 2.0 + uso_d(u->umri) * 0.15, 3);
+    // macho
+    kama (ny_nasibu_ya(mbegu, 8) < ny_p_kope_moja(jamii)) { u->macho = 3; } sivyo { u->macho = uso_nasibu(mbegu, 9) % 3; }
+    d64 rm = ny_nasibu_ya(mbegu, 10);
+    u->rangi_ya_macho = 0;
+    kama (rm > 0.45) { u->rangi_ya_macho = 1; }
+    kama (rm < ny_p_macho_mepesi(jamii)) {
+        u->rangi_ya_macho = 2 + uso_nasibu(mbegu, 11) % 3;
+    }
+    // nywele: aina, rangi na umri
+    n32 kipilipili = ny_nasibu_ya(mbegu, 12) < ny_p_kipilipili(jamii);
+    n64 r = uso_nasibu(mbegu, 13) % 100;
+    kama (jinsia == 1) {
+        kama (kipilipili) { kama (r < 40) { u->nywele = 8; } sivyo kama (r < 70) { u->nywele = 7; } sivyo { u->nywele = 4; } }
+        sivyo { kama (r < 40) { u->nywele = 3; } sivyo kama (r < 70) { u->nywele = 5; } sivyo kama (r < 85) { u->nywele = 2; } sivyo { u->nywele = 7; } }
+    } sivyo {
+        kama (kipilipili) { kama (r < 55) { u->nywele = 4; } sivyo kama (r < 70) { u->nywele = 8; } sivyo kama (r < 85) { u->nywele = 0; } sivyo { u->nywele = 7; } }
+        sivyo { kama (r < 38) { u->nywele = 1; } sivyo kama (r < 66) { u->nywele = 2; } sivyo kama (r < 84) { u->nywele = 9; } sivyo kama (r < 94) { u->nywele = 7; } sivyo { u->nywele = 3; } }
+        // upara kadiri umri unavyoongezeka
+        n64 upara = uso_nasibu(mbegu, 14) % 100;
+        kama (u->umri >= 2 && upara < u->umri * 12) { u->nywele = 6; }
+        kama (u->umri >= 3 && upara < u->umri * 5) { u->nywele = 0; }
+    }
+    d64 rn = ny_nasibu_ya(mbegu, 15);
+    u->rangi_ya_nywele = 0;
+    kama (rn > 0.55) { u->rangi_ya_nywele = 1; }
+    kama (rn < ny_p_nywele_nyepesi(jamii)) { u->rangi_ya_nywele = 2 + uso_nasibu(mbegu, 16) % 3; }
+    n64 mvi = uso_nasibu(mbegu, 17) % 100;
+    kama (u->umri >= 3 && mvi < (u->umri - 2) * 30) { u->rangi_ya_nywele = 5; }
+    kama (u->umri >= 4 && mvi < (u->umri - 3) * 25) { u->rangi_ya_nywele = 6; }
+    kama (u->nywele == 7) { u->rangi_ya_nywele = uso_nasibu(mbegu, 18) % 7; }
+    // ndevu: wingi wa jamii na mitindo ya zama
+    u->ndevu = 0;
+    kama (jinsia == 0 && ny_nasibu_ya(mbegu, 19) < ny_p_ndevu(jamii)) {
+        n64 m = uso_nasibu(mbegu, 20) % 100;
+        kama (mwaka < 1900) {
+            kama (m < 30) { u->ndevu = 3; } sivyo kama (m < 50) { u->ndevu = 2; } sivyo kama (m < 65) { u->ndevu = 5; } sivyo kama (m < 80) { u->ndevu = 6; } sivyo { u->ndevu = 4; }
+        } sivyo kama (mwaka < 1960) {
+            kama (m < 45) { u->ndevu = 2; } sivyo kama (m < 60) { u->ndevu = 3; } sivyo kama (m < 70) { u->ndevu = 4; }
+        } sivyo {
+            kama (m < 30) { u->ndevu = 1; } sivyo kama (m < 50) { u->ndevu = 3; } sivyo kama (m < 62) { u->ndevu = 4; } sivyo kama (m < 72) { u->ndevu = 2; }
+        }
+    }
+    // miwani: huongezeka na umri
+    u->miwani = 0;
+    kama (uso_nasibu(mbegu, 21) % 100 < 6 + u->umri * 9) {
+        u->miwani = 1;
+        kama (mwaka >= 1930 && uso_nasibu(mbegu, 22) % 2 == 0) { u->miwani = 2; }
+    }
+}
+
+// Mbegu ya jina (kwa maafisa, matajiri na washauri).
+n64 ny_mbegu_ya_jina(n8* jina) {
+    n64 h = 5381;
+    kama (jina == 0) { rudisha h; }
+    n64 i = 0;
+    wakati (jina[i] != 0) { h = ((h * 33) ^ (jina[i] & 255)) & 4294967295; i = i + 1; }
+    rudisha h;
+}
+
+n64 ny_mwaka_wa_zamu(n64 zamu) {
+    n64 y = 0;
+    n64 m = 0;
+    n64 s = 0;
+    tarehe_ya_siku(tarehe_siku_ya_zamu(zamu), &y, &m, &s);
+    rudisha y;
+}
+
+// Sehemu ya wanawake kati ya maafisa kwa zama (asilimia).
+n64 ny_wanawake_kwa_mwaka(n64 mwaka) {
+    kama (mwaka < 1900) { rudisha 4; }
+    kama (mwaka < 1950) { rudisha 8; }
+    kama (mwaka < 2000) { rudisha 22; }
+    rudisha 35;
+}
+
+// Mavazi ya afisa kwa tawi, cheo, aina ya utawala na zama.
+n64 ny_mavazi_ya(MhusikaWaDola* m, Dola* d, n64 mwaka, n64 mbegu) {
+    kama (m->tawi == TAWI_JESHI) { rudisha 2; }
+    kama (m->tawi == TAWI_MAHAKAMA) { rudisha 3; }
+    kama (d != 0) {
+        n32 ufalme = d->aina == DOLA_UFALME_WA_KATIBA || d->aina == DOLA_UFALME_KAMILI || d->aina == DOLA_UFALME_WA_KUCHAGULIWA || d->aina == DOLA_MILKI;
+        kama (ufalme && m->tawi == TAWI_UTENDAJI && m->ujazaji == UJAZAJI_KURITHI) { rudisha 5; }
+        kama (d->aina == DOLA_UTAWALA_WA_KIDINI && m->tawi == TAWI_UTENDAJI && m->ngazi >= 8) { rudisha 3; }
+        kama (d->aina == DOLA_UTAWALA_WA_KIJESHI && m->tawi == TAWI_UTENDAJI && m->ngazi >= 8) { rudisha 2; }
+        kama (d->aina == DOLA_MUUNGANO_WA_KABILA) { rudisha 6; }
+    }
+    kama (mwaka < 1850) { rudisha 0; }
+    kama (mwaka >= 1950 && m->ngazi <= 5 && uso_nasibu(mbegu, 30) % 100 < 20) { rudisha 4; }
+    rudisha 1;
+}
+
+// Uso wa afisa wa taifa.
+w0 ny_uso_wa_mhusika(MhusikaWaDola* m, Dola* d, n64 taifa, n64 mwaka, Uso* nje) {
+    n64 mbegu = ny_mbegu_ya_jina(m->jina) ^ (taifa * 7919);
+    n64 jinsia = 0;
+    kama (uso_nasibu(mbegu, 50) % 100 < ny_wanawake_kwa_mwaka(mwaka)) { jinsia = 1; }
+    n64 jamii = ny_chagua_jamii(taifa, mbegu);
+    ny_zalisha_kwa_jamii(nje, jamii, mbegu, mwaka, jinsia, m->umri, ny_mavazi_ya(m, d, mwaka, mbegu));
+}
+
+// Uso wa mtu wa kiraia kwa jina tu (matajiri, washauri wa kulipwa).
+w0 ny_uso_wa_jina(n8* jina, n64 taifa, n64 mwaka, n64 umri, Uso* nje) {
+    n64 mbegu = ny_mbegu_ya_jina(jina) ^ (taifa * 7919);
+    n64 jinsia = 0;
+    kama (uso_nasibu(mbegu, 50) % 100 < ny_wanawake_kwa_mwaka(mwaka)) { jinsia = 1; }
+    n64 mavazi = 1;
+    kama (mwaka < 1850) { mavazi = 0; }
+    ny_zalisha_kwa_jamii(nje, ny_chagua_jamii(taifa, mbegu), mbegu, mwaka, jinsia, umri, mavazi);
+}
+
+Uso* ny_kazi = 0;
+
+// Chora uso wa afisa kwa mduara (cx, cy, r).
+w0 ny_chora_mhusika(Turubai* t, MhusikaWaDola* m, Dola* d, n64 taifa, n64 mwaka, n64 cx, n64 cy, n64 r) {
+    kama (m == 0) { rudisha; }
+    kama (ny_kazi == 0) { ny_kazi = tenga(ukubwa(Uso)); }
+    ny_uso_wa_mhusika(m, d, taifa, mwaka, ny_kazi);
+    uso_chora_duara(t, ny_kazi, cx, cy, r);
+}
+
+w0 ny_chora_jina(Turubai* t, n8* jina, n64 taifa, n64 mwaka, n64 umri, n64 cx, n64 cy, n64 r) {
+    kama (ny_kazi == 0) { ny_kazi = tenga(ukubwa(Uso)); }
+    ny_uso_wa_jina(jina, taifa, mwaka, umri, ny_kazi);
+    uso_chora_duara(t, ny_kazi, cx, cy, r);
+}
+
+// ---------- mhariri wa uso wa mchezaji ----------
+
+// Je, thamani v ya sifa inapatikana kwa jamii yoyote ya taifa?
+n32 ny_inaruhusiwa(n64 taifa, n64 sifa, n64 v) {
+    n64* jamii = tenga(8 * NY_MCHANGANYIKO);
+    n64* uzito = tenga(8 * NY_MCHANGANYIKO);
+    ny_mchanganyiko(taifa, jamii, uzito);
+    n32 ndiyo = 0;
+    n64 k = 0;
+    wakati (k < NY_MCHANGANYIKO) {
+        n64 j = jamii[k];
+        kama (j >= 0) {
+            kama (sifa == 1) { kama (uso_kamili(uso_d(v) - ny_ngozi_kati(j)) <= 2.6) { ndiyo = 1; } }
+            sivyo kama (sifa == 2) {
+                kama ((v == 4 || v == 8) == 0) { ndiyo = 1; }
+                kama ((v == 4 || v == 8) && ny_p_kipilipili(j) > 0.08) { ndiyo = 1; }
+            }
+            sivyo kama (sifa == 3) { kama (v <= 1 || v >= 5 || ny_p_nywele_nyepesi(j) > 0.04) { ndiyo = 1; } }
+            sivyo kama (sifa == 4) { kama (v != 3 || ny_p_kope_moja(j) > 0.08) { ndiyo = 1; } }
+            sivyo kama (sifa == 12) { kama (v <= 1 || ny_p_macho_mepesi(j) > 0.04) { ndiyo = 1; } }
+            sivyo { ndiyo = 1; }
+        }
+        k = k + 1;
+    }
+    achilia jamii;
+    achilia uzito;
+    rudisha ndiyo;
+}
+
+// Badilisha sifa ya uso wa mchezaji, ukiruka thamani zisizopatikana kwenye taifa.
+w0 ny_badilisha(Uso* u, n64 sifa, n64 hatua, n64 taifa) {
+    n64 k = uso_kikomo(sifa);
+    n64 jaribio = 0;
+    wakati (jaribio < k) {
+        uso_badilisha(u, sifa, hatua);
+        kama (ny_inaruhusiwa(taifa, sifa, uso_sifa_ya(u, sifa)[0])) { jaribio = k; }
+        jaribio = jaribio + 1;
+    }
+    kama (sifa == 11 && u->jinsia == 1) { u->ndevu = 0; }
+}
+
+// Uso wa mwanzo wa mchezaji: mtu wa jamii kuu ya taifa lake.
+w0 ny_zalisha_mchezaji(Uso* u, n64 taifa, n64 mbegu, n64 mwaka) {
+    n64 mavazi = 1;
+    kama (mwaka < 1850) { mavazi = 0; }
+    ny_zalisha_kwa_jamii(u, ny_chagua_jamii(taifa, mbegu), mbegu, mwaka, 0, 45, mavazi);
+}

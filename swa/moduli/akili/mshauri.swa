@@ -320,9 +320,32 @@ w0 akili_kichwa_cha_idhini(AkiliUsanidi* u, n8* nje, n64 uwezo) {
     kama (u->ufunguo[0] != 0) { mfuatano_umbiza(nje, uwezo, "Authorization: Bearer %s\n", u->ufunguo, 0, 0, 0, 0, 0); }
 }
 
+// Modeli zilizo kwenye seva, kutoka jaribio la mwisho (GET /v1/models).
+n64 AKILI_MODELI_JUU = 16;
+n8** akili_modeli = 0;
+n64 akili_modeli_idadi = 0;
+n8 akili_kosa_ujumbe[256];           // ujumbe wa hitilafu wa seva ("model 'x' not found")
+
+// Je, modeli iliyochaguliwa imo kwenye orodha ya seva?
+n32 akili_modeli_ipo(AkiliUsanidi* u) {
+    n64 i = 0;
+    wakati (i < akili_modeli_idadi) {
+        kama (linganisha_mfuatano(akili_modeli[i], u->modeli) == 0) { rudisha 1; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
 // Je, seva inafikika na inajibu? 1 ndiyo, 0 hapana. (GET /v1/models)
+// Pia hujaza akili_modeli kwa vitambulisho ("id") vya modeli zote za seva.
 n32 akili_jaribu(AkiliUsanidi* u) {
+    akili_modeli_idadi = 0;
     kama (u->mtoa == AKILI_HAKUNA) { rudisha 0; }
+    kama (akili_modeli == 0) {
+        akili_modeli = tenga(8 * AKILI_MODELI_JUU);
+        n64 k = 0;
+        wakati (k < AKILI_MODELI_JUU) { akili_modeli[k] = tenga(128); k = k + 1; }
+    }
     n8 idhini[320];
     akili_kichwa_cha_idhini(u, idhini, 320);
     n8* vichwa = tenga(1024);
@@ -330,10 +353,32 @@ n32 akili_jaribu(AkiliUsanidi* u) {
     n8* ombi = tenga(2048);
     n64 n = akili_crlf(ombi, vichwa);
     achilia vichwa;
-    n8* jibu = tenga(8192);
-    n64 r = akili_http_ombi(u, ombi, n, jibu, 8192, 3);
+    n64 uwezo = 65536;
+    n8* jibu = tenga(uwezo);
+    n64 r = akili_http_ombi(u, ombi, n, jibu, uwezo, 3);
     n32 sawa = 0;
-    kama (r > 0 && akili_http_hali(jibu) == 200) { sawa = 1; }
+    kama (r > 0 && akili_http_hali(jibu) == 200) {
+        sawa = 1;
+        n64 urefu = 0;
+        n64 mwanzo = akili_http_mwili(jibu, r, &urefu);
+        kama (mwanzo >= 0) {
+            n8* mwili = &jibu[mwanzo];
+            n64 i = 0;
+            wakati (mwili[i] != 0 && akili_modeli_idadi < AKILI_MODELI_JUU) {
+                n32 p = tafuta_mfuatano(&mwili[i], "\"id\"");
+                kama (p < 0) { mwili[i] = 0; }
+                sivyo {
+                    i = i + p + 4;
+                    wakati (mwili[i] != 0 && mwili[i] != 34) { i = i + 1; }
+                    kama (mwili[i] == 34) {
+                        akili_json_soma_mfuatano(&mwili[i + 1], akili_modeli[akili_modeli_idadi], 128);
+                        akili_modeli_idadi = akili_modeli_idadi + 1;
+                        i = i + 1;
+                    }
+                }
+            }
+        }
+    }
     achilia ombi;
     achilia jibu;
     rudisha sawa;
@@ -361,7 +406,23 @@ n64 akili_jenga_swali(AkiliUsanidi* u, n8* maelekezo, n8* swali, n8* mwili, n64 
 // Toa jibu la mshauri kutoka jibu kamili la HTTP (urefu n). Hurudisha urefu
 // wa maandishi, au hasi: -10 hali si 200, -11 hakuna maudhui.
 n64 akili_toa_jibu(n8* jibu, n64 n, n8* nje, n64 uwezo) {
-    kama (akili_http_hali(jibu) != 200) { rudisha 0 - 10; }
+    akili_kosa_ujumbe[0] = 0;
+    kama (akili_http_hali(jibu) != 200) {
+        // ujumbe wa seva: {"error":{"message":"..."}} au {"error":"..."}
+        n64 urefu_k = 0;
+        n64 mw = akili_http_mwili(jibu, n, &urefu_k);
+        kama (mw >= 0) {
+            n32 m = tafuta_mfuatano(&jibu[mw], "\"message\"");
+            kama (m < 0) { m = tafuta_mfuatano(&jibu[mw], "\"error\""); }
+            kama (m >= 0) {
+                n64 i = mw + m + 7;
+                wakati (jibu[i] != 0 && jibu[i] != 58) { i = i + 1; }
+                wakati (jibu[i] != 0 && jibu[i] != 34 && jibu[i] != 123) { i = i + 1; }
+                kama (jibu[i] == 34) { akili_json_soma_mfuatano(&jibu[i + 1], akili_kosa_ujumbe, 256); }
+            }
+        }
+        rudisha 0 - 10;
+    }
     n64 urefu = 0;
     n64 mwanzo = akili_http_mwili(jibu, n, &urefu);
     kama (mwanzo < 0) { rudisha 0 - 11; }
