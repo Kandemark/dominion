@@ -21,6 +21,17 @@ Dola* tafuta_dola(n8* cheo, n64 aina, n64 mabaraza) {
     rudisha 0;
 }
 
+w0 weka_itikadi_ya_serikali(Dola* d, n64 itikadi) {
+    n64 c = 0;
+    wakati (c < d->vyama) { kama (d->chama_serikalini[c]) { d->chama_itikadi[c] = itikadi; } c = c + 1; }
+}
+
+n64 ina_haki(n64 h) {
+    n64 i = 0;
+    wakati (i < hati_idadi) { kama (hati_pata(i)->aina == K_HAKI && hati_pata(i)->mada == h) { rudisha 1; } i = i + 1; }
+    rudisha 0;
+}
+
 n64 hesabu_aina(n64 aina) {
     n64 n = 0;
     n64 i = 0;
@@ -42,6 +53,8 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     hati_mikoa_idadi = 4;
     hati_mikoa_majina = mikoa;
     hati_mwaka = 1900;
+    // waandishi wa katiba ni vyama vya serikali: hapa ni waliberali
+    weka_itikadi_ya_serikali(r, ITIKADI_ULIBERALI);
     hati_hakikisha(r, wr, 2);
     andika("katiba: vifungu %d, ibara %d\n", hati_idadi, hati_ibara_idadi, 0, 0, 0, 0);
     thibitisha("vifungu vingi", hati_idadi > 120);
@@ -119,6 +132,23 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     wakati (i < hati_idadi) { Kifungu* kk = hati_pata(i); baada = baada + kk->p0 + kk->p1 * 3 + kk->p2 * 7; i = i + 1; }
     thibitisha("toleo jipya limebadilika", hati_toleo == 6 && baada != kabla);
 
+    // kutokuwa na upande: aina ya utawala haiamui haki, watu wake ndio huamua
+    weka_itikadi_ya_serikali(r, ITIKADI_UKOMUNISTI);
+    hati_taifa = 0 - 1;
+    hati_hakikisha(r, wr, 2);
+    thibitisha("jamhuri ya kikomunisti: hakuna haki ya mali binafsi", ina_haki(17) == 0 && ina_haki(23) == 1);
+    weka_itikadi_ya_serikali(r, ITIKADI_UHAFIDHINA);
+    hati_taifa = 0 - 1;
+    hati_hakikisha(r, wr, 2);
+    thibitisha("jamhuri ya kihafidhina: haki ya mali ipo", ina_haki(17) == 1);
+    Dola* fk = tafuta_dola("Kingdom of Test", DOLA_UFALME_KAMILI, -1);
+    kama (fk != 0 && fk->vyama > 0) {
+        weka_itikadi_ya_serikali(fk, ITIKADI_ULIBERALI);
+        Wahusika* wf = wahusika_unda(fk, 77, 30000000);
+        hati_taifa = 0 - 1;
+        hati_hakikisha(fk, wf, 3);
+        thibitisha("ufalme kamili wenye waliberali: uhuru wa habari na haki zisizoguswa", ina_haki(12) == 1 && hati_tafuta(K_ZISIZOGUSWA, -1)->p0 == 1);
+    }
     kama (makosa > 0) {
         andika("hati: makosa %d\n", makosa, 0, 0, 0, 0, 0);
         rudisha 1;

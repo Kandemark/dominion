@@ -89,6 +89,114 @@ n64 ITIKADI_MILA = 20;
 n64 ITIKADI_HURU = 21;
 n64 ITIKADI_IDADI = 22;
 
+// ---------- misimamo ya itikadi ----------
+//
+// Hakuna aina ya utawala wala itikadi iliyo nzuri au mbaya kwa msimbo. Kila
+// itikadi ina msimamo kwenye mihimili mitano (-100..100) -- kile watu wake
+// wanachotaka, si thamani yake:
+//   UHURU    uhuru wa mtu binafsi (+) dhidi ya udhibiti wa pamoja (-)
+//   USAWA    usawa na ugawaji (+) dhidi ya ngazi na mali binafsi (-)
+//   MAMLAKA  mamlaka imara ya kati (+) dhidi ya mamlaka yaliyotawanyika (-)
+//   MILA     mila na imani (+) dhidi ya mabadiliko ya kidunia (-)
+//   TAIFA    taifa na nguvu ya kijeshi (+) dhidi ya ulimwengu mzima (-)
+// Matokeo yote (uhalali, utulivu, yaliyomo kwenye katiba, ukubwa wa jeshi,
+// hatari ya mapinduzi) hutoka kwenye watu halisi wa dola: vyama vyake na
+// viti vyao, na jinsi misimamo yao inavyopokea jambo husika.
+
+n64 MHIMILI_UHURU = 0;
+n64 MHIMILI_USAWA = 1;
+n64 MHIMILI_MAMLAKA = 2;
+n64 MHIMILI_MILA = 3;
+n64 MHIMILI_TAIFA = 4;
+n64 MIHIMILI = 5;
+
+n64 itikadi_msimamo(n64 i, n64 m) {
+    // safu: uhuru, usawa, mamlaka, mila, taifa
+    n64 v0 = 0; n64 v1 = 0; n64 v2 = 0; n64 v3 = 0; n64 v4 = 0;
+    kama (i == ITIKADI_UKOMUNISTI) { v0 = -40; v1 = 90; v2 = 60; v3 = -60; v4 = -20; }
+    kama (i == ITIKADI_UJAMAA) { v0 = 0; v1 = 80; v2 = 20; v3 = -30; v4 = -10; }
+    kama (i == ITIKADI_DEMOKRASIA_YA_KIJAMII) { v0 = 40; v1 = 60; v2 = -10; v3 = -20; v4 = -10; }
+    kama (i == ITIKADI_KIJANI) { v0 = 40; v1 = 50; v2 = -30; v3 = -10; v4 = -60; }
+    kama (i == ITIKADI_ULIBERALI) { v0 = 80; v1 = -10; v2 = -40; v3 = -20; v4 = -10; }
+    kama (i == ITIKADI_KATI) { v0 = 20; v1 = 10; v2 = 0; v3 = 0; v4 = 0; }
+    kama (i == ITIKADI_DEMOKRASIA_YA_KIDINI) { v0 = 20; v1 = 20; v2 = 0; v3 = 60; v4 = 10; }
+    kama (i == ITIKADI_UHAFIDHINA) { v0 = 10; v1 = -40; v2 = 30; v3 = 60; v4 = 30; }
+    kama (i == ITIKADI_UTAIFA) { v0 = -20; v1 = -10; v2 = 50; v3 = 40; v4 = 90; }
+    kama (i == ITIKADI_UFASHISTI) { v0 = -80; v1 = -20; v2 = 90; v3 = 30; v4 = 100; }
+    kama (i == ITIKADI_UFALME) { v0 = -20; v1 = -60; v2 = 70; v3 = 80; v4 = 40; }
+    kama (i == ITIKADI_UKLERO) { v0 = -30; v1 = 0; v2 = 40; v3 = 100; v4 = 20; }
+    kama (i == ITIKADI_WAKULIMA) { v0 = 10; v1 = 50; v2 = -20; v3 = 50; v4 = 10; }
+    kama (i == ITIKADI_UHURU_BINAFSI) { v0 = 100; v1 = -80; v2 = -70; v3 = -10; v4 = -20; }
+    kama (i == ITIKADI_UANAKI) { v0 = 90; v1 = 80; v2 = -100; v3 = -50; v4 = -70; }
+    kama (i == ITIKADI_UTAALAMU) { v0 = 0; v1 = 10; v2 = 40; v3 = -50; v4 = 0; }
+    kama (i == ITIKADI_UMAARUFU) { v0 = 0; v1 = 40; v2 = 40; v3 = 20; v4 = 50; }
+    kama (i == ITIKADI_UJESHI) { v0 = -40; v1 = -10; v2 = 80; v3 = 20; v4 = 90; }
+    kama (i == ITIKADI_UKANDA) { v0 = 30; v1 = 10; v2 = -60; v3 = 30; v4 = -20; }
+    kama (i == ITIKADI_VYAMA_VYA_WAFANYAKAZI) { v0 = 30; v1 = 90; v2 = -40; v3 = -20; v4 = -30; }
+    kama (i == ITIKADI_MILA) { v0 = 0; v1 = -10; v2 = 30; v3 = 90; v4 = 30; }
+    kama (m == 0) { rudisha v0; }
+    kama (m == 1) { rudisha v1; }
+    kama (m == 2) { rudisha v2; }
+    kama (m == 3) { rudisha v3; }
+    rudisha v4;
+}
+
+// Msimamo wa wenye uzito: vyama (vya serikali tu ikiwa `serikali`), kwa viti
+// vyao kwenye baraza la kwanza; bila viti, kila chama kwa uzito sawa.
+// Hakuna vyama: 0 (bila mwelekeo).
+n64 dola_msimamo(Dola* d, n64 m, n32 serikali) {
+    kama (d == 0 || d->vyama == 0) { rudisha 0; }
+    n64 jumla = 0;
+    n64 uzito = 0;
+    n64 c = 0;
+    wakati (c < d->vyama) {
+        kama (serikali == 0 || d->chama_serikalini[c]) {
+            n64 w = 1;
+            kama (d->mabaraza > 0) { w = d->viti[c] + 1; }
+            jumla = jumla + itikadi_msimamo(d->chama_itikadi[c], m) * w;
+            uzito = uzito + w;
+        }
+        c = c + 1;
+    }
+    kama (uzito == 0) { rudisha 0; }
+    rudisha jumla / uzito;
+}
+
+// Jinsi dola (vyama vyake vyote kwa viti) inavyopokea badiliko lenye mwelekeo
+// (b0..b4 kwenye mihimili): -100 (wanapinga wote) .. 100 (wanaunga mkono wote).
+n64 dola_mwitikio(Dola* d, n64 b0, n64 b1, n64 b2, n64 b3, n64 b4) {
+    kama (d == 0 || d->vyama == 0) { rudisha 0; }
+    n64 ukubwa = b0 * b0 + b1 * b1 + b2 * b2 + b3 * b3 + b4 * b4;
+    kama (ukubwa == 0) { rudisha 0; }
+    n64 jumla = 0;
+    n64 uzito = 0;
+    n64 c = 0;
+    wakati (c < d->vyama) {
+        n64 i = d->chama_itikadi[c];
+        n64 w = 1;
+        kama (d->mabaraza > 0) { w = d->viti[c] + 1; }
+        n64 dot = itikadi_msimamo(i, 0) * b0 + itikadi_msimamo(i, 1) * b1 + itikadi_msimamo(i, 2) * b2 + itikadi_msimamo(i, 3) * b3 + itikadi_msimamo(i, 4) * b4;
+        jumla = jumla + dot * w;
+        uzito = uzito + w;
+        c = c + 1;
+    }
+    // dot / (|b| * 100) kwa uzito; |b| kwa kipeuo
+    n64 b = 1;
+    wakati ((b + 1) * (b + 1) <= ukubwa) { b = b + 1; }
+    n64 r = jumla / (uzito * b);
+    kama (r > 100) { r = 100; }
+    kama (r < -100) { r = -100; }
+    rudisha r;
+}
+
+// Tumia mwitikio: uhalali hubadilika kwa `nguvu` * mwitikio / 100, utulivu kwa nusu yake.
+w0 dola_pokea(Dola* d, n64 nguvu, n64 b0, n64 b1, n64 b2, n64 b3, n64 b4) {
+    kama (d == 0) { rudisha; }
+    n64 r = dola_mwitikio(d, b0, b1, b2, b3, b4);
+    d->uhalali = dola_rekebisha(d->uhalali, (r * nguvu) / 100);
+    d->utulivu = dola_rekebisha(d->utulivu, (r * nguvu) / 200);
+}
+
 n8* itikadi_jina(n64 i) {
     kama (i == ITIKADI_UKOMUNISTI) { rudisha ui("Communism"); }
     kama (i == ITIKADI_UJAMAA) { rudisha ui("Socialism"); }
@@ -703,7 +811,6 @@ Dola* dola_unda(n64 mbegu, n8* cheo, n64 watu) {
     d->utulivu = 35 + dola_nasibu(mbegu, 10) % 55;
     d->uhalali = 30 + dola_nasibu(mbegu, 11) % 60;
     d->hazina = 25 + dola_nasibu(mbegu, 12) % 60;
-    kama (d->aina == DOLA_SERIKALI_YA_MPITO || d->aina == DOLA_BILA_SERIKALI) { d->utulivu = 15 + dola_nasibu(mbegu, 10) % 30; }
     rudisha d;
 }
 

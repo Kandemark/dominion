@@ -75,6 +75,27 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     dola_mwaka_wa_zama = 0;
     kama (marufuku > 0) { andika("SHINDWA: aina za utawala za baadaye mwaka 1750: %d\n", marufuku, 0, 0, 0, 0, 0); makosa = makosa + 1; }
     kama (chama == 0) { andika("SHINDWA: hakuna chama kimoja mwaka 1960\n", 0, 0, 0, 0, 0, 0); makosa = makosa + 1; }
+    // kutokuwa na upande: uamuzi uleule hupokelewa tofauti na watu tofauti
+    Dola* jm = dola_unda(11, "Republic of Mwitikio", 9000000);
+    n64 c = 0;
+    wakati (c < jm->vyama) { jm->chama_itikadi[c] = ITIKADI_ULIBERALI; c = c + 1; }
+    jm->uhalali = 50;
+    dola_pokea(jm, 8, -60, 0, 60, 0, 0);
+    n64 ya_waliberali = jm->uhalali;
+    c = 0;
+    wakati (c < jm->vyama) { jm->chama_itikadi[c] = ITIKADI_UJESHI; c = c + 1; }
+    jm->uhalali = 50;
+    dola_pokea(jm, 8, -60, 0, 60, 0, 0);
+    n64 ya_kijeshi = jm->uhalali;
+    kama (ya_waliberali >= 50 || ya_kijeshi <= 50) { andika("SHINDWA: mwitikio %d / %d\n", ya_waliberali, ya_kijeshi, 0, 0, 0, 0); makosa = makosa + 1; }
+    // ujamaa na ubepari: hakuna uliopendelewa -- mwitikio wao kwa kodi ni kinyume sawa
+    c = 0;
+    wakati (c < jm->vyama) { jm->chama_itikadi[c] = ITIKADI_UJAMAA; c = c + 1; }
+    n64 kodi_ujamaa = dola_mwitikio(jm, -30, 60, 20, 0, 0);
+    c = 0;
+    wakati (c < jm->vyama) { jm->chama_itikadi[c] = ITIKADI_UHURU_BINAFSI; c = c + 1; }
+    n64 kodi_ubepari = dola_mwitikio(jm, -30, 60, 20, 0, 0);
+    kama (kodi_ujamaa <= 0 || kodi_ubepari >= 0) { andika("SHINDWA: kodi %d / %d\n", kodi_ujamaa, kodi_ubepari, 0, 0, 0, 0); makosa = makosa + 1; }
     kama (makosa == 0) { andika("dola: sawa\n", 0, 0, 0, 0, 0, 0); rudisha 0; }
     rudisha 1;
 }
