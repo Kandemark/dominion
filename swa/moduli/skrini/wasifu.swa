@@ -13,6 +13,8 @@ n64 WS_AJIRI = 91;
 n64 WS_FUKUZA = 92;
 n64 WS_KITUO = 93;
 n64 WS_HIFADHI = 94;            // hoja: nafasi
+n64 WS_KAMPUNI = 95;            // hoja: kampuni -- fungua kwenye kituo cha hisa
+n64 wasifu_kampuni = -1;
 n8 wasifu_ujumbe[160];
 
 // Nafasi za kuhifadhi: 0 otomatiki, 1..5 za mchezaji.
@@ -178,6 +180,7 @@ w0 wasifu_hisa(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
         Kampuni* c = soko_kampuni_pata(p->kampuni[i]);
         n64 ry = yh + 22 + i * 34;
         sura_safu(x + 8, ry - 4, w - 16, 32, i, 0);
+        bofya_ongeza(x + 8, ry - 4, w - 116, 32, WS_KAMPUNI, p->kampuni[i]);
         sura_rangi(SURA_LAFUDHI);
         sura_lebo_kati(c->tika, x + 16, ry, 12);
         sura_rangi(SURA_MAANDISHI);
@@ -203,6 +206,9 @@ w0 wasifu_hisa(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
     kama (p->idadi == 0) {
         sura_rangi(SURA_HAFIFU);
         sura_lebo(ui("You own no shares. Buy them from the market terminal."), x + 16, yh + 26, 12);
+    } sivyo {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(ui("Click a holding to open its company."), x + 16, y + h - 24, 11);
     }
 }
 
@@ -318,6 +324,7 @@ n32 skrini_wasifu_bofya(Mchezo* g, n64 px, n64 py, n64* kituo) {
     n64 k = bofya_tafuta(px, py, &hoja);
     kama (k == 0) { rudisha 0; }
     kama (k == WS_KITUO) { kituo[0] = 1; }
+    kama (k == WS_KAMPUNI) { kituo[0] = 2; wasifu_kampuni = hoja; }
     kama (k == WS_UZA_ZOTE) {
         n64 nafasi = soko_pochi_nafasi_ya(hoja);
         kama (nafasi >= 0) { soko_uza(hoja, soko_pochi_pata()->hisa[nafasi]); }

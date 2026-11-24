@@ -199,6 +199,10 @@ w0 dashibodi_umakini(Mchezo* g, Dola* d, Wahusika* w_, n64 x, n64 y, n64 w, n64 
     kama (hs < 46) { hs = 46; }
     sura_namba(m1, nq);
     chati_safu_ya_umakini(x + 14, ry, w - 28, SURA_ICON_INFO, ui("Officials asking to see you"), ui("Waiting in your diary"), m1, nq > 0);
+    db_kiungo(x + 14, ry, w - 28, hs, 11);
+    db_kiungo(x + 14, ry + hs, w - 28, hs, 9);
+    db_kiungo(x + 14, ry + 2 * hs, w - 28, hs, 2);
+    db_kiungo(x + 14, ry + 3 * hs, w - 28, hs, 1);
     n8 m2[16];
     sura_namba(m2, maadui);
     n8 m2b[64];
@@ -290,6 +294,12 @@ w0 dashibodi_wapinzani(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
         r = r + 1;
     }
     chati_ramani_ya_joto(x + 18, y + 52, w - 36, h - 66, thamani, n, 4, safu, safuwima, SURA_BAHARI);
+    // jina la taifa hulifungua
+    kama (n > 0) {
+        n64 ch = (h - 66 - 20) / n;
+        r = 0;
+        wakati (r < n) { db_kiungo(x + 18, y + 72 + r * ch, 90, ch, 1000 + bora[r]); r = r + 1; }
+    }
 }
 
 // Safu 4: mikutano inayoendelea kama kadi za kazi -- maombi yanayoingia
@@ -352,12 +362,20 @@ w0 dashibodi_mikutano(Mchezo* g, Wahusika* w_, n64 x, n64 y, n64 w, n64 h) {
     }
 }
 
+// Kubofya kadi: hoja ni ukurasa (SKRINI_* kama namba), 100 + kichupo cha
+// kituo cha uchumi, au 1000 + taifa la kufungua.
+n64 DB_FUNGUA = 45;
+n64 DB_MAKRO = 104;             // 100 + KT_MAKRO
+
+w0 db_kiungo(n64 x, n64 y, n64 w, n64 h, n64 lengo) { bofya_ongeza(x, y, w, h, DB_FUNGUA, lengo); }
+
 w0 skrini_dashibodi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_anzisha(t);
     turubai_brashi(t, SURA_USULI, 255);
     turubai_jaza(t, 0, 0, t->upana, t->kimo);
     skrini_upau_wa_juu(g, t);
     skrini_urambazaji(t, 0);
+    bofya_anza();
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
     Dola* d = skrini_siasa_dola(g, taifa);
@@ -380,6 +398,11 @@ w0 skrini_dashibodi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     skrini_kichwa_fm(g, t, ui("Overview"), sentensi, x, y - 4);
     y = y + 64;
 
+    n64 wk = (w - 3 * DASHIBODI_PENGO) / 4;
+    db_kiungo(x, y, wk, 124, DB_MAKRO);
+    db_kiungo(x + (wk + DASHIBODI_PENGO), y, wk, 124, 5);
+    db_kiungo(x + 2 * (wk + DASHIBODI_PENGO), y, wk, 124, DB_MAKRO);
+    db_kiungo(x + 3 * (wk + DASHIBODI_PENGO), y, wk, 124, DB_MAKRO);
     dashibodi_vigae(g, tn, hist, x, y, w);
     y = y + 124 + DASHIBODI_PENGO;
 
@@ -393,16 +416,20 @@ w0 skrini_dashibodi_chora(Mchezo* g, Turubai* t, n64 taifa) {
 
     n64 w_kulia = (w * 30) / 100;
     n64 w_kushoto = w - w_kulia - DASHIBODI_PENGO;
+    db_kiungo(x, y, w_kushoto, 48, DB_MAKRO);
+    db_kiungo(x + w_kushoto + DASHIBODI_PENGO, y, w_kulia, h2, 2);
     dashibodi_pato_kwa_zamu(g, tn, hist, x, y, w_kushoto, h2);
     dashibodi_uungwaji(d, x + w_kushoto + DASHIBODI_PENGO, y, w_kulia, h2);
     y = y + h2 + DASHIBODI_PENGO;
 
     n64 w4 = (w - 3 * DASHIBODI_PENGO) / 4;
+    db_kiungo(x, y, w4, h3, DB_MAKRO);
+    db_kiungo(x + 2 * (w4 + DASHIBODI_PENGO), y, w4, h3, 9);
     dashibodi_faneli(tn, x, y, w4, h3);
     dashibodi_umakini(g, d, watu, x + (w4 + DASHIBODI_PENGO), y, w4, h3);
     dashibodi_matawi(watu, x + 2 * (w4 + DASHIBODI_PENGO), y, w4, h3);
     dashibodi_wapinzani(g, x + 3 * (w4 + DASHIBODI_PENGO), y, w4, h3);
     y = y + h3 + DASHIBODI_PENGO;
 
-    kama (h4 > 0) { dashibodi_mikutano(g, watu, x, y, w, h4); }
+    kama (h4 > 0) { db_kiungo(x, y, w, h4, 9); dashibodi_mikutano(g, watu, x, y, w, h4); }
 }

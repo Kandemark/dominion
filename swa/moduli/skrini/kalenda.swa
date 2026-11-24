@@ -20,6 +20,8 @@ husisha { moduli/onyesho/chati_kadi.swa }
 
 husisha { moduli/siasa/hati.swa }
 husisha { moduli/dunia/historia_ya_mipaka.swa }
+husisha { moduli/skrini/nyuso.swa }
+husisha { moduli/jeshi/vikosi.swa }
 
 n64 kalenda_mwaka_onyesha = 0;          // 0 = mwezi wa leo
 n64 kalenda_mwezi_onyesha = 0;
@@ -35,6 +37,12 @@ n64 SIKU_AINA = 11;
 
 n64 KALENDA_KITUFE = 160;               // hoja: 0 nyuma, 1 mbele, 2 leo
 n64 KALENDA_SIKU = 161;                 // hoja: siku
+n64 KALENDA_TUKIO = 162;                // hoja: siku * 16 + faharisi ya tukio
+n64 KALENDA_TUKIO_FUNGA = 163;
+n64 KALENDA_KIUNGO = 164;               // hoja: ukurasa, au 100 + mtu (kutana)
+n64 kalenda_tukio_siku = -1;            // tukio teule: siku na faharisi, -1 hakuna
+n64 kalenda_tukio_i = -1;
+n64 kalenda_kiungo = -1;                // kitendo cha mwisho cha kiungo
 
 n64 kalenda_rangi_yote(n64 aina) {
     kama (aina == SIKU_KURA) { rudisha 16743818; }        // matumbawe
@@ -180,7 +188,10 @@ n64 skrini_kalenda_bofya(n64 upana, n64 kimo, n64 leo, n64 px, n64 py) {
         kama (hoja == 2) { kalenda_mwaka_onyesha = 0; kalenda_teule = leo; kalenda_mwanzo_wa_mwezi(leo); }
         rudisha 1;
     }
-    kama (k == KALENDA_SIKU) { kalenda_teule = hoja; rudisha 3; }
+    kama (k == KALENDA_SIKU) { kalenda_teule = hoja; kalenda_tukio_siku = 0 - 1; rudisha 3; }
+    kama (k == KALENDA_TUKIO) { kalenda_tukio_siku = hoja / 16; kalenda_tukio_i = hoja % 16; kalenda_teule = hoja / 16; rudisha 3; }
+    kama (k == KALENDA_TUKIO_FUNGA) { kalenda_tukio_siku = 0 - 1; rudisha 3; }
+    kama (k == KALENDA_KIUNGO) { kalenda_kiungo = hoja; rudisha 4; }
     rudisha 0;
 }
 
@@ -253,6 +264,11 @@ w0 kalenda_ratiba(Mchezo* g, Dola* d, Wahusika* w, n64 taifa, n64 siku, n64 x, n
         turubai_mviringo(sura_t, xa, ya, upana_wa_safu - 4, hb, 4);
         turubai_brashi(sura_t, rangi, 255);
         turubai_jaza(sura_t, xa, ya + 2, 3, hb - 4);
+        bofya_ongeza(xa, ya, upana_wa_safu - 4, hb, KALENDA_TUKIO, siku * 16 + i);
+        kama (kalenda_tukio_siku == siku && kalenda_tukio_i == i) {
+            turubai_brashi(sura_t, rangi, 200);
+            turubai_mpaka(sura_t, xa, ya, upana_wa_safu - 4, hb, 4);
+        }
         turubai_kata(sura_t, xa, ya, upana_wa_safu - 6, hb);
         kalenda_saa_maandishi(e->kuanza, lebo);
         sura_rangi(rangi);
@@ -404,12 +420,135 @@ w0 kalenda_gridi(Mchezo* g, Turubai* tt, Dola* d, Wahusika* w, n64 taifa, n64 le
 }
 
 // Safu ya kulia: siku teule na siku 30 zijazo.
+// Ongeza idadi ya miswada inayosubiri kura mwishoni mwa maelezo.
+w0 kalenda_miswada(n8* nje, n64 hoja) {
+    n64 n = urefu_wa_mfuatano(nje);
+    kama (hoja == 0) { mfuatano_umbiza(&nje[n], 600 - n, " %s", ui("No bill awaits a vote."), 0, 0, 0, 0, 0); }
+    sivyo kama (hoja == 1) { mfuatano_umbiza(&nje[n], 600 - n, " %s", ui("One bill awaits a vote."), 0, 0, 0, 0, 0); }
+    sivyo { n8 m[96]; mfuatano_umbiza(m, 96, ui("%d bills await a vote."), hoja, 0, 0, 0, 0, 0); mfuatano_umbiza(&nje[n], 600 - n, " %s", m, 0, 0, 0, 0, 0); }
+}
+
+// Maelezo ya tukio kutoka hali ya sasa ya mchezo.
+w0 kalenda_tukio_maelezo(Dola* d, TukioLaSiku* e, n64 taifa, n8* nje) {
+    n64 a = e->aina;
+    n64 hoja = 0;
+    n64 i = 0;
+    wakati (i < nguvu_hoja_idadi) { kama (nguvu_hoja_pata(i)->hatua == HOJA_INASUBIRI) { hoja = hoja + 1; } i = i + 1; }
+    n8 viti[24];
+    sura_asilimia(viti, hs_viti_vya_serikali(d) * 10, 0);
+    kama (a == TUKIO_BARAZA_LA_MAWAZIRI) { mfuatano_umbiza(nje, 600, ui("The weekly meeting of the government. Ministers report on their departments; the treasury's health stands at %d out of 100 and stability at %d."), d->hazina, d->utulivu, 0, 0, 0, 0); rudisha; }
+    kama (a == TUKIO_BUNGE) { mfuatano_umbiza(nje, 600, ui("The chambers sit this week. %d chambers, %d parties; the government holds %s of the seats in the first."), d->mabaraza, d->vyama, viti, 0, 0, 0); kalenda_miswada(nje, hoja); rudisha; }
+    kama (a == TUKIO_WANAHABARI) { mfuatano_umbiza(nje, 600, ui("A briefing for the press. Expect questions on stability (%d out of 100) and the government's legitimacy (%d)."), d->utulivu, d->uhalali, 0, 0, 0, 0); rudisha; }
+    kama (a == TUKIO_BARAZA_LA_DOLA) { mfuatano_umbiza(nje, 600, ui("The council of state: the senior office holders review the week under the %s."), ui(d->mkuu_wa_dola), 0, 0, 0, 0, 0); rudisha; }
+    kama (a == SIKU_KURA) { mfuatano_umbiza(nje, 600, ui("The legislature votes at the close of the sitting; the government holds %s of the seats."), viti, 0, 0, 0, 0, 0); kalenda_miswada(nje, hoja); rudisha; }
+    kama (a == SIKU_KAZI) { nakili_mfuatano(nje, ui("Your assistant reports on a task due today. The result reaches your Inbox.")); rudisha; }
+    kama (a == SIKU_BAJETI) { mfuatano_umbiza(nje, 600, ui("The budget estimates go before the legislature. The treasury's health stands at %d out of 100."), d->hazina, 0, 0, 0, 0, 0); rudisha; }
+    kama (a == SIKU_UCHAGUZI) { mfuatano_umbiza(nje, 600, ui("A general election. The government holds %s of the seats in the first chamber and a legitimacy of %d."), viti, d->uhalali, 0, 0, 0, 0); rudisha; }
+    kama (a == SIKU_SIKUKUU) { nakili_mfuatano(nje, ui("A public holiday. Government offices are closed.")); rudisha; }
+    kama (a == SIKU_VITA) {
+        n64 askari = 0;
+        kama (vk_jumla != 0 && taifa >= 0 && taifa < vk_mataifa) { askari = vk_jumla[taifa]; }
+        mfuatano_umbiza(nje, 600, ui("The weekly report from the front. Men under arms: %d."), askari, 0, 0, 0, 0, 0);
+        rudisha;
+    }
+    nakili_mfuatano(nje, ui("A meeting in your diary."));
+}
+
+// Ukurasa unaohusiana na aina ya tukio (SKRINI_* kama namba), au -1.
+n64 kalenda_ukurasa_wa(n64 a) {
+    kama (a == TUKIO_BARAZA_LA_MAWAZIRI || a == TUKIO_BARAZA_LA_DOLA || a == SIKU_KAZI) { rudisha 9; }
+    kama (a == TUKIO_BUNGE || a == SIKU_KURA) { rudisha 2; }
+    kama (a == TUKIO_WANAHABARI) { rudisha 10; }
+    kama (a == SIKU_BAJETI) { rudisha 1; }
+    kama (a == SIKU_UCHAGUZI) { rudisha 14; }
+    kama (a == SIKU_VITA) { rudisha 3; }
+    rudisha 0 - 1;
+}
+
+n8* kalenda_jina_la_ukurasa(n64 u) {
+    kama (u == 9) { rudisha ui("Open Government"); }
+    kama (u == 2) { rudisha ui("Open Politics"); }
+    kama (u == 10) { rudisha ui("Open World"); }
+    kama (u == 1) { rudisha ui("Open Economy"); }
+    kama (u == 14) { rudisha ui("Open Constitution"); }
+    rudisha ui("Open Military");
+}
+
+// Jopo la tukio teule (badala ya siku 30 zijazo).
+w0 kalenda_tukio_chora(Mchezo* g, Turubai* tt, Dola* d, Wahusika* w, n64 taifa, TukioLaSiku* e, n64 siku, n64 x, n64 y, n64 wr, n64 h) {
+    sura_paneli(x, y, wr, h, ui("EVENT"));
+    kalenda_kitufe("x", x + wr - 40, y + 6, 28, 0);
+    bofya_ongeza(x + wr - 40, y + 6, 28, 30, KALENDA_TUKIO_FUNGA, 0);
+    n64 rangi = kalenda_rangi_yote(e->aina);
+    n64 xx = x + 16;
+    n64 ww = wr - 32;
+    n64 yy = y + 38;
+    chati_lebo(xx, yy, kalenda_jina_la_aina(e->aina), rangi);
+    yy = yy + 26;
+    sura_rangi(SURA_MAANDISHI);
+    turubai_kata(tt, xx, yy, ww, 24);
+    sura_lebo_nene(e->kichwa, xx, yy, 16);
+    turubai_kata_yote(tt);
+    yy = yy + 26;
+    n8 tarehe[64];
+    tarehe_maandishi(siku, tarehe, 64);
+    n8 a[8];
+    n8 b[8];
+    kalenda_saa_maandishi(e->kuanza, a);
+    kalenda_saa_maandishi(e->kumaliza, b);
+    n8 m[160];
+    mfuatano_umbiza(m, 160, "%s  ·  %s - %s", tarehe, a, b, 0, 0, 0);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(m, xx, yy, 12);
+    yy = yy + 26;
+    MhusikaWaDola* mh = wahusika_pata(w, e->mtu);
+    kama (mh != 0) {
+        ny_chora_mhusika(tt, mh, d, taifa, ny_mwaka_wa_zamu(g->zamu_ya_sasa), xx + 22, yy + 22, 20);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kati(mh->jina, xx + 52, yy + 4, 13);
+        sura_rangi(SURA_HAFIFU);
+        turubai_kata(tt, xx + 52, yy + 20, ww - 52, 18);
+        sura_lebo(mh->cheo, xx + 52, yy + 22, 11);
+        turubai_kata_yote(tt);
+        yy = yy + 52;
+        n8* msimamo = ui("neutral towards you");
+        kama (mh->msimamo >= 20) { msimamo = ui("well disposed towards you"); }
+        kama (mh->msimamo <= 0 - 20) { msimamo = ui("hostile towards you"); }
+        mfuatano_umbiza(m, 160, ui("Standing: %d, %s."), mh->msimamo, msimamo, 0, 0, 0, 0);
+        sura_lebo(m, xx, yy, 12);
+        yy = yy + 20;
+    }
+    n8* mz = tenga(600);
+    kalenda_tukio_maelezo(d, e, taifa, mz);
+    sura_rangi(SURA_MAANDISHI);
+    yy = skrini_mkutano_aya(mz, xx, yy + 4, ww, 12, y + h - 50);
+    achilia mz;
+    // kiungo
+    n64 by = y + h - 42;
+    n64 bx = xx;
+    kama (mh != 0) {
+        kalenda_kitufe(ui("Meet now"), bx, by, 120, 0);
+        bofya_ongeza(bx, by, 120, 30, KALENDA_KIUNGO, 100 + e->mtu);
+        bx = bx + 128;
+    }
+    n64 u = kalenda_ukurasa_wa(e->aina);
+    kama (u >= 0) {
+        kalenda_kitufe(kalenda_jina_la_ukurasa(u), bx, by, 160, 0);
+        bofya_ongeza(bx, by, 160, 30, KALENDA_KIUNGO, u);
+    }
+}
+
 w0 kalenda_kulia(Mchezo* g, Turubai* tt, Dola* d, Wahusika* w, n64 taifa, n64 leo, n64 xr, n64 y, n64 wr, n64 h_chini, TukioLaSiku* t) {
     // kulia: siku teule na yanayokuja
     n64 h_siku = (h_chini * 55) / 100;
     kalenda_ratiba(g, d, w, taifa, kalenda_teule, xr, y, wr, h_siku);
     n64 yu = y + h_siku + 12;
     n64 hu = h_chini - h_siku - 12;
+    kama (kalenda_tukio_siku >= 0) {
+        n64 n_t = kalenda_matukio_yote(g, d, w, taifa, kalenda_tukio_siku, t);
+        kama (kalenda_tukio_i < n_t) { kalenda_tukio_chora(g, tt, d, w, taifa, &t[kalenda_tukio_i], kalenda_tukio_siku, xr, yu, wr, hu); rudisha; }
+        kalenda_tukio_siku = 0 - 1;
+    }
     sura_paneli(xr, yu, wr, hu, ui("NEXT 30 DAYS"));
     n64 ry = yu + 36;
     n64 kiasi = 0;
@@ -426,6 +565,7 @@ w0 kalenda_kulia(Mchezo* g, Turubai* tt, Dola* d, Wahusika* w, n64 taifa, n64 le
                 tarehe_maandishi_mafupi(siku, tarehe_m, 48);
                 n8 saa_m[8];
                 kalenda_saa_maandishi(t[i].kuanza, saa_m);
+                bofya_ongeza(xr + 8, ry - 1, wr - 16, 20, KALENDA_TUKIO, siku * 16 + i);
                 turubai_brashi(tt, kalenda_rangi_yote(a), 255);
                 turubai_jaza(tt, xr + 16, ry + 3, 3, 13);
                 sura_rangi(SURA_HAFIFU);

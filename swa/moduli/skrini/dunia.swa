@@ -510,6 +510,7 @@ n64 skrini_dunia_habari_moja(Mchezo* g, Habari* hb, n64 nambari, n64 x, n64 y, n
     turubai_kata(sura_t, xx, y + 46, w - 14, 18);
     sura_lebo(hb->mwili, xx, y + 47, 12);
     turubai_kata_yote(sura_t);
+    bofya_ongeza(xx, y + 20, w - 14, 44, 7, nambari);     // DUNIA_SOMA (makala.swa): soma makala kamili
     n64 bx = xx;
     n8* jibu = ui("Respond");
     kama (hb->umejibiwa) { jibu = ui("Responded"); }

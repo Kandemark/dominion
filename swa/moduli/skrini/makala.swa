@@ -1,0 +1,318 @@
+husisha { moduli/skrini/dunia.swa }
+husisha { moduli/jeshi/vikosi.swa }
+
+// makala.swa -- habari kamili: kubofya habari kwenye World hufungua makala
+// ya gazeti juu ya ukurasa.
+//
+// Habari huhifadhi kichwa na sentensi moja tu; makala huandikwa wakati wa
+// kusoma kutoka kwa takwimu za taifa wakati huo: pato na ukuaji wake,
+// nafasi duniani, utawala, utulivu na uhalali na mwelekeo wake, vyama na
+// mabaraza, jeshi na vita, na ulinganisho na wastani wa dunia. Mpangilio wa
+// aya hufuata aina ya habari (uchumi kwanza kwa habari za uchumi, n.k.).
+// Kando: kisanduku cha takwimu na chati ya pato.
+
+n64 DUNIA_SOMA = 7;             // hoja: faharisi ya habari mpya
+n64 DUNIA_MAKALA_FUNGA = 8;
+n64 DUNIA_MAKALA_NDANI = 9;     // eneo la makala: humeza bofya
+Habari* makala_wazi = 0;
+n64 MAKALA_AYA = 900;
+
+// Jina la gazeti la taifa (aina ya gazeti huchaguliwa kwa jina la taifa).
+w0 makala_gazeti(TaifaNchi* tn, n8* nje) {
+    n64 h = 0;
+    n64 i = 0;
+    wakati (tn->jina[i] != 0) { h = (h * 31 + (tn->jina[i] & 255)) % 1000003; i = i + 1; }
+    n8* aina = "Courier";
+    n64 r = h % 7;
+    kama (r == 1) { aina = "Gazette"; }
+    kama (r == 2) { aina = "Herald"; }
+    kama (r == 3) { aina = "Chronicle"; }
+    kama (r == 4) { aina = "Ledger"; }
+    kama (r == 5) { aina = "Observer"; }
+    kama (r == 6) { aina = "Dispatch"; }
+    mfuatano_umbiza(nje, 96, "The %s %s", tn->jina, aina, 0, 0, 0, 0);
+}
+
+// Mji wa habari: mji mkubwa zaidi wa taifa, au jina la taifa.
+n8* makala_mji(TaifaNchi* tn, n64 t) {
+    kama (vk_miji != 0 && vk_miji_idadi != 0 && t >= 0 && t < vk_mataifa && vk_miji_idadi[t] > 0 && vk_miji[t * VK_MIJI] != 0) { rudisha vk_miji[t * VK_MIJI]; }
+    rudisha tn->jina;
+}
+
+// Ongeza sentensi mwishoni mwa aya.
+w0 makala_ongeza(n8* aya, n8* sentensi) {
+    n64 n = urefu_wa_mfuatano(aya);
+    kama (n > 0 && n < MAKALA_AYA - 2) { aya[n] = 32; n = n + 1; aya[n] = 0; }
+    n64 k = urefu_wa_mfuatano(sentensi);
+    kama (n + k >= MAKALA_AYA) { k = MAKALA_AYA - n - 1; }
+    nakili(&aya[n], sentensi, k);
+    aya[n + k] = 0;
+}
+
+// Aya ya uchumi.
+w0 makala_aya_uchumi(Mchezo* g, n64 t, n8* nje) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, t);
+    n8 a[32];
+    n8 b[32];
+    n8 s[400];
+    nje[0] = 0;
+    sura_namba_fupi(a, skrini_pato_la_taifa(tn));
+    sura_namba(b, skrini_pato_la_taifa(tn) / (tn->idadi_ya_watu + 1));
+    mfuatano_umbiza(s, 400, ui("The economy of %s produces %s, %s for every inhabitant, and ranks %d of %d nations by size."), tn->jina, a, b, skrini_dunia_nafasi(tm, t), tm->idadi, 0);
+    makala_ongeza(nje, s);
+    n64 g52 = skrini_dunia_ukuaji(g, t, 52);
+    n64 g4 = skrini_dunia_ukuaji(g, t, 4);
+    sura_asilimia(a, g52, 1);
+    sura_asilimia(b, g4, 1);
+    kama (g52 >= 0) { mfuatano_umbiza(s, 400, ui("Over the past year output has grown by %s; over the past month the change was %s."), a, b, 0, 0, 0, 0); }
+    sivyo { mfuatano_umbiza(s, 400, ui("Over the past year output has shrunk by %s; over the past month the change was %s."), a, b, 0, 0, 0, 0); }
+    makala_ongeza(nje, s);
+    sura_namba_fupi(a, tn->idadi_ya_watu);
+    mfuatano_umbiza(s, 400, ui("Its population numbers %s."), a, 0, 0, 0, 0, 0);
+    makala_ongeza(nje, s);
+}
+
+// Aya ya siasa: utawala, utulivu na uhalali na mwelekeo wake, vyama.
+w0 makala_aya_siasa(Mchezo* g, n64 t, n8* nje) {
+    nje[0] = 0;
+    Dola* d = skrini_siasa_dola(g, t);
+    kama (d == 0) { rudisha; }
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), t);
+    n8 s[400];
+    mfuatano_umbiza(s, 400, ui("%s is governed as a %s under its %s. The constitution has stood for %d years."), tn->jina, ui(dola_aina_jina(d->aina)), ui(d->mkuu_wa_dola), d->umri_wa_katiba, 0, 0);
+    makala_ongeza(nje, s);
+    n8 b4[24];
+    n8 b26[24];
+    kt_badiliko(b4, hs_badiliko(t, HS_UTULIVU, 4));
+    kt_badiliko(b26, hs_badiliko(t, HS_UTULIVU, 26));
+    mfuatano_umbiza(s, 400, ui("Stability stands at %d out of 100 (%s over four weeks, %s over six months) and the government's legitimacy at %d."), d->utulivu, b4, b26, d->uhalali, 0, 0);
+    makala_ongeza(nje, s);
+    kama (d->vyama > 0 && d->mabaraza > 0) {
+        n8 viti[24];
+        sura_asilimia(viti, hs_viti_vya_serikali(d) * 10, 0);
+        kama (d->mabaraza == 1) { mfuatano_umbiza(s, 400, ui("%d parties sit in a single chamber, where the government holds %s of the seats."), d->vyama, viti, 0, 0, 0, 0); }
+        sivyo { mfuatano_umbiza(s, 400, ui("%d parties sit in %d chambers; the government holds %s of the seats in the first."), d->vyama, d->mabaraza, viti, 0, 0, 0); }
+        makala_ongeza(nje, s);
+    } sivyo kama (d->vyama == 0) {
+        makala_ongeza(nje, ui("No parties contest power."));
+    }
+    mfuatano_umbiza(s, 400, ui("The treasury's health is rated %d out of 100."), d->hazina, 0, 0, 0, 0, 0);
+    makala_ongeza(nje, s);
+}
+
+// Aya ya jeshi na mahusiano.
+w0 makala_aya_jeshi(Mchezo* g, n64 t, n8* nje) {
+    nje[0] = 0;
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, t);
+    n8 a[32];
+    n8 s[400];
+    kama (vk_mataifa > t) {
+        sura_namba(a, vk_jumla_ya(t));
+        mfuatano_umbiza(s, 400, ui("Its armed forces number %s men under arms, with a military index of %d."), a, tn->kielezo_cha_kijeshi, 0, 0, 0, 0);
+        makala_ongeza(nje, s);
+        kama (vk_vita_adui[t] >= 0 && vk_vita_adui[t] < tm->idadi) {
+            mfuatano_umbiza(s, 400, ui("It is at war with %s."), dunia_taifa_mfumo_pata_kwa_faharisi(tm, vk_vita_adui[t])->jina, 0, 0, 0, 0, 0);
+        } sivyo { nakili_mfuatano(s, ui("It is at peace with its neighbours.")); }
+        makala_ongeza(nje, s);
+    }
+}
+
+// Aya ya ulinganisho na wastani wa dunia.
+w0 makala_aya_dunia(Mchezo* g, n64 t, n8* nje) {
+    nje[0] = 0;
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 utulivu = 0;
+    n64 ukuaji = 0;
+    n64 n = 0;
+    n64 i = 0;
+    wakati (i < tm->idadi) {
+        Dola* d = skrini_siasa_dola(g, i);
+        kama (d != 0) { utulivu = utulivu + d->utulivu; ukuaji = ukuaji + skrini_dunia_ukuaji(g, i, 52); n = n + 1; }
+        i = i + 1;
+    }
+    kama (n == 0) { rudisha; }
+    n8 a[24];
+    sura_asilimia(a, ukuaji / n, 1);
+    n8 s[400];
+    mfuatano_umbiza(s, 400, ui("Across the %d nations of the world, average stability is %d out of 100 and the average economy has changed by %s over the year."), n, utulivu / n, a, 0, 0, 0);
+    makala_ongeza(nje, s);
+    Dola* d = skrini_siasa_dola(g, t);
+    kama (d != 0) {
+        kama (d->utulivu >= utulivu / n) { makala_ongeza(nje, ui("By that measure the country is calmer than most.")); }
+        sivyo { makala_ongeza(nje, ui("By that measure the country is more troubled than most.")); }
+    }
+}
+
+// Faharisi ya habari kwenye orodha ya habari mpya (kwa Respond), au -1.
+n64 makala_faharisi(Habari* hb) {
+    n64 i = 0;
+    wakati (i < habari_idadi) { kama (habari_mpya(i) == hb) { rudisha i; } i = i + 1; }
+    rudisha 0 - 1;
+}
+
+// Safu moja ya kisanduku cha takwimu.
+n64 makala_takwimu(n8* lebo, n8* thamani, n64 x, n64 y, n64 w) {
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(lebo, x, y, 11);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_kulia(thamani, x + w, y, 12);
+    turubai_brashi(sura_t, 16777215, 14);
+    turubai_jaza(sura_t, x, y + 21, w, 1);
+    rudisha y + 28;
+}
+
+// Kisanduku cha takwimu na chati ya pato.
+w0 makala_kando(Mchezo* g, n64 t, n64 x, n64 y, n64 w, n64 h) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, t);
+    Dola* d = skrini_siasa_dola(g, t);
+    turubai_brashi(sura_t, SURA_PANELI_JUU, 255);
+    turubai_mviringo(sura_t, x, y, w, h, 8);
+    turubai_brashi(sura_t, tn->rangi, 255);
+    turubai_duara(sura_t, x + 22, y + 24, 6);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(tn->jina, x + 36, y + 15, 14);
+    n8 m[48];
+    n64 yy = y + 50;
+    n64 ix = x + 16;
+    n64 iw = w - 32;
+    sura_namba_fupi(m, skrini_pato_la_taifa(tn));
+    yy = makala_takwimu(ui("GDP"), m, ix, yy, iw);
+    sura_asilimia(m, skrini_dunia_ukuaji(g, t, 52), 1);
+    yy = makala_takwimu(ui("Growth, 1 year"), m, ix, yy, iw);
+    mfuatano_umbiza(m, 48, "%d / %d", skrini_dunia_nafasi(tm, t), tm->idadi, 0, 0, 0, 0);
+    yy = makala_takwimu(ui("Rank by GDP"), m, ix, yy, iw);
+    sura_namba_fupi(m, tn->idadi_ya_watu);
+    yy = makala_takwimu(ui("Population"), m, ix, yy, iw);
+    kama (d != 0) {
+        sura_namba(m, d->utulivu);
+        yy = makala_takwimu(ui("Stability"), m, ix, yy, iw);
+        sura_namba(m, d->uhalali);
+        yy = makala_takwimu(ui("Legitimacy"), m, ix, yy, iw);
+        yy = makala_takwimu(ui("Head of state"), ui(d->mkuu_wa_dola), ix, yy, iw);
+    }
+    // chati ya pato: hadi wiki 104 za mwisho
+    TakwimuHistoria* hi = mchezo_pata_historia_ya_taifa(g, t);
+    kama (hi != 0 && hi->idadi >= 2) {
+        n64 n = hi->idadi;
+        kama (n > 104) { n = 104; }
+        n64* th = tenga(8 * n);
+        n64 i = 0;
+        wakati (i < n) { th[i] = hi->sampuli[hi->idadi - n + i]; i = i + 1; }
+        yy = yy + 10;
+        sura_rangi(SURA_HAFIFU);
+        mfuatano_umbiza(m, 48, ui("GDP, last %d weeks"), n, 0, 0, 0, 0, 0);
+        sura_lebo_nene(m, ix, yy, 10);
+        n64 ch = y + h - 16 - (yy + 20);
+        kama (ch > 30) { kt_chati(th, n, ix, yy + 20, iw, ch, SURA_BAHARI); }
+        achilia th;
+    }
+}
+
+// Chora makala juu ya ukurasa wa World.
+w0 makala_chora(Mchezo* g, Turubai* t) {
+    Habari* hb = makala_wazi;
+    kama (hb == 0) { rudisha; }
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 x0 = SKRINI_UPANA_WA_PEMBENI;
+    n64 y0 = SKRINI_UPAU_WA_JUU;
+    turubai_brashi(t, 0, 160);
+    turubai_jaza(t, x0, y0, t->upana - x0, t->kimo - y0);
+    n64 pw = t->upana - x0 - 80;
+    kama (pw > 1240) { pw = 1240; }
+    n64 px = x0 + (t->upana - x0 - pw) / 2;
+    n64 py = y0 + 24;
+    n64 ph = t->kimo - py - 24;
+    turubai_brashi(t, SURA_PANELI, 255);
+    turubai_mviringo(t, px, py, pw, ph, 12);
+    turubai_brashi(t, 16777215, 26);
+    turubai_mpaka(t, px, py, pw, ph, 12);
+    bofya_ongeza(px, py, pw, ph, DUNIA_MAKALA_NDANI, 0);
+    n64 kw = 330;
+    n64 tx = px + 40;
+    n64 tw = pw - kw - 100;
+    // kichwa cha gazeti
+    TaifaNchi* tn = 0;
+    kama (hb->taifa >= 0) { tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, hb->taifa); }
+    n8 gazeti[96];
+    kama (tn != 0) { makala_gazeti(tn, gazeti); } sivyo { nakili_mfuatano(gazeti, "The World Dispatch"); }
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(gazeti, tx, py + 22, 20);
+    n8 tarehe[64];
+    tarehe_maandishi(hb->siku, tarehe, 64);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo_kulia(tarehe, tx + tw, py + 28, 12);
+    turubai_brashi(t, 16777215, 60);
+    turubai_jaza(t, tx, py + 58, tw, 2);
+    turubai_jaza(t, tx, py + 63, tw, 1);
+    // aina, kichwa, muhtasari
+    chati_lebo(tx, py + 80, habari_aina_jina(hb->aina), habari_aina_rangi(hb->aina));
+    n64 y = py + 108;
+    sura_rangi(SURA_MAANDISHI);
+    y = makala_kichwa(hb->kichwa, tx, y, tw);
+    sura_rangi(SURA_HAFIFU);
+    y = skrini_mkutano_aya(hb->mwili, tx, y + 4, tw, 15, py + ph - 60);
+    n8 mwandishi[160];
+    kama (tn != 0) { mfuatano_umbiza(mwandishi, 160, ui("By our correspondent in %s"), makala_mji(tn, hb->taifa), 0, 0, 0, 0, 0); } sivyo { nakili_mfuatano(mwandishi, ui("By our correspondents")); }
+    sura_rangi(SURA_LAFUDHI);
+    sura_lebo_kati(mwandishi, tx, y + 6, 12);
+    y = y + 36;
+    // mwili
+    kama (tn != 0) { y = makala_mwili(g, hb, tn, tx, y, tw, py + ph - 70); }
+    // kando
+    kama (tn != 0) { makala_kando(g, hb->taifa, px + pw - kw - 40, py + 80, kw, ph - 160); }
+    // vitufe
+    n64 by = py + ph - 52;
+    n64 bx = tx;
+    bx = bx + skrini_dunia_kitufe(ui("Back to the press"), bx, by, 0, DUNIA_MAKALA_FUNGA, 0) + 8;
+    n8* jibu = ui("Respond");
+    kama (hb->umejibiwa) { jibu = ui("Responded"); }
+    n64 nambari = makala_faharisi(hb);
+    kama (nambari >= 0) { bx = bx + skrini_dunia_kitufe(jibu, bx, by, hb->umejibiwa, DUNIA_JIBU, nambari) + 8; }
+    kama (hb->taifa >= 0) { skrini_dunia_kitufe(ui("Open nation"), bx, by, 0, DUNIA_FUNGUA, hb->taifa); }
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo_kulia(ui("Esc closes the article."), tx + tw, by + 4, 11);
+}
+
+// Kichwa kikubwa (mistari miwili kwa kima cha juu); hurudisha y mpya.
+n64 makala_kichwa(n8* s, n64 x, n64 y, n64 w) {
+    kama (maandishi_upana(sura_nene, s, 26) <= w) { sura_lebo_nene(s, x, y, 26); rudisha y + 40; }
+    // kata kwenye nafasi karibu na katikati
+    n8 a[256];
+    n64 n = urefu_wa_mfuatano(s);
+    kama (n > 250) { n = 250; }
+    n64 kati = n / 2;
+    wakati (kati < n && s[kati] != 32) { kati = kati + 1; }
+    nakili(a, s, kati);
+    a[kati] = 0;
+    sura_lebo_nene(a, x, y, 26);
+    kama (kati < n) { sura_lebo_nene(&s[kati + 1], x, y + 36, 26); }
+    rudisha y + 76;
+}
+
+// Aya za mwili kwa mpangilio wa aina ya habari; hurudisha y mpya.
+n64 makala_mwili(Mchezo* g, Habari* hb, TaifaNchi* tn, n64 x, n64 y, n64 w, n64 y_mwisho) {
+    n8* aya = tenga(MAKALA_AYA * 4);
+    n8* u = aya;
+    n8* s = &aya[MAKALA_AYA];
+    n8* j = &aya[MAKALA_AYA * 2];
+    n8* d = &aya[MAKALA_AYA * 3];
+    makala_aya_uchumi(g, hb->taifa, u);
+    makala_aya_siasa(g, hb->taifa, s);
+    makala_aya_jeshi(g, hb->taifa, j);
+    makala_aya_dunia(g, hb->taifa, d);
+    n8* mpangilio[4];
+    mpangilio[0] = u; mpangilio[1] = s; mpangilio[2] = j; mpangilio[3] = d;
+    kama (hb->aina == HABARI_SIASA || hb->aina == HABARI_YAKO) { mpangilio[0] = s; mpangilio[1] = u; }
+    kama (hb->aina == HABARI_DIPLOMASIA) { mpangilio[0] = j; mpangilio[1] = s; mpangilio[2] = u; }
+    n64 i = 0;
+    sura_rangi(SURA_MAANDISHI);
+    wakati (i < 4) {
+        kama (mpangilio[i][0] != 0 && y < y_mwisho) { y = skrini_mkutano_aya(mpangilio[i], x, y, w, 14, y_mwisho) + 10; }
+        i = i + 1;
+    }
+    achilia aya;
+    rudisha y;
+}

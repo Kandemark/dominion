@@ -356,6 +356,11 @@ w0 chati_ramani_ya_joto(n64 x, n64 y, n64 w, n64 h, n64* thamani, n64 safu, n64 
             n64 uwazi = 40 + (215 * v) / juu;
             turubai_brashi(sura_t, rangi, uwazi);
             turubai_mviringo(sura_t, x + w_lebo + k * cw + 3, ry + 3, cw - 6, ch - 6, 4);
+            n8 e_k[96];
+            n8 e_v[24];
+            mfuatano_umbiza(e_k, 96, "%s  ·  %s", lebo_za_safu[r], lebo_za_safuwima[k], 0, 0, 0, 0);
+            sura_namba(e_v, v);
+            elea_ongeza(x + w_lebo + k * cw + 3, ry + 3, cw - 6, ch - 6, e_k, e_v);
             kama (cw >= 46 && ch >= 22) {
                 n8 m[16];
                 sura_namba(m, v);

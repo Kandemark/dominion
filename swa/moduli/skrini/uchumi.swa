@@ -1,5 +1,26 @@
 husisha { moduli/skrini/jopo.swa }
 husisha { moduli/soko/masoko.swa }
+husisha { moduli/onyesho/elea.swa }
+
+// Thamani za chati ya historia ya pato kielekezi kikiwa juu yake (sura_chati_mstari
+// huacha pikseli 78 za lebo kushoto).
+w0 uchumi_elea_ya_historia(n64* th, n64 n, n64 x, n64 y, n64 w, n64 h) {
+    kama (n < 2) { rudisha; }
+    n64 hatua = w / (n - 1);
+    kama (hatua < 1) { hatua = 1; }
+    n8 k[48];
+    n8 v[32];
+    n64 j = 0;
+    wakati (j < n) {
+        n64 nyuma = n - 1 - j;
+        kama (nyuma == 0) { nakili_mfuatano(k, ui("This week")); }
+        sivyo kama (nyuma == 1) { nakili_mfuatano(k, ui("1 week ago")); }
+        sivyo { mfuatano_umbiza(k, 48, ui("%d weeks ago"), nyuma, 0, 0, 0, 0, 0); }
+        sura_namba_fupi(v, th[j]);
+        elea_ongeza(x + (j * (w - 1)) / (n - 1) - hatua / 2, y, hatua, h, k, v);
+        j = j + 1;
+    }
+}
 
 n64 skrini_uchumi_dirisha_la_historia = 24;
 
@@ -192,6 +213,7 @@ w0 skrini_uchumi_makro_chora(Mchezo* g, Turubai* t, n64 taifa, n64 y0) {
             i = i + 1;
         }
         sura_chati_mstari(x + 16, y + 48, w_kushoto - 32, kimo_cha_safu - 72, thamani, n);
+        uchumi_elea_ya_historia(thamani, n, x + 16 + 78, y + 48, w_kushoto - 32 - 78, kimo_cha_safu - 72);
         achilia thamani;
     }
 
