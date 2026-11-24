@@ -571,22 +571,34 @@ w0 kt_kampuni_chora(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
         mfuatano_umbiza(m, 128, "HELD %d", nazo, 0, 0, 0, 0, 0);
         kt_maandishi_kulia(m, x + w - 10, yy, 11, SURA_MAANDISHI);
         yy = yy + 20;
+        // kununua: ukubwa usiotosheka na fedha huonyeshwa hafifu; MAX hununua
+        // hisa nyingi zaidi zinazowezekana
+        n64 upeo = soko_hisa_zinazowezekana(kt_kampuni);
         n64 bx = x + 10;
-        kt_maandishi("BUY", bx, yy + 3, 11, SURA_CHANYA);
+        kt_maandishi(ui("BUY"), bx, yy + 3, 11, SURA_CHANYA);
         bx = bx + 36;
-        bx = bx + kt_kitufe("10", bx, yy, 0, KT_NUNUA, 10) + 4;
-        bx = bx + kt_kitufe("100", bx, yy, 0, KT_NUNUA, 100) + 4;
-        bx = bx + kt_kitufe("1K", bx, yy, 0, KT_NUNUA, 1000) + 4;
-        bx = bx + kt_kitufe("10K", bx, yy, 0, KT_NUNUA, 10000) + 4;
+        bx = bx + kt_kitufe_kama("10", bx, yy, upeo >= 10, KT_NUNUA, 10) + 4;
+        bx = bx + kt_kitufe_kama("100", bx, yy, upeo >= 100, KT_NUNUA, 100) + 4;
+        bx = bx + kt_kitufe_kama("1K", bx, yy, upeo >= 1000, KT_NUNUA, 1000) + 4;
+        bx = bx + kt_kitufe_kama("10K", bx, yy, upeo >= 10000, KT_NUNUA, 10000) + 4;
+        bx = bx + kt_kitufe_kama(ui("MAX"), bx, yy, upeo > 0, KT_NUNUA, 0 - 1) + 4;
         yy = yy + 24;
         bx = x + 10;
-        kt_maandishi("SELL", bx, yy + 3, 11, SURA_HASI);
+        kt_maandishi(ui("SELL"), bx, yy + 3, 11, SURA_HASI);
         bx = bx + 36;
-        bx = bx + kt_kitufe("10", bx, yy, 0, KT_UZA, 10) + 4;
-        bx = bx + kt_kitufe("100", bx, yy, 0, KT_UZA, 100) + 4;
-        bx = bx + kt_kitufe("1K", bx, yy, 0, KT_UZA, 1000) + 4;
-        bx = bx + kt_kitufe("ALL", bx, yy, 0, KT_UZA, 0 - 1) + 4;
+        bx = bx + kt_kitufe_kama("10", bx, yy, nazo >= 10, KT_UZA, 10) + 4;
+        bx = bx + kt_kitufe_kama("100", bx, yy, nazo >= 100, KT_UZA, 100) + 4;
+        bx = bx + kt_kitufe_kama("1K", bx, yy, nazo >= 1000, KT_UZA, 1000) + 4;
+        bx = bx + kt_kitufe_kama(ui("ALL"), bx, yy, nazo > 0, KT_UZA, 0 - 1) + 4;
         yy = yy + 26;
+        // gharama ya hisa moja na idadi inayowezekana
+        n8 b1[40];
+        soko_bei_maandishi(b1, soko_gharama_ya_kununua(kt_kampuni, 1));
+        n8 b2[32];
+        sura_namba(b2, upeo);
+        mfuatano_umbiza(m, 128, ui("COST/SHARE %s  ·  AFFORDABLE %s"), b1, b2, 0, 0, 0, 0);
+        kt_maandishi(m, x + 10, yy, 11, SURA_HAFIFU);
+        yy = yy + 16;
         Sarafu2* nyumbani = soko_sarafu_ya(p->taifa);
         n8 b[40];
         soko_bei_maandishi(b, p->fedha);
@@ -1164,10 +1176,19 @@ n32 skrini_uchumi_bofya(Mchezo* g, n64 px, n64 py, n64* fungua, n64* kutana) {
     kama (k == KT_MKOA) { kt_mkoa = hoja; skrini_wigo = WIGO_MKOA; kt_ukurasa = 0; }
     kama (k == UCHUMI_MUDA) { skrini_uchumi_dirisha_la_historia = hoja; }
     kama (k == KT_NUNUA) {
-        n64 r = soko_nunua(kt_kampuni, hoja);
-        kama (r == SOKO_SAWA) { mfuatano_umbiza(kt_ujumbe, 200, "FILLED: BOUGHT %d", hoja, 0, 0, 0, 0, 0); }
-        sivyo kama (r == SOKO_HAKUNA_FEDHA) { nakili_mfuatano(kt_ujumbe, "REJECTED: INSUFFICIENT CASH"); }
-        sivyo { nakili_mfuatano(kt_ujumbe, "REJECTED"); }
+        n64 kiasi = hoja;
+        kama (kiasi < 0) { kiasi = soko_hisa_zinazowezekana(kt_kampuni); }
+        n64 r = soko_nunua(kt_kampuni, kiasi);
+        kama (r == SOKO_SAWA) { mfuatano_umbiza(kt_ujumbe, 200, ui("FILLED: BOUGHT %d"), kiasi, 0, 0, 0, 0, 0); }
+        sivyo kama (r == SOKO_HAKUNA_FEDHA) {
+            n8 gh[40];
+            n8 fd[40];
+            soko_bei_maandishi(gh, soko_gharama_ya_kununua(kt_kampuni, kiasi));
+            soko_bei_maandishi(fd, soko_pochi_pata()->fedha);
+            mfuatano_umbiza(kt_ujumbe, 200, ui("REJECTED: COST %s, CASH %s"), gh, fd, 0, 0, 0, 0);
+        }
+        sivyo kama (r == SOKO_POCHI_IMEJAA) { nakili_mfuatano(kt_ujumbe, ui("REJECTED: PORTFOLIO FULL")); }
+        sivyo { nakili_mfuatano(kt_ujumbe, ui("REJECTED")); }
     }
     kama (k == KT_UZA) {
         n64 kiasi = hoja;

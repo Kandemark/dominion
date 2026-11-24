@@ -23,12 +23,15 @@ n64 kalenda_idadi = 0;
 n64* kalenda_siku = 0;
 n64* kalenda_saa = 0;
 n64* kalenda_mtu = 0;
+n64* kalenda_uamuzi = 0;        // wiki ya mkutano: 0 mchezaji hajaamua, 1 atahudhuria
 
 w0 kalenda_andaa() {
     kama (kalenda_siku == 0) {
         kalenda_siku = tenga(8 * KALENDA_UWEZO);
         kalenda_saa = tenga(8 * KALENDA_UWEZO);
         kalenda_mtu = tenga(8 * KALENDA_UWEZO);
+        kalenda_uamuzi = tenga(8 * KALENDA_UWEZO);
+        weka_sifuri(kalenda_uamuzi, 8 * KALENDA_UWEZO);
     }
 }
 
@@ -47,7 +50,22 @@ w0 kalenda_panga(n64 siku, n64 mtu) {
     kalenda_siku[kalenda_idadi] = siku;
     kalenda_saa[kalenda_idadi] = saa;
     kalenda_mtu[kalenda_idadi] = mtu;
+    kalenda_uamuzi[kalenda_idadi] = 0;
     kalenda_idadi = kalenda_idadi + 1;
+}
+
+// Ondoa mkutano wa i kwenye shajara.
+w0 kalenda_ondoa(n64 i) {
+    kama (i < 0 || i >= kalenda_idadi) { rudisha; }
+    n64 j = i + 1;
+    wakati (j < kalenda_idadi) {
+        kalenda_siku[j - 1] = kalenda_siku[j];
+        kalenda_saa[j - 1] = kalenda_saa[j];
+        kalenda_mtu[j - 1] = kalenda_mtu[j];
+        kalenda_uamuzi[j - 1] = kalenda_uamuzi[j];
+        j = j + 1;
+    }
+    kalenda_idadi = kalenda_idadi - 1;
 }
 
 // Tukio moja la siku: aina, saa ya kuanza, saa ya kumaliza, kichwa, na

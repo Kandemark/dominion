@@ -69,7 +69,8 @@ n8* skrini_mipangilio_maelezo(n64 l) {
 // ---------- mshauri wa AI ----------
 
 AkiliUsanidi* mipangilio_akili = 0;
-n64 mipangilio_akili_hali = 0;          // 0 haijajaribiwa, 1 imeunganishwa, 2 haifikiki
+n64 mipangilio_akili_hali = 0;          // 0 haijajaribiwa, 1 imeunganishwa, 2 haifikiki, 3 modeli haipo
+n64 MIPANGILIO_MODELI_SAFU = 24;        // kimo cha safu ya modeli kwenye orodha
 
 AkiliUsanidi* mipangilio_akili_pata() {
     kama (mipangilio_akili == 0) { mipangilio_akili = akili_soma_usanidi("saves/akili"); }
@@ -93,7 +94,7 @@ n8* skrini_mipangilio_mtoa_maelezo(n64 m) {
 }
 
 // Kitendo cha bofya kwenye sehemu ya mshauri: 0..2 = mtoa, 10 = jaribu
-// muunganisho, -1 = hakuna.
+// muunganisho, 100 + i = tumia modeli i ya seva, -1 = hakuna.
 n64 skrini_mipangilio_bofya_akili(n64 upana, n64 px, n64 py) {
     n64 x = skrini_mipangilio_x();
     n64 y = skrini_mipangilio_akili_y();
@@ -103,6 +104,11 @@ n64 skrini_mipangilio_bofya_akili(n64 upana, n64 px, n64 py) {
     kama (safu < AKILI_WATOA) { rudisha safu; }
     n64 y_kitufe = y + SKRINI_MIPANGILIO_SAFU * AKILI_WATOA + 92;
     kama (py >= y_kitufe && py < y_kitufe + 32 && px < x + 180) { rudisha 10; }
+    n64 y_orodha = y_kitufe + 90;
+    kama (akili_modeli_idadi > 0 && py >= y_orodha) {
+        n64 i = (py - y_orodha) / MIPANGILIO_MODELI_SAFU;
+        kama (i < akili_modeli_idadi) { rudisha 100 + i; }
+    }
     rudisha 0 - 1;
 }
 
@@ -120,12 +126,22 @@ w0 mipangilio_akili_tekeleza(n64 kitendo) {
     }
     kama (kitendo == 10) {
         mipangilio_akili_hali = 2;
-        kama (akili_jaribu(u)) { mipangilio_akili_hali = 1; }
+        kama (akili_jaribu(u)) {
+            mipangilio_akili_hali = 1;
+            kama (akili_modeli_idadi > 0 && akili_modeli_ipo(u) == 0) { mipangilio_akili_hali = 3; }
+        }
+    }
+    kama (kitendo >= 100 && kitendo - 100 < akili_modeli_idadi) {
+        nakili_mfuatano(u->modeli, akili_modeli[kitendo - 100]);
+        akili_hifadhi_usanidi(u, "saves/akili");
+        mipangilio_akili_hali = 1;
     }
 }
 
 w0 skrini_mipangilio_akili_chora(Turubai* t, n64 x, n64 w) {
     AkiliUsanidi* u = mipangilio_akili_pata();
+    // jaribio la kwanza hufanyika ukurasa unapofunguliwa, ili orodha ya modeli ionekane
+    kama (mipangilio_akili_hali == 0 && u->mtoa != AKILI_HAKUNA) { mipangilio_akili_tekeleza(10); }
     n64 y = skrini_mipangilio_akili_y();
     sura_rangi(SURA_HAFIFU);
     sura_lebo_kati(ui("AI ADVISER"), x + 4, y - 26, 12);
@@ -171,8 +187,30 @@ w0 skrini_mipangilio_akili_chora(Turubai* t, n64 x, n64 w) {
     sura_lebo_kati(ui("Test connection"), x + 16, by + 7, 13);
     kama (mipangilio_akili_hali == 1) { sura_rangi(SURA_CHANYA); sura_lebo_kati(ui("Connected"), x + 196, by + 7, 13); }
     kama (mipangilio_akili_hali == 2) { sura_rangi(SURA_HASI); sura_lebo_kati(ui("Not reachable"), x + 196, by + 7, 13); }
+    kama (mipangilio_akili_hali == 3) {
+        n8 ujumbe[200];
+        mfuatano_umbiza(ujumbe, 200, ui("Connected, but the model %s is not installed"), u->modeli, 0, 0, 0, 0, 0);
+        sura_rangi(SURA_HASI);
+        sura_lebo_kati(ujumbe, x + 196, by + 7, 13);
+    }
     sura_rangi(SURA_HAFIFU);
-    sura_lebo(ui("To change the server, model or key, edit the file saves/akili and reopen Settings."), x + 4, by + 46, 11);
+    sura_lebo(ui("To change the server or key, edit the file saves/akili and reopen Settings."), x + 4, by + 46, 11);
+    // modeli za seva: bofya moja kuitumia
+    kama (akili_modeli_idadi > 0) {
+        n64 oy = by + 90;
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo_kati(ui("MODELS ON THE SERVER  ·  CLICK ONE TO USE IT"), x + 4, oy - 20, 11);
+        n64 i = 0;
+        wakati (i < akili_modeli_idadi) {
+            n64 ry = oy + i * MIPANGILIO_MODELI_SAFU;
+            n32 hii = linganisha_mfuatano(akili_modeli[i], u->modeli) == 0;
+            kama (hii) { turubai_brashi(t, SURA_LAFUDHI, 30); turubai_mviringo(t, x, ry, w, MIPANGILIO_MODELI_SAFU - 2, 5); }
+            sura_radio(x + 14, ry + MIPANGILIO_MODELI_SAFU / 2 - 1, hii, SURA_LAFUDHI, 255);
+            sura_rangi(SURA_MAANDISHI);
+            sura_lebo(akili_modeli[i], x + 32, ry + 4, 12);
+            i = i + 1;
+        }
+    }
 }
 
 w0 skrini_mipangilio_chora(Mchezo* g, Turubai* t) {

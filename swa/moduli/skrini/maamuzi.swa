@@ -1,0 +1,213 @@
+husisha { moduli/skrini/mkutano.swa }
+
+// maamuzi.swa -- maamuzi ya lazima kabla wiki haijasonga.
+//
+// Kabla ya zamu inayofuata mchezaji lazima aamue:
+//   ombi la mkutano   kila ombi jipya la wiki hii: Kutana (mkutano hupangwa
+//                     kwenye shajara wiki hii) au Kataa
+//   shajara           kila mkutano wa shajara ulio katika siku saba zijazo:
+//                     Hudhuria au Ruka (hutolewa kwenye shajara)
+// Maamuzi yana matokeo: kukataa au kuruka hushusha msimamo wa afisa kwa
+// mchezaji; kukutana au kuhudhuria huupandisha kidogo.
+// Continue na Space hufungua jopo hili ikiwa kuna lolote ambalo halijaamuliwa;
+// wiki husonga tu baada ya yote kuamuliwa.
+
+n64 MA_AMUA = 170;              // hoja: kipengele * 2 + chaguo (0 kubali, 1 kataa)
+n64 MA_KATAA_YOTE = 171;
+n64 MA_ENDELEA = 172;
+n64 MA_FUNGA = 173;
+n32 maamuzi_wazi = 0;
+
+n64 MA_JUU = 24;
+n64 MA_OMBI = 0;
+n64 MA_SHAJARA = 1;
+n64* ma_aina = 0;
+n64* ma_faharisi = 0;
+n64 ma_idadi = 0;
+
+// Kusanya yanayosubiri uamuzi kwa wiki ya zamu `zamu`.
+n64 maamuzi_kusanya(n64 zamu) {
+    kama (ma_aina == 0) { ma_aina = tenga(8 * MA_JUU); ma_faharisi = tenga(8 * MA_JUU); }
+    ma_idadi = 0;
+    n64 i = 0;
+    wakati (i < kikasha_idadi && ma_idadi < MA_JUU) {
+        Ujumbe* u = kikasha_pata(i);
+        kama (u->aina == UJUMBE_OMBI && u->jibu == 0 && u->zamu >= zamu) {
+            ma_aina[ma_idadi] = MA_OMBI;
+            ma_faharisi[ma_idadi] = i;
+            ma_idadi = ma_idadi + 1;
+        }
+        i = i + 1;
+    }
+    kalenda_andaa();
+    n64 leo = tarehe_siku_ya_zamu(zamu);
+    i = 0;
+    wakati (i < kalenda_idadi && ma_idadi < MA_JUU) {
+        kama (kalenda_siku[i] >= leo && kalenda_siku[i] <= leo + 6 && kalenda_uamuzi[i] == 0) {
+            ma_aina[ma_idadi] = MA_SHAJARA;
+            ma_faharisi[ma_idadi] = i;
+            ma_idadi = ma_idadi + 1;
+        }
+        i = i + 1;
+    }
+    rudisha ma_idadi;
+}
+
+w0 maamuzi_msimamo(MhusikaWaDola* m, n64 badiliko) {
+    kama (m == 0) { rudisha; }
+    m->msimamo = m->msimamo + badiliko;
+    kama (m->msimamo > 100) { m->msimamo = 100; }
+    kama (m->msimamo < 0 - 100) { m->msimamo = 0 - 100; }
+}
+
+// Tekeleza uamuzi wa kipengele k: kubali (0) au kataa (1).
+w0 maamuzi_amua(Wahusika* w, n64 zamu, n64 k, n64 chaguo) {
+    kama (k < 0 || k >= ma_idadi) { rudisha; }
+    n64 leo = tarehe_siku_ya_zamu(zamu);
+    kama (ma_aina[k] == MA_OMBI) {
+        Ujumbe* u = kikasha_pata(ma_faharisi[k]);
+        MhusikaWaDola* m = wahusika_pata(w, u->mtumaji);
+        u->umesomwa = 1;
+        kama (chaguo == 0) {
+            u->jibu = 1;
+            // mkutano siku ya kazi ijayo iliyo wazi wiki hii; tayari umekubaliwa
+            n64 siku = leo + 1 + (u->mtumaji % 4);
+            kalenda_panga(siku, u->mtumaji);
+            kalenda_uamuzi[kalenda_idadi - 1] = 1;
+            kama (m != 0) { m->mkutano = 3; m->mkutano_siku = siku; }
+            maamuzi_msimamo(m, 3);
+        } sivyo {
+            u->jibu = 2;
+            kama (m != 0) { m->mkutano = 2; }
+            maamuzi_msimamo(m, 0 - 4);
+        }
+    } sivyo {
+        n64 i = ma_faharisi[k];
+        MhusikaWaDola* m = wahusika_pata(w, kalenda_mtu[i]);
+        kama (chaguo == 0) {
+            kalenda_uamuzi[i] = 1;
+            maamuzi_msimamo(m, 2);
+        } sivyo {
+            kalenda_ondoa(i);
+            kama (m != 0) { m->mkutano = 0; }
+            maamuzi_msimamo(m, 0 - 6);
+        }
+    }
+}
+
+// Jopo la maamuzi juu ya ukurasa wowote.
+w0 maamuzi_chora(Mchezo* g, Turubai* t) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    Wahusika* w = skrini_mkutano_watu(g, tm->faharisi_ya_taifa_la_mchezaji);
+    kama (w == 0) { rudisha; }
+    maamuzi_kusanya(g->zamu_ya_sasa);
+    sura_anzisha(t);
+    turubai_brashi(t, 0, 150);
+    turubai_jaza(t, 0, 0, t->upana, t->kimo);
+    // jopo kubwa vya kutosha kwa safu zote
+    n64 safu_h = 54;
+    n64 pw = 820;
+    n64 ph = 150 + ma_idadi * safu_h;
+    kama (ma_idadi == 0) { ph = 190; }
+    kama (ph > t->kimo - 80) { ph = t->kimo - 80; }
+    n64 px = (t->upana - pw) / 2;
+    n64 py = (t->kimo - ph) / 2;
+    turubai_brashi(t, SURA_PANELI, 255);
+    turubai_mviringo(t, px, py, pw, ph, 12);
+    turubai_brashi(t, 16777215, 28);
+    turubai_mpaka(t, px, py, pw, ph, 12);
+    bofya_ongeza(px, py, pw, ph, MA_FUNGA, 0);            // jopo humeza bofya za ukurasa
+    sura_rangi(SURA_LAFUDHI);
+    sura_lebo_nene(ui("DECISIONS REQUIRED"), px + 24, py + 20, 12);
+    sura_rangi(SURA_MAANDISHI);
+    n8 m[200];
+    kama (ma_idadi > 0) { mfuatano_umbiza(m, 200, ui("%d matters need your answer before the week can advance."), ma_idadi, 0, 0, 0, 0, 0); }
+    sivyo { nakili_mfuatano(m, ui("Every matter is answered. The week can advance.")); }
+    sura_lebo_kati(m, px + 24, py + 42, 16);
+    n64 ry = py + 84;
+    n64 k = 0;
+    wakati (k < ma_idadi && ry + safu_h < py + ph - 60) {
+        sura_safu(px + 16, ry, pw - 32, safu_h - 6, k, 0);
+        n8* aina_jina = ui("REQUEST");
+        n8* kubali = ui("Meet");
+        n8* kataa = ui("Decline");
+        n8 kichwa[200];
+        n8 maelezo[240];
+        MhusikaWaDola* mh = 0;
+        kama (ma_aina[k] == MA_OMBI) {
+            Ujumbe* u = kikasha_pata(ma_faharisi[k]);
+            mh = wahusika_pata(w, u->mtumaji);
+            nakili_mfuatano(maelezo, u->mwili);
+        } sivyo {
+            n64 i = ma_faharisi[k];
+            mh = wahusika_pata(w, kalenda_mtu[i]);
+            aina_jina = ui("DIARY");
+            kubali = ui("Attend");
+            kataa = ui("Skip");
+            n8 tarehe[48];
+            tarehe_maandishi(kalenda_siku[i], tarehe, 48);
+            mfuatano_umbiza(maelezo, 240, ui("Meeting on %s at %d:00. Skipping it will offend."), tarehe, kalenda_saa[i], 0, 0, 0, 0);
+        }
+        kama (mh != 0) { mfuatano_umbiza(kichwa, 200, "%s  ·  %s", mh->jina, mh->cheo, 0, 0, 0, 0); } sivyo { nakili_mfuatano(kichwa, ui("An official")); }
+        sura_rangi(SURA_BAHARI);
+        sura_lebo_nene(aina_jina, px + 30, ry + 8, 10);
+        turubai_kata(t, px + 100, ry, pw - 340, safu_h);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kati(kichwa, px + 100, ry + 6, 13);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(maelezo, px + 100, ry + 26, 11);
+        turubai_kata_yote(t);
+        // vitufe
+        n64 bx = px + pw - 228;
+        turubai_brashi(t, SURA_LAFUDHI, 255);
+        turubai_mviringo(t, bx, ry + 10, 100, 28, 7);
+        sura_rangi(CHATI_GIZA);
+        n64 lw = maandishi_upana(sura_kati, kubali, 13);
+        sura_lebo_kati(kubali, bx + (100 - lw) / 2, ry + 15, 13);
+        bofya_ongeza(bx, ry + 10, 100, 28, MA_AMUA, k * 2);
+        bx = bx + 108;
+        turubai_brashi(t, SURA_PANELI_JUU, 255);
+        turubai_mviringo(t, bx, ry + 10, 100, 28, 7);
+        sura_rangi(SURA_MAANDISHI);
+        lw = maandishi_upana(sura_kati, kataa, 13);
+        sura_lebo_kati(kataa, bx + (100 - lw) / 2, ry + 15, 13);
+        bofya_ongeza(bx, ry + 10, 100, 28, MA_AMUA, k * 2 + 1);
+        ry = ry + safu_h;
+        k = k + 1;
+    }
+    // chini: kataa yote, au endelea yote yakishaamuliwa
+    n64 fy = py + ph - 52;
+    kama (ma_idadi > 0) {
+        turubai_brashi(t, SURA_PANELI_JUU, 255);
+        turubai_mviringo(t, px + 24, fy, 180, 32, 7);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kati(ui("Decline and skip all"), px + 40, fy + 7, 13);
+        bofya_ongeza(px + 24, fy, 180, 32, MA_KATAA_YOTE, 0);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(ui("Esc closes this panel without advancing."), px + 220, fy + 9, 11);
+    } sivyo {
+        turubai_brashi(t, SURA_LAFUDHI, 255);
+        turubai_mviringo(t, px + pw - 204, fy, 180, 32, 7);
+        sura_rangi(CHATI_GIZA);
+        sura_lebo_kati(ui("Continue"), px + pw - 160, fy + 7, 13);
+        bofya_ongeza(px + pw - 204, fy, 180, 32, MA_ENDELEA, 0);
+    }
+}
+
+// Bofya ndani ya jopo: 1 = endelea na wiki, 0 = vinginevyo. Jopo humeza bofya zote.
+n32 maamuzi_bofya(Mchezo* g, n64 px, n64 py) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    Wahusika* w = skrini_mkutano_watu(g, tm->faharisi_ya_taifa_la_mchezaji);
+    kama (w == 0) { rudisha 0; }
+    maamuzi_kusanya(g->zamu_ya_sasa);
+    n64 hoja = 0;
+    n64 k = bofya_tafuta(px, py, &hoja);
+    kama (k == MA_AMUA) { maamuzi_amua(w, g->zamu_ya_sasa, hoja / 2, hoja % 2); }
+    kama (k == MA_KATAA_YOTE) {
+        // kutoka mwisho ili faharisi za shajara zisisogee
+        n64 i = ma_idadi - 1;
+        wakati (i >= 0) { maamuzi_amua(w, g->zamu_ya_sasa, i, 1); i = i - 1; }
+    }
+    kama (k == MA_ENDELEA) { maamuzi_wazi = 0; rudisha 1; }
+    rudisha 0;
+}

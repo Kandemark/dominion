@@ -488,14 +488,16 @@ w0 hifadhi_andika_kikasha_na_shajara() {
     n64 i = 0;
     wakati (i < kikasha_idadi) {
         Ujumbe* u = kikasha_pata(i);
-        mk_n64(u->mtumaji); mk_n64(u->aina); mk_n64(u->zamu); mk_n64(u->siku); mk_n64(u->umesomwa);
+        // jibu la ombi hukaa juu ya alama ya kusomwa (umbizo la faili halibadiliki)
+        mk_n64(u->mtumaji); mk_n64(u->aina); mk_n64(u->zamu); mk_n64(u->siku); mk_n64(u->umesomwa + u->jibu * 2);
         mk_mfuatano(u->kichwa); mk_mfuatano(u->mwili);
         i = i + 1;
     }
     mk_n64(kikasha_zamu_ya_mwisho);
     mk_n64(kalenda_idadi);
     i = 0;
-    wakati (i < kalenda_idadi) { mk_n64(kalenda_siku[i]); mk_n64(kalenda_saa[i]); mk_n64(kalenda_mtu[i]); i = i + 1; }
+    // uamuzi wa mchezaji hukaa juu ya saa (saa + 100 * uamuzi)
+    wakati (i < kalenda_idadi) { mk_n64(kalenda_siku[i]); mk_n64(kalenda_saa[i] + 100 * kalenda_uamuzi[i]); mk_n64(kalenda_mtu[i]); i = i + 1; }
 }
 
 w0 hifadhi_soma_kikasha_na_shajara() {
@@ -508,7 +510,7 @@ w0 hifadhi_soma_kikasha_na_shajara() {
         n8* mwili = mk_soma_mfuatano();
         kikasha_ongeza(mtumaji, aina, zamu, siku, kichwa, mwili);
         Ujumbe* u = kikasha_pata(kikasha_idadi - 1);
-        kama (u != 0) { u->umesomwa = umesomwa; }
+        kama (u != 0) { u->umesomwa = umesomwa % 2; u->jibu = umesomwa / 2; }
         i = i + 1;
     }
     kikasha_zamu_ya_mwisho = mk_soma();
@@ -518,7 +520,7 @@ w0 hifadhi_soma_kikasha_na_shajara() {
     wakati (i < n) {
         n64 siku = mk_soma(); n64 saa = mk_soma(); n64 mtu = mk_soma();
         kalenda_panga(siku, mtu);
-        kama (kalenda_idadi > 0) { kalenda_saa[kalenda_idadi - 1] = saa; }
+        kama (kalenda_idadi > 0) { kalenda_saa[kalenda_idadi - 1] = saa % 100; kalenda_uamuzi[kalenda_idadi - 1] = saa / 100; }
         i = i + 1;
     }
 }

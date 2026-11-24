@@ -36,6 +36,7 @@ n64 mkutano_leo = 0;                // siku ya leo (kalenda ya mchezo)
 n64 mkutano_ruhusa = 1;             // mchezaji anaweza kuzungumza na mteule
 n64 mkutano_hali = 0;               // 0 tulivu, 1 inatuma, 2 jibu lipo, 3 hitilafu
 n64 mkutano_kosa = 0;
+n8 mkutano_kosa_maandishi[320];
 Mchezo* mkutano_g = 0;            // mchezo unaochorwa sasa
 n64 mkutano_nafasi = 1;             // nafasi ya hifadhi ya kumbukumbu
 n64 mkutano_urefu = 0;
@@ -300,7 +301,13 @@ n64 skrini_mkutano_athari_chora(n8* lebo, n64 v, n64 x, n64 y) {
 
 n8* skrini_mkutano_kosa_jina(n64 kosa) {
     kama (kosa == 0 - 1) { rudisha ui("The adviser is switched off. Choose a provider in Settings."); }
-    kama (kosa == 0 - 10) { rudisha ui("The server refused the request. Check the model name and key in saves/akili."); }
+    kama (kosa == 0 - 10) {
+        kama (akili_kosa_ujumbe[0] != 0) {
+            mfuatano_umbiza(mkutano_kosa_maandishi, 320, ui("The server refused: %s. Pick an installed model in Settings."), akili_kosa_ujumbe, 0, 0, 0, 0, 0);
+            rudisha mkutano_kosa_maandishi;
+        }
+        rudisha ui("The server refused the request. Check the model name and key in saves/akili.");
+    }
     kama (kosa == 0 - 4) { rudisha ui("No answer arrived in time."); }
     rudisha ui("Could not reach the adviser's server.");
 }
@@ -1184,7 +1191,8 @@ w0 skrini_mkutano_chora(Mchezo* g, Turubai* t, n64 taifa) {
         mkutano_taifa = taifa;
         mkutano_mteule = 0 - 1;
         mkutano_mbunge = 0 - 1;
-        mkutano_ofisi = 0;
+        // mkutano_ofisi ni cheo cha mchezaji kwenye mti wa taifa lake; hakibadiliki
+        // anapotazama serikali ya taifa jingine (zamani kiliwekwa 0, yaani mkuu wa dola)
         serikali_nyumba = NYUMBA_UTENDAJI;
         serikali_tembea = 0;
         mkutano_hali = 0;
@@ -1193,7 +1201,7 @@ w0 skrini_mkutano_chora(Mchezo* g, Turubai* t, n64 taifa) {
         mkutano_ujumbe[0] = 0;
     }
     kama (mkutano_mteule >= w->idadi) { mkutano_mteule = 0 - 1; }
-    kama (mkutano_ofisi >= w->idadi) { mkutano_ofisi = 0; }
+    kama (taifa == tm->faharisi_ya_taifa_la_mchezaji && mkutano_ofisi >= w->idadi) { mkutano_ofisi = 0; }
     MhusikaWaDola* m = wahusika_pata(w, mkutano_mteule);
     MhusikaWaDola* mimi = wahusika_pata(w, mkutano_ofisi);
     // ruhusa ya kuzungumza: Mshauri, msaidizi, wajumbe, walio chini au sawa,

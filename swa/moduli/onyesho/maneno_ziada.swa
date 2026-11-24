@@ -1290,6 +1290,7 @@ w0 maneno_jaza_ziada() {
     maneno_sajili("Your person, your money and the people around you.", "Nafsi yako, fedha zako na watu wanaokuzunguka.", "Votre personne, votre argent et votre entourage.");
     maneno_sajili("your value vs the top", "thamani yako dhidi ya wa kwanza", "votre valeur face au premier");
     maneno_sajili("Your veto stands. The chamber could not muster two thirds.", "Turufu yako inabaki. Baraza halikupata theluthi mbili.", "Votre veto tient. La chambre n'a pu réunir les deux tiers.");
+    maneno_jaza_ziada_4();
     maneno_jaza_ziada_3();
     maneno_jaza_ziada_2();
 }
@@ -1508,4 +1509,34 @@ w0 maneno_jaza_ziada_3() {
     maneno_sajili("LEFT", "ZIMEBAKI", "RESTANT");
     maneno_sajili("%dw", "wiki %d", "%d sem");
     maneno_sajili("OPEN", "WAZI", "OUVERT");
+}
+
+// maamuzi ya lazima, mshauri na tiketi ya oda (2026-11)
+w0 maneno_jaza_ziada_4() {
+    maneno_sajili("DECISIONS REQUIRED", "MAAMUZI YANAHITAJIKA", "DÉCISIONS REQUISES");
+    maneno_sajili("%d matters need your answer before the week can advance.", "Mambo %d yanahitaji jibu lako kabla wiki haijasonga.", "%d affaires attendent votre réponse avant que la semaine avance.");
+    maneno_sajili("Every matter is answered. The week can advance.", "Kila jambo limejibiwa. Wiki inaweza kusonga.", "Toutes les affaires ont une réponse. La semaine peut avancer.");
+    maneno_sajili("REQUEST", "OMBI", "DEMANDE");
+    maneno_sajili("Meet", "Kutana", "Recevoir");
+    maneno_sajili("Decline", "Kataa", "Refuser");
+    maneno_sajili("DIARY", "SHAJARA", "AGENDA");
+    maneno_sajili("Attend", "Hudhuria", "Assister");
+    maneno_sajili("Skip", "Ruka", "Annuler");
+    maneno_sajili("Meeting on %s at %d:00. Skipping it will offend.", "Mkutano %s saa %d:00. Kuuruka kutamchukiza.", "Rendez-vous le %s à %d h. L'annuler vexera.");
+    maneno_sajili("An official", "Afisa", "Un responsable");
+    maneno_sajili("Decline and skip all", "Kataa na ruka yote", "Tout refuser et annuler");
+    maneno_sajili("Esc closes this panel without advancing.", "Esc hufunga jopo hili bila kusonga.", "Échap ferme ce panneau sans avancer.");
+    maneno_sajili("Connected, but the model %s is not installed", "Imeunganishwa, lakini modeli %s haijasakinishwa", "Connecté, mais le modèle %s n'est pas installé");
+    maneno_sajili("To change the server or key, edit the file saves/akili and reopen Settings.", "Kubadili seva au ufunguo, hariri faili saves/akili kisha fungua Mipangilio tena.", "Pour changer le serveur ou la clé, modifiez le fichier saves/akili puis rouvrez les Réglages.");
+    maneno_sajili("MODELS ON THE SERVER  ·  CLICK ONE TO USE IT", "MODELI ZILIZO KWENYE SEVA  ·  BOFYA MOJA KUITUMIA", "MODÈLES DU SERVEUR  ·  CLIQUEZ POUR EN UTILISER UN");
+    maneno_sajili("The server refused: %s. Pick an installed model in Settings.", "Seva imekataa: %s. Chagua modeli iliyosakinishwa kwenye Mipangilio.", "Le serveur a refusé : %s. Choisissez un modèle installé dans les Réglages.");
+    maneno_sajili("BUY", "NUNUA", "ACHAT");
+    maneno_sajili("MAX", "ZOTE", "MAX");
+    maneno_sajili("SELL", "UZA", "VENTE");
+    maneno_sajili("ALL", "ZOTE", "TOUT");
+    maneno_sajili("COST/SHARE %s  ·  AFFORDABLE %s", "BEI/HISA %s  ·  UNAWEZA %s", "COÛT/ACTION %s  ·  ABORDABLE %s");
+    maneno_sajili("FILLED: BOUGHT %d", "IMEKAMILIKA: UMENUNUA %d", "EXÉCUTÉ : %d ACHETÉES");
+    maneno_sajili("REJECTED: COST %s, CASH %s", "IMEKATALIWA: GHARAMA %s, FEDHA %s", "REFUSÉ : COÛT %s, LIQUIDITÉS %s");
+    maneno_sajili("REJECTED: PORTFOLIO FULL", "IMEKATALIWA: POCHI IMEJAA", "REFUSÉ : PORTEFEUILLE PLEIN");
+    maneno_sajili("REJECTED", "IMEKATALIWA", "REFUSÉ");
 }

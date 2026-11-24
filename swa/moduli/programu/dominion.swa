@@ -1,4 +1,5 @@
 husisha { moduli/skrini/historia_ya_siasa.swa }
+husisha { moduli/skrini/maamuzi.swa }
 husisha { msingi/maktaba/mfuatano.swa }
 husisha { moduli/skrini/ramani.swa }
 husisha { moduli/skrini/kituo.swa }
@@ -720,6 +721,7 @@ w0 bofya_kikasha(Mchezo* g, Hali* h, n64 upana, n64 kimo, n64 px, n64 py) {
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     Wahusika* watu = skrini_mkutano_watu(g, tm->faharisi_ya_taifa_la_mchezaji);
     kama (u == 0 || watu == 0) { rudisha; }
+    kama ((kitendo == KIKASHA_KITENDO_ONANA || kitendo == KIKASHA_KITENDO_PANGA) && u->aina == UJUMBE_OMBI) { u->jibu = 1; }
     kama (kitendo == KIKASHA_KITENDO_ONANA) {
         skrini_mkutano_fungua_na(u->mtumaji, watu);
         fungua_ukurasa(h, SKRINI_MKUTANO);
@@ -734,6 +736,13 @@ w0 bofya_kikasha(Mchezo* g, Hali* h, n64 upana, n64 kimo, n64 px, n64 py) {
 
 // Bonyezo la kushoto: upau wa juu, urambazaji, ukurasa, au ramani.
 w0 bonyeza(Mchezo* g, Hali* h, Dirisha* d, n64 px, n64 py) {
+    // jopo la maamuzi likiwa wazi hupokea bofya zote
+    kama (maamuzi_wazi) {
+        kama (maamuzi_bofya(g, px, py)) { songa_kipindi(g, h); }
+        chafua_msingi(h);
+        chafua_ukurasa(h);
+        rudisha;
+    }
     // orodha ya vipindi ikiwa wazi, bofya lolote hulifunga (na huchagua kipindi)
     kama (skrini_kipindi_wazi) {
         n64 k = skrini_kipindi_chini_ya(d->upana, px, py);
@@ -951,6 +960,13 @@ w0 songa_kipindi(Mchezo* g, Hali* h) {
     n64 hatua = 0;
     n32 simama = 0;
     wakati (simama == 0) {
+        // maamuzi ya lazima (skrini/maamuzi.swa): wiki haisongi hadi yaamuliwe
+        kama (maamuzi_kusanya(g->zamu_ya_sasa) > 0) {
+            maamuzi_wazi = 1;
+            chafua_msingi(h);
+            chafua_ukurasa(h);
+            rudisha;
+        }
         n64 maombi_kabla = kikasha_idadi;
         zamu_inayofuata(g, h);
         hatua = hatua + 1;
@@ -976,6 +992,11 @@ w0 songa_kipindi(Mchezo* g, Hali* h) {
 }
 
 w0 kibodi(Mchezo* g, Hali* h, Dirisha* d, n64 a) {
+    // jopo la maamuzi: Esc hulifunga bila kusonga; vitufe vingine havifanyi kazi
+    kama (maamuzi_wazi) {
+        kama (a == KEY_ESC) { maamuzi_wazi = 0; chafua_msingi(h); chafua_ukurasa(h); }
+        rudisha;
+    }
     // Ctrl + / Ctrl - (na + / - za vitufe vya namba) hukuza ramani kutoka ukurasa wowote
     kama ((h->ctrl && (a == KEY_EQUAL || a == KEY_MINUS)) || a == KEY_KP_ONGEZA || a == KEY_KP_TOA) {
         kama (a == KEY_EQUAL || a == KEY_KP_ONGEZA) { kuza_kati(h, d, 1); } sivyo { kuza_kati(h, d, 0 - 1); }
@@ -1099,6 +1120,7 @@ w0 chora_fremu(Mchezo* g, Hali* h, Dirisha* d, Turubai* t) {
         sura_anzisha(t);
         chora_sanduku_la_mtu(g, t, h);
         skrini_kipindi_chora(t);
+        kama (maamuzi_wazi) { maamuzi_chora(g, t); }
         rudisha;
     }
     kama (h->haja_msingi || h->msingi == 0) { chora_msingi(g, h, d); }
@@ -1108,6 +1130,7 @@ w0 chora_fremu(Mchezo* g, Hali* h, Dirisha* d, Turubai* t) {
     chora_kadi_za_muhtasari(g, t, h, d);
     kama (h->inavutwa == 0) { chora_kadi_za_taifa(g, t, h); }
     skrini_kipindi_chora(t);
+    kama (maamuzi_wazi) { maamuzi_chora(g, t); }
 }
 
 // ---------- kuwaka ----------

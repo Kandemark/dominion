@@ -801,12 +801,32 @@ n64 SOKO_HAKUNA_FEDHA = 1;
 n64 SOKO_HAKUNA_HISA = 2;
 n64 SOKO_POCHI_IMEJAA = 3;
 
+// Gharama kamili ya kununua hisa `hisa` (pamoja na ada ya dalali 0.5%), kwa
+// senti za sarafu ya nyumbani ya pochi.
+n64 soko_gharama_ya_kununua(n64 kampuni, n64 hisa) {
+    Kampuni* c = soko_kampuni_pata(kampuni);
+    kama (c == 0 || hisa <= 0) { rudisha 0; }
+    n64 g = soko_bei_kwa_sarafu_ya_nyumbani(c, hisa);
+    rudisha g + g / 200;
+}
+
+// Hisa nyingi zaidi ambazo fedha za pochi zinatosha kununua.
+n64 soko_hisa_zinazowezekana(n64 kampuni) {
+    Kampuni* c = soko_kampuni_pata(kampuni);
+    kama (c == 0 || soko_pochi == 0) { rudisha 0; }
+    n64 moja = soko_gharama_ya_kununua(kampuni, 1);
+    kama (moja <= 0) { rudisha 0; }
+    n64 n = soko_pochi->fedha / moja;
+    // bei kwa sarafu nyingine huzungushwa: punguza hadi gharama halisi itoshe
+    wakati (n > 0 && soko_gharama_ya_kununua(kampuni, n) > soko_pochi->fedha) { n = n - 1; }
+    rudisha n;
+}
+
 // Nunua hisa (ada ya dalali 0.5%); ununuzi mkubwa husukuma bei juu kidogo.
 n64 soko_nunua(n64 kampuni, n64 hisa) {
     Kampuni* c = soko_kampuni_pata(kampuni);
     kama (c == 0 || hisa <= 0) { rudisha SOKO_HAKUNA_HISA; }
-    n64 gharama = soko_bei_kwa_sarafu_ya_nyumbani(c, hisa);
-    gharama = gharama + gharama / 200;
+    n64 gharama = soko_gharama_ya_kununua(kampuni, hisa);
     kama (gharama > soko_pochi->fedha) { rudisha SOKO_HAKUNA_FEDHA; }
     n64 i = soko_pochi_nafasi_ya(kampuni);
     kama (i < 0) {

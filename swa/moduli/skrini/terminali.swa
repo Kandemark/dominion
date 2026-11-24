@@ -86,6 +86,22 @@ w0 kt_chati(n64* th, n64 n, n64 x, n64 y, n64 w, n64 h, n64 rangi) {
 
 // ---------- vipande vipya vya pamoja ----------
 
+// Kitufe cha kituo kisichoweza kubonyezwa (k.m. fedha hazitoshi): hafifu, bila kujiandikisha.
+n64 kt_kitufe_zima(n8* lebo, n64 x, n64 y) {
+    n64 w = maandishi_upana(sura_mono_nene, lebo, 11) + 18;
+    turubai_brashi(sura_t, SURA_PANELI_JUU, 120);
+    turubai_mviringo(sura_t, x, y, w, 20, 6);
+    turubai_brashi(sura_t, SURA_HAFIFU, 160);
+    maandishi_chora(sura_t, sura_mono_nene, lebo, x + 9, y + 3, 11);
+    rudisha w;
+}
+
+// Kitufe kinachowezekana au la.
+n64 kt_kitufe_kama(n8* lebo, n64 x, n64 y, n32 inawezekana, n64 kitendo, n64 hoja) {
+    kama (inawezekana) { rudisha kt_kitufe(lebo, x, y, 0, kitendo, hoja); }
+    rudisha kt_kitufe_zima(lebo, x, y);
+}
+
 // Mstari wa amri: kisanduku, maandishi ya amri na kielekezi. Hurudisha x ya
 // kwanza baada ya amri (kwa vichupo).
 n64 kt_amri(n8* amri, n64 x, n64 y, n64 w) {
