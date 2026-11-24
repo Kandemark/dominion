@@ -1219,6 +1219,8 @@ w0 chora_fremu(Mchezo* g, Hali* h, Dirisha* d, Turubai* t) {
     }
     kama (h->skrini != SKRINI_RAMANI) {
         elea_anza();
+        elea_px = h->elea_x;
+        elea_py = h->elea_y;
         chora_skrini_ya_taifa(g, t, h->skrini, h->taifa);
         sura_anzisha(t);
         chora_sanduku_la_mtu(g, t, h);

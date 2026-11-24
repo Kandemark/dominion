@@ -1,4 +1,5 @@
 husisha { moduli/skrini/uchumi.swa }
+husisha { moduli/skrini/bajeti_kuu.swa }
 husisha { moduli/skrini/terminali.swa }
 husisha { moduli/soko/masoko.swa }
 
@@ -21,6 +22,7 @@ n64 KT_HISA = 1;
 n64 KT_FX = 2;
 n64 KT_WATU = 3;
 n64 KT_MAKRO = 4;
+n64 KT_BAJETI = 5;
 
 // vitendo vya kubofya
 n64 KT_TABO = 70;
@@ -162,6 +164,7 @@ w0 kt_mstari_wa_amri(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w) {
     kama (kt_tabo == KT_FX) { kazi = "FXC"; }
     kama (kt_tabo == KT_WATU) { kazi = "RICH"; }
     kama (kt_tabo == KT_MAKRO) { kazi = "ECO"; }
+    kama (kt_tabo == KT_BAJETI) { kazi = "BUDG"; }
     n8* wigo = "NATION";
     kama (skrini_wigo == WIGO_MKOA) { wigo = "REGION"; }
     kama (skrini_wigo == WIGO_DUNIA) { wigo = "WORLD"; }
@@ -177,6 +180,7 @@ w0 kt_mstari_wa_amri(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w) {
     bx = bx + kt_kitufe("3 FX", bx, y + 5, kt_tabo == KT_FX, KT_TABO, KT_FX) + 4;
     bx = bx + kt_kitufe("4 PEOPLE", bx, y + 5, kt_tabo == KT_WATU, KT_TABO, KT_WATU) + 4;
     bx = bx + kt_kitufe("5 MACRO", bx, y + 5, kt_tabo == KT_MAKRO, KT_TABO, KT_MAKRO) + 4;
+    bx = bx + kt_kitufe("6 BUDGET", bx, y + 5, kt_tabo == KT_BAJETI, KT_TABO, KT_BAJETI) + 4;
     // wigo kulia
     n64 rx = x + w - 8;
     rx = rx - maandishi_upana(sura_mono_nene, "WORLD", 11) - 16;
@@ -1113,6 +1117,11 @@ w0 skrini_uchumi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 p = 6;
     kama (kt_tabo == KT_MAKRO) {
         skrini_uchumi_makro_chora(g, t, taifa, y + 8);
+        rudisha;
+    }
+    kama (kt_tabo == KT_BAJETI) {
+        kt_kusanya_mikoa(taifa);
+        skrini_bajeti_kuu_chora(g, taifa, x, y + 8, w, h - 8, kt_mkoa_watu, kt_mkoa_jina, kt_mikoa_idadi);
         rudisha;
     }
     n64 w1 = (w * 27) / 100;

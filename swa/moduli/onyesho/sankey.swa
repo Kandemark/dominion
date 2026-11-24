@@ -1,0 +1,611 @@
+husisha { moduli/onyesho/elea.swa }
+
+// sankey.swa -- chati ya mtiririko (Sankey) ya safu nyingi.
+//
+// Matumizi:
+//   sankey_anza();
+//   n64 a = sankey_nodi(ui("GDP"), 0, rangi);        // jina, safu, rangi
+//   n64 b = sankey_nodi(ui("Taxes"), 1, rangi);
+//   sankey_kiungo(a, b, thamani);
+//   sankey_chora(x, y, w, h);
+//
+// Mpangilio:
+//   - safu zimepangwa kwa usawa kutoka kushoto kwenda kulia; nafasi ya lebo
+//     huachwa kushoto kwa safu ya kwanza na kulia kwa ya mwisho
+//   - kimo cha nodi = thamani yake (kubwa kati ya inayoingia na inayotoka)
+//     kwa kipimo kimoja cha chati nzima, ili upana wa kila utepe ulinganishwe
+//   - kila safu imewekwa katikati kwa wima
+//   - tepe zinazotoka kwenye nodi zimepangwa kwa nafasi ya nodi zinakokwenda,
+//     na zinazoingia kwa nafasi ya zinakotoka, hivyo hazivukani bila sababu
+// Utepe hupinda kwa mkunjo laini (smoothstep) na rangi yake hubadilika
+// taratibu kutoka rangi ya chanzo hadi ya lengo; kingo zake hulainishwa.
+// Lebo: safu ya kwanza kushoto, ya mwisho kulia, za kati juu ya kibao.
+// Lebo za nodi ndogo zinazogongana husogezwa na kuunganishwa kwa mstari.
+// Kila utepe na nodi huandikisha thamani yake kwa elea.swa.
+//
+// Kufuatilia (hover): kielekezi kikiwa juu ya nodi, fedha zake hufuatiliwa
+// pande zote mbili kwa uwiano -- kuelekea mbele, sehemu ya kila nodi
+// inayotoka kwenye nodi hiyo; kuelekea nyuma, sehemu ya kila chanzo
+// inayoishia kwenye nodi hiyo. Kielekezi kikiwa juu ya utepe, utepe huo
+// hufuatiliwa vivyo hivyo. Sehemu iliyofuatiliwa ya kila utepe na nodi
+// huchorwa kwa rangi kamili juu ya chati iliyofifishwa, na lebo za njia
+// hiyo huonyesha kiasi kilichofuatiliwa.
+
+n64 SANKEY_NODI_JUU = 64;
+n64 SANKEY_VIUNGO_JUU = 160;
+n64 SANKEY_KIBAO = 10;          // upana wa kibao cha nodi
+n64 SANKEY_PENGO = 12;          // nafasi kati ya nodi za safu moja (mpigaji anaweza kubadili)
+n64 SANKEY_MOJA = 1000000;      // 1.0 kwa sehemu za kufuatilia
+n64* sk_mbele = 0;              // sehemu ya nodi inayotoka kwenye kilichoelekezwa
+n64* sk_nyuma = 0;              // sehemu ya nodi inayoishia kwenye kilichoelekezwa
+n32 sk_fuatilia = 0;            // 1: kuna kilichoelekezwa
+
+n64 sk_idadi = 0;
+n64 sk_viungo = 0;
+n64* sk_lebo = 0;               // n8*
+n64* sk_safu = 0;
+n64* sk_rangi = 0;
+n64* sk_ndani = 0;
+n64* sk_nje = 0;
+n64* sk_y = 0;
+n64* sk_h = 0;
+n64* sk_x = 0;
+n64* sk_tumia_ndani = 0;        // nafasi iliyotumika ya tepe zinazoingia
+n64* sk_tumia_nje = 0;
+n64* sk_ka = 0;                 // kiungo: chanzo
+n64* sk_kb = 0;                 // kiungo: lengo
+n64* sk_kv = 0;                 // kiungo: thamani
+n64* sk_ky_a = 0;               // kiungo: y juu upande wa chanzo
+n64* sk_ky_b = 0;
+n64* sk_kt = 0;                 // kiungo: unene
+n8* sk_kichwa_cha_elea = 0;
+
+w0 sankey_anza() {
+    kama (sk_lebo == 0) {
+        sk_lebo = tenga(8 * SANKEY_NODI_JUU);
+        sk_safu = tenga(8 * SANKEY_NODI_JUU);
+        sk_rangi = tenga(8 * SANKEY_NODI_JUU);
+        sk_ndani = tenga(8 * SANKEY_NODI_JUU);
+        sk_nje = tenga(8 * SANKEY_NODI_JUU);
+        sk_y = tenga(8 * SANKEY_NODI_JUU);
+        sk_h = tenga(8 * SANKEY_NODI_JUU);
+        sk_x = tenga(8 * SANKEY_NODI_JUU);
+        sk_tumia_ndani = tenga(8 * SANKEY_NODI_JUU);
+        sk_tumia_nje = tenga(8 * SANKEY_NODI_JUU);
+        sk_ka = tenga(8 * SANKEY_VIUNGO_JUU);
+        sk_kb = tenga(8 * SANKEY_VIUNGO_JUU);
+        sk_kv = tenga(8 * SANKEY_VIUNGO_JUU);
+        sk_ky_a = tenga(8 * SANKEY_VIUNGO_JUU);
+        sk_ky_b = tenga(8 * SANKEY_VIUNGO_JUU);
+        sk_kt = tenga(8 * SANKEY_VIUNGO_JUU);
+        sk_kichwa_cha_elea = tenga(160);
+        sk_mbele = tenga(8 * SANKEY_NODI_JUU);
+        sk_nyuma = tenga(8 * SANKEY_NODI_JUU);
+    }
+    SANKEY_PENGO = 12;
+    sk_fuatilia = 0;
+    sk_idadi = 0;
+    sk_viungo = 0;
+}
+
+n64 sankey_nodi(n8* lebo, n64 safu, n64 rangi) {
+    kama (sk_idadi >= SANKEY_NODI_JUU) { rudisha SANKEY_NODI_JUU - 1; }
+    n64 i = sk_idadi;
+    sk_lebo[i] = lebo;
+    sk_safu[i] = safu;
+    sk_rangi[i] = rangi;
+    sk_ndani[i] = 0;
+    sk_nje[i] = 0;
+    sk_idadi = sk_idadi + 1;
+    rudisha i;
+}
+
+w0 sankey_kiungo(n64 a, n64 b, n64 thamani) {
+    kama (sk_viungo >= SANKEY_VIUNGO_JUU || thamani <= 0 || a < 0 || b < 0 || a >= sk_idadi || b >= sk_idadi) { rudisha; }
+    sk_ka[sk_viungo] = a;
+    sk_kb[sk_viungo] = b;
+    sk_kv[sk_viungo] = thamani;
+    sk_nje[a] = sk_nje[a] + thamani;
+    sk_ndani[b] = sk_ndani[b] + thamani;
+    sk_viungo = sk_viungo + 1;
+}
+
+n64 sankey_thamani(n64 i) {
+    kama (sk_ndani[i] > sk_nje[i]) { rudisha sk_ndani[i]; }
+    rudisha sk_nje[i];
+}
+
+// Changanya rangi mbili: f kati ya 0 na 256.
+n64 sankey_changanya(n64 a, n64 b, n64 f) {
+    n64 r = (((a >> 16) & 255) * (256 - f) + ((b >> 16) & 255) * f) >> 8;
+    n64 g = (((a >> 8) & 255) * (256 - f) + ((b >> 8) & 255) * f) >> 8;
+    n64 bb = ((a & 255) * (256 - f) + (b & 255) * f) >> 8;
+    rudisha (r << 16) | (g << 8) | bb;
+}
+
+// Hatua ya 1: x ya kila nodi, kipimo, na y/kimo kwa kila safu.
+// Hurudisha idadi ya safu.
+n64 sankey_panga_nodi(n64 x, n64 y, n64 w, n64 h, n64 nafasi_kushoto, n64 nafasi_kulia) {
+    n64 safu = 0;
+    n64 i = 0;
+    wakati (i < sk_idadi) { kama (sk_safu[i] + 1 > safu) { safu = sk_safu[i] + 1; } i = i + 1; }
+    kama (safu < 2) { safu = 2; }
+    n64 x0 = x + nafasi_kushoto;
+    n64 upana = w - nafasi_kushoto - nafasi_kulia - SANKEY_KIBAO;
+    // kipimo: kidogo kati ya safu zote, ili kila safu itoshee
+    d64 kipimo = 1000000000.0;
+    n64 c = 0;
+    wakati (c < safu) {
+        n64 jumla = 0;
+        n64 n = 0;
+        i = 0;
+        wakati (i < sk_idadi) { kama (sk_safu[i] == c) { jumla = jumla + sankey_thamani(i); n = n + 1; } i = i + 1; }
+        kama (n > 0 && jumla > 0) {
+            d64 nafasi = h - SANKEY_PENGO * (n - 1);
+            d64 kk = nafasi / jumla;
+            kama (kk < kipimo) { kipimo = kk; }
+        }
+        c = c + 1;
+    }
+    c = 0;
+    wakati (c < safu) {
+        n64 jumla_h = 0;
+        n64 n = 0;
+        i = 0;
+        wakati (i < sk_idadi) {
+            kama (sk_safu[i] == c) {
+                d64 hv = sankey_thamani(i) * kipimo;
+                n64 hh = hv;
+                kama (hh < 2) { hh = 2; }
+                sk_h[i] = hh;
+                sk_x[i] = x0 + (c * upana) / (safu - 1);
+                jumla_h = jumla_h + hh;
+                n = n + 1;
+            }
+            i = i + 1;
+        }
+        n64 yy = y + (h - jumla_h - SANKEY_PENGO * (n - 1)) / 2;
+        kama (n > 0 && yy < y) { yy = y; }
+        i = 0;
+        wakati (i < sk_idadi) {
+            kama (sk_safu[i] == c) { sk_y[i] = yy; yy = yy + sk_h[i] + SANKEY_PENGO; }
+            i = i + 1;
+        }
+        c = c + 1;
+    }
+    // unene wa kila kiungo kwa kipimo hichohicho
+    n64 k = 0;
+    wakati (k < sk_viungo) {
+        d64 tv = sk_kv[k] * kipimo;
+        n64 tt = tv;
+        kama (tt < 1) { tt = 1; }
+        sk_kt[k] = tt;
+        k = k + 1;
+    }
+    rudisha safu;
+}
+
+// Hatua ya 2: nafasi ya kila utepe kwenye nodi zake. Tepe za nodi moja
+// hupangwa kwa y ya nodi ya upande mwingine.
+w0 sankey_panga_viungo() {
+    n64 i = 0;
+    wakati (i < sk_idadi) { sk_tumia_ndani[i] = 0; sk_tumia_nje[i] = 0; i = i + 1; }
+    // upande wa chanzo: kwa kila nodi, tepe zake kwa mpangilio wa y ya lengo
+    i = 0;
+    wakati (i < sk_idadi) {
+        n64 iliyotumika = 0 - 1;
+        n64 zamu = 0;
+        wakati (zamu < sk_viungo) {
+            // tafuta utepe unaofuata kwa y ndogo ya lengo kuliko iliyotumika
+            n64 bora = 0 - 1;
+            n64 k = 0;
+            wakati (k < sk_viungo) {
+                kama (sk_ka[k] == i) {
+                    n64 ufunguo = sk_y[sk_kb[k]] * SANKEY_VIUNGO_JUU + k;
+                    kama (ufunguo > iliyotumika && (bora < 0 || ufunguo < sk_y[sk_kb[bora]] * SANKEY_VIUNGO_JUU + bora)) { bora = k; }
+                }
+                k = k + 1;
+            }
+            kama (bora < 0) { zamu = sk_viungo; }
+            sivyo {
+                sk_ky_a[bora] = sk_y[i] + sk_tumia_nje[i];
+                sk_tumia_nje[i] = sk_tumia_nje[i] + sk_kt[bora];
+                iliyotumika = sk_y[sk_kb[bora]] * SANKEY_VIUNGO_JUU + bora;
+                zamu = zamu + 1;
+            }
+        }
+        i = i + 1;
+    }
+    // upande wa lengo: kwa y ya chanzo
+    i = 0;
+    wakati (i < sk_idadi) {
+        n64 iliyotumika = 0 - 1;
+        n64 zamu = 0;
+        wakati (zamu < sk_viungo) {
+            n64 bora = 0 - 1;
+            n64 k = 0;
+            wakati (k < sk_viungo) {
+                kama (sk_kb[k] == i) {
+                    n64 ufunguo = sk_y[sk_ka[k]] * SANKEY_VIUNGO_JUU + k;
+                    kama (ufunguo > iliyotumika && (bora < 0 || ufunguo < sk_y[sk_ka[bora]] * SANKEY_VIUNGO_JUU + bora)) { bora = k; }
+                }
+                k = k + 1;
+            }
+            kama (bora < 0) { zamu = sk_viungo; }
+            sivyo {
+                sk_ky_b[bora] = sk_y[i] + sk_tumia_ndani[i];
+                sk_tumia_ndani[i] = sk_tumia_ndani[i] + sk_kt[bora];
+                iliyotumika = sk_y[sk_ka[bora]] * SANKEY_VIUNGO_JUU + bora;
+                zamu = zamu + 1;
+            }
+        }
+        i = i + 1;
+    }
+}
+
+// y ya juu ya utepe k kwenye x ya pikseli px (ndani ya chanzo..lengo).
+n64 sankey_y_ya_utepe(n64 k, n64 px) {
+    n64 x0 = sk_x[sk_ka[k]] + SANKEY_KIBAO;
+    n64 x1 = sk_x[sk_kb[k]];
+    d64 f = px - x0;
+    f = f / (x1 - x0);
+    kama (f < 0.0) { f = 0.0; }
+    kama (f > 1.0) { f = 1.0; }
+    d64 s = f * f * (3.0 - 2.0 * f);
+    d64 ya = sk_ky_a[k];
+    d64 yb = sk_ky_b[k];
+    n64 y = ya + (yb - ya) * s;
+    rudisha y;
+}
+
+// Kilichoelekezwa: nodi (rudisha i), utepe (rudisha 1000 + k), au -1.
+n64 sankey_kilichoelekezwa() {
+    n64 px = elea_px;
+    n64 py = elea_py;
+    kama (px < 0) { rudisha 0 - 1; }
+    n64 i = 0;
+    wakati (i < sk_idadi) {
+        kama (px >= sk_x[i] - 4 && px < sk_x[i] + SANKEY_KIBAO + 4 && py >= sk_y[i] - 1 && py <= sk_y[i] + sk_h[i] + 1) { rudisha i; }
+        i = i + 1;
+    }
+    n64 bora = 0 - 1;
+    n64 k = 0;
+    wakati (k < sk_viungo) {
+        n64 x0 = sk_x[sk_ka[k]] + SANKEY_KIBAO;
+        n64 x1 = sk_x[sk_kb[k]];
+        kama (px >= x0 && px <= x1) {
+            n64 juu_k = sankey_y_ya_utepe(k, px);
+            kama (py >= juu_k - 1 && py <= juu_k + sk_kt[k] + 1 && (bora < 0 || sk_kt[k] < sk_kt[bora])) { bora = k; }
+        }
+        k = k + 1;
+    }
+    kama (bora >= 0) { rudisha 1000 + bora; }
+    rudisha 0 - 1;
+}
+
+// Sehemu za kufuatilia kwa kila nodi (SANKEY_MOJA = yote).
+w0 sankey_fuatilia(n64 kitu, n64 safu) {
+    n64 i = 0;
+    wakati (i < sk_idadi) { sk_mbele[i] = 0; sk_nyuma[i] = 0; i = i + 1; }
+    sk_fuatilia = 0;
+    kama (kitu < 0) { rudisha; }
+    sk_fuatilia = 1;
+    n64 safu_ya_mbele = 0;
+    n64 safu_ya_nyuma = 0;
+    kama (kitu < 1000) {
+        sk_mbele[kitu] = SANKEY_MOJA;
+        sk_nyuma[kitu] = SANKEY_MOJA;
+        safu_ya_mbele = sk_safu[kitu] + 1;
+        safu_ya_nyuma = sk_safu[kitu] - 1;
+    } sivyo {
+        n64 k = kitu - 1000;
+        n64 a = sk_ka[k];
+        n64 b = sk_kb[k];
+        d64 vk = sk_kv[k];
+        d64 tb = sankey_thamani(b);
+        d64 ta = sankey_thamani(a);
+        kama (tb > 0.0) { sk_mbele[b] = (vk * 1000000.0) / tb; }
+        kama (ta > 0.0) { sk_nyuma[a] = (vk * 1000000.0) / ta; }
+        safu_ya_mbele = sk_safu[b] + 1;
+        safu_ya_nyuma = sk_safu[a] - 1;
+    }
+    // mbele: kila safu kwa mpangilio, f(b) = jumla ya v * f(a) / thamani(b)
+    n64 c = safu_ya_mbele;
+    wakati (c < safu) {
+        i = 0;
+        wakati (i < sk_idadi) {
+            kama (sk_safu[i] == c && sankey_thamani(i) > 0) {
+                d64 jumla = 0.0;
+                n64 k = 0;
+                wakati (k < sk_viungo) { kama (sk_kb[k] == i) { d64 vk = sk_kv[k]; d64 fk = sk_mbele[sk_ka[k]]; jumla = jumla + vk * fk; } k = k + 1; }
+                d64 th = sankey_thamani(i);
+                n64 ongeza = jumla / th;
+                sk_mbele[i] = sk_mbele[i] + ongeza;
+                kama (sk_mbele[i] > SANKEY_MOJA) { sk_mbele[i] = SANKEY_MOJA; }
+            }
+            i = i + 1;
+        }
+        c = c + 1;
+    }
+    // nyuma: g(a) = jumla ya v * g(b) / thamani(a)
+    c = safu_ya_nyuma;
+    wakati (c >= 0) {
+        i = 0;
+        wakati (i < sk_idadi) {
+            kama (sk_safu[i] == c && sankey_thamani(i) > 0) {
+                d64 jumla = 0.0;
+                n64 k = 0;
+                wakati (k < sk_viungo) { kama (sk_ka[k] == i) { d64 vk = sk_kv[k]; d64 gk = sk_nyuma[sk_kb[k]]; jumla = jumla + vk * gk; } k = k + 1; }
+                d64 th = sankey_thamani(i);
+                n64 ongeza = jumla / th;
+                sk_nyuma[i] = sk_nyuma[i] + ongeza;
+                kama (sk_nyuma[i] > SANKEY_MOJA) { sk_nyuma[i] = SANKEY_MOJA; }
+            }
+            i = i + 1;
+        }
+        c = c - 1;
+    }
+}
+
+// Sehemu iliyofuatiliwa ya utepe k (0..SANKEY_MOJA).
+n64 sankey_sehemu_ya_utepe(n64 k, n64 kitu) {
+    kama (sk_fuatilia == 0) { rudisha 0; }
+    kama (kitu == 1000 + k) { rudisha SANKEY_MOJA; }
+    n64 f = sk_mbele[sk_ka[k]];
+    kama (sk_nyuma[sk_kb[k]] > f) { f = sk_nyuma[sk_kb[k]]; }
+    // utepe unaotoka kwenye kilichoelekezwa kama utepe: si sehemu ya njia
+    kama (kitu >= 1000) {
+        n64 kk = kitu - 1000;
+        kama (sk_ka[k] == sk_ka[kk] && k != kk && sk_safu[sk_kb[k]] == sk_safu[sk_kb[kk]]) { rudisha 0; }
+        kama (sk_kb[k] == sk_kb[kk] && k != kk && sk_safu[sk_ka[k]] == sk_safu[sk_ka[kk]]) { rudisha 0; }
+    }
+    rudisha f;
+}
+
+// Sehemu iliyofuatiliwa ya nodi i.
+n64 sankey_sehemu_ya_nodi(n64 i) {
+    n64 f = sk_mbele[i];
+    kama (sk_nyuma[i] > f) { f = sk_nyuma[i]; }
+    rudisha f;
+}
+
+// Chora utepe k: safu-wima moja kwa kila pikseli ya x, kingo zikilainishwa.
+// unene_wa_kipande: kima cha unene kuchorwa kutoka juu (sehemu iliyofuatiliwa).
+w0 sankey_utepe_kipande(n64 k, n64 uwazi, n64 unene_wa_kipande) {
+    n64 a = sk_ka[k];
+    n64 b = sk_kb[k];
+    n64 x0 = sk_x[a] + SANKEY_KIBAO;
+    n64 x1 = sk_x[b];
+    kama (x1 <= x0 || unene_wa_kipande <= 0) { rudisha; }
+    n64 t = unene_wa_kipande;
+    d64 ya = sk_ky_a[k];
+    d64 yb = sk_ky_b[k];
+    n64 upana = x1 - x0;
+    n64 px = 0;
+    wakati (px <= upana) {
+        d64 f = px;
+        f = f / upana;
+        d64 s = f * f * (3.0 - 2.0 * f);
+        d64 juu = ya + (yb - ya) * s;
+        n64 ji = juu;
+        d64 sehemu = juu - ji;
+        n64 rangi = sankey_changanya(sk_rangi[a], sk_rangi[b], (px * 256) / upana);
+        n64 sehemu_256 = sehemu * 256.0;
+        turubai_brashi(sura_t, rangi, (uwazi * (256 - sehemu_256)) >> 8);
+        turubai_jaza(sura_t, x0 + px, ji, 1, 1);
+        kama (t > 1) {
+            turubai_brashi(sura_t, rangi, uwazi);
+            turubai_jaza(sura_t, x0 + px, ji + 1, 1, t - 1);
+        }
+        turubai_brashi(sura_t, rangi, (uwazi * sehemu_256) >> 8);
+        turubai_jaza(sura_t, x0 + px, ji + t, 1, 1);
+        px = px + 1;
+    }
+}
+
+w0 sankey_utepe(n64 k, n64 uwazi) {
+    n64 a = sk_ka[k];
+    n64 b = sk_kb[k];
+    n64 x0 = sk_x[a] + SANKEY_KIBAO;
+    n64 x1 = sk_x[b];
+    kama (x1 <= x0) { rudisha; }
+    n64 t = sk_kt[k];
+    d64 ya = sk_ky_a[k];
+    d64 yb = sk_ky_b[k];
+    n64 upana = x1 - x0;
+    n64 px = 0;
+    sankey_utepe_kipande(k, uwazi, t);
+    // thamani kielekezi kikiwa juu ya utepe: vipande kila pikseli 14
+    mfuatano_umbiza(sk_kichwa_cha_elea, 160, "%s  >  %s", sk_lebo[a], sk_lebo[b], 0, 0, 0, 0);
+    n8 v[32];
+    sura_namba_fupi(v, sk_kv[k]);
+    px = 0;
+    wakati (px < upana) {
+        d64 f = px + 7;
+        f = f / upana;
+        kama (f > 1.0) { f = 1.0; }
+        d64 s = f * f * (3.0 - 2.0 * f);
+        n64 y_elea = ya + (yb - ya) * s;
+        elea_ongeza(x0 + px, y_elea, 14, t + 1, sk_kichwa_cha_elea, v);
+        px = px + 14;
+    }
+}
+
+// Lebo ya nodi: jina (nene) na thamani; mistari miwili ikiwa nodi ni ndefu.
+// upande: 0 kushoto mwa kibao, 1 kulia, 2 kulia juu ya kibao chenye usuli.
+// Hurudisha kimo cha lebo.
+n64 sankey_kimo_cha_lebo(n64 i) {
+    kama (sk_h[i] >= 30) { rudisha 34; }
+    rudisha 17;
+}
+
+w0 sankey_lebo(n64 i, n64 upande, n64 ly) {
+    n8 v[64];
+    sura_namba_fupi(v, sankey_thamani(i));
+    n64 sehemu = sankey_sehemu_ya_nodi(i);
+    kama (sk_fuatilia && sehemu > 0 && sehemu < SANKEY_MOJA - 500) {
+        n8 f[32];
+        d64 tv = sankey_thamani(i);
+        d64 shd = sehemu;
+        n64 kiasi = (tv * shd) / 1000000.0;
+        sura_namba_fupi(f, kiasi);
+        n64 n = urefu_wa_mfuatano(v);
+        mfuatano_umbiza(&v[n], 64 - n, "  (%s)", f, 0, 0, 0, 0, 0);
+    }
+    n8* jina = sk_lebo[i];
+    n32 mbili = sk_h[i] >= 30;
+    n64 w_jina = maandishi_upana(sura_nene, jina, 12);
+    n64 w_v = maandishi_upana(sura_kawaida, v, 11);
+    n64 upana = w_jina;
+    kama (mbili == 0) { upana = w_jina + 8 + w_v; } sivyo kama (w_v > upana) { upana = w_v; }
+    n64 lx = sk_x[i] + SANKEY_KIBAO + 8;
+    kama (upande == 0) { lx = sk_x[i] - 8 - upana; }
+    kama (upande == 2) {
+        turubai_brashi(sura_t, SURA_PANELI, 225);
+        turubai_mviringo(sura_t, lx - 6, ly - 3, upana + 12, sankey_kimo_cha_lebo(i) + 4, 5);
+    }
+    n32 fifi = sk_fuatilia && sehemu == 0;
+    kama (fifi) { sura_rangi(SURA_HAFIFU); } sivyo { sura_rangi(SURA_MAANDISHI); }
+    sura_lebo_nene(jina, lx, ly, 12);
+    kama (sk_fuatilia && sehemu > 0) { sura_rangi(sk_rangi[i]); } sivyo { sura_rangi(SURA_HAFIFU); }
+    kama (mbili) { sura_lebo(v, lx, ly + 17, 11); }
+    sivyo { sura_lebo(v, lx + w_jina + 8, ly + 1, 11); }
+}
+
+// Lebo za safu moja: kwa mpangilio wa y, zikisukumwa chini (na kisha juu
+// kutoka mpaka wa chini) ili zisigongane; lebo iliyosogea huunganishwa na
+// nodi yake kwa mstari mwembamba.
+w0 sankey_lebo_za_safu(n64 c, n64 upande, n64 y, n64 h) {
+    n64 orodha[40];
+    n64 ly[40];
+    n64 n = 0;
+    n64 i = 0;
+    wakati (i < sk_idadi) { kama (sk_safu[i] == c && n < 40) { orodha[n] = i; n = n + 1; } i = i + 1; }
+    kama (n == 0) { rudisha; }
+    n64 mwisho = y - 1000;
+    i = 0;
+    wakati (i < n) {
+        n64 nd = orodha[i];
+        n64 taka = sk_y[nd] + sk_h[nd] / 2 - sankey_kimo_cha_lebo(nd) / 2;
+        kama (taka < mwisho + 2) { taka = mwisho + 2; }
+        ly[i] = taka;
+        mwisho = taka + sankey_kimo_cha_lebo(nd);
+        i = i + 1;
+    }
+    // kama zimevuka chini, sukuma juu kutoka chini
+    n64 chini = y + h;
+    i = n - 1;
+    wakati (i >= 0) {
+        n64 nd = orodha[i];
+        kama (ly[i] + sankey_kimo_cha_lebo(nd) > chini) { ly[i] = chini - sankey_kimo_cha_lebo(nd); }
+        chini = ly[i] - 2;
+        i = i - 1;
+    }
+    i = 0;
+    wakati (i < n) {
+        n64 nd = orodha[i];
+        n64 kati = sk_y[nd] + sk_h[nd] / 2;
+        n64 lkati = ly[i] + sankey_kimo_cha_lebo(nd) / 2;
+        n64 tofauti = kati - lkati;
+        kama (tofauti < 0) { tofauti = 0 - tofauti; }
+        kama (tofauti > 4 && upande != 2) {
+            // mstari wa kiongozi: kutoka kibao hadi lebo
+            turubai_brashi(sura_t, sk_rangi[nd], 200);
+            n64 xa = sk_x[nd] + SANKEY_KIBAO + 1;
+            n64 xb = xa + 6;
+            kama (upande == 0) { xa = sk_x[nd] - 2; xb = xa - 6; }
+            turubai_mstari(sura_t, xa, kati, xb, lkati, 256);
+            sankey_lebo_iliyosogea(nd, upande, ly[i]);
+        } sivyo {
+            sankey_lebo(nd, upande, ly[i]);
+        }
+        i = i + 1;
+    }
+}
+
+// Lebo iliyosogezwa: pembeni zaidi ili mstari wa kiongozi uonekane.
+w0 sankey_lebo_iliyosogea(n64 nd, n64 upande, n64 ly) {
+    n64 x_asili = sk_x[nd];
+    kama (upande == 0) { sk_x[nd] = x_asili - 6; } sivyo { sk_x[nd] = x_asili + 6; }
+    sankey_lebo(nd, upande, ly);
+    sk_x[nd] = x_asili;
+}
+
+// Upana wa lebo pana zaidi ya safu c (jina na thamani kwenye mstari mmoja).
+n64 sankey_upana_wa_lebo(n64 c) {
+    n64 juu = 0;
+    n64 i = 0;
+    wakati (i < sk_idadi) {
+        kama (sk_safu[i] == c) {
+            n8 v[32];
+            sura_namba_fupi(v, sankey_thamani(i));
+            n64 u = maandishi_upana(sura_nene, sk_lebo[i], 12) + 8 + maandishi_upana(sura_kawaida, v, 11);
+            kama (u > juu) { juu = u; }
+        }
+        i = i + 1;
+    }
+    rudisha juu;
+}
+
+// Chora chati nzima ndani ya (x, y, w, h). Nafasi ya lebo za kushoto na
+// kulia hulingana na lebo zenyewe.
+w0 sankey_chora(n64 x, n64 y, n64 w, n64 h) {
+    kama (sk_idadi == 0) { rudisha; }
+    n64 safu_za_mwisho = 0;
+    n64 q = 0;
+    wakati (q < sk_idadi) { kama (sk_safu[q] > safu_za_mwisho) { safu_za_mwisho = sk_safu[q]; } q = q + 1; }
+    n64 kushoto = sankey_upana_wa_lebo(0) + 22;
+    n64 kulia = sankey_upana_wa_lebo(safu_za_mwisho) + 26 + 84;     // 84: kiasi kilichofuatiliwa "(1.23 B)"
+    n64 safu = sankey_panga_nodi(x, y, w, h, kushoto, kulia);
+    sankey_panga_viungo();
+    n64 kitu = sankey_kilichoelekezwa();
+    sankey_fuatilia(kitu, safu);
+    n64 msingi = 120;
+    kama (sk_fuatilia) { msingi = 34; }
+    n64 k = 0;
+    wakati (k < sk_viungo) { sankey_utepe(k, msingi); k = k + 1; }
+    // sehemu iliyofuatiliwa ya kila utepe, juu ya chati iliyofifishwa
+    kama (sk_fuatilia) {
+        k = 0;
+        wakati (k < sk_viungo) {
+            n64 sh = sankey_sehemu_ya_utepe(k, kitu);
+            kama (sh > 0) {
+                d64 tkd = sk_kt[k];
+                d64 shd = sh;
+                n64 tk = (tkd * shd) / 1000000.0;
+                kama (tk < 1) { tk = 1; }
+                sankey_utepe_kipande(k, 215, tk);
+            }
+            k = k + 1;
+        }
+    }
+    n64 i = 0;
+    wakati (i < sk_idadi) {
+        kama (sk_fuatilia) {
+            turubai_brashi(sura_t, sk_rangi[i], 80);
+            turubai_mviringo(sura_t, sk_x[i], sk_y[i], SANKEY_KIBAO, sk_h[i], 2);
+            n64 sh = sankey_sehemu_ya_nodi(i);
+            kama (sh > 0) {
+                n64 hk = (sk_h[i] * sh) / SANKEY_MOJA;
+                kama (hk < 2) { hk = 2; }
+                turubai_brashi(sura_t, sk_rangi[i], 255);
+                turubai_mviringo(sura_t, sk_x[i], sk_y[i], SANKEY_KIBAO, hk, 2);
+            }
+        } sivyo {
+            turubai_brashi(sura_t, sk_rangi[i], 255);
+            turubai_mviringo(sura_t, sk_x[i], sk_y[i], SANKEY_KIBAO, sk_h[i], 2);
+        }
+        n8 v[32];
+        sura_namba_fupi(v, sankey_thamani(i));
+        elea_ongeza(sk_x[i] - 3, sk_y[i], SANKEY_KIBAO + 6, sk_h[i], sk_lebo[i], v);
+        i = i + 1;
+    }
+    n64 c = 0;
+    wakati (c < safu) {
+        n64 upande = 2;
+        kama (c == 0) { upande = 0; }
+        kama (c == safu - 1) { upande = 1; }
+        sankey_lebo_za_safu(c, upande, y, h);
+        c = c + 1;
+    }
+}

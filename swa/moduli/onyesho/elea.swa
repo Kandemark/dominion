@@ -14,6 +14,8 @@ n64* elea_maeneo = 0;           // [x, y, w, h, kichwa, thamani] kwa kila eneo
 n8* elea_hazina = 0;
 n64 elea_urefu = 0;
 n64 elea_idadi = 0;
+n64 elea_px = -1;               // kielekezi cha fremu hii (kitanzi kikuu huweka kabla ya kuchora)
+n64 elea_py = -1;
 
 w0 elea_anza() {
     kama (elea_maeneo == 0) {

@@ -1,0 +1,318 @@
+husisha { moduli/skrini/uchumi.swa }
+husisha { moduli/jeshi/vikosi.swa }
+
+// bajeti_kuu.swa -- kichupo cha BUDGET cha kituo cha uchumi: mapato na
+// matumizi ya taifa kama Sankey ya ukurasa mzima.
+//
+//   safu 0  kodi saba kwa kiasi ambacho kila moja ingeweza kukusanya
+//   safu 1  kilichokusanywa, kilichopotea (ukwepaji na upotevu), mikopo
+//   safu 2  hazina
+//   safu 3  kategoria nane za matumizi (na ziada)
+//   safu 4  ndani ya kategoria: jeshi kwa matawi (kwa idadi ya askari),
+//           utawala kwa matawi ya serikali (kwa idadi ya maafisa), na
+//           miundombinu, elimu, afya na ustawi kwa mikoa (kwa idadi ya watu);
+//           mikoa ni nodi za pamoja, hivyo kila mkoa huonyesha jumla yake
+//
+// Mgawanyo wa kodi kwa aina hufuata kanuni za mfumo wa kodi wa mchezo
+// zikitumika kwa pato na watu wa taifa hili, kisha zikilinganishwa na mapato
+// ya kodi ya taifa. Mgawanyo wa matumizi na mikopo hufuata mfumo wa bajeti.
+// Kielekezi juu ya kipande chochote hufuatilia fedha zake (sankey.swa).
+
+n64 BK_KODI_JINA_IDADI = 7;
+
+n8* bk_jina_la_kodi(n64 a) {
+    kama (a == 0) { rudisha ui("Income tax"); }
+    kama (a == 1) { rudisha ui("Corporate tax"); }
+    kama (a == 2) { rudisha ui("Property tax"); }
+    kama (a == 3) { rudisha ui("Sales tax"); }
+    kama (a == 4) { rudisha ui("Customs duties"); }
+    kama (a == 5) { rudisha ui("Luxury tax"); }
+    rudisha ui("Inheritance tax");
+}
+
+n64 bk_rangi_ya_kodi(n64 a) {
+    kama (a == 0) { rudisha 15124326; }     // dhahabu
+    kama (a == 1) { rudisha 13662537; }     // shaba
+    kama (a == 2) { rudisha 11899780; }     // kahawia
+    kama (a == 3) { rudisha 15388512; }     // machungwa
+    kama (a == 4) { rudisha 6596315; }      // buluu
+    kama (a == 5) { rudisha 13469132; }     // waridi
+    rudisha 10194592;                       // kijivu-zambarau
+}
+
+// Kodi ya aina `a` kwa taifa (pato kwa mamilioni, watu): kiasi kinachokusanywa
+// na (kwenye *uwezekano) kiasi kamili bila upotevu wa ukusanyaji na ukwepaji.
+d64 bk_kodi_ya_aina(KodiMfumo* t, n64 a, d64 pato, d64 watu, d64* uwezekano) {
+    uwezekano[0] = 0.0;
+    KodiSera* s = kodi_pata_sera(t, a);
+    kama (s->inafanya_kazi == 0) { rudisha 0.0; }
+    d64 kamili = 0.0;
+    kama (a == 0) {
+        kama (t->idadi_ya_vizingiti == 0 || watu <= 0.0) { rudisha 0.0; }
+        kamili = kodi_hesabu_kodi_ya_mapato(t, pato / watu) * watu;
+    }
+    kama (a == 1) { kamili = pato * 0.15 * s->kiwango_gorofa; }
+    kama (a == 3) { kamili = pato * 0.65 * s->kiwango_gorofa; }
+    kama (a == 2) { kamili = pato * 0.02 * s->kiwango_gorofa; }
+    kama (a == 4) { kamili = pato * 0.05 * s->kiwango_gorofa; }
+    kama (a == 5) { kamili = pato * 0.01 * s->kiwango_gorofa; }
+    kama (a == 6) { kamili = pato * 0.005 * s->kiwango_gorofa; }
+    uwezekano[0] = kamili;
+    rudisha kamili * s->ufanisi_wa_ukusanyaji * (1.0 - s->kiwango_cha_ukwepaji);
+}
+
+// Gawanya `jumla` kwa uzito, ukiongeza nodi kwenye safu 4 na viungo kutoka
+// `chanzo`. Vipande vidogo kuliko 1/40 ya jumla huunganishwa kuwa "Other".
+w0 bk_gawanya(n64 chanzo, n64 jumla, n64* uzito, n64* majina, n64 n, n64 rangi, n8* jina_la_mengine) {
+    n64 jumla_ya_uzito = 0;
+    n64 i = 0;
+    wakati (i < n) { jumla_ya_uzito = jumla_ya_uzito + uzito[i]; i = i + 1; }
+    kama (jumla_ya_uzito <= 0 || jumla <= 0) { rudisha; }
+    n64 mengine = 0;
+    n64 kivuli = 0;
+    i = 0;
+    wakati (i < n) {
+        d64 sh = uzito[i];
+        sh = sh / jumla_ya_uzito;
+        d64 kiasi_d = jumla * sh;
+        n64 kiasi = kiasi_d;
+        kama (sh * 40.0 < 1.0) { mengine = mengine + kiasi; }
+        sivyo kama (kiasi > 0) {
+            n64 nn = sankey_nodi(majina[i], 4, sankey_changanya(rangi, 16777215, 30 + kivuli * 22));
+            sankey_kiungo(chanzo, nn, kiasi);
+            kivuli = kivuli + 1;
+        }
+        i = i + 1;
+    }
+    kama (mengine > 0) {
+        n64 nn = sankey_nodi(jina_la_mengine, 4, sankey_changanya(rangi, 0, 90));
+        sankey_kiungo(chanzo, nn, mengine);
+    }
+}
+
+// Mikoa mitatu mikubwa kwa watu + "mikoa mingine": uzito na majina.
+n64 bk_mikoa(n64* mkoa_watu, n64* mkoa_jina, n64 mikoa, n64* uzito, n64* majina) {
+    n32 imetumika[256];
+    n64 i = 0;
+    wakati (i < mikoa && i < 256) { imetumika[i] = 0; i = i + 1; }
+    n64 n = 0;
+    n64 jumla = 0;
+    i = 0;
+    wakati (i < mikoa) { jumla = jumla + mkoa_watu[i]; i = i + 1; }
+    n64 juu = 0;
+    wakati (n < 3 && n < mikoa) {
+        n64 bora = 0 - 1;
+        i = 0;
+        wakati (i < mikoa && i < 256) { kama (imetumika[i] == 0 && (bora < 0 || mkoa_watu[i] > mkoa_watu[bora])) { bora = i; } i = i + 1; }
+        kama (bora < 0) { rudisha n; }
+        imetumika[bora] = 1;
+        uzito[n] = mkoa_watu[bora];
+        n8* jina = tenga(96);
+        kama (mkoa_jina[bora] != 0) { mfuatano_umbiza(jina, 96, ui("%s region"), mkoa_jina[bora], 0, 0, 0, 0, 0); }
+        sivyo { nakili_mfuatano(jina, ui("A region")); }
+        majina[n] = jina;
+        juu = juu + mkoa_watu[bora];
+        n = n + 1;
+    }
+    kama (jumla > juu) { uzito[n] = jumla - juu; majina[n] = ui("Other regions"); n = n + 1; }
+    rudisha n;
+}
+
+// Jenga nodi za safu 0..3 (kodi, ukusanyaji, hazina, kategoria). Hurudisha
+// faharisi ya nodi ya kwanza ya kategoria kwenye `kategoria_nodi[8]`.
+w0 bk_jenga_juu(Mchezo* g, TaifaNchi* tn, n64* kategoria_nodi, n64* kategoria_kiasi, n64* takwimu) {
+    KodiMfumo* kd = mchezo_pata_kodi(g);
+    BajetiMfumo* bj = mchezo_pata_bajeti(g);
+    d64 pato = tn->uchumi.pato_ghafi;
+    d64 watu = tn->idadi_ya_watu;
+    d64 kodi_ya_taifa = tn->uchumi.mapato_ya_kodi * 1000000.0;
+    d64 kusanywa[7];
+    d64 kamili[7];
+    d64 jumla_k = 0.0;
+    n64 a = 0;
+    wakati (a < 7) {
+        d64 u = 0.0;
+        kusanywa[a] = 0.0;
+        kama (kd != 0) { kusanywa[a] = bk_kodi_ya_aina(kd, a, pato, watu, &u); }
+        kamili[a] = u;
+        jumla_k = jumla_k + kusanywa[a];
+        a = a + 1;
+    }
+    n64 nk = sankey_nodi(ui("Taxes collected"), 1, 14721112);
+    n64 np = sankey_nodi(ui("Lost to evasion and waste"), 1, 7105644);
+    n64 kodi_jumla = 0;
+    n64 potea_jumla = 0;
+    kama (jumla_k > 0.0) {
+        d64 kipimo = kodi_ya_taifa / jumla_k;
+        a = 0;
+        wakati (a < 7) {
+            n64 k_n = kusanywa[a] * kipimo;
+            n64 p_n = (kamili[a] - kusanywa[a]) * kipimo;
+            kama (k_n + p_n > 0) {
+                n64 na = sankey_nodi(bk_jina_la_kodi(a), 0, bk_rangi_ya_kodi(a));
+                sankey_kiungo(na, nk, k_n);
+                sankey_kiungo(na, np, p_n);
+                kodi_jumla = kodi_jumla + k_n;
+                potea_jumla = potea_jumla + p_n;
+            }
+            a = a + 1;
+        }
+    } sivyo {
+        n64 na = sankey_nodi(ui("Taxes"), 0, 14721112);
+        kodi_jumla = kodi_ya_taifa;
+        sankey_kiungo(na, nk, kodi_jumla);
+    }
+    // mikopo na ziada kwa uwiano wa bajeti
+    n64 mkopo = 0;
+    n64 ziada = 0;
+    kama (bj != 0 && bj->mapato_jumla > 0.0) {
+        d64 uw = bj->nakisi / bj->mapato_jumla;
+        d64 kiasi = kodi_jumla * uw;
+        kama (uw < 0.0) { mkopo = 0.0 - kiasi; } sivyo { ziada = kiasi; }
+    }
+    n64 nz = sankey_nodi(ui("Treasury"), 2, 14721112);
+    sankey_kiungo(nk, nz, kodi_jumla);
+    kama (mkopo > 0) { n64 nm = sankey_nodi(ui("Borrowing"), 1, 14247003); sankey_kiungo(nm, nz, mkopo); }
+    n64 matumizi = kodi_jumla + mkopo - ziada;
+    takwimu[0] = kodi_jumla;
+    takwimu[1] = potea_jumla;
+    takwimu[2] = mkopo;
+    takwimu[3] = ziada;
+    takwimu[4] = matumizi;
+    n64 rangi[8];
+    rangi[0] = 14247003; rangi[1] = 5999087; rangi[2] = 5223077; rangi[3] = 7327639;
+    rangi[4] = 11832027; rangi[5] = 5688562; rangi[6] = 10135985; rangi[7] = 13204323;
+    n32 imetumika[8];
+    n64 thamani[8];
+    n64 c = 0;
+    wakati (c < 8) {
+        d64 sh = 0.125;
+        kama (bj != 0) { sh = bajeti_pata_mgao(bj, c); }
+        thamani[c] = sh * matumizi;
+        imetumika[c] = 0;
+        kategoria_nodi[c] = 0 - 1;
+        kategoria_kiasi[c] = 0;
+        c = c + 1;
+    }
+    n64 r = 0;
+    wakati (r < 8) {
+        n64 bora = 0 - 1;
+        c = 0;
+        wakati (c < 8) { kama (imetumika[c] == 0 && (bora < 0 || thamani[c] > thamani[bora])) { bora = c; } c = c + 1; }
+        imetumika[bora] = 1;
+        kama (thamani[bora] > 0) {
+            kategoria_nodi[bora] = sankey_nodi(uchumi_jina_la_kategoria(bora), 3, rangi[bora]);
+            kategoria_kiasi[bora] = thamani[bora];
+            sankey_kiungo(nz, kategoria_nodi[bora], thamani[bora]);
+        }
+        r = r + 1;
+    }
+    kama (ziada > 0) { n64 nzd = sankey_nodi(ui("Surplus to reserves"), 3, 9413567); sankey_kiungo(nz, nzd, ziada); }
+}
+
+// Safu 4: ndani ya kategoria.
+w0 bk_jenga_chini(Mchezo* g, n64 taifa, n64* kn, n64* kk, n64* mkoa_watu, n64* mkoa_jina, n64 mikoa) {
+    n64 rangi[8];
+    rangi[0] = 14247003; rangi[1] = 5999087; rangi[2] = 5223077; rangi[3] = 7327639;
+    rangi[4] = 11832027; rangi[5] = 5688562; rangi[6] = 10135985; rangi[7] = 13204323;
+    n64 uzito[8];
+    n64 majina[8];
+    // jeshi kwa matawi
+    kama (kn[0] >= 0 && vk_mataifa > taifa && vk_aina_watu != 0) {
+        n64 a = 0;
+        wakati (a < VK_AINA) { uzito[a] = vk_aina_watu[taifa * VK_AINA + a]; majina[a] = vk_jina_fupi_la_aina(a); a = a + 1; }
+        bk_gawanya(kn[0], kk[0], uzito, majina, VK_AINA, rangi[0], ui("Other forces"));
+    }
+    // utawala kwa matawi ya serikali (bila majeshi)
+    Wahusika* w = skrini_mkutano_watu(g, taifa);
+    kama (kn[6] >= 0 && w != 0) {
+        n64 hesabu[5];
+        n64 b = 0;
+        wakati (b < 5) { hesabu[b] = 0; b = b + 1; }
+        n64 i = 0;
+        wakati (i < w->idadi) { MhusikaWaDola* m = wahusika_pata(w, i); kama (m != 0 && m->tawi >= 0 && m->tawi < 5) { hesabu[m->tawi] = hesabu[m->tawi] + 1; } i = i + 1; }
+        uzito[0] = hesabu[0]; majina[0] = ui("Executive offices");
+        uzito[1] = hesabu[1]; majina[1] = ui("The legislature");
+        uzito[2] = hesabu[2]; majina[2] = ui("The courts");
+        uzito[3] = hesabu[4]; majina[3] = ui("Provincial government");
+        bk_gawanya(kn[6], kk[6], uzito, majina, 4, rangi[6], ui("Other offices"));
+    }
+    // miundombinu, elimu, afya na ustawi: mikoa ni nodi za pamoja ambazo
+    // huduma zote nne humwagia, kila mkoa kwa sehemu ya watu wake
+    n64 nm = bk_mikoa(mkoa_watu, mkoa_jina, mikoa, uzito, majina);
+    kama (nm > 0) {
+        n64 jumla_ya_uzito = 0;
+        n64 i = 0;
+        wakati (i < nm) { jumla_ya_uzito = jumla_ya_uzito + uzito[i]; i = i + 1; }
+        n64 nodi_za_mikoa[8];
+        i = 0;
+        wakati (i < nm) { nodi_za_mikoa[i] = sankey_nodi(majina[i], 4, sankey_changanya(9413567, 16777215, 20 + i * 24)); i = i + 1; }
+        n64 c = 1;
+        wakati (c <= 4) {
+            kama (kn[c] >= 0 && jumla_ya_uzito > 0) {
+                i = 0;
+                wakati (i < nm) {
+                    d64 sh = uzito[i];
+                    sh = sh / jumla_ya_uzito;
+                    d64 kiasi = kk[c] * sh;
+                    sankey_kiungo(kn[c], nodi_za_mikoa[i], kiasi);
+                    i = i + 1;
+                }
+            }
+            c = c + 1;
+        }
+    }
+}
+
+// Kigae kimoja cha takwimu juu ya ukurasa.
+w0 bk_kigae(n8* lebo, n64 thamani, n8* maelezo, n64 x, n64 y, n64 w) {
+    sura_paneli(x, y, w, 76, lebo);
+    n8 m[32];
+    sura_namba_fupi(m, thamani);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(m, x + 16, y + 30, 20);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(maelezo, x + 16 + maandishi_upana(sura_nene, m, 20) + 12, y + 37, 11);
+}
+
+// Ukurasa mzima wa BUDGET.
+w0 skrini_bajeti_kuu_chora(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h, n64* mkoa_watu, n64* mkoa_jina, n64 mikoa) {
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), taifa);
+    kama (tn == 0) { rudisha; }
+    sankey_anza();
+    SANKEY_PENGO = 6;
+    n64 kn[8];
+    n64 kk[8];
+    n64 takwimu[5];
+    bk_jenga_juu(g, tn, kn, kk, takwimu);
+    bk_jenga_chini(g, taifa, kn, kk, mkoa_watu, mkoa_jina, mikoa);
+    // vigae
+    n64 p = 8;
+    n64 wk = (w - 4 * p) / 5;
+    n8 m[96];
+    n8 a[24];
+    bk_kigae(ui("TAXES COLLECTED"), takwimu[0], ui("this year"), x, y, wk);
+    d64 kamili = takwimu[0] + takwimu[1];
+    n64 bp = 0;
+    kama (kamili > 0.0) { d64 r = takwimu[1]; bp = (r * 10000.0) / kamili; }
+    sura_asilimia(a, bp, 0);
+    mfuatano_umbiza(m, 96, ui("%s of what could be raised"), a, 0, 0, 0, 0, 0);
+    bk_kigae(ui("LOST TO EVASION AND WASTE"), takwimu[1], m, x + (wk + p), y, wk);
+    kama (takwimu[2] > 0) { bk_kigae(ui("BORROWING"), takwimu[2], ui("to cover the deficit"), x + 2 * (wk + p), y, wk); }
+    sivyo { bk_kigae(ui("SURPLUS"), takwimu[3], ui("to reserves"), x + 2 * (wk + p), y, wk); }
+    bk_kigae(ui("SPENDING"), takwimu[4], ui("across eight areas"), x + 3 * (wk + p), y, wk);
+    n64 pato = skrini_pato_la_taifa(tn);
+    n64 bp2 = 0;
+    kama (pato > 0) { d64 s = takwimu[4]; bp2 = (s * 10000.0) / pato; }
+    sura_asilimia(a, bp2, 0);
+    sura_paneli(x + 4 * (wk + p), y, w - 4 * (wk + p), 76, ui("SPENDING / GDP"));
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(a, x + 4 * (wk + p) + 16, y + 30, 20);
+    // mtiririko
+    n64 yf = y + 76 + p;
+    n64 hf = h - 76 - p;
+    sura_paneli(x, yf, w, hf, ui("WHERE THE MONEY COMES FROM AND WHERE IT GOES"));
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo_kulia(ui("Point at any flow or block to trace its money."), x + w - 16, yf + 12, 11);
+    sankey_chora(x + 16, yf + 44, w - 32, hf - 58);
+}

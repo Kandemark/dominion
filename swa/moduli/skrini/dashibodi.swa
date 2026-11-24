@@ -402,7 +402,7 @@ w0 skrini_dashibodi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     db_kiungo(x, y, wk, 124, DB_MAKRO);
     db_kiungo(x + (wk + DASHIBODI_PENGO), y, wk, 124, 5);
     db_kiungo(x + 2 * (wk + DASHIBODI_PENGO), y, wk, 124, DB_MAKRO);
-    db_kiungo(x + 3 * (wk + DASHIBODI_PENGO), y, wk, 124, DB_MAKRO);
+    db_kiungo(x + 3 * (wk + DASHIBODI_PENGO), y, wk, 124, 105);       // kodi: kichupo cha BUDGET
     dashibodi_vigae(g, tn, hist, x, y, w);
     y = y + 124 + DASHIBODI_PENGO;
 

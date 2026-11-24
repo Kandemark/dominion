@@ -1,6 +1,7 @@
 husisha { moduli/skrini/jopo.swa }
 husisha { moduli/soko/masoko.swa }
 husisha { moduli/onyesho/elea.swa }
+husisha { moduli/onyesho/sankey.swa }
 
 // Thamani za chati ya historia ya pato kielekezi kikiwa juu yake (sura_chati_mstari
 // huacha pikseli 78 za lebo kushoto).
@@ -94,39 +95,104 @@ w0 skrini_safu_ya_uwiano(n8* lebo, d64 uzalishaji, d64 matumizi, n64 x, n64 y, n
     sura_lebo_kulia(chombo, x + w, y, 13);
 }
 
-// Sankey ndogo ya matumizi ya bajeti ya simulizi; fedha ni za mfumo
-// mkuu wa sasa (si hesabu iliyogawanywa kwa kila taifa).
-w0 skrini_uchumi_bajeti(Mchezo* g, Turubai* t, n64 x, n64 y, n64 w) {
-    BajetiMfumo* budget = mchezo_pata_bajeti(g);
-    kama (budget == 0 || t->kimo < 840) { rudisha; }
-    n64 fy = y + 132;
-    sura_paneli(x, fy, w, 108, ui("BUDGET SPENDING BREAKDOWN — WORLD"));
-    n8 total_text[32];
-    sura_namba_fupi(total_text, budget->matumizi_jumla);
-    n64 source_x = x + 16;
-    n64 sink_x = x + w - 170;
-    n64 source_y = fy + 56;
-    sura_sankey_nodi(ui("Spending"), total_text, source_x, source_y - 12, 124, 24, SURA_BAHARI, 255);
-    d64 total = budget->matumizi_jumla;
-    n64 sector = 0;
-    wakati (sector < 4) {
-        n8* name = ui("Military");
-        n64 color = SURA_HASI;
-        kama (sector == 1) { name = ui("Infrastructure"); color = SURA_BAHARI; }
-        kama (sector == 2) { name = ui("Education"); color = SURA_CHANYA; }
-        kama (sector == 3) { name = ui("Health"); color = SURA_LAFUDHI; }
-        d64 amount = bajeti_matumizi_ya(budget, sector);
-        n64 amount_n = amount;
-        n8 amount_text[24];
-        sura_namba_fupi(amount_text, amount_n);
-        n64 row_y = fy + 30 + sector * 19;
-        n64 thickness = 2;
-        kama (total > 0.0) { thickness = 2 + (amount * 80.0) / total; }
-        kama (thickness > 10) { thickness = 10; }
-        sura_sankey_mtiririko(source_x + 124, source_y, sink_x, row_y + 8, thickness, color, 150);
-        sura_sankey_nodi(name, amount_text, sink_x, row_y, 154, 16, color, 255);
-        sector = sector + 1;
+// Mtiririko wa pato la taifa (Sankey): sekta -> pato ghafi -> kodi na
+// mapato ya watu na makampuni -> hazina (pamoja na mikopo) -> matumizi kwa
+// kategoria nane za bajeti, na ziada. Thamani ni za taifa hili (mamilioni
+// kuwa vitengo); mgawanyo wa matumizi na uwiano wa mikopo hufuata mfumo wa
+// bajeti wa mchezo.
+w0 skrini_uchumi_mtiririko(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h) {
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), taifa);
+    sura_paneli(x, y, w, h, ui("WHERE THE OUTPUT GOES"));
+    kama (tn == 0) { rudisha; }
+    d64 M = 1000000.0;
+    d64 pato_d = tn->uchumi.pato_ghafi;
+    d64 viwanda_d = tn->uchumi.uzalishaji_wa_viwanda;
+    d64 malighafi_d = tn->uchumi.malighafi;
+    d64 kodi_d = tn->uchumi.mapato_ya_kodi;
+    kama (viwanda_d + malighafi_d > pato_d) { viwanda_d = pato_d * 0.6; malighafi_d = pato_d * 0.2; }
+    kama (kodi_d > pato_d) { kodi_d = pato_d; }
+    n64 pato = pato_d * M;
+    n64 viwanda = viwanda_d * M;
+    n64 malighafi = malighafi_d * M;
+    n64 kodi = kodi_d * M;
+    sankey_anza();
+    n64 nv = sankey_nodi(ui("Industry"), 0, 5999087);
+    n64 nm = sankey_nodi(ui("Raw materials"), 0, 13214247);
+    n64 nh = sankey_nodi(ui("Services and other"), 0, 5223077);
+    n64 np = sankey_nodi(ui("GDP"), 1, 9413567);
+    n64 nk = sankey_nodi(ui("Taxes"), 2, 14721112);
+    n64 nb = sankey_nodi(ui("Households and firms"), 2, 7109267);
+    sankey_kiungo(nv, np, viwanda);
+    sankey_kiungo(nm, np, malighafi);
+    sankey_kiungo(nh, np, pato - viwanda - malighafi);
+    sankey_kiungo(np, nk, kodi);
+    sankey_kiungo(np, nb, pato - kodi);
+    sankey_chora(x + 16, y + 44, w - 32, h - 60);
+}
+
+// Bajeti (Sankey): kodi na mikopo -> hazina -> kategoria nane, na ziada.
+// Mgawanyo na uwiano wa mikopo hufuata mfumo wa bajeti wa mchezo.
+w0 skrini_uchumi_bajeti(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h) {
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), taifa);
+    BajetiMfumo* bj = mchezo_pata_bajeti(g);
+    sura_paneli(x, y, w, h, ui("THE BUDGET"));
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo_kulia(ui("Full budget: tab 6"), x + w - 16, y + 12, 11);
+    bofya_ongeza(x, y, w, 36, 70, 5);       // KT_TABO, KT_BAJETI
+    kama (tn == 0 || bj == 0) { rudisha; }
+    n64 kodi_n = tn->uchumi.mapato_ya_kodi * 1000000.0;
+    n64 mkopo = 0;
+    n64 ziada = 0;
+    kama (bj->mapato_jumla > 0.0) {
+        d64 uw = bj->nakisi / bj->mapato_jumla;
+        d64 kiasi = kodi_n * uw;
+        kama (uw < 0.0) { mkopo = 0.0 - kiasi; } sivyo { ziada = kiasi; }
     }
+    n64 matumizi = kodi_n + mkopo - ziada;
+    sankey_anza();
+    n64 nk = sankey_nodi(ui("Taxes"), 0, 14721112);
+    n64 nmk = 0 - 1;
+    kama (mkopo > 0) { nmk = sankey_nodi(ui("Borrowing"), 0, 14247003); }
+    n64 nz = sankey_nodi(ui("Treasury"), 1, 14721112);
+    sankey_kiungo(nk, nz, kodi_n);
+    kama (nmk >= 0) { sankey_kiungo(nmk, nz, mkopo); }
+    n64 rangi[8];
+    rangi[0] = 14247003; rangi[1] = 5999087; rangi[2] = 5223077; rangi[3] = 7327639;
+    rangi[4] = 11832027; rangi[5] = 5688562; rangi[6] = 10135985; rangi[7] = 13204323;
+    n64 thamani[8];
+    n32 imetumika[8];
+    n64 c = 0;
+    wakati (c < 8) {
+        d64 sh = bajeti_pata_mgao(bj, c);
+        thamani[c] = sh * matumizi;
+        imetumika[c] = 0;
+        c = c + 1;
+    }
+    n64 r = 0;
+    wakati (r < 8) {
+        n64 bora = 0 - 1;
+        c = 0;
+        wakati (c < 8) { kama (imetumika[c] == 0 && (bora < 0 || thamani[c] > thamani[bora])) { bora = c; } c = c + 1; }
+        imetumika[bora] = 1;
+        kama (thamani[bora] > 0) {
+            n64 nn = sankey_nodi(uchumi_jina_la_kategoria(bora), 2, rangi[bora]);
+            sankey_kiungo(nz, nn, thamani[bora]);
+        }
+        r = r + 1;
+    }
+    kama (ziada > 0) { n64 nzd = sankey_nodi(ui("Surplus to reserves"), 2, 9413567); sankey_kiungo(nz, nzd, ziada); }
+    sankey_chora(x + 16, y + 44, w - 32, h - 60);
+}
+
+n8* uchumi_jina_la_kategoria(n64 c) {
+    kama (c == 0) { rudisha ui("Military"); }
+    kama (c == 1) { rudisha ui("Infrastructure"); }
+    kama (c == 2) { rudisha ui("Education"); }
+    kama (c == 3) { rudisha ui("Health"); }
+    kama (c == 4) { rudisha ui("Welfare"); }
+    kama (c == 5) { rudisha ui("Research"); }
+    kama (c == 6) { rudisha ui("Administration"); }
+    rudisha ui("Debt service");
 }
 
 // Kitendo cha kubofya: urefu wa historia ya pato (hoja = zamu).
@@ -285,35 +351,18 @@ w0 skrini_uchumi_makro_chora(Mchezo* g, Turubai* t, n64 taifa, n64 y0) {
     sura_lebo_kulia(chombo, xr + w_kulia - 16, py, 13);
     y = y + kimo_cha_safu + pengo;
 
-    // nafasi kati ya mataifa yote
-    sura_paneli(x, y, w, 120, ui("RANK AMONG ALL NATIONS"));
-    n64 wn = (w - 32) / 4;
-    n64 k = 0;
-    wakati (k < 4) {
-        n64 xn = x + 16 + k * wn;
-        n8* jina = ui("row|GDP");
-        kama (k == 1) { jina = ui("GDP per capita"); }
-        kama (k == 2) { jina = ui("Population"); }
-        kama (k == 3) { jina = ui("Land"); }
-        sura_rangi(SURA_HAFIFU);
-        sura_lebo(jina, xn, y + 44, 13);
-        n64 nafasi = skrini_nafasi_kwa_kipimo(tm, taifa, k);
-        n8 namba[24];
-        n8 jumla[24];
-        sura_namba(namba, nafasi);
-        sura_namba(jumla, tm->idadi);
-        mfuatano_umbiza(chombo, 48, "%s / %s", namba, jumla, 0, 0, 0, 0);
-        sura_rangi(SURA_MAANDISHI);
-        sura_lebo_nene(chombo, xn, y + 66, 22);
-        // pau: juu zaidi = ndefu zaidi
-        sura_pau(xn, y + 100, wn - 32, 6, ((tm->idadi - nafasi + 1) * 1000) / tm->idadi, SURA_LAFUDHI);
-        k = k + 1;
-    }
+    // mtiririko wa pato (kushoto) na bajeti (kulia); nafasi duniani ziko
+    // kwenye upau wa juu na safu ya chini (RANKING)
+    n64 h_mt = t->kimo - y - 24;
+    kama (h_mt > 420) { h_mt = 420; }
+    kama (h_mt < 260) { h_mt = 260; }
+    n64 w_mt = ((w - pengo) * 45) / 100;
+    skrini_uchumi_mtiririko(g, taifa, x, y, w_mt, h_mt);
+    skrini_uchumi_bajeti(g, taifa, x + w_mt + pengo, y, w - w_mt - pengo, h_mt);
+    y = y + h_mt - 132 - pengo;
 
-    skrini_uchumi_bajeti(g, t, x, y, w);
     // chini: uchumi kati ya mataifa yote
-    n64 y_chini = y + 132;
-    kama (t->kimo >= 840) { y_chini = y_chini + 108 + pengo; }
+    n64 y_chini = y + 132 + pengo;
     n64 h_chini = t->kimo - y_chini - 24;
     kama (h_chini > 180) {
         n64 w4 = (w - 3 * pengo) / 4;
