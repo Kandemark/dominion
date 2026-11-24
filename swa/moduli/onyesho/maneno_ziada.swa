@@ -1513,6 +1513,7 @@ w0 maneno_jaza_ziada_3() {
 
 // maamuzi ya lazima, mshauri na tiketi ya oda (2026-11)
 w0 maneno_jaza_ziada_4() {
+    maneno_sajili("Click a column heading to sort; again to reverse.", "Bofya kichwa cha safuwima kupanga; tena kugeuza.", "Cliquez un en-tête de colonne pour trier ; encore pour inverser.");
     maneno_sajili("This week", "Wiki hii", "Cette semaine");
     maneno_sajili("1 week ago", "Wiki 1 iliyopita", "Il y a 1 semaine");
     maneno_sajili("%d weeks ago", "Wiki %d zilizopita", "Il y a %d semaines");

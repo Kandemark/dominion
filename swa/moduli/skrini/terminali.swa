@@ -105,6 +105,118 @@ w0 kt_chati(n64* th, n64 n, n64 x, n64 y, n64 w, n64 h, n64 rangi) {
 }
 
 
+// ---------- vichwa vya jedwali vinavyopanga ----------
+//
+// Kubofya kichwa cha safuwima hupanga jedwali kwa safuwima hiyo (kubwa
+// kwanza); kubofya tena hugeuza mwelekeo. Kila jedwali lina namba yake
+// (KT_JEDWALI_*) na hali yake ya kupanga. Mshale mdogo huonyesha safuwima
+// inayotumika. Majina hupangwa kwa herufi (kt_ufunguo_wa_jina).
+
+n64 KT_PANGA_SAFU = 60;         // hoja: jedwali * 100 + safuwima
+n64 KT_JEDWALI_JUU = 16;
+n64 KT_JEDWALI_SIASA = 0;
+n64 KT_JEDWALI_SIASA_FUPI = 1;
+n64 KT_JEDWALI_MIZANI = 2;
+n64 KT_JEDWALI_OOB = 3;
+n64 KT_JEDWALI_MAHUSIANO = 4;
+n64 KT_JEDWALI_HISA = 5;
+n64* kt_panga_safu = 0;         // safuwima inayopanga, -1 = mpangilio wa asili
+n64* kt_panga_juu = 0;          // 1 ndogo kwanza, 0 kubwa kwanza
+
+w0 kt_panga_andaa() {
+    kama (kt_panga_safu != 0) { rudisha; }
+    kt_panga_safu = tenga(8 * KT_JEDWALI_JUU);
+    kt_panga_juu = tenga(8 * KT_JEDWALI_JUU);
+    n64 i = 0;
+    wakati (i < KT_JEDWALI_JUU) { kt_panga_safu[i] = 0 - 1; kt_panga_juu[i] = 0; i = i + 1; }
+}
+
+n64 kt_panga_safu_ya(n64 jedwali) { kt_panga_andaa(); rudisha kt_panga_safu[jedwali]; }
+
+// Weka mpangilio wa mwanzo wa jedwali (mara moja tu).
+w0 kt_panga_chaguo(n64 jedwali, n64 safu, n32 ndogo_kwanza) {
+    kt_panga_andaa();
+    kama (kt_panga_safu[jedwali] < 0) { kt_panga_safu[jedwali] = safu; kt_panga_juu[jedwali] = ndogo_kwanza; }
+}
+
+// Bofya kichwa: safuwima mpya hupangwa kubwa kwanza (majina: A kwanza);
+// safuwima ileile hugeuza mwelekeo.
+w0 kt_panga_bofya(n64 hoja) {
+    kt_panga_andaa();
+    n64 jedwali = hoja / 100;
+    n64 safu = hoja % 100;
+    kama (jedwali < 0 || jedwali >= KT_JEDWALI_JUU) { rudisha; }
+    kama (kt_panga_safu[jedwali] == safu) { kt_panga_juu[jedwali] = 1 - kt_panga_juu[jedwali]; }
+    sivyo { kt_panga_safu[jedwali] = safu; kt_panga_juu[jedwali] = 0; }
+}
+
+// Ufunguo wa kupanga jina kwa herufi: herufi nane za kwanza kama namba
+// (kubwa = mwanzo wa alfabeti, ili "kubwa kwanza" iwe A..Z).
+n64 kt_ufunguo_wa_jina(n8* s) {
+    n64 v = 0;
+    n64 i = 0;
+    wakati (i < 8) {
+        n64 c = 0;
+        kama (s != 0 && s[i] != 0) {
+            c = s[i] & 255;
+            kama (c >= 97 && c <= 122) { c = c - 32; }
+            kama (c > 127) { c = 127; }
+        }
+        v = v * 128 + (127 - c);
+        kama (s == 0 || s[i] == 0) { s = 0; }
+        i = i + 1;
+    }
+    rudisha v;
+}
+
+// Panga orodha ya vitambulisho kwa funguo zao (funguo[i] kwa orodha[i]).
+w0 kt_panga_kwa_funguo(n64* orodha, n64* funguo, n64 n, n32 ndogo_kwanza) {
+    n64 i = 1;
+    wakati (i < n) {
+        n64 ko = orodha[i];
+        n64 kf = funguo[i];
+        n64 j = i - 1;
+        n32 bado = 1;
+        wakati (bado) {
+            kama (j < 0) { bado = 0; }
+            sivyo {
+                n32 sogeza_nyuma = funguo[j] < kf;
+                kama (ndogo_kwanza) { sogeza_nyuma = funguo[j] > kf; }
+                kama (sogeza_nyuma) { orodha[j + 1] = orodha[j]; funguo[j + 1] = funguo[j]; j = j - 1; } sivyo { bado = 0; }
+            }
+        }
+        orodha[j + 1] = ko;
+        funguo[j + 1] = kf;
+        i = i + 1;
+    }
+}
+
+// Kichwa kinachobofyeka: maandishi, mshale ikiwa kinapanga, na eneo la bofya.
+w0 kt_kichwa_p(n8* s, n64 x, n64 y, n32 kulia, n64 jedwali, n64 safu) {
+    kt_panga_andaa();
+    n64 w = maandishi_upana(sura_mono, s, 10);
+    n64 x0 = x;
+    kama (kulia) { x0 = x - w; }
+    n32 hai = kt_panga_safu[jedwali] == safu;
+    n64 rangi = SURA_LAFUDHI;
+    kama (hai) { rangi = SURA_MAANDISHI; }
+    kt_maandishi(s, x0, y, 10, rangi);
+    kama (hai) {
+        // mshale mdogo: juu (ndogo kwanza) au chini (kubwa kwanza)
+        n64 ax = x0 - 9;
+        kama (kulia == 0) { ax = x0 + w + 4; }
+        turubai_brashi(sura_t, SURA_MAANDISHI, 255);
+        n64 r = 0;
+        wakati (r < 4) {
+            n64 yy = y + 3 + r;
+            kama (kt_panga_juu[jedwali]) { yy = y + 6 - r; }
+            turubai_jaza(sura_t, ax + r, yy, 7 - 2 * r, 1);
+            r = r + 1;
+        }
+    }
+    bofya_ongeza(x0 - 10, y - 3, w + 20, 16, KT_PANGA_SAFU, jedwali * 100 + safu);
+}
+
 // ---------- vipande vipya vya pamoja ----------
 
 // Kitufe cha kituo kisichoweza kubonyezwa (k.m. fedha hazitoshi): hafifu, bila kujiandikisha.

@@ -215,10 +215,36 @@ w0 js_matawi(Mchezo* g, n64 taifa, n64 mwaka, n64 x, n64 y, n64 w, n64 h) {
     achilia alama;
 }
 
+// Ufunguo wa safuwima ya mpangilio wa vita kwa kikosi.
+//   0 jina  1 mji  2 askari  3 ujazo  4 vifaa  5 ari  6 utayari  7 uzoefu
+//   8 vyombo  9 wiki ya kuundwa  10 alama
+n64 js_ufunguo_oob(Kikosi* kk, n64 mwaka, n64 safu) {
+    kama (safu == 0) { n8 jina[96]; vk_jina(kk, mwaka, jina, 96); rudisha kt_ufunguo_wa_jina(jina); }
+    kama (safu == 1) { rudisha kt_ufunguo_wa_jina(js_mji(kk)); }
+    kama (safu == 3) { kama (kk->juu <= 0) { rudisha 0; } rudisha (kk->watu * 1000) / kk->juu; }
+    kama (safu == 4) { rudisha kk->vifaa; }
+    kama (safu == 5) { rudisha kk->morali; }
+    kama (safu == 6) { rudisha vk_utayari(kk); }
+    kama (safu == 7) { rudisha kk->uzoefu; }
+    kama (safu == 8) { rudisha vk_vyombo(kk, mwaka); }
+    kama (safu == 9) { rudisha kk->zamu; }
+    kama (safu == 10) { rudisha vk_alama_ya(kk, mwaka); }
+    rudisha kk->watu;
+}
+
 // Mpangilio wa vita: jedwali la vikosi (kamili kwenye kichupo cha OOB).
 w0 js_oob(Mchezo* g, n64 taifa, n64 mwaka, n64 x, n64 y, n64 w, n64 h, n32 pana) {
     n64* orodha = tenga(8 * VK_JUU_KWA_TAIFA);
     n64 n = vk_vya_taifa(taifa, orodha, VK_JUU_KWA_TAIFA);
+    // mpangilio wa safuwima iliyobofywa (asili: mpangilio wa vikosi)
+    n64 safu_ya_panga = kt_panga_safu_ya(KT_JEDWALI_OOB);
+    kama (pana && safu_ya_panga >= 0) {
+        n64* funguo = tenga(8 * VK_JUU_KWA_TAIFA);
+        n64 q = 0;
+        wakati (q < n) { funguo[q] = js_ufunguo_oob(vk_pata(orodha[q]), mwaka, safu_ya_panga); q = q + 1; }
+        kt_panga_kwa_funguo(orodha, funguo, n, kt_panga_juu[KT_JEDWALI_OOB]);
+        achilia funguo;
+    }
     n8 k[96];
     mfuatano_umbiza(k, 96, ui("ORDER OF BATTLE  %d FORMATIONS"), n, 0, 0, 0, 0, 0);
     kt_paneli(x, y, w, h, k);
@@ -230,18 +256,27 @@ w0 js_oob(Mchezo* g, n64 taifa, n64 mwaka, n64 x, n64 y, n64 w, n64 h, n32 pana)
     kama (pana) { safuwima = 9; }
     n64 hatua = (w - (c1 - x) - 12) / safuwima;
     n64 yh = y + 30;
-    kt_kichwa(ui("FORMATION"), x_jina, yh);
-    kama (pana) { kt_kichwa(ui("HOME"), x_mji, yh); }
-    kt_kichwa_kulia(ui("MEN"), c1 + hatua, yh);
-    kt_kichwa_kulia(ui("STR"), c1 + 2 * hatua, yh);
-    kt_kichwa_kulia(ui("EQUIP"), c1 + 3 * hatua, yh);
-    kt_kichwa_kulia(ui("MORALE"), c1 + 4 * hatua, yh);
-    kt_kichwa_kulia(ui("READY"), c1 + 5 * hatua, yh);
     kama (pana) {
-        kt_kichwa_kulia(ui("EXP"), c1 + 6 * hatua, yh);
-        kt_kichwa_kulia(ui("VEH"), c1 + 7 * hatua, yh);
-        kt_kichwa_kulia(ui("RAISED"), c1 + 8 * hatua, yh);
-        kt_kichwa_kulia(ui("SCORE"), c1 + 9 * hatua, yh);
+        kt_kichwa_p(ui("FORMATION"), x_jina, yh, 0, KT_JEDWALI_OOB, 0);
+        kt_kichwa_p(ui("HOME"), x_mji, yh, 0, KT_JEDWALI_OOB, 1);
+        kt_kichwa_p(ui("MEN"), c1 + hatua, yh, 1, KT_JEDWALI_OOB, 2);
+        kt_kichwa_p(ui("STR"), c1 + 2 * hatua, yh, 1, KT_JEDWALI_OOB, 3);
+        kt_kichwa_p(ui("EQUIP"), c1 + 3 * hatua, yh, 1, KT_JEDWALI_OOB, 4);
+        kt_kichwa_p(ui("MORALE"), c1 + 4 * hatua, yh, 1, KT_JEDWALI_OOB, 5);
+        kt_kichwa_p(ui("READY"), c1 + 5 * hatua, yh, 1, KT_JEDWALI_OOB, 6);
+    } sivyo {
+        kt_kichwa(ui("FORMATION"), x_jina, yh);
+        kt_kichwa_kulia(ui("MEN"), c1 + hatua, yh);
+        kt_kichwa_kulia(ui("STR"), c1 + 2 * hatua, yh);
+        kt_kichwa_kulia(ui("EQUIP"), c1 + 3 * hatua, yh);
+        kt_kichwa_kulia(ui("MORALE"), c1 + 4 * hatua, yh);
+        kt_kichwa_kulia(ui("READY"), c1 + 5 * hatua, yh);
+    }
+    kama (pana) {
+        kt_kichwa_p(ui("EXP"), c1 + 6 * hatua, yh, 1, KT_JEDWALI_OOB, 7);
+        kt_kichwa_p(ui("VEH"), c1 + 7 * hatua, yh, 1, KT_JEDWALI_OOB, 8);
+        kt_kichwa_p(ui("RAISED"), c1 + 8 * hatua, yh, 1, KT_JEDWALI_OOB, 9);
+        kt_kichwa_p(ui("SCORE"), c1 + 9 * hatua, yh, 1, KT_JEDWALI_OOB, 10);
     }
     n64 safu_h = 18;
     n64 kwa_ukurasa = (h - 76) / safu_h;
@@ -304,6 +339,24 @@ w0 js_oob(Mchezo* g, n64 taifa, n64 mwaka, n64 x, n64 y, n64 w, n64 h, n32 pana)
     achilia orodha;
 }
 
+// Ufunguo wa safuwima ya mizani kwa taifa t.
+//   0 jina  1 kielezo  2 4W  3 askari  4 uwiano  5 uhamasishaji  6 1W  7 26W
+//   8 utayari  9 vikosi  10 hasara  11 vitani  12 umbali
+n64 js_ufunguo_mizani(Mchezo* g, n64 taifa, n64 t, n64 safu) {
+    kama (safu == 0) { rudisha kt_ufunguo_wa_jina(dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), t)->jina); }
+    kama (safu == 2) { rudisha hs_badiliko(t, HS_JESHI, 4); }
+    kama (safu == 3 || safu == 4) { rudisha vk_jumla_ya(t); }
+    kama (safu == 5) { rudisha vk_uhamasishaji[t]; }
+    kama (safu == 6) { rudisha hs_badiliko(t, HS_JESHI, 1); }
+    kama (safu == 7) { rudisha hs_badiliko(t, HS_JESHI, 26); }
+    kama (safu == 8) { rudisha vk_utayari_wa_taifa(t); }
+    kama (safu == 9) { rudisha vk_kt_mwanzo[t + 1] - vk_kt_mwanzo[t]; }
+    kama (safu == 10) { rudisha vk_hasara[t]; }
+    kama (safu == 11) { rudisha vk_vita_adui[t] >= 0; }
+    kama (safu == 12) { rudisha jopo_umbali(taifa, t); }
+    rudisha hs_pata(t, HS_JESHI, 0);
+}
+
 // Mizani ya nguvu: mataifa ya wigo (au ya karibu kwenye FORCES), yamepangwa
 // kwa kielezo cha kijeshi, na uwiano wa askari wao kwa wetu.
 w0 js_mizani(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h, n32 pana) {
@@ -336,14 +389,19 @@ w0 js_mizani(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h, n32 pana) {
     wakati (i < tm->idadi) {
         n32 ndani = jopo_inafaa(i);
         kama (pana == 0) { ndani = karibu[i] != 0; }
-        kama (ndani) {
-            n64 p = n;
-            wakati (p > 0 && hs_pata(orodha[p - 1], HS_JESHI, 0) < hs_pata(i, HS_JESHI, 0)) { orodha[p] = orodha[p - 1]; p = p - 1; }
-            orodha[p] = i;
-            n = n + 1;
-        }
+        kama (ndani) { orodha[n] = i; n = n + 1; }
         i = i + 1;
     }
+    // mpangilio: kwa kielezo (kubwa kwanza), au safuwima iliyobofywa (pana)
+    kt_panga_chaguo(KT_JEDWALI_MIZANI, 1, 0);
+    n64 safu_ya_panga = 1;
+    n32 ndogo_kwanza = 0;
+    kama (pana) { safu_ya_panga = kt_panga_safu_ya(KT_JEDWALI_MIZANI); ndogo_kwanza = kt_panga_juu[KT_JEDWALI_MIZANI]; }
+    n64* funguo = tenga(8 * tm->idadi + 8);
+    i = 0;
+    wakati (i < n) { funguo[i] = js_ufunguo_mizani(g, taifa, orodha[i], safu_ya_panga); i = i + 1; }
+    kt_panga_kwa_funguo(orodha, funguo, n, ndogo_kwanza);
+    achilia funguo;
     n64 c_jina = x + 52;
     n64 c1 = x + (w * 28) / 100;
     n64 safuwima = 5;
@@ -351,20 +409,20 @@ w0 js_mizani(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h, n32 pana) {
     n64 hatua = (w - (c1 - x) - 12) / safuwima;
     n64 yh = y + 30;
     kt_kichwa("CCY", x + 12, yh);
-    kt_kichwa(ui("NATION"), c_jina, yh);
-    kt_kichwa_kulia(ui("MIL"), c1 + hatua, yh);
-    kt_kichwa_kulia("4W", c1 + 2 * hatua, yh);
-    kt_kichwa_kulia(ui("MEN"), c1 + 3 * hatua, yh);
-    kt_kichwa_kulia(ui("RATIO"), c1 + 4 * hatua, yh);
-    kt_kichwa_kulia(ui("POSTURE"), c1 + 5 * hatua, yh);
+    kt_kichwa_p(ui("NATION"), c_jina, yh, 0, KT_JEDWALI_MIZANI, 0);
+    kt_kichwa_p(ui("MIL"), c1 + hatua, yh, 1, KT_JEDWALI_MIZANI, 1);
+    kt_kichwa_p("4W", c1 + 2 * hatua, yh, 1, KT_JEDWALI_MIZANI, 2);
+    kt_kichwa_p(ui("MEN"), c1 + 3 * hatua, yh, 1, KT_JEDWALI_MIZANI, 3);
+    kt_kichwa_p(ui("RATIO"), c1 + 4 * hatua, yh, 1, KT_JEDWALI_MIZANI, 4);
+    kt_kichwa_p(ui("POSTURE"), c1 + 5 * hatua, yh, 1, KT_JEDWALI_MIZANI, 5);
     kama (pana) {
-        kt_kichwa_kulia("1W", c1 + 6 * hatua, yh);
-        kt_kichwa_kulia("26W", c1 + 7 * hatua, yh);
-        kt_kichwa_kulia(ui("READY"), c1 + 8 * hatua, yh);
-        kt_kichwa_kulia(ui("FMN"), c1 + 9 * hatua, yh);
-        kt_kichwa_kulia(ui("LOSSES"), c1 + 10 * hatua, yh);
-        kt_kichwa_kulia(ui("AT WAR"), c1 + 11 * hatua, yh);
-        kt_kichwa_kulia("KM", c1 + 12 * hatua, yh);
+        kt_kichwa_p("1W", c1 + 6 * hatua, yh, 1, KT_JEDWALI_MIZANI, 6);
+        kt_kichwa_p("26W", c1 + 7 * hatua, yh, 1, KT_JEDWALI_MIZANI, 7);
+        kt_kichwa_p(ui("READY"), c1 + 8 * hatua, yh, 1, KT_JEDWALI_MIZANI, 8);
+        kt_kichwa_p(ui("FMN"), c1 + 9 * hatua, yh, 1, KT_JEDWALI_MIZANI, 9);
+        kt_kichwa_p(ui("LOSSES"), c1 + 10 * hatua, yh, 1, KT_JEDWALI_MIZANI, 10);
+        kt_kichwa_p(ui("AT WAR"), c1 + 11 * hatua, yh, 1, KT_JEDWALI_MIZANI, 11);
+        kt_kichwa_p("KM", c1 + 12 * hatua, yh, 1, KT_JEDWALI_MIZANI, 12);
     }
     n64 wetu = vk_jumla_ya(taifa);
     kama (wetu <= 0) { wetu = 1; }
@@ -479,6 +537,7 @@ n32 skrini_jeshi_bofya(Mchezo* g, n64 taifa, n64 px, n64 py) {
     kama (k == JS_UHAMASISHAJI) { vk_weka_uhamasishaji(taifa, hoja); rudisha 1; }
     kama (k == JS_UKURASA) { jeshi_ukurasa = jeshi_ukurasa + hoja; kama (jeshi_ukurasa < 0) { jeshi_ukurasa = 0; } rudisha 1; }
     kama (k == JS_TABO) { js_tabo = hoja; jeshi_ukurasa = 0; rudisha 1; }
+    kama (k == KT_PANGA_SAFU) { kt_panga_bofya(hoja); jeshi_ukurasa = 0; rudisha 1; }
     rudisha 0;
 }
 
