@@ -368,11 +368,19 @@ w0 vk_safisha() {
 // Askari wa tawi `aina` wakati wa amani kutoka sifa zisizobadilika za taifa
 // (watu wa mwanzo, kielezo cha mwanzo, aina ya utawala, zama): msingi wa
 // vikomo vya katiba, ambavyo havipaswi kuyumba kila katiba inapozalishwa.
-n64 vk_tawi_la_msingi(n64 t, n64 aina_ya_dola, n64 aina, n64 mwaka) {
+// Wenye mamlaka huamua ukubwa wa jeshi: vyama vya serikali vinavyoelekea
+// taifa na mamlaka ya kati hutaka jeshi kubwa (hadi mara 1.5), vinavyoelekea
+// ulimwengu na mamlaka yaliyotawanyika hutaka dogo (hadi nusu). Aina ya
+// utawala yenyewe haina athari.
+n64 vk_kiwango_cha_watawala(Dola* d, n64 kiwango) {
+    kama (d == 0) { rudisha kiwango; }
+    n64 m = (dola_msimamo(d, MHIMILI_TAIFA, 1) + dola_msimamo(d, MHIMILI_MAMLAKA, 1)) / 4;
+    rudisha (kiwango * (100 + m)) / 100;
+}
+
+n64 vk_tawi_la_msingi(n64 t, Dola* d, n64 aina, n64 mwaka) {
     kama (t < 0 || t >= vk_mataifa) { rudisha 0; }
-    n64 kiwango = 40 + vk_bana(vk_kielezo_awali[t] - 60, 0, 400) / 4;
-    kama (aina_ya_dola == DOLA_UTAWALA_WA_KIJESHI || aina_ya_dola == DOLA_UDIKTETA || aina_ya_dola == DOLA_CHAMA_KIMOJA) { kiwango = (kiwango * 15) / 10; }
-    kama (aina_ya_dola == DOLA_UFALME_KAMILI || aina_ya_dola == DOLA_MILKI) { kiwango = (kiwango * 12) / 10; }
+    n64 kiwango = vk_kiwango_cha_watawala(d, 40 + vk_bana(vk_kielezo_awali[t] - 60, 0, 400) / 4);
     n64 jumla = (vk_watu_wa_mwanzo[t] / 10000) * kiwango;
     kama (jumla < 500) { jumla = 500; }
     n64 jumla_ya_sehemu = 0;
@@ -391,8 +399,7 @@ n64 vk_lengo(Mchezo* g, n64 t) {
     // kwa elfu kumi ya watu: kielezo 60..420 -> 40..130
     n64 kiwango = 40 + vk_bana(vk_kielezo_awali[t] - 60, 0, 400) / 4;
     kama (d != 0) {
-        kama (d->aina == DOLA_UTAWALA_WA_KIJESHI || d->aina == DOLA_UDIKTETA || d->aina == DOLA_CHAMA_KIMOJA) { kiwango = (kiwango * 15) / 10; }
-        kama (d->aina == DOLA_UFALME_KAMILI || d->aina == DOLA_MILKI) { kiwango = (kiwango * 12) / 10; }
+        kiwango = vk_kiwango_cha_watawala(d, kiwango);
         kiwango = (kiwango * (60 + d->hazina * 4 / 10)) / 100;
     }
     n64 u = vk_uhamasishaji[t];

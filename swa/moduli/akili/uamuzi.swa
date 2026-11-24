@@ -293,16 +293,21 @@ w0 uamuzi_tumia_mara_moja(Uamuzi* u, Dola* d) {
     kama (d != 0) {
         // mfuko ni mamilioni; hazina ni 0..100, kila milioni 20 ni alama moja
         d->hazina = dola_rekebisha(d->hazina, u->mfuko / 20);
-        // kodi ya juu hujaza hazina lakini hupunguza uhalali, na kinyume chake
         d->hazina = dola_rekebisha(d->hazina, u->kodi);
-        d->uhalali = dola_rekebisha(d->uhalali, u->uungwaji - u->kodi / 2 - u->rushwa / 2);
-        kama (u->aina == UAMUZI_VITA) { d->utulivu = dola_rekebisha(d->utulivu, 0 - 5); }
-        kama (u->aina == UAMUZI_AMANI || u->aina == UAMUZI_MSAMAHA) { d->utulivu = dola_rekebisha(d->utulivu, 3); }
-        kama (u->aina == UAMUZI_UKANDAMIZAJI) {
-            d->utulivu = dola_rekebisha(d->utulivu, 4);
-            d->uhalali = dola_rekebisha(d->uhalali, 0 - 4);
-        }
-        kama (u->aina == UAMUZI_UCHAGUZI || u->aina == UAMUZI_MAGEUZI) { d->uhalali = dola_rekebisha(d->uhalali, 3); }
+        // uungwaji ni tathmini ya mshauri (AI); rushwa hudhoofisha imani ya wote
+        d->uhalali = dola_rekebisha(d->uhalali, u->uungwaji - u->rushwa / 2);
+        // mengine yote ni mwitikio wa vyama vya dola kwa mwelekeo wa uamuzi:
+        // hakuna uamuzi ulio mzuri au mbaya wenyewe (angalia siasa/dola.swa)
+        kama (u->kodi != 0) { dola_pokea(d, 4, 0 - u->kodi * 3, u->kodi * 6, u->kodi * 2, 0, 0); }
+        kama (u->aina == UAMUZI_VITA) { dola_pokea(d, 8, 0, 0, 30, 0, 60); }
+        kama (u->aina == UAMUZI_AMANI) { dola_pokea(d, 6, 0, 0, 0, 0, -50); }
+        kama (u->aina == UAMUZI_MSAMAHA) { dola_pokea(d, 6, 40, 0, -40, 0, 0); }
+        kama (u->aina == UAMUZI_UKANDAMIZAJI) { dola_pokea(d, 8, -60, 0, 60, 0, 0); }
+        kama (u->aina == UAMUZI_UCHAGUZI) { dola_pokea(d, 6, 40, 20, -40, 0, 0); }
+        kama (u->aina == UAMUZI_MAGEUZI) { dola_pokea(d, 6, 20, 20, 0, -40, 0); }
+        kama (u->aina == UAMUZI_MUUNGANO) { dola_pokea(d, 4, 0, 0, 0, 0, -30); }
+        kama (u->aina == UAMUZI_VIKWAZO) { dola_pokea(d, 4, 0, 0, 0, 0, 40); }
+        kama (u->aina == UAMUZI_MRADI) { dola_pokea(d, 4, 0, 20, 20, 0, 10); }
     }
 }
 
@@ -353,11 +358,12 @@ w0 uamuzi_zamu(n64 zamu, Dola* d) {
                 uamuzi_biashara[l] = 0;
                 kama (umri % 4 == 3) { uamuzi_urafiki[l] = uamuzi_bana(uamuzi_urafiki[l] - 1, 0 - 100, 100); }
             }
+            // vita hula hazina; jinsi watu wanavyoivumilia hutegemea misimamo yao
             kama (u->aina == UAMUZI_VITA && d != 0 && umri % 4 == 3) {
-                d->utulivu = dola_rekebisha(d->utulivu, 0 - 1);
                 d->hazina = dola_rekebisha(d->hazina, 0 - 1);
+                dola_pokea(d, 2, 0, 0, 0, 0, 60);
             }
-            kama (u->aina == UAMUZI_MRADI && d != 0 && umri % 8 == 7) { d->utulivu = dola_rekebisha(d->utulivu, 1); }
+            kama (u->aina == UAMUZI_MRADI && d != 0 && umri % 8 == 7) { dola_pokea(d, 2, 0, 20, 20, 0, 10); }
         }
         i = i + 1;
     }

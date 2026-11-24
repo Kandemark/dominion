@@ -395,20 +395,77 @@ n64 haki_mwaka(n64 h) {
     rudisha 1700;
 }
 
-// Kanuni za haki kwa aina ya utawala: mamlaka kuu hukata haki za kisiasa,
-// chama kimoja hukata mali na vyama, utawala wa kidini hukata uhuru wa
-// dini na sanaa, falme hukata nafasi kwa sifa na mgomo.
-n32 haki_inakubalika(Dola* d, n64 h) {
-    n64 a = d->aina;
-    n32 kuu = a == DOLA_UFALME_KAMILI || a == DOLA_MILKI || a == DOLA_UDIKTETA || a == DOLA_UTAWALA_WA_KIJESHI;
-    n32 kisiasa = h == 11 || h == 12 || h == 13 || h == 14 || h == 20 || h == 25 || h == 33;
-    kama (kuu && kisiasa) { rudisha 0; }
-    kama (a == DOLA_CHAMA_KIMOJA && (h == 12 || h == 14 || h == 17 || h == 35 || h == 31)) { rudisha 0; }
-    kama (a == DOLA_UTAWALA_WA_KIDINI && (h == 10 || h == 30)) { rudisha 0; }
-    kama ((wahusika_ni_ufalme(d) || a == DOLA_JUMUIYA_YA_WAUNGWANA) && (h == 21 || h == 25)) { rudisha 0; }
-    kama (a == DOLA_BILA_SERIKALI && (h == 17 || h == 34)) { rudisha 0; }
-    rudisha 1;
+// Kila haki ina mwelekeo kwenye mihimili ya itikadi (siasa/dola.swa):
+// uhuru wa habari huelekea uhuru na mbali na mamlaka ya kati, mali binafsi
+// huelekea mbali na usawa, na kadhalika. Hakuna haki iliyo "ya demokrasia"
+// au "ya udikteta": waandishi wa katiba (vyama vya serikali kwa viti vyao)
+// huamua kila haki kwa misimamo yao.
+n64 haki_mwelekeo(n64 h, n64 m) {
+    n64 v0 = 0; n64 v1 = 0; n64 v2 = 0; n64 v3 = 0; n64 v4 = 0;
+    kama (h == 0) { v0 = 30; v1 = 60; }
+    kama (h == 1) { v0 = 20; v3 = 20; }
+    kama (h == 2) { v0 = 50; v2 = -30; }
+    kama (h == 3) { v0 = 50; v1 = 40; }
+    kama (h == 4 || h == 5) { v0 = 60; v2 = -40; }
+    kama (h == 6 || h == 7) { v0 = 50; v2 = -20; }
+    kama (h == 8) { v0 = 40; }
+    kama (h == 9) { v0 = 60; v2 = -30; }
+    kama (h == 10) { v0 = 60; v3 = -30; }
+    kama (h == 11) { v0 = 80; v2 = -30; }
+    kama (h == 12) { v0 = 80; v2 = -40; }
+    kama (h == 13 || h == 14) { v0 = 70; v2 = -30; }
+    kama (h == 15) { v0 = 60; }
+    kama (h == 16) { v0 = 60; v4 = -20; }
+    kama (h == 17) { v0 = 40; v1 = -60; }
+    kama (h == 18) { v0 = 30; v1 = -40; }
+    kama (h == 19) { v0 = 40; v2 = -10; }
+    kama (h == 20) { v0 = 50; v1 = 30; v2 = -30; }
+    kama (h == 21) { v1 = 40; v3 = -30; }
+    kama (h == 22) { v1 = 60; }
+    kama (h == 23) { v1 = 70; }
+    kama (h == 24) { v0 = 30; v1 = 60; }
+    kama (h == 25) { v0 = 40; v1 = 60; v2 = -30; }
+    kama (h == 26) { v1 = 40; v3 = 30; }
+    kama (h == 27) { v1 = 70; }
+    kama (h == 28) { v0 = 40; v4 = -40; }
+    kama (h == 29) { v0 = 40; v4 = -50; }
+    kama (h == 30) { v0 = 60; v3 = -30; }
+    kama (h == 31) { v0 = 60; v2 = -50; }
+    kama (h == 32) { v0 = 40; v2 = -30; }
+    kama (h == 33) { v0 = 40; v4 = -50; }
+    kama (h == 34) { v1 = -50; v3 = 30; }
+    kama (h == 35) { v0 = 50; v1 = -60; }
+    kama (m == 0) { rudisha v0; }
+    kama (m == 1) { rudisha v1; }
+    kama (m == 2) { rudisha v2; }
+    kama (m == 3) { rudisha v3; }
+    rudisha v4;
 }
+
+// Msimamo wa waandishi wa katiba (vyama vya serikali kwa viti vyao) kwenye mhimili m.
+n64 hati_w(Dola* d, n64 m) { rudisha dola_msimamo(d, m, 1); }
+
+// Kiasi waandishi wanavyopendelea kuweka mamlaka chini ya mipaka (-100..100).
+n64 hati_huria(Dola* d) { rudisha (hati_w(d, MHIMILI_UHURU) - hati_w(d, MHIMILI_MAMLAKA)) / 2; }
+
+// Jinsi waandishi wanavyoiona haki h: -100 (wanaipinga) .. 100 (wanaitaka).
+n64 haki_alama(Dola* d, n64 h) {
+    n64 dot = 0;
+    n64 ukubwa = 0;
+    n64 m = 0;
+    wakati (m < MIHIMILI) {
+        dot = dot + hati_w(d, m) * haki_mwelekeo(h, m);
+        ukubwa = ukubwa + haki_mwelekeo(h, m) * haki_mwelekeo(h, m);
+        m = m + 1;
+    }
+    kama (ukubwa == 0) { rudisha 0; }
+    n64 b = 1;
+    wakati ((b + 1) * (b + 1) <= ukubwa) { b = b + 1; }
+    rudisha dot / b;
+}
+
+// Haki huwekwa kwenye katiba isipokuwa waandishi wake wanaipinga waziwazi.
+n32 haki_inakubalika(Dola* d, n64 h) { rudisha haki_alama(d, h) > -35; }
 
 // ---------- maeneo ya sera na taasisi huru ----------
 
@@ -586,11 +643,6 @@ n64 hati_namna_ya_mkuu(Dola* d) {
     rudisha 1;
 }
 
-n32 hati_ni_jamhuri(Dola* d) {
-    n64 a = d->aina;
-    rudisha a == DOLA_JAMHURI_YA_BUNGE || a == DOLA_JAMHURI_YA_RAIS || a == DOLA_JAMHURI_NUSU_RAIS || a == DOLA_JAMHURI_YA_SHIRIKISHO || a == DOLA_JAMHURI_YA_WAFANYABIASHARA || a == DOLA_SERIKALI_YA_MPITO;
-}
-
 n32 hati_ni_kuu(Dola* d) {
     n64 a = d->aina;
     rudisha a == DOLA_UFALME_KAMILI || a == DOLA_MILKI || a == DOLA_UDIKTETA || a == DOLA_UTAWALA_WA_KIJESHI;
@@ -620,8 +672,6 @@ n32 hati_ni_waziri(MhusikaWaDola* m) { rudisha tafuta_mfuatano(m->cheo, "Ministe
 n32 hati_ni_kamati(MhusikaWaDola* m) { rudisha tafuta_mfuatano(m->cheo, "Committee") >= 0; }
 
 w0 hati_zalisha_dola_na_haki(Dola* d) {
-    n32 jamhuri = hati_ni_jamhuri(d);
-    n32 kuu = hati_ni_kuu(d);
     hati_ongeza(K_DOLA, 0 - 1, d->aina, 0, 0, 0);
     hati_ongeza(K_MAMLAKA, 0 - 1, 0, 0, 0, 0);
     hati_ongeza(K_ENEO, 0 - 1, hati_mikoa_idadi, 0, 0, 0);
@@ -632,13 +682,13 @@ w0 hati_zalisha_dola_na_haki(Dola* d) {
         kama (haki_mwaka(h) <= hati_mwaka && haki_inakubalika(d, h)) {
             n64 mipaka = 1;
             kama (h == 1 || h == 2 || h == 3 || h == 8) { mipaka = 0; }
-            kama (kuu) { mipaka = 2; }
-            n64 mahakama = jamhuri || d->aina == DOLA_UFALME_WA_KATIBA;
+            kama (haki_alama(d, h) < -15) { mipaka = 2; }
+            n64 mahakama = hati_huria(d) > -20;
             n64 m0 = hati_badilisha(mipaka, 10 + h, 3, 1);
             hati_ongeza(K_HAKI, h, m0, mahakama, 0, 0);
             kama (m0 == 1) { hati_ongeza(K_HAKI_MIPAKA, h, hati_badilisha(haki_sababu(d, h), 700 + h, 43, 1), 0, 0, 0); }
             n64 simamisha = m0 > 0;
-            kama (h == 10 && kuu == 0) { simamisha = 0; }
+            kama (h == 10 && haki_alama(d, 10) > 0) { simamisha = 0; }
             hati_ongeza(K_HAKI_DHARURA, h, simamisha, 0, 0, 0);
         }
         h = h + 1;
@@ -654,22 +704,21 @@ n64 WAJIBU_IDADI = 16;
 
 n32 hati_wajibu_upo(Dola* d, n64 j) {
     n64 a = d->aina;
-    n32 kuu = hati_ni_kuu(d);
     kama (j == 0 || j == 1) { rudisha 1; }                             // ulinzi na utulivu; haki
     kama (j == 2) { rudisha hati_mwaka >= 1830; }                      // elimu kwa wote
     kama (j == 3) { rudisha hati_mwaka >= 1880; }                      // afya ya umma
     kama (j == 4) { rudisha hati_mwaka >= 1900; }                      // ajira na hali ya kazi
-    kama (j == 5) { rudisha hati_mwaka >= 1910 && kuu == 0; }          // hifadhi ya jamii
-    kama (j == 6) { rudisha a == DOLA_CHAMA_KIMOJA; }                  // umiliki wa pamoja wa njia za uzalishaji
-    kama (j == 7) { rudisha a != DOLA_CHAMA_KIMOJA && a != DOLA_BILA_SERIKALI; } // soko na mali binafsi
+    kama (j == 5) { rudisha hati_mwaka >= 1910 && hati_w(d, MHIMILI_USAWA) > -20; }          // hifadhi ya jamii
+    kama (j == 6) { rudisha hati_w(d, MHIMILI_USAWA) > 60 && hati_w(d, MHIMILI_UHURU) < 20; }   // umiliki wa pamoja
+    kama (j == 7) { rudisha hati_w(d, MHIMILI_USAWA) <= 60 && a != DOLA_BILA_SERIKALI; }       // soko na mali binafsi
     kama (j == 8) { rudisha a == DOLA_UTAWALA_WA_KIDINI; }             // dini ya dola
     kama (j == 9) { rudisha a != DOLA_UTAWALA_WA_KIDINI; }             // kutokuwa na dini ya dola
     kama (j == 10) { rudisha hati_mwaka >= 1960; }                     // mazingira
     kama (j == 11) { rudisha 1; }                                      // urithi wa utamaduni
-    kama (j == 12) { rudisha hati_mwaka >= 1919 && kuu == 0; }         // amani na sheria za kimataifa
+    kama (j == 12) { rudisha hati_mwaka >= 1919 && hati_w(d, MHIMILI_TAIFA) < 50; }         // amani na sheria za kimataifa
     kama (j == 13) { rudisha 1; }                                      // kilimo na ardhi
     kama (j == 14) { rudisha hati_mwaka >= 1850; }                     // miundombinu
-    rudisha hati_mwaka >= 1945 && kuu == 0;                            // usawa wa wanawake
+    rudisha hati_mwaka >= 1945 && hati_w(d, MHIMILI_MILA) < 60;                            // usawa wa wanawake
 }
 
 w0 hati_zalisha_wajibu(Dola* d) {
@@ -690,8 +739,8 @@ n64 haki_sababu(Dola* d, n64 h) {
     kama (h == 9) { b = 1 | 4 | 64; }
     kama (h == 4 || h == 5) { b = 64 | 128; }
     kama (h == 17 || h == 34 || h == 35) { b = 2 | 16 | 32; }
-    kama (hati_ni_kuu(d) || d->aina == DOLA_CHAMA_KIMOJA) { b = b | 1 | 32; }
-    kama (d->aina == DOLA_UTAWALA_WA_KIDINI) { b = b | 8; }
+    kama (hati_w(d, MHIMILI_MAMLAKA) > 40) { b = b | 1 | 32; }
+    kama (hati_w(d, MHIMILI_MILA) > 50) { b = b | 8; }
     rudisha b;
 }
 
@@ -739,18 +788,15 @@ w0 hati_orodha_ya_biti(n64 biti, n64 juu, n8* nje, n64 uwezo, n64 aina) {
 
 // Dhamana za kesi ya haki: zama na aina ya utawala huamua zipi zipo.
 w0 hati_zalisha_kesi(Dola* d) {
-    n32 kuu = hati_ni_kuu(d);
-    n32 jamhuri = hati_ni_jamhuri(d);
     n64 g = 0;
     wakati (g < 12) {
         n32 ipo = 1;
         n64 p1 = 0;
         kama (g == 0 || g == 1) { p1 = hati_badilisha(24 + 24 * (hati_nasibu(800 + g, 44) % 3), 800 + g, 45, 12); }
-        kama (g == 3) { ipo = hati_mwaka >= 1930 || jamhuri; }
+        kama (g == 3) { ipo = hati_mwaka >= 1930 || hati_huria(d) > 20; }
         kama (g == 10) { p1 = 0; }
         kama (g == 11) { ipo = hati_mwaka >= 1950; }
-        kama (kuu && (g == 2 || g == 3 || g == 6 || g == 9 || g == 11)) { ipo = 0; }
-        kama (d->aina == DOLA_CHAMA_KIMOJA && (g == 3 || g == 11)) { ipo = 0; }
+        kama (hati_huria(d) < -30 && (g == 2 || g == 3 || g == 6 || g == 9 || g == 11)) { ipo = 0; }
         kama (ipo) { hati_ongeza(K_KESI, g, 1, p1, 0, 0); }
         g = g + 1;
     }
@@ -758,13 +804,12 @@ w0 hati_zalisha_kesi(Dola* d) {
 
 // Njia za kupata na kupoteza uraia, na alama za taifa.
 w0 hati_zalisha_uraia_na_alama(Dola* d) {
-    n32 kuu = hati_ni_kuu(d);
     // kuzaliwa: ardhi (1) au damu (0)
     hati_ongeza(K_URAIA_NJIA, 0, hati_badilisha(hati_nasibu(820, 46) % 2, 820, 47, 1), 0, 0, 0);
     hati_ongeza(K_URAIA_NJIA, 1, 1, 0, 0, 0);
     hati_ongeza(K_URAIA_NJIA, 2, 1, hati_badilisha(2 + hati_nasibu(821, 48) % 6, 821, 49, 1), 0, 0);
     hati_ongeza(K_URAIA_NJIA, 3, 1, hati_badilisha(5 + hati_nasibu(822, 50) % 11, 822, 51, 1), 0, 0);
-    n64 mbili = hati_mwaka >= 1900 && kuu == 0 && hati_nasibu(823, 52) % 3 != 0;
+    n64 mbili = hati_mwaka >= 1900 && hati_w(d, MHIMILI_TAIFA) < 50 && hati_nasibu(823, 52) % 3 != 0;
     hati_ongeza(K_URAIA_NJIA, 4, hati_badilisha(mbili, 823, 53, 1), 0, 0, 0);
     hati_ongeza(K_URAIA_NJIA, 5, 1, 0, 0, 0);
     hati_ongeza(K_URAIA_NJIA, 6, 1, 0, 0, 0);
@@ -801,7 +846,7 @@ w0 hati_zalisha_utendaji(Dola* d, Wahusika* w) {
             hati_ongeza(K_WIZARA, i, 0, 0, 0, 0);
             n64 maeneo = hati_maeneo_ya_wizara(m->cheo);
             kama (maeneo != 0) { hati_ongeza(K_WIZARA_KAZI, i, maeneo, 0, 0, 0); }
-            kama (bunge && hati_ni_kuu(d) == 0) { hati_ongeza(K_WIZARA_MASWALI, i, hati_badilisha(1 + hati_nasibu(840 + i, 56) % 4, 840 + i, 57, 1), 0, 0, 0); }
+            kama (bunge) { hati_ongeza(K_WIZARA_MASWALI, i, hati_badilisha(1 + hati_nasibu(840 + i, 56) % 4, 840 + i, 57, 1), 0, 0, 0); }
         }
         kama (m->ujazaji == UJAZAJI_KUTEULIWA && m->tawi != TAWI_OFISI) {
             hati_ongeza(K_UTEUZI, i, m->uhakiki + 1, hati_badilisha(14 + hati_nasibu(100 + i, 6) % 47, 100 + i, 9, 7), 0, 0);
@@ -814,7 +859,6 @@ w0 hati_zalisha_utendaji(Dola* d, Wahusika* w) {
 }
 
 w0 hati_zalisha_bunge(Dola* d, Wahusika* w) {
-    n32 jamhuri = hati_ni_jamhuri(d);
     n64 b = 0;
     wakati (b < d->mabaraza) {
         hati_ongeza(K_BARAZA, b, d->baraza_viti[b], d->baraza_uteuzi[b], 0, 0);
@@ -823,7 +867,7 @@ w0 hati_zalisha_bunge(Dola* d, Wahusika* w) {
         hati_ongeza(K_AKIDI, b, hati_badilisha(25 + hati_nasibu(b, 9) % 26, 62 + b, 14, 5), 0, 0, 0);
         hati_ongeza(K_SPIKA, b, hati_badilisha(60 + hati_nasibu(b, 10) % 16, 63 + b, 15, 2), 0, 0, 0);
         hati_ongeza(K_VIKAO, b, hati_badilisha(2 + hati_nasibu(b, 11) % 3, 64 + b, 16, 1), 0, 0, 0);
-        hati_ongeza(K_KINGA, b, jamhuri || d->aina == DOLA_UFALME_WA_KATIBA, 0, 0, 0);
+        hati_ongeza(K_KINGA, b, hati_huria(d) > 0, 0, 0, 0);
         hati_ongeza(K_NAFASI_WAZI, b, hati_badilisha(60 + hati_nasibu(b, 12) % 61, 65 + b, 17, 10), 0, 0, 0);
         n64 avunja = 0;
         kama (b == 0) {
@@ -852,15 +896,13 @@ w0 hati_zalisha_bunge(Dola* d, Wahusika* w) {
 }
 
 w0 hati_zalisha_mengine(Dola* d, Wahusika* w) {
-    n32 jamhuri = hati_ni_jamhuri(d);
-    n32 kuu = hati_ni_kuu(d);
     n32 bunge = d->mabaraza > 0;
     hati_ongeza(K_MAHAKAMA, 0 - 1, NGUVU_BENCHI, 0, 0, 0);
     hati_ongeza(K_JAJI_MUDA, 0 - 1, hati_badilisha(65 + hati_nasibu(7, 13) % 11, 70, 20, 1), 0, 0, 0);
     hati_ongeza(K_JAJI_KUONDOLEWA, 0 - 1, hati_badilisha(60 + hati_nasibu(8, 14) % 21, 71, 21, 5), 0, 0, 0);
-    hati_ongeza(K_MAPITIO, 0 - 1, jamhuri, 0, 0, 0);
+    hati_ongeza(K_MAPITIO, 0 - 1, hati_huria(d) > 0, 0, 0, 0);
     n64 mamlaka = 1 | 2 | 4 | 64;
-    kama (jamhuri) { mamlaka = mamlaka | 8 | 32; }
+    kama (hati_huria(d) > 0) { mamlaka = mamlaka | 8 | 32; }
     kama (d->mabaraza > 0) { mamlaka = mamlaka | 16; }
     hati_ongeza(K_MAHAKAMA_MAMLAKA, 0 - 1, hati_badilisha(mamlaka, 890, 70, 1), 0, 0, 0);
     hati_zalisha_mahakama_maalum(d);
@@ -870,7 +912,7 @@ w0 hati_zalisha_mengine(Dola* d, Wahusika* w) {
         kama (m->tawi == TAWI_JESHI) { hati_ongeza(K_AMRI_JESHI, i, 0, 0, 0, 0); }
         i = i + 1;
     }
-    hati_ongeza(K_VITA, 0 - 1, bunge && kuu == 0, hati_badilisha(51 + hati_nasibu(9, 15) % 17, 72, 22, 1), 0, 0);
+    hati_ongeza(K_VITA, 0 - 1, bunge && hati_w(d, MHIMILI_MAMLAKA) < 50, hati_badilisha(51 + hati_nasibu(9, 15) % 17, 72, 22, 1), 0, 0);
     hati_zalisha_ulinzi(d, w);
     n64 r = 0;
     wakati (r < hati_mikoa_idadi) {
@@ -882,12 +924,12 @@ w0 hati_zalisha_mengine(Dola* d, Wahusika* w) {
     hati_ongeza(K_BAJETI, 0 - 1, 1 + hati_nasibu(10, 16) % 12, 0, 0, 0);
     kama (bunge) { hati_ongeza(K_KODI, 0 - 1, 0, 0, 0, 0); }
     hati_ongeza(K_DENI, 0 - 1, hati_badilisha(30 + hati_nasibu(11, 17) % 71, 73, 23, 5), 0, 0, 0);
-    hati_ongeza(K_BENKI, 0 - 1, jamhuri, 0, 0, 0);
+    hati_ongeza(K_BENKI, 0 - 1, hati_huria(d) > 0, 0, 0, 0);
     hati_ongeza(K_UKAGUZI, 0 - 1, hati_badilisha(5 + hati_nasibu(12, 18) % 6, 74, 24, 1), 0, 0, 0);
     kama (hati_mikoa_idadi > 0) {
         n64 sehemu = 5;
         kama (d->aina == DOLA_JAMHURI_YA_SHIRIKISHO || d->aina == DOLA_MUUNGANO_WA_DOLA || d->aina == DOLA_MUUNGANO_WA_KABILA) { sehemu = 30 + hati_nasibu(890, 73) % 16; }
-        sivyo kama (kuu == 0) { sehemu = 10 + hati_nasibu(890, 74) % 16; }
+        sivyo kama (hati_w(d, MHIMILI_MAMLAKA) < 40) { sehemu = 10 + hati_nasibu(890, 74) % 16; }
         hati_ongeza(K_MGAO_JUMLA, 0 - 1, hati_badilisha(sehemu, 891, 75, 2), 0, 0, 0);
     }
     n64 kura = 0;
@@ -900,11 +942,11 @@ w0 hati_zalisha_mengine(Dola* d, Wahusika* w) {
         hati_ongeza(K_UCHAGUZI_MIGOGORO, 0 - 1, hati_badilisha(30 + hati_nasibu(894, 79) % 151, 894, 80, 10), 0, 0, 0);
     }
     hati_ongeza(K_VYAMA, 0 - 1, d->vyama > 1, hati_badilisha(5 + hati_nasibu(14, 20) % 46, 77, 27, 5), 0, 0);
-    hati_ongeza(K_DHARURA, 0 - 1, hati_badilisha(30 + hati_nasibu(15, 21) % 61, 78, 28, 10), hati_badilisha(60 + hati_nasibu(16, 22) % 16, 79, 29, 3), kuu, 0);
+    hati_ongeza(K_DHARURA, 0 - 1, hati_badilisha(30 + hati_nasibu(15, 21) % 61, 78, 28, 10), hati_badilisha(60 + hati_nasibu(16, 22) % 16, 79, 29, 3), hati_w(d, MHIMILI_MAMLAKA) > 70 && hati_w(d, MHIMILI_UHURU) < -40, 0);
     n64 hatua = 67;
-    kama (kuu) { hatua = 51; }
-    hati_ongeza(K_MAREKEBISHO, 0 - 1, hati_badilisha(hatua, 80, 30, 3), jamhuri, hati_badilisha(30 + hati_nasibu(17, 23) % 61, 81, 31, 10), 0);
-    hati_ongeza(K_ZISIZOGUSWA, 0 - 1, jamhuri, 0, 0, 0);
+    kama (hati_w(d, MHIMILI_MAMLAKA) > 50) { hatua = 51; }
+    hati_ongeza(K_MAREKEBISHO, 0 - 1, hati_badilisha(hatua, 80, 30, 3), hati_w(d, MHIMILI_UHURU) > 20, hati_badilisha(30 + hati_nasibu(17, 23) % 61, 81, 31, 10), 0);
+    hati_ongeza(K_ZISIZOGUSWA, 0 - 1, hati_w(d, MHIMILI_UHURU) > 30, 0, 0, 0);
     hati_ongeza(K_MPITO, 0 - 1, d->umri_wa_katiba, 0, 0, 0);
     hati_zalisha_kina(d, w);
 }
@@ -914,14 +956,13 @@ w0 hati_zalisha_mengine(Dola* d, Wahusika* w) {
 // baraza la kila mkoa.
 w0 hati_zalisha_kina(Dola* d, Wahusika* w) {
     n32 shirikisho = d->aina == DOLA_JAMHURI_YA_SHIRIKISHO || d->aina == DOLA_MUUNGANO_WA_DOLA || d->aina == DOLA_MUUNGANO_WA_KABILA;
-    n32 kuu = hati_ni_kuu(d);
     n64 e = 0;
     wakati (e < MAENEO_IDADI) {
         kama (eneo_mwaka(e) <= hati_mwaka) {
             n64 ngazi = 0;
             kama (e >= 9) {
                 kama (shirikisho) { ngazi = 1 + hati_nasibu(200 + e, 30) % 2; }
-                sivyo kama (kuu == 0 && hati_nasibu(200 + e, 31) % 3 == 0) { ngazi = 1; }
+                sivyo kama (hati_w(d, MHIMILI_MAMLAKA) < 40 && hati_nasibu(200 + e, 31) % 3 == 0) { ngazi = 1; }
             }
             hati_ongeza(K_MGAWANYO, e, hati_badilisha(ngazi, 200 + e, 32, 1), 0, 0, 0);
         }
@@ -948,7 +989,7 @@ w0 hati_zalisha_kina(Dola* d, Wahusika* w) {
     n64 t = 0;
     wakati (t < TAASISI_IDADI) {
         n32 inafaa = taasisi_mwaka(t) <= hati_mwaka;
-        kama ((t == 1 || t == 3 || t == 5) && (kuu || d->aina == DOLA_CHAMA_KIMOJA)) { inafaa = 0; }
+        kama ((t == 1 || t == 3) && hati_huria(d) < -30) { inafaa = 0; }
         kama (t == 4 && d->mabaraza == 0) { inafaa = 0; }
         kama (inafaa) { hati_ongeza(K_TAASISI, t, hati_badilisha(4 + hati_nasibu(500 + t, 39) % 7, 500 + t, 40, 1), 0, 0, 0); }
         t = t + 1;
@@ -964,7 +1005,7 @@ w0 hati_zalisha_mahakama_maalum(Dola* d) {
         kama (m == 1) { ipo = hati_mwaka >= 1920; }                 // kazi
         kama (m == 2) { ipo = hati_mwaka >= 1900 || hati_nasibu(900 + m, 81) % 2 == 0; }
         kama (m == 3) { ipo = hati_mwaka >= 1850; }                 // biashara
-        kama (m == 4) { ipo = d->aina == DOLA_UTAWALA_WA_KIDINI || (wahusika_ni_ufalme(d) && hati_nasibu(900 + m, 82) % 3 == 0); }
+        kama (m == 4) { ipo = d->aina == DOLA_UTAWALA_WA_KIDINI || hati_w(d, MHIMILI_MILA) > 50; }
         kama (m == 5) { ipo = hati_mwaka >= 1910; }                 // watoto
         kama (m == 6) { ipo = hati_mwaka >= 1870 && hati_nasibu(900 + m, 83) % 2 == 0; }
         kama (ipo) { hati_ongeza(K_MAHAKAMA_MAALUM, m, hati_badilisha(3 + hati_nasibu(910 + m, 84) % 7, 910 + m, 85, 1), 0, 0, 0); }
@@ -975,11 +1016,10 @@ w0 hati_zalisha_mahakama_maalum(Dola* d) {
 // Majeshi: kikomo cha kila tawi hutoka kwenye majeshi halisi ya taifa (na
 // nafasi ya ziada), jeshi la lazima kwa aina ya utawala na zama.
 w0 hati_zalisha_ulinzi(Dola* d, Wahusika* w) {
-    n32 kuu = hati_ni_kuu(d);
     n64 a = 0;
     wakati (a < VK_AINA) {
         n64 watu = 0;
-        kama (vk_mataifa > 0 && hati_taifa >= 0 && hati_taifa < vk_mataifa) { watu = vk_tawi_la_msingi(hati_taifa, d->aina, a, hati_mwaka); }
+        kama (vk_mataifa > 0 && hati_taifa >= 0 && hati_taifa < vk_mataifa) { watu = vk_tawi_la_msingi(hati_taifa, d, a, hati_mwaka); }
         kama (watu > 0) {
             n64 nafasi = 160 + hati_nasibu(920 + a, 86) % 81;          // asilimia 160..240
             n64 kikomo = (watu * nafasi) / 100000 + 1;
@@ -988,9 +1028,10 @@ w0 hati_zalisha_ulinzi(Dola* d, Wahusika* w) {
         a = a + 1;
     }
     n64 miezi = 0;
-    kama (d->aina == DOLA_UTAWALA_WA_KIJESHI || d->aina == DOLA_UDIKTETA) { miezi = 18 + hati_nasibu(930, 88) % 19; }
-    sivyo kama (d->aina == DOLA_CHAMA_KIMOJA) { miezi = 18 + hati_nasibu(930, 89) % 7; }
-    sivyo kama (kuu && hati_mwaka >= 1800) { miezi = 12 + hati_nasibu(930, 90) % 13; }
+    // jeshi la lazima hufuata waandishi: taifa na mamlaka huelekea huduma ndefu
+    n64 nguvu_ya_taifa = (hati_w(d, MHIMILI_TAIFA) + hati_w(d, MHIMILI_MAMLAKA)) / 2;
+    kama (nguvu_ya_taifa > 50 && hati_mwaka >= 1800) { miezi = 18 + hati_nasibu(930, 88) % 19; }
+    sivyo kama (nguvu_ya_taifa > 20 && hati_mwaka >= 1800) { miezi = 12 + hati_nasibu(930, 90) % 13; }
     sivyo kama (hati_mwaka >= 1870 && hati_mwaka < 1970 && hati_nasibu(930, 91) % 5 < 3) { miezi = 12 + hati_nasibu(930, 92) % 7; }
     sivyo kama (hati_mwaka >= 1970 && hati_nasibu(930, 93) % 10 < 3) { miezi = 9 + hati_nasibu(930, 94) % 10; }
     hati_ongeza(K_LAZIMA_JESHI, 0 - 1, hati_badilisha(miezi, 931, 95, 3), hati_badilisha(18 + hati_nasibu(932, 96) % 4, 932, 97, 1), 0, 0);
@@ -1001,7 +1042,7 @@ w0 hati_zalisha_ulinzi(Dola* d, Wahusika* w) {
     n64 shirikisho = d->aina == DOLA_JAMHURI_YA_SHIRIKISHO || d->aina == DOLA_MUUNGANO_WA_DOLA;
     hati_ongeza(K_POLISI, 0 - 1, shirikisho, 0, 0, 0);
     kama (hati_mwaka >= 1900) {
-        n64 usimamizi = hati_ni_jamhuri(d) || d->aina == DOLA_UFALME_WA_KATIBA;
+        n64 usimamizi = hati_huria(d) > 0;
         hati_ongeza(K_UJASUSI, 0 - 1, usimamizi, 0, 0, 0);
     }
 }
@@ -1199,7 +1240,7 @@ w0 hati_zalisha_majedwali(Dola* d, Wahusika* w, n64 taifa) {
         kama (hati_mwaka >= 1900) { kazi = kazi | 32 | 64; } // zahanati, zimamoto
         kama (hati_mwaka >= 1920) { kazi = kazi | 128; }    // mipango ya miji
         kama (hati_mwaka >= 1885) { kazi = kazi | 256; }    // taa na umeme wa mtaa
-        kama (hati_ni_kuu(d) == 0) { kazi = kazi | 512; }   // leseni za biashara
+        kazi = kazi | 512;                                  // leseni za biashara
         kama (hati_wilaya_watu[i] > 200000) { kazi = kazi | 1024; } // usafiri wa umma
         hati_ongeza(K_WILAYA_MAMLAKA, i, hati_badilisha(kazi, 1100 + i, 99, 1), 0, 0, 0);
         i = i + 1;
@@ -1490,21 +1531,59 @@ w0 hati_tumia(Dola* d, n64 kifungu, n64 kigezo, n64 thamani, n64 zamu) {
         hati_utawala_umebadilika = 1;
         rudisha;
     }
+    n64 kabla = k->p0;
+    kama (kigezo == 1) { kabla = k->p1; }
+    kama (kigezo == 2) { kabla = k->p2; }
+    kama (kigezo == 3) { kabla = k->p3; }
     kama (kigezo < 0) { k->hai = 0; }
     kama (kigezo == 0) { k->p0 = thamani; }
     kama (kigezo == 1) { k->p1 = thamani; }
     kama (kigezo == 2) { k->p2 = thamani; }
     kama (kigezo == 3) { k->p3 = thamani; }
     k->marekebisho = k->marekebisho + 1;
-    // athari: kukata haki hupunguza uhalali; kupanua mamlaka huleta utulivu
-    // kwa gharama ya uhalali
-    kama (k->aina == K_HAKI && kigezo < 0) { d->uhalali = dola_rekebisha(d->uhalali, 0 - 4); }
-    kama (k->aina == K_HAKI && kigezo == 0) { d->uhalali = dola_rekebisha(d->uhalali, 1 - thamani * 2); }
-    kama (k->aina == K_UHURU_HABARI) { kama (thamani) { d->uhalali = dola_rekebisha(d->uhalali, 4); } sivyo { d->uhalali = dola_rekebisha(d->uhalali, 0 - 6); } }
-    kama (k->aina == K_DHARURA && kigezo == 2 && thamani) { d->utulivu = dola_rekebisha(d->utulivu, 5); d->uhalali = dola_rekebisha(d->uhalali, 0 - 5); }
-    kama (k->aina == K_MKUU_UTEUZI && kigezo >= 1) { d->uhalali = dola_rekebisha(d->uhalali, 0 - 2); }
-    kama (k->aina == K_KURA && kigezo == 0) { d->uhalali = dola_rekebisha(d->uhalali, 1 - thamani * 2); }
-    kama (k->aina == K_VYAMA && kigezo == 0) { kama (thamani) { d->uhalali = dola_rekebisha(d->uhalali, 5); } sivyo { d->uhalali = dola_rekebisha(d->uhalali, 0 - 8); } }
+    // athari: hakuna marekebisho yaliyo mazuri au mabaya yenyewe; vyama vya
+    // dola (kwa viti vyao) hupokea mwelekeo wa badiliko kwa misimamo yao
+    n64 h = k->mada;
+    kama (k->aina == K_HAKI && kigezo < 0) {
+        dola_pokea(d, 8, 0 - haki_mwelekeo(h, 0), 0 - haki_mwelekeo(h, 1), 0 - haki_mwelekeo(h, 2), 0 - haki_mwelekeo(h, 3), 0 - haki_mwelekeo(h, 4));
+    }
+    kama (k->aina == K_HAKI && kigezo == 0 && thamani != kabla) {
+        // mipaka zaidi ni kusogea mbali na mwelekeo wa haki
+        n64 ishara = 1;
+        kama (thamani > kabla) { ishara = -1; }
+        dola_pokea(d, 4, ishara * haki_mwelekeo(h, 0), ishara * haki_mwelekeo(h, 1), ishara * haki_mwelekeo(h, 2), ishara * haki_mwelekeo(h, 3), ishara * haki_mwelekeo(h, 4));
+    }
+    kama (k->aina == K_UHURU_HABARI && thamani != kabla) {
+        n64 ishara = 1;
+        kama (thamani == 0) { ishara = -1; }
+        dola_pokea(d, 8, ishara * 80, 0, ishara * -40, 0, 0);
+    }
+    kama (k->aina == K_DHARURA && kigezo == 2 && thamani != kabla) {
+        n64 ishara = 1;
+        kama (thamani == 0) { ishara = -1; }
+        dola_pokea(d, 8, ishara * -60, 0, ishara * 60, 0, 0);
+    }
+    kama (k->aina == K_MKUU_UTEUZI && (kigezo == 1 || kigezo == 2) && thamani != kabla) {
+        // muhula mrefu (0 = maisha) au kikomo kilichoondolewa ni mamlaka zaidi
+        n64 a = kabla;
+        n64 b = thamani;
+        kama (a == 0) { a = 99; }
+        kama (b == 0) { b = 99; }
+        n64 ishara = 1;
+        kama (b < a) { ishara = -1; }
+        dola_pokea(d, 4, ishara * -20, 0, ishara * 50, ishara * 20, 0);
+    }
+    kama (k->aina == K_KURA && kigezo == 0 && thamani != kabla) {
+        // namba kubwa ni haki ya kura finyu zaidi
+        n64 ishara = 1;
+        kama (thamani > kabla) { ishara = -1; }
+        dola_pokea(d, 6, ishara * 40, ishara * 50, ishara * -20, ishara * -20, 0);
+    }
+    kama (k->aina == K_VYAMA && kigezo == 0 && thamani != kabla) {
+        n64 ishara = 1;
+        kama (thamani == 0) { ishara = -1; }
+        dola_pokea(d, 8, ishara * 60, 0, ishara * -40, 0, 0);
+    }
     d->umri_wa_katiba = 0;
     kama (hati_historia == 0) { hati_historia = tenga(8 * 4 * HATI_HISTORIA_JUU); }
     kama (hati_historia_idadi < HATI_HISTORIA_JUU) {
@@ -1669,7 +1748,12 @@ w0 hati_andika_jumla(Kifungu* k, n64 i, Dola* d, n8* taifa, n8* nje, n64 uwezo) 
     kama (t == K_MAMLAKA) {
         n8* chanzo = ui("the people, who exercise it through their representatives and by referendum");
         kama (wahusika_ni_ufalme(d)) { chanzo = ui("the Crown, which exercises it according to this Constitution"); }
-        kama (d->aina == DOLA_CHAMA_KIMOJA) { chanzo = ui("the working people, under the leadership of the Party"); }
+        // chama kimoja: kauli hufuata itikadi ya chama chenyewe
+        kama (d->aina == DOLA_CHAMA_KIMOJA) {
+            chanzo = ui("the people, under the leadership of the Party");
+            kama (hati_w(d, MHIMILI_USAWA) > 60) { chanzo = ui("the working people, under the leadership of the Party"); }
+            sivyo kama (hati_w(d, MHIMILI_TAIFA) > 60) { chanzo = ui("the nation, under the leadership of the Party"); }
+        }
         kama (d->aina == DOLA_UTAWALA_WA_KIJESHI) { chanzo = ui("the nation, held in trust by the Armed Forces"); }
         kama (d->aina == DOLA_UTAWALA_WA_KIDINI) { chanzo = ui("God, and is exercised by the guardians of the Faith"); }
         mfuatano_umbiza(nje, uwezo, ui("Sovereignty belongs to %s."), chanzo, 0, 0, 0, 0, 0);
@@ -2027,7 +2111,11 @@ w0 hati_andika_kina(Kifungu* k, n64 i, Dola* d, Wahusika* w, n8* taifa, n8* nje,
     kama (t == K_KIAPO && m != 0) {
         n8* ahadi = ui("faithfully serve the people of %s");
         kama (wahusika_ni_ufalme(d)) { ahadi = ui("be faithful and bear true allegiance to the Crown of %s"); }
-        kama (d->aina == DOLA_CHAMA_KIMOJA) { ahadi = ui("serve the working people of %s and the Party"); }
+        kama (d->aina == DOLA_CHAMA_KIMOJA) {
+            ahadi = ui("serve the people of %s and the Party");
+            kama (hati_w(d, MHIMILI_USAWA) > 60) { ahadi = ui("serve the working people of %s and the Party"); }
+            sivyo kama (hati_w(d, MHIMILI_TAIFA) > 60) { ahadi = ui("serve the nation of %s and the Party"); }
+        }
         kama (d->aina == DOLA_UTAWALA_WA_KIDINI) { ahadi = ui("serve God and the faithful of %s"); }
         kama (d->aina == DOLA_UTAWALA_WA_KIJESHI) { ahadi = ui("serve %s and the Armed Forces"); }
         mfuatano_umbiza(a, 640, ahadi, taifa, 0, 0, 0, 0, 0);

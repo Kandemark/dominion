@@ -4,6 +4,10 @@
 // msimbo), Kiswahili, Kifaransa. Alama %s na %d hubaki kwa mpangilio uleule.
 
 w0 maneno_jaza_ziada() {
+    maneno_sajili("the people, under the leadership of the Party", "wananchi, chini ya uongozi wa Chama", "le peuple, sous la direction du Parti");
+    maneno_sajili("the nation, under the leadership of the Party", "taifa, chini ya uongozi wa Chama", "la nation, sous la direction du Parti");
+    maneno_sajili("serve the people of %s and the Party", "kuwatumikia wananchi wa %s na Chama", "servir le peuple de %s et le Parti");
+    maneno_sajili("serve the nation of %s and the Party", "kulitumikia taifa la %s na Chama", "servir la nation de %s et le Parti");
     maneno_sajili("ord|%s no. %d, %s", "%s Na. %d, %s", "%s n° %d, %s");
     maneno_sajili("ord|%s no. %d", "%s Na. %d", "%s n° %d");
     maneno_sajili(" A member who leaves the party for which he or she was elected also loses the seat.", " Mjumbe anayehama chama kilichomchagua pia hupoteza kiti.", " Un membre qui quitte le parti sous lequel il a été élu perd aussi son siège.");
