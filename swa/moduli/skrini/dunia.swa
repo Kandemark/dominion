@@ -3,6 +3,7 @@ husisha { moduli/skrini/mkutano.swa }
 husisha { moduli/akili/uamuzi.swa }
 husisha { moduli/onyesho/chati_kadi.swa }
 husisha { moduli/onyesho/bofya.swa }
+husisha { moduli/onyesho/miraba.swa }
 
 // dunia.swa -- ukurasa wa World: kituo cha dunia nzima.
 //
@@ -373,6 +374,9 @@ n64 DUNIA_HABARI_UKURASA = 6;   // ukurasa wa habari (hoja = -1 / +1)
 
 n64 skrini_dunia_chujio = -1;
 n64 skrini_dunia_mpangilio = 0;
+n64 skrini_dunia_miraba = 0;           // RANKINGS: 0 jedwali, 1 treemap
+n64 DUNIA_MTAZAMO = 10;                // hoja: 0 jedwali, 1 treemap
+n8* dunia_maelezo_ya_miraba = 0;       // mistari ya pili ya elea, 24 kwa kila taifa
 n64 skrini_dunia_ukurasa = 0;
 n64 skrini_dunia_habari_ukurasa = 0;
 
@@ -584,6 +588,32 @@ n64 skrini_dunia_thamani_ya_mpangilio(Mchezo* g, n64 t) {
 
 // Jedwali la nafasi: nafasi, taifa, pato, ukuaji wa mwaka (pamoja na
 // mstari mdogo), utulivu, uhalali, aina ya utawala.
+// Treemap ya mataifa yote: eneo = pato (au watu ukipanga kwa watu), rangi =
+// rangi ya taifa kwenye ramani. Kubofya kigae hufungua taifa.
+w0 skrini_dunia_miraba_chora(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    kama (dunia_maelezo_ya_miraba == 0) { dunia_maelezo_ya_miraba = tenga(24 * 512); }
+    miraba_anza();
+    n64 i = 0;
+    wakati (i < tm->idadi && i < 512) {
+        TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, i);
+        n64 v = skrini_pato_la_taifa(tn);
+        kama (skrini_dunia_mpangilio == 3) { v = tn->idadi_ya_watu; }
+        n8* m = &dunia_maelezo_ya_miraba[24 * i];
+        n8 a[16];
+        sura_asilimia(a, skrini_dunia_ukuaji(g, i, 52), 1);
+        mfuatano_umbiza(m, 24, ui("%s 1Y"), a, 0, 0, 0, 0, 0);
+        miraba_ongeza(tn->jina, v, tn->rangi, i, m);
+        i = i + 1;
+    }
+    sura_rangi(SURA_HAFIFU);
+    kama (skrini_dunia_mpangilio == 3) { sura_lebo(ui("Area is population. Click a nation to open it."), x + 16, y + h - 24, 11); }
+    sivyo { sura_lebo(ui("Area is GDP. Click a nation to open it."), x + 16, y + h - 24, 11); }
+    miraba_chora(x + 16, y + 42, w - 32, h - 74);
+    i = 0;
+    wakati (i < miraba_idadi) { bofya_ongeza(miraba_x[i], miraba_y[i], miraba_w[i], miraba_h[i], DUNIA_FUNGUA, miraba_kitambulisho[i]); i = i + 1; }
+}
+
 w0 skrini_dunia_jedwali(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     sura_paneli(x, y, w, h, ui("RANKINGS"));
@@ -602,6 +632,11 @@ w0 skrini_dunia_jedwali(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
         k = k - 1;
     }
     achilia lebo;
+    // mtazamo: jedwali au treemap
+    n64 tx = x + 16 + maandishi_upana(sura_nene, ui("RANKINGS"), 12) + 18;
+    tx = tx + skrini_dunia_kitufe(ui("Table"), tx, y + 8, skrini_dunia_miraba == 0, DUNIA_MTAZAMO, 0) + 6;
+    skrini_dunia_kitufe(ui("Treemap"), tx, y + 8, skrini_dunia_miraba == 1, DUNIA_MTAZAMO, 1);
+    kama (skrini_dunia_miraba == 1) { skrini_dunia_miraba_chora(g, x, y, w, h); rudisha; }
     // panga
     n64 n = tm->idadi;
     n64* mpangilio = tenga(8 * n);

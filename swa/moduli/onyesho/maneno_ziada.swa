@@ -1513,6 +1513,11 @@ w0 maneno_jaza_ziada_3() {
 
 // maamuzi ya lazima, mshauri na tiketi ya oda (2026-11)
 w0 maneno_jaza_ziada_4() {
+    maneno_sajili("Table", "Jedwali", "Tableau");
+    maneno_sajili("Treemap", "Ramani ya miraba", "Carte proportionnelle");
+    maneno_sajili("%s 1Y", "%s mwaka 1", "%s sur 1 an");
+    maneno_sajili("Area is population. Click a nation to open it.", "Eneo ni idadi ya watu. Bofya taifa kulifungua.", "La surface est la population. Cliquez une nation pour l'ouvrir.");
+    maneno_sajili("Area is GDP. Click a nation to open it.", "Eneo ni pato. Bofya taifa kulifungua.", "La surface est le PIB. Cliquez une nation pour l'ouvrir.");
     maneno_sajili("Income tax", "Kodi ya mapato", "Impôt sur le revenu");
     maneno_sajili("Corporate tax", "Kodi ya makampuni", "Impôt sur les sociétés");
     maneno_sajili("Property tax", "Kodi ya mali", "Impôt foncier");

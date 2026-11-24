@@ -1,0 +1,195 @@
+husisha { moduli/onyesho/elea.swa }
+
+// miraba.swa -- treemap (ramani ya miraba): sehemu za jumla kama
+// mistatili ambayo eneo lake ni thamani yake.
+//
+// Mpangilio ni "squarified" (Bruls, Huizing, van Wijk): vipengele
+// vimepangwa kubwa kwanza, na kila safu hujazwa kwenye upande mfupi wa
+// eneo lililobaki mpaka kuongeza kipengele kungeharibu uwiano wa umbo
+// (mistatili hukaribia miraba, hivyo maeneo hulinganishwa kwa urahisi).
+//
+// Matumizi:
+//   miraba_anza();
+//   miraba_ongeza(lebo, thamani, rangi, kitambulisho);   // kwa kila kipengele
+//   miraba_chora(x, y, w, h, jumla_ya_maelezo);
+// Baada ya kuchora, miraba_x/y/w/h[i] na miraba_kitambulisho[i] hutumika na
+// mpigaji kuandikisha bofya (kwa mpangilio uliopangwa).
+
+n64 MIRABA_JUU = 512;
+n64 miraba_idadi = 0;
+n64* miraba_lebo = 0;
+n64* miraba_thamani = 0;
+n64* miraba_rangi = 0;
+n64* miraba_kitambulisho = 0;
+n64* miraba_maelezo = 0;        // n8* mstari wa pili wa elea (hiari)
+n64* miraba_x = 0;
+n64* miraba_y = 0;
+n64* miraba_w = 0;
+n64* miraba_h = 0;
+
+w0 miraba_anza() {
+    kama (miraba_lebo == 0) {
+        miraba_lebo = tenga(8 * MIRABA_JUU);
+        miraba_thamani = tenga(8 * MIRABA_JUU);
+        miraba_rangi = tenga(8 * MIRABA_JUU);
+        miraba_kitambulisho = tenga(8 * MIRABA_JUU);
+        miraba_maelezo = tenga(8 * MIRABA_JUU);
+        miraba_x = tenga(8 * MIRABA_JUU);
+        miraba_y = tenga(8 * MIRABA_JUU);
+        miraba_w = tenga(8 * MIRABA_JUU);
+        miraba_h = tenga(8 * MIRABA_JUU);
+    }
+    miraba_idadi = 0;
+}
+
+w0 miraba_ongeza(n8* lebo, n64 thamani, n64 rangi, n64 kitambulisho, n8* maelezo) {
+    kama (miraba_idadi >= MIRABA_JUU || thamani <= 0) { rudisha; }
+    n64 i = miraba_idadi;
+    miraba_lebo[i] = lebo;
+    miraba_thamani[i] = thamani;
+    miraba_rangi[i] = rangi;
+    miraba_kitambulisho[i] = kitambulisho;
+    miraba_maelezo[i] = maelezo;
+    miraba_idadi = miraba_idadi + 1;
+}
+
+// Panga kubwa kwanza (vipengele vyote husogea pamoja).
+w0 miraba_panga() {
+    n64 i = 1;
+    wakati (i < miraba_idadi) {
+        n64 j = i;
+        wakati (j > 0 && miraba_thamani[j - 1] < miraba_thamani[j]) {
+            n64 t = miraba_thamani[j]; miraba_thamani[j] = miraba_thamani[j - 1]; miraba_thamani[j - 1] = t;
+            t = miraba_lebo[j]; miraba_lebo[j] = miraba_lebo[j - 1]; miraba_lebo[j - 1] = t;
+            t = miraba_rangi[j]; miraba_rangi[j] = miraba_rangi[j - 1]; miraba_rangi[j - 1] = t;
+            t = miraba_kitambulisho[j]; miraba_kitambulisho[j] = miraba_kitambulisho[j - 1]; miraba_kitambulisho[j - 1] = t;
+            t = miraba_maelezo[j]; miraba_maelezo[j] = miraba_maelezo[j - 1]; miraba_maelezo[j - 1] = t;
+            j = j - 1;
+        }
+        i = i + 1;
+    }
+}
+
+// Uwiano mbaya zaidi wa umbo wa safu (maeneo a..b, jumla s) kwenye upande l.
+d64 miraba_mbaya(d64* eneo, n64 a, n64 b, d64 s, d64 l) {
+    d64 juu = eneo[a];
+    d64 chini = eneo[a];
+    n64 i = a;
+    wakati (i <= b) {
+        kama (eneo[i] > juu) { juu = eneo[i]; }
+        kama (eneo[i] < chini) { chini = eneo[i]; }
+        i = i + 1;
+    }
+    kama (chini <= 0.0 || s <= 0.0) { rudisha 1000000.0; }
+    d64 l2 = l * l;
+    d64 s2 = s * s;
+    d64 r1 = (l2 * juu) / s2;
+    d64 r2 = s2 / (l2 * chini);
+    kama (r1 > r2) { rudisha r1; }
+    rudisha r2;
+}
+
+// Hesabu mistatili ndani ya (x, y, w, h).
+w0 miraba_panga_eneo(n64 x0, n64 y0, n64 w0_, n64 h0) {
+    kama (miraba_idadi == 0) { rudisha; }
+    d64* eneo = tenga(8 * miraba_idadi);
+    d64 jumla = 0.0;
+    n64 i = 0;
+    wakati (i < miraba_idadi) { d64 v = miraba_thamani[i]; jumla = jumla + v; i = i + 1; }
+    d64 x = x0;
+    d64 y = y0;
+    d64 w = w0_;
+    d64 h = h0;
+    d64 kipimo = (w * h) / jumla;
+    i = 0;
+    wakati (i < miraba_idadi) { d64 v = miraba_thamani[i]; eneo[i] = v * kipimo; i = i + 1; }
+    n64 a = 0;
+    wakati (a < miraba_idadi) {
+        d64 l = w;
+        kama (h < w) { l = h; }
+        // ongeza vipengele kwenye safu mpaka uwiano uzidi kuwa mbaya
+        n64 b = a;
+        d64 s = eneo[a];
+        n32 ongeza_zaidi = 1;
+        wakati (ongeza_zaidi && b + 1 < miraba_idadi) {
+            d64 s2 = s + eneo[b + 1];
+            kama (miraba_mbaya(eneo, a, b + 1, s2, l) <= miraba_mbaya(eneo, a, b, s, l)) { b = b + 1; s = s2; }
+            sivyo { ongeza_zaidi = 0; }
+        }
+        // weka safu: unene = s / l kwenye upande mfupi
+        d64 unene = s / l;
+        d64 nafasi = 0.0;
+        n64 k = a;
+        wakati (k <= b) {
+            d64 urefu = eneo[k] / unene;
+            kama (w >= h) {
+                // upande mfupi ni h: safu wima kushoto
+                miraba_x[k] = x;
+                miraba_y[k] = y + nafasi;
+                miraba_w[k] = unene;
+                miraba_h[k] = urefu;
+            } sivyo {
+                miraba_x[k] = x + nafasi;
+                miraba_y[k] = y;
+                miraba_w[k] = urefu;
+                miraba_h[k] = unene;
+            }
+            nafasi = nafasi + urefu;
+            k = k + 1;
+        }
+        kama (w >= h) { x = x + unene; w = w - unene; } sivyo { y = y + unene; h = h - unene; }
+        a = b + 1;
+    }
+    achilia eneo;
+}
+
+// Chora: kila mstatili kwa rangi yake, pengo la pikseli 2, lebo ikitosha.
+// Thamani hufomatiwa kwa sura_namba_fupi; elea huonyesha jina, thamani na
+// sehemu ya jumla (pamoja na maelezo ya kipengele).
+w0 miraba_chora(n64 x, n64 y, n64 w, n64 h) {
+    miraba_panga();
+    miraba_panga_eneo(x, y, w, h);
+    n64 jumla = 0;
+    n64 i = 0;
+    wakati (i < miraba_idadi) { jumla = jumla + miraba_thamani[i]; i = i + 1; }
+    i = 0;
+    wakati (i < miraba_idadi) {
+        n64 rx = miraba_x[i] + 1;
+        n64 ry = miraba_y[i] + 1;
+        n64 rw = miraba_w[i] - 2;
+        n64 rh = miraba_h[i] - 2;
+        kama (rw >= 1 && rh >= 1) {
+            // rangi ya taifa imefifishwa kuelekea usuli ili maandishi yasomeke
+            n64 c = miraba_rangi[i];
+            n64 r = (((c >> 16) & 255) * 170 + 20 * 86) / 256;
+            n64 g = (((c >> 8) & 255) * 170 + 26 * 86) / 256;
+            n64 b = ((c & 255) * 170 + 40 * 86) / 256;
+            turubai_brashi(sura_t, (r << 16) | (g << 8) | b, 255);
+            kama (rw >= 8 && rh >= 8) { turubai_mviringo(sura_t, rx, ry, rw, rh, 3); } sivyo { turubai_jaza(sura_t, rx, ry, rw, rh); }
+            n8 v[32];
+            sura_namba_fupi(v, miraba_thamani[i]);
+            kama (rw >= 54 && rh >= 26) {
+                turubai_kata(sura_t, rx + 6, ry + 3, rw - 10, rh - 4);
+                n64 px = 13;
+                kama (rw > 160 && rh > 70) { px = 16; }
+                sura_rangi(16777215);
+                sura_lebo_nene(miraba_lebo[i], rx + 7, ry + 5, px);
+                kama (rh >= 44) {
+                    sura_rangi(14211288);
+                    sura_lebo(v, rx + 7, ry + 9 + px, 11);
+                }
+                turubai_kata_yote(sura_t);
+            }
+            n8 m[96];
+            d64 sh = miraba_thamani[i];
+            n64 bp = 0;
+            kama (jumla > 0) { bp = (sh * 10000.0) / jumla; }
+            n8 a[24];
+            sura_asilimia(a, bp, 0);
+            kama (miraba_maelezo[i] != 0) { mfuatano_umbiza(m, 96, "%s  ·  %s  ·  %s", v, a, miraba_maelezo[i], 0, 0, 0); }
+            sivyo { mfuatano_umbiza(m, 96, "%s  ·  %s", v, a, 0, 0, 0, 0); }
+            elea_ongeza(rx, ry, rw, rh, miraba_lebo[i], m);
+        }
+        i = i + 1;
+    }
+}

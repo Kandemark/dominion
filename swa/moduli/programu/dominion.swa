@@ -921,6 +921,7 @@ w0 bofya_dunia(Mchezo* g, Hali* h, n64 px, n64 py) {
     kama (makala_wazi != 0 && k != DUNIA_SOMA) { chafua_ukurasa(h); rudisha; }
     kama (k == DUNIA_CHUJIO) { skrini_dunia_chujio = hoja; skrini_dunia_habari_ukurasa = 0; }
     kama (k == DUNIA_PANGA) { skrini_dunia_mpangilio = hoja; skrini_dunia_ukurasa = 0; }
+    kama (k == DUNIA_MTAZAMO) { skrini_dunia_miraba = hoja; }
     kama (k == DUNIA_UKURASA) { skrini_dunia_ukurasa = skrini_dunia_ukurasa + hoja; }
     kama (k == DUNIA_HABARI_UKURASA) { skrini_dunia_habari_ukurasa = skrini_dunia_habari_ukurasa + hoja; }
     kama (skrini_dunia_ukurasa < 0) { skrini_dunia_ukurasa = 0; }
