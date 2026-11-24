@@ -343,6 +343,6 @@ w0 skrini_siasa_chora(Mchezo* g, Turubai* t, n64 taifa) {
     kama (h_kulia > 160) {
         n64 nusu = (wr - pengo) / 2;
         jopo_kwa_utawala(g, taifa, KIPIMO_UHALALI, ui("LEGITIMACY BY FORM OF GOVERNMENT"), xr, yr, nusu, h_kulia);
-        jopo_majirani(g, taifa, KIPIMO_UTULIVU, ui("NEIGHBOURS  ·  STABILITY"), xr + nusu + pengo, yr, wr - nusu - pengo, h_kulia);
+        jopo_majirani(g, taifa, KIPIMO_UTULIVU, ui("NEARBY  ·  STABILITY"), xr + nusu + pengo, yr, wr - nusu - pengo, h_kulia);
     }
 }

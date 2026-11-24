@@ -55,6 +55,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     thibitisha("bila mfano: uhalali hupotea zaidi", hasara >= 15);
     Wahusika* baadaye = skrini_mkutano_watu(g, mimi);
     thibitisha("mti mpya", baadaye != kabla && baadaye->idadi > 0);
+    thibitisha("miti ya mataifa yote ipo", wahusika_wa_dola(skrini_siasa_dola(g, (mimi + 1) % tm->idadi)) != 0);
     andika("1700: %s, mkuu %s, vyama %d, uhalali -%d\n", dola_aina_jina(d->aina), d->mkuu_wa_dola, d->vyama, hasara, 0, 0);
     // hifadhi na pakia: aina na mabaraza hurudi
     n64 mabaraza = d->mabaraza;

@@ -717,7 +717,7 @@ w0 skrini_dunia_wanaosonga(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
     }
     n64 nusu = (w - 48) / 2;
     n64 safu = (h - 50) / 24;
-    kama (safu > 6) { safu = 6; }
+    kama (safu > 9) { safu = 9; }
     n8 m[32];
     n64 r = 0;
     wakati (r < safu && r < n) {
@@ -728,22 +728,22 @@ w0 skrini_dunia_wanaosonga(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
         TaifaNchi* tb = dunia_taifa_mfumo_pata_kwa_faharisi(tm, b);
         sura_ikoni(x + 22, ry + 9, 6, SURA_ICON_ARROW_UP, SURA_CHANYA, 255);
         sura_rangi(SURA_MAANDISHI);
-        turubai_kata(sura_t, x + 32, ry, nusu - 80, 20);
-        sura_lebo(ta->jina, x + 34, ry + 2, 12);
+        turubai_kata(sura_t, x + 32, ry, nusu - 56, 20);
+        sura_lebo(ta->jina, x + 34, ry + 3, 11);
         turubai_kata_yote(sura_t);
         sura_asilimia(m, uk[a], 1);
         sura_rangi(SURA_CHANYA);
-        sura_lebo_kulia(m, x + 16 + nusu, ry + 2, 12);
+        sura_lebo_kulia(m, x + 16 + nusu, ry + 3, 10);
         bofya_ongeza(x + 16, ry, nusu, 22, DUNIA_FUNGUA, a);
         n64 xb = x + 32 + nusu;
         sura_ikoni(xb + 6, ry + 9, 6, SURA_ICON_ARROW_DOWN, SURA_HASI, 255);
         sura_rangi(SURA_MAANDISHI);
-        turubai_kata(sura_t, xb + 16, ry, nusu - 80, 20);
-        sura_lebo(tb->jina, xb + 18, ry + 2, 12);
+        turubai_kata(sura_t, xb + 16, ry, nusu - 56, 20);
+        sura_lebo(tb->jina, xb + 18, ry + 3, 11);
         turubai_kata_yote(sura_t);
         sura_asilimia(m, uk[b], 1);
         sura_rangi(SURA_HASI);
-        sura_lebo_kulia(m, x + w - 16, ry + 2, 12);
+        sura_lebo_kulia(m, x + w - 16, ry + 3, 10);
         bofya_ongeza(xb, ry, nusu, 22, DUNIA_FUNGUA, b);
         r = r + 1;
     }
@@ -783,7 +783,27 @@ w0 skrini_dunia_utawala(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
     n8** majina = tenga(8 * 6);
     k = 0;
     wakati (k < 6) { majina[k] = skrini_dunia_kundi_jina(k); k = k + 1; }
-    chati_donati(x + 16, y + 36, w - 32, h - 100, makundi, rangi, majina, 6, ui("nations"));
+    // safu moja kwa kila kundi: jina, pau la sehemu, idadi na asilimia
+    n64 jumla = tm->idadi;
+    kama (jumla <= 0) { jumla = 1; }
+    n64 rh = (h - 36 - 70) / 6;
+    kama (rh > 26) { rh = 26; }
+    n8 mm[48];
+    k = 0;
+    wakati (k < 6) {
+        n64 ry = y + 36 + k * rh;
+        turubai_brashi(sura_t, rangi[k], 255);
+        turubai_jaza(sura_t, x + 16, ry + 2, 3, rh - 8);
+        sura_rangi(SURA_MAANDISHI);
+        turubai_kata(sura_t, x + 24, ry, (w * 45) / 100, rh);
+        sura_lebo(majina[k], x + 26, ry + 1, 11);
+        turubai_kata_yote(sura_t);
+        sura_pau(x + (w * 50) / 100, ry + 7, (w * 28) / 100, 4, (makundi[k] * 1000) / jumla, rangi[k]);
+        mfuatano_umbiza(mm, 48, "%d  ·  %d%%", makundi[k], (makundi[k] * 100) / jumla, 0, 0, 0, 0);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo_kulia(mm, x + w - 16, ry + 1, 10);
+        k = k + 1;
+    }
     // itikadi za vyama vinavyotawala
     n64* rangi_k = tenga(8 * 4);
     rangi_k[0] = SURA_HASI;
@@ -848,127 +868,6 @@ w0 skrini_dunia_machafuko(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
     achilia walioonyeshwa;
 }
 
-// Uhusiano wako: mataifa ambayo maamuzi yako yamebadilisha urafiki au biashara.
-w0 skrini_dunia_uhusiano(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
-    TaifaMfumo* tm = mchezo_pata_taifa(g);
-    sura_paneli(x, y, w, h, ui("YOUR RELATIONS"));
-    uamuzi_anzisha();
-    n64 safu = (h - 44) / 26;
-    n64 r = 0;
-    n64 i = 0;
-    n8 m[32];
-    wakati (i < tm->idadi && i < MATAIFA_UWEZO && r < safu) {
-        kama (uamuzi_urafiki[i] != 0 || uamuzi_biashara[i] != 0) {
-            TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, i);
-            n64 ry = y + 38 + r * 26;
-            turubai_brashi(sura_t, tn->rangi, 255);
-            turubai_duara(sura_t, x + 22, ry + 8, 4);
-            sura_rangi(SURA_MAANDISHI);
-            turubai_kata(sura_t, x + 30, ry, w / 3, 20);
-            sura_lebo(tn->jina, x + 32, ry, 12);
-            turubai_kata_yote(sura_t);
-            // pau kutoka katikati: kushoto hasi, kulia chanya
-            n64 px0 = x + w / 3 + 40;
-            n64 pw = w - (w / 3) - 150;
-            turubai_brashi(sura_t, 16777215, 18);
-            turubai_jaza(sura_t, px0, ry + 6, pw, 4);
-            n64 kati = px0 + pw / 2;
-            n64 urefu = (uamuzi_urafiki[i] * (pw / 2)) / 100;
-            kama (urefu >= 0) { turubai_brashi(sura_t, SURA_CHANYA, 255); turubai_jaza(sura_t, kati, ry + 5, urefu, 6); }
-            sivyo { turubai_brashi(sura_t, SURA_HASI, 255); turubai_jaza(sura_t, kati + urefu, ry + 5, 0 - urefu, 6); }
-            // biashara ya wiki (ikiwepo) na urafiki
-            n8 biashara[32];
-            biashara[0] = 0;
-            kama (uamuzi_biashara[i] > 0) { sura_namba_fupi(biashara, uamuzi_biashara[i] * 1000000); }
-            mfuatano_umbiza(m, 32, "%s  %d", biashara, uamuzi_urafiki[i], 0, 0, 0, 0);
-            sura_rangi(SURA_HAFIFU);
-            sura_lebo_kulia(m, x + w - 16, ry, 11);
-            bofya_ongeza(x + 16, ry - 2, w - 32, 24, DUNIA_FUNGUA, i);
-            r = r + 1;
-        }
-        i = i + 1;
-    }
-    kama (r == 0) {
-        sura_rangi(SURA_HAFIFU);
-        sura_lebo(ui("No agreements yet. Talk to officials or the Adviser;"), x + 16, y + 42, 12);
-        sura_lebo(ui("concluded deals appear here."), x + 16, y + 60, 12);
-    }
-}
-
-// Daftari la maamuzi: ya karibuni kwanza.
-w0 skrini_dunia_daftari(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
-    TaifaMfumo* tm = mchezo_pata_taifa(g);
-    sura_paneli(x, y, w, h, ui("DECISION LEDGER"));
-    n64 safu = (h - 44) / 24;
-    n64 r = 0;
-    n8 m[128];
-    wakati (r < safu && r < uamuzi_idadi) {
-        Uamuzi* u = uamuzi_pata(uamuzi_idadi - 1 - r);
-        n64 ry = y + 38 + r * 24;
-        n32 hai = uamuzi_uko_hai(u, g->zamu_ya_sasa);
-        kama (hai) { turubai_brashi(sura_t, SURA_CHANYA, 255); } sivyo { turubai_brashi(sura_t, SURA_HAFIFU, 255); }
-        turubai_duara(sura_t, x + 22, ry + 8, 3);
-        kama (u->lengwa >= 0) {
-            TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, u->lengwa);
-            mfuatano_umbiza(m, 128, "%s  ·  %s", ui(uamuzi_aina_jina(u->aina)), tn->jina, 0, 0, 0, 0);
-        } sivyo { mfuatano_umbiza(m, 128, "%s", ui(uamuzi_aina_jina(u->aina)), 0, 0, 0, 0, 0); }
-        sura_rangi(SURA_MAANDISHI);
-        sura_lebo(m, x + 32, ry, 12);
-        kama (u->wiki > 0) {
-            n64 baki = u->zamu + u->wiki - g->zamu_ya_sasa;
-            kama (baki < 0) { baki = 0; }
-            mfuatano_umbiza(m, 128, ui("%d wk left"), baki, 0, 0, 0, 0, 0);
-        } sivyo { mfuatano_umbiza(m, 128, "%s", ui("one-off"), 0, 0, 0, 0, 0); }
-        sura_rangi(SURA_HAFIFU);
-        sura_lebo_kulia(m, x + w - 16, ry, 11);
-        r = r + 1;
-    }
-    kama (uamuzi_idadi == 0) {
-        sura_rangi(SURA_HAFIFU);
-        sura_lebo(ui("Every concluded decision is kept here."), x + 16, y + 42, 12);
-    }
-}
-
-// Ramani ya joto: mataifa manane makubwa x viashiria sita.
-w0 skrini_dunia_joto(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
-    TaifaMfumo* tm = mchezo_pata_taifa(g);
-    sura_paneli(x, y, w, h, ui("GREAT POWERS"));
-    n64* mp = tenga(8 * tm->idadi);
-    skrini_dunia_panga_kwa_pato(tm, mp);
-    n64 safu = 8;
-    kama (tm->idadi < safu) { safu = tm->idadi; }
-    n64 safuwima = 6;
-    n64* thamani = tenga(8 * safu * safuwima);
-    n8** lebo_s = tenga(8 * safu);
-    n8** lebo_k = tenga(8 * safuwima);
-    lebo_k[0] = ui("Tech");
-    lebo_k[1] = ui("Econ");
-    lebo_k[2] = ui("Mil");
-    lebo_k[3] = ui("Cult");
-    lebo_k[4] = ui("Stab");
-    lebo_k[5] = ui("Legit");
-    n64 r = 0;
-    wakati (r < safu) {
-        TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, mp[r]);
-        Dola* d = skrini_siasa_dola(g, mp[r]);
-        lebo_s[r] = tn->jina;
-        n64 b = r * safuwima;
-        thamani[b] = tn->kielezo_cha_teknolojia;
-        thamani[b + 1] = tn->kielezo_cha_uchumi;
-        thamani[b + 2] = tn->kielezo_cha_kijeshi;
-        thamani[b + 3] = tn->kielezo_cha_utamaduni;
-        thamani[b + 4] = 0;
-        thamani[b + 5] = 0;
-        kama (d != 0) { thamani[b + 4] = d->utulivu; thamani[b + 5] = d->uhalali; }
-        r = r + 1;
-    }
-    chati_ramani_ya_joto(x + 16, y + 38, w - 32, h - 50, thamani, safu, safuwima, lebo_s, lebo_k, SURA_BAHARI);
-    achilia mp;
-    achilia thamani;
-    achilia lebo_s;
-    achilia lebo_k;
-}
-
 // ---------- ukurasa ----------
 
 w0 skrini_dunia_kituo_chora(Mchezo* g, Turubai* t) {
@@ -1002,26 +901,19 @@ w0 skrini_dunia_kituo_chora(Mchezo* g, Turubai* t) {
     // safu ya kwanza: habari
     skrini_dunia_habari(g, x, y, wa, urefu);
 
-    // safu ya pili: jedwali, historia ya pato, wanaosonga, ramani ya joto
-    n64 h_jedwali = (urefu * 46) / 100;
+    // safu ya pili: jedwali, kisha historia ya pato na wanaosonga
+    n64 h_jedwali = (urefu * 62) / 100;
     skrini_dunia_jedwali(g, xb, y, wb, h_jedwali);
     n64 y2 = y + h_jedwali + pengo;
     n64 h_chini = urefu - h_jedwali - pengo;
-    n64 h_historia = (h_chini - pengo) / 2;
     n64 nusu = (wb - pengo) / 2;
-    skrini_historia_ya_pato(g, xb, y2, nusu, h_historia);
-    skrini_dunia_wanaosonga(g, xb + nusu + pengo, y2, wb - nusu - pengo, h_historia);
-    skrini_dunia_joto(g, xb, y2 + h_historia + pengo, wb, h_chini - h_historia - pengo);
+    skrini_historia_ya_pato(g, xb, y2, nusu, h_chini);
+    skrini_dunia_wanaosonga(g, xb + nusu + pengo, y2, wb - nusu - pengo, h_chini);
 
-    // safu ya tatu: utawala, machafuko, uhusiano, daftari
-    n64 h1 = (urefu * 34) / 100;
-    n64 h2 = (urefu * 26) / 100;
-    n64 h3 = (urefu - h1 - h2 - 3 * pengo) / 2;
-    n64 h4 = urefu - h1 - h2 - h3 - 3 * pengo;
+    // safu ya tatu: utawala na machafuko (mataifa makubwa yako kwenye Muhtasari)
+    n64 h1 = 36 + 6 * 26 + 70;
     skrini_dunia_utawala(g, xc, y, wc, h1);
-    skrini_dunia_machafuko(g, xc, y + h1 + pengo, wc, h2);
-    skrini_dunia_uhusiano(g, xc, y + h1 + h2 + 2 * pengo, wc, h3);
-    skrini_dunia_daftari(g, xc, y + h1 + h2 + h3 + 3 * pengo, wc, h4);
+    skrini_dunia_machafuko(g, xc, y + h1 + pengo, wc, urefu - h1 - pengo);
 }
 
 // Jibu habari: andaa swali kwa Mshauri kwenye ukurasa wa mikutano.

@@ -668,8 +668,22 @@ n64 hati_maeneo_ya_wizara(n8* cheo) {
     rudisha b;
 }
 
-n32 hati_ni_waziri(MhusikaWaDola* m) { rudisha tafuta_mfuatano(m->cheo, "Minister") == 0; }
-n32 hati_ni_kamati(MhusikaWaDola* m) { rudisha tafuta_mfuatano(m->cheo, "Committee") >= 0; }
+// Vyeo hutambuliwa kwa muundo wa mti (tawi, ngazi, ujazaji), si kwa maandishi
+// ya cheo, kwa sababu cheo huandikwa kwa lugha ya mchezaji.
+n32 hati_ni_waziri(MhusikaWaDola* m) { rudisha m->tawi == TAWI_UTENDAJI && m->ngazi == 7 && m->ujazaji == UJAZAJI_KUTEULIWA; }
+n32 hati_ni_mjumbe(MhusikaWaDola* m) { rudisha m->tawi == TAWI_BUNGE && m->ngazi == 4; }
+
+// Mwenyekiti wa kamati: ngazi 5 ya bunge isipokuwa mnadhimu mkuu.
+n32 hati_ni_kamati(MhusikaWaDola* m) {
+    kama (m->tawi != TAWI_BUNGE || m->ngazi != 5) { rudisha 0; }
+    n8* kiolezo = ui("Chief Whip, %s");
+    n64 i = 0;
+    wakati (kiolezo[i] != 0 && kiolezo[i] != 37) {
+        kama (m->cheo[i] != kiolezo[i]) { rudisha 1; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
 
 w0 hati_zalisha_dola_na_haki(Dola* d) {
     hati_ongeza(K_DOLA, 0 - 1, d->aina, 0, 0, 0);
@@ -1249,7 +1263,7 @@ w0 hati_zalisha_majedwali(Dola* d, Wahusika* w, n64 taifa) {
     i = 0;
     wakati (i < w->idadi) {
         MhusikaWaDola* m = wahusika_pata(w, i);
-        n32 inafaa = i > 0 && m->bosi >= 0 && m->tawi != TAWI_OFISI && hati_ni_kamati(m) == 0 && tafuta_mfuatano(m->cheo, "Member, ") != 0;
+        n32 inafaa = i > 0 && m->bosi >= 0 && m->tawi != TAWI_OFISI && hati_ni_kamati(m) == 0 && hati_ni_mjumbe(m) == 0;
         kama (m->tawi == TAWI_UTENDAJI && hati_ni_waziri(m)) { inafaa = 0; }
         kama (inafaa) {
             n64 aina = K_KAZI_UTENDAJI;

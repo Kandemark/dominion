@@ -521,12 +521,30 @@ w0 jopo_mtawanyiko(Mchezo* g, n64 taifa, n64 kx, n64 ky, n8* kichwa, n64 x, n64 
     sura_lebo_kulia(m, gx - 6, gy + 12, 10);
 }
 
+// Umbali wa miji mikuu (km) kwenye ramani; dunia huzunguka mashariki-magharibi.
+n64 jopo_umbali(n64 a, n64 b) {
+    DuniaHalisi* d = dunia_halisi_ya_mchezo;
+    kama (d == 0 || a < 0 || b < 0 || a >= d->mataifa || b >= d->mataifa) { rudisha 0; }
+    n64 dx = d->mji_x[a] - d->mji_x[b];
+    kama (dx < 0) { dx = 0 - dx; }
+    kama (dx > d->upana / 2) { dx = d->upana - dx; }
+    n64 dy = d->mji_y[a] - d->mji_y[b];
+    n64 u = dx * dx + dy * dy;
+    n64 r = 0;
+    wakati ((r + 1) * (r + 1) <= u) { r = r + 1; }
+    rudisha (r * 977) / 100;
+}
+
 // ---------- majirani ----------
 
-// Majirani wa nchi kavu kwa kipimo, pamoja na taifa hili, kwa pau.
+// Mataifa ya karibu kwa kipimo, pamoja na taifa hili, kwa pau: majirani wa
+// nchi kavu kwanza, kisha yaliyo karibu zaidi kwa umbali wa miji mikuu hadi
+// jopo lijae. Kila safu huonyesha umbali (au "mpaka" kwa jirani wa nchi kavu).
 w0 jopo_majirani(Mchezo* g, n64 taifa, n64 k, n8* kichwa, n64 x, n64 y, n64 w, n64 h) {
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     sura_paneli(x, y, w, h, kichwa);
+    n64 safu = (h - 46) / 26;
+    kama (safu > 63) { safu = 63; }
     n64* orodha = tenga(8 * 64);
     n64 n = 0;
     orodha[n] = taifa;
@@ -535,6 +553,21 @@ w0 jopo_majirani(Mchezo* g, n64 taifa, n64 k, n8* kichwa, n64 x, n64 y, n64 w, n
     wakati (i < tm->idadi && n < 64) {
         kama (i != taifa && dunia_atlasi_mpaka(taifa, i) > 0) { orodha[n] = i; n = n + 1; }
         i = i + 1;
+    }
+    // jaza kwa yaliyo karibu zaidi
+    wakati (n < safu && n < tm->idadi) {
+        n64 bora = 0 - 1;
+        n64 bora_u = 0;
+        i = 0;
+        wakati (i < tm->idadi) {
+            n32 tayari = 0;
+            n64 j = 0;
+            wakati (j < n) { kama (orodha[j] == i) { tayari = 1; } j = j + 1; }
+            n64 u = jopo_umbali(taifa, i);
+            kama (tayari == 0 && (bora < 0 || u < bora_u)) { bora = i; bora_u = u; }
+            i = i + 1;
+        }
+        kama (bora < 0) { safu = n; } sivyo { orodha[n] = bora; n = n + 1; }
     }
     // panga kwa kipimo
     i = 1;
@@ -552,7 +585,6 @@ w0 jopo_majirani(Mchezo* g, n64 taifa, n64 k, n8* kichwa, n64 x, n64 y, n64 w, n
     }
     n64 juu = kipimo_thamani(g, orodha[0], k);
     kama (juu <= 0) { juu = 1; }
-    n64 safu = (h - 46) / 26;
     n8 m[48];
     i = 0;
     wakati (i < n && i < safu) {
@@ -567,10 +599,17 @@ w0 jopo_majirani(Mchezo* g, n64 taifa, n64 k, n8* kichwa, n64 x, n64 y, n64 w, n
         turubai_brashi(sura_t, tn->rangi, 255);
         turubai_duara(sura_t, x + 22, ry + 9, 4);
         sura_rangi(SURA_MAANDISHI);
-        turubai_kata(sura_t, x + 30, ry - 3, (w * 36) / 100 - 30, 24);
+        turubai_kata(sura_t, x + 30, ry - 3, (w * 32) / 100 - 30, 24);
         sura_lebo(tn->jina, x + 32, ry, 12);
         turubai_kata_yote(sura_t);
         n64 xb = x + (w * 38) / 100;
+        kama (w >= 300) { xb = x + (w * 52) / 100; }
+        kama (t != taifa && w >= 300) {
+            kama (dunia_atlasi_mpaka(taifa, t) > 0) { nakili_mfuatano(m, ui("border")); }
+            sivyo { n8 nm[32]; sura_namba(nm, jopo_umbali(taifa, t)); mfuatano_umbiza(m, 48, "%s km", nm, 0, 0, 0, 0, 0); }
+            sura_rangi(SURA_HAFIFU);
+            sura_lebo_kulia(m, xb - 10, ry + 2, 10);
+        }
         n64 v = kipimo_thamani(g, t, k);
         n64 kwa_elfu = 0;
         kama (v > 0) { kwa_elfu = (v * 1000) / juu; }
@@ -581,10 +620,6 @@ w0 jopo_majirani(Mchezo* g, n64 taifa, n64 k, n8* kichwa, n64 x, n64 y, n64 w, n
         sura_rangi(SURA_MAANDISHI);
         sura_lebo_kulia(m, x + w - 16, ry + 1, 11);
         i = i + 1;
-    }
-    kama (n == 1) {
-        sura_rangi(SURA_HAFIFU);
-        sura_lebo(ui("No land neighbours: an island nation."), x + 16, y + 70, 12);
     }
     achilia orodha;
 }
@@ -673,23 +708,40 @@ w0 jopo_vyeo(Mchezo* g, n64 taifa, n64 tawi, n8* kichwa, n64 x, n64 y, n64 w, n6
     n8 m[16];
     n64 r = 0;
     n64 i = 0;
-    wakati (i < wh->idadi && yy + 26 < y + h) {
+    // safu ndefu (cheo, kisha jina, itikadi na tabia) kama nafasi inatosha
+    n64 hesabu = 0;
+    i = 0;
+    wakati (i < wh->idadi) { kama (wahusika_pata(wh, i)->tawi == tawi) { hesabu = hesabu + 1; } i = i + 1; }
+    n64 sh = 28;
+    kama (hesabu > 0 && (h - 46) / hesabu >= 42) { sh = 42; }
+    n8 mstari[160];
+    i = 0;
+    wakati (i < wh->idadi && yy + sh - 2 < y + h) {
         MhusikaWaDola* mh = wahusika_pata(wh, i);
         kama (mh->tawi == tawi) {
-            sura_safu(x + 8, yy - 3, w - 16, 26, r, 0);
+            sura_safu(x + 8, yy - 3, w - 16, sh - 2, r, 0);
             sura_rangi(SURA_MAANDISHI);
-            turubai_kata(sura_t, x + 8, yy - 3, (w * 55) / 100, 26);
+            turubai_kata(sura_t, x + 8, yy - 3, (w * 55) / 100, sh);
             sura_lebo(mh->cheo, x + 18, yy + 1, 12);
             turubai_kata_yote(sura_t);
-            sura_rangi(SURA_HAFIFU);
-            turubai_kata(sura_t, x + (w * 57) / 100, yy - 3, (w * 30) / 100, 26);
-            sura_lebo(mh->jina, x + (w * 57) / 100, yy + 1, 11);
-            turubai_kata_yote(sura_t);
+            kama (sh == 42) {
+                mfuatano_umbiza(mstari, 160, "%s  ·  %s  ·  %s, %s", mh->jina, itikadi_jina(mh->itikadi), tabia_jina(mh->tabia_1), tabia_jina(mh->tabia_2), 0, 0);
+                sura_rangi(SURA_HAFIFU);
+                turubai_kata(sura_t, x + 8, yy - 3, w - 70, sh);
+                sura_lebo(mstari, x + 18, yy + 19, 10);
+                turubai_kata_yote(sura_t);
+            } sivyo {
+                sura_rangi(SURA_HAFIFU);
+                turubai_kata(sura_t, x + (w * 57) / 100, yy - 3, (w * 30) / 100, 26);
+                sura_lebo(mh->jina, x + (w * 57) / 100, yy + 1, 11);
+                turubai_kata_yote(sura_t);
+            }
             sura_namba(m, mh->msimamo);
+            sura_rangi(SURA_HAFIFU);
             kama (mh->msimamo >= 15) { sura_rangi(SURA_CHANYA); }
             kama (mh->msimamo <= 0 - 15) { sura_rangi(SURA_HASI); }
             sura_lebo_kulia(m, x + w - 16, yy + 1, 11);
-            yy = yy + 28;
+            yy = yy + sh;
             r = r + 1;
         }
         i = i + 1;

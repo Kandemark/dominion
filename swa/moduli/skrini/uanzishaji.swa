@@ -182,7 +182,7 @@ n64 uanz_vyeo(Wahusika* w, n64* nje, n64 uwezo) {
         wakati (i < w->idadi && n < uwezo) {
             MhusikaWaDola* m = wahusika_pata(w, i);
             // cheo kimoja au viwili kwa kila ngazi, ili orodha ifike hadi kijijini
-            n32 mjumbe = tafuta_mfuatano(m->cheo, "Member, ") == 0;
+            n32 mjumbe = m->tawi == TAWI_BUNGE && m->ngazi == 4;
             kama (m->ngazi == ngazi && m->tawi != TAWI_OFISI && mjumbe == 0 && za_ngazi < 2) { nje[n] = i; n = n + 1; za_ngazi = za_ngazi + 1; }
             i = i + 1;
         }
