@@ -26,6 +26,8 @@ n64 UZ_OFISI = 145;         // hoja: cheo
 n64 UZ_SIFA = 146;          // hoja: sifa * 2 + (0 nyuma, 1 mbele)
 n64 UZ_JINA = 147;
 n64 UZ_NASIBU = 148;
+n64 UZ_MPYA = 149;
+n64 UZ_PAKIA = 150;            // hoja: nafasi
 
 n64 uanz_mwaka = 1900;
 n64 uanz_taifa = 0;

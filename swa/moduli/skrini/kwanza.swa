@@ -1,0 +1,144 @@
+husisha { moduli/hifadhi/hifadhi.swa }
+
+// kwanza.swa -- ukurasa wa kwanza wa mchezo (kabla ya uanzishaji).
+// ---------- 0: ukurasa wa kwanza ----------
+//
+// Endelea (mchezo uliohifadhiwa karibuni zaidi), pakia nafasi yoyote, au
+// anza mchezo mpya. Kupakia hutokea hapa tu; ndani ya mchezo kuna kuhifadhi.
+
+// Rangi ya taifa kwa jina lake kwenye dunia (kwa alama ya nafasi), au kijivu.
+n64 uanz_rangi_ya_jina(n8* jina) {
+    DuniaHalisi* d = dunia_halisi_ya_mchezo;
+    kama (d == 0) { rudisha SURA_HAFIFU; }
+    n64 i = 0;
+    wakati (i < d->mataifa) {
+        kama (linganisha_mfuatano(dh_jina(d->data, d->jina[i]), jina) == 0) { rudisha d->rangi[i]; }
+        i = i + 1;
+    }
+    rudisha SURA_HAFIFU;
+}
+
+// Sehemu ya k ya "taifa|zamu|tarehe" kwenye nje.
+w0 uanz_sehemu(n8* maelezo, n64 k, n8* nje, n64 uwezo) {
+    n64 sehemu = 0;
+    n64 n = 0;
+    n64 i = 0;
+    wakati (maelezo[i] != 0 && maelezo[i] != 10) {
+        kama (maelezo[i] == 124) { sehemu = sehemu + 1; }
+        sivyo kama (sehemu == k && n < uwezo - 1) { nje[n] = maelezo[i]; n = n + 1; }
+        i = i + 1;
+    }
+    nje[n] = 0;
+}
+
+// Maelezo ghafi ya nafasi (bila kubadilisha '|').
+w0 uanz_maelezo_ghafi(n64 nafasi, n8* nje, n64 uwezo) {
+    nje[0] = 0;
+    n8 njia[160];
+    hifadhi_njia(njia, nafasi, "maelezo");
+    n64 fd = mfumo_fungua(njia, 0, 0);
+    kama (fd < 0) { rudisha; }
+    n64 n = mfumo_soma(fd, nje, uwezo - 1);
+    mfumo_funga(fd);
+    kama (n < 0) { n = 0; }
+    nje[n] = 0;
+}
+
+w0 uanz_kwanza_chora(Turubai* t) {
+    sura_anzisha(t);
+    bofya_anza();
+    mandhari_mapinduzi(t, 150);
+    n64 w = 760;
+    n64 h = 560;
+    n64 x = (t->upana - w) / 2;
+    n64 y = (t->kimo - h) / 2;
+    turubai_brashi(t, SURA_PANELI, 235);
+    turubai_mviringo(t, x, y, w, h, 14);
+    turubai_brashi(t, 16777215, 24);
+    turubai_mpaka(t, x, y, w, h, 14);
+    sura_rangi(SURA_LAFUDHI);
+    sura_lebo_nene("DOMINION", x + 40, y + 32, 12);
+    sura_rangi(SURA_MAANDISHI);
+    sura_lebo_nene(ui("Govern a nation of your choosing"), x + 40, y + 52, 24);
+    // endelea: nafasi ya karibuni
+    n64 mpya = hifadhi_nafasi_mpya_zaidi();
+    n8 m[256];
+    n8 jina[96];
+    n8 zamu[16];
+    n8 tarehe[64];
+    n64 yy = y + 108;
+    kama (mpya >= 0) {
+        uanz_maelezo_ghafi(mpya, m, 256);
+        uanz_sehemu(m, 0, jina, 96);
+        uanz_sehemu(m, 2, tarehe, 64);
+        turubai_brashi(t, SURA_PANELI_JUU, 255);
+        turubai_mviringo(t, x + 40, yy, w - 80, 76, 10);
+        turubai_brashi(t, uanz_rangi_ya_jina(jina), 255);
+        turubai_mviringo(t, x + 58, yy + 18, 40, 40, 8);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo_kati(ui("CONTINUE"), x + 116, yy + 14, 11);
+        sura_rangi(SURA_MAANDISHI);
+        mfuatano_umbiza(m, 256, "%s  ·  %s", jina, tarehe, 0, 0, 0, 0);
+        sura_lebo_nene(m, x + 116, yy + 34, 18);
+        uanz_kitufe(ui("Continue"), x + w - 200, yy + 23, 140, 1, 1, UZ_PAKIA, mpya);
+        yy = yy + 96;
+    }
+    // nafasi zote
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo_kati(ui("LOAD A SAVED GAME"), x + 40, yy, 11);
+    yy = yy + 22;
+    n64 k = 0;
+    wakati (k < 6) {
+        n64 ry = yy + k * 40;
+        sura_safu(x + 40, ry, w - 80, 36, k, 0);
+        n8* lebo = ui("Autosave");
+        n8 slot[32];
+        kama (k > 0) { mfuatano_umbiza(slot, 32, ui("Slot %d"), k, 0, 0, 0, 0, 0); lebo = slot; }
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo(lebo, x + 56, ry + 9, 13);
+        n64 mwaka = hifadhi_mwaka_wa_nafasi(k);
+        kama (mwaka > 0) {
+            uanz_maelezo_ghafi(k, m, 256);
+            uanz_sehemu(m, 0, jina, 96);
+            uanz_sehemu(m, 1, zamu, 16);
+            uanz_sehemu(m, 2, tarehe, 64);
+            turubai_brashi(t, uanz_rangi_ya_jina(jina), 255);
+            turubai_duara(t, x + 172, ry + 18, 6);
+            sura_rangi(SURA_MAANDISHI);
+            sura_lebo(jina, x + 186, ry + 9, 13);
+            mfuatano_umbiza(m, 256, ui("%s  ·  week %s  ·  began %d"), tarehe, zamu, mwaka, 0, 0, 0);
+            sura_rangi(SURA_HAFIFU);
+            sura_lebo(m, x + 360, ry + 10, 12);
+            uanz_kitufe(ui("Load"), x + w - 140, ry + 3, 84, 0, 1, UZ_PAKIA, k);
+        } sivyo {
+            uanz_maelezo_ghafi(k, m, 256);
+            sura_rangi(SURA_HAFIFU);
+            kama (m[0] != 0) {
+                uanz_sehemu(m, 0, jina, 96);
+                mfuatano_umbiza(m, 256, ui("%s  ·  saved by an older version; cannot be loaded"), jina, 0, 0, 0, 0, 0);
+                sura_lebo(m, x + 186, ry + 9, 12);
+            } sivyo { sura_lebo(ui("empty"), x + 186, ry + 9, 13); }
+        }
+        k = k + 1;
+    }
+    uanz_kitufe(ui("New game"), x + w - 200, y + h - 62, 160, mpya < 0, 1, UZ_MPYA, 0);
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(ui("Enter continues your latest game. Saves are made in game: F5, or Profile."), x + 40, y + h - 54, 11);
+}
+
+// 1 mchezo mpya, 100 + nafasi kupakia, 0 hakuna.
+n64 uanz_kwanza_bofya(n64 px, n64 py) {
+    n64 hoja = 0;
+    n64 k = bofya_tafuta(px, py, &hoja);
+    kama (k == UZ_MPYA) { rudisha 1; }
+    kama (k == UZ_PAKIA) { rudisha 100 + hoja; }
+    rudisha 0;
+}
+
+// Enter kwenye ukurasa wa kwanza: endelea na mchezo wa karibuni, au mpya.
+n64 uanz_kwanza_endelea() {
+    n64 mpya = hifadhi_nafasi_mpya_zaidi();
+    kama (mpya >= 0) { rudisha 100 + mpya; }
+    rudisha 1;
+}
+

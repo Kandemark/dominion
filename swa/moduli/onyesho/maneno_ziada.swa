@@ -1513,6 +1513,15 @@ w0 maneno_jaza_ziada_3() {
 
 // maamuzi ya lazima, mshauri na tiketi ya oda (2026-11)
 w0 maneno_jaza_ziada_4() {
+    maneno_sajili("Govern a nation of your choosing", "Tawala taifa ulilochagua", "Gouvernez la nation de votre choix");
+    maneno_sajili("CONTINUE", "ENDELEA", "CONTINUER");
+    maneno_sajili("LOAD A SAVED GAME", "PAKIA MCHEZO ULIOHIFADHIWA", "CHARGER UNE PARTIE");
+    maneno_sajili("%s  ·  week %s  ·  began %d", "%s  ·  wiki %s  ·  ilianza %d", "%s  ·  semaine %s  ·  début %d");
+    maneno_sajili("%s  ·  saved by an older version; cannot be loaded", "%s  ·  imehifadhiwa na toleo la zamani; haiwezi kupakiwa", "%s  ·  sauvegardée par une ancienne version ; impossible à charger");
+    maneno_sajili("New game", "Mchezo mpya", "Nouvelle partie");
+    maneno_sajili("Enter continues your latest game. Saves are made in game: F5, or Profile.", "Enter huendeleza mchezo wako wa karibuni. Kuhifadhi hufanyika ndani ya mchezo: F5, au Wasifu.", "Entrée reprend votre dernière partie. On sauvegarde en jeu : F5, ou Profil.");
+    maneno_sajili("SAVE GAME", "HIFADHI MCHEZO", "SAUVEGARDER");
+    maneno_sajili("Saved games are loaded from the opening screen.", "Michezo iliyohifadhiwa hupakiwa kwenye ukurasa wa kwanza.", "Les parties sauvegardées se chargent depuis l'écran d'accueil.");
     maneno_sajili("Could not reach the adviser's server. Is it running?", "Seva ya mshauri haifikiki. Je, inaendeshwa?", "Impossible de joindre le serveur du conseiller. Est-il lancé ?");
     maneno_sajili("CONVERSATION  ·  %s  ·  %d messages", "MAZUNGUMZO  ·  %s  ·  ujumbe %d", "CONVERSATION  ·  %s  ·  %d messages");
     maneno_sajili("Stop", "Simamisha", "Arrêter");

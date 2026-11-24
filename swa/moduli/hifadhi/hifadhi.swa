@@ -772,6 +772,44 @@ n64 hifadhi_pakia(Mchezo* g, n64 nafasi) {
 }
 
 // Maelezo ya nafasi kwa orodha: "Cheqing|12|25 March 1900", au tupu.
+// Mwaka wa kuanza wa mchezo uliohifadhiwa (thamani ya sita ya kichwa cha
+// dominion.hali), bila kusoma faili lote; 0 ikiwa nafasi haina mchezo.
+n64 hifadhi_mwaka_wa_nafasi(n64 nafasi) {
+    n8 njia[160];
+    hifadhi_njia(njia, nafasi, "dominion.hali");
+    n64 fd = mfumo_fungua(njia, 0, 0);
+    kama (fd < 0) { rudisha 0; }
+    n8 b[48];
+    n64 n = mfumo_soma(fd, b, 48);
+    mfumo_funga(fd);
+    kama (n < 48) { rudisha 0; }
+    kama (pata_u64(b, 0) != HIFADHI_ALAMA || pata_u64(b, 8) != HIFADHI_TOLEO) { rudisha 0; }
+    rudisha pata_u64(b, 40);
+}
+
+// Saa (sekunde za Unix) ya mwisho nafasi ilipohifadhiwa; 0 ikiwa haina mchezo.
+n64 hifadhi_saa_ya_nafasi(n64 nafasi) {
+    kama (hifadhi_mwaka_wa_nafasi(nafasi) == 0) { rudisha 0; }
+    n8 njia[160];
+    hifadhi_njia(njia, nafasi, "dominion.hali");
+    n64 st[18];
+    kama (wito_wa_mfumo(4, njia, st, 0, 0, 0, 0) < 0) { rudisha 0; }
+    rudisha st[11];             // st_mtime (struct stat ya x86-64)
+}
+
+// Nafasi iliyohifadhiwa karibuni zaidi (0..5), au -1.
+n64 hifadhi_nafasi_mpya_zaidi() {
+    n64 bora = 0 - 1;
+    n64 bora_saa = 0;
+    n64 i = 0;
+    wakati (i < 6) {
+        n64 s = hifadhi_saa_ya_nafasi(i);
+        kama (s > bora_saa) { bora = i; bora_saa = s; }
+        i = i + 1;
+    }
+    rudisha bora;
+}
+
 w0 hifadhi_maelezo(n64 nafasi, n8* nje, n64 uwezo) {
     nje[0] = 0;
     n8 njia[160];

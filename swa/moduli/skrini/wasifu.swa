@@ -13,12 +13,11 @@ n64 WS_AJIRI = 91;
 n64 WS_FUKUZA = 92;
 n64 WS_KITUO = 93;
 n64 WS_HIFADHI = 94;            // hoja: nafasi
-n64 WS_PAKIA = 95;              // hoja: nafasi
 n8 wasifu_ujumbe[160];
 
 // Nafasi za kuhifadhi: 0 otomatiki, 1..5 za mchezaji.
 w0 wasifu_nafasi(n64 x, n64 y, n64 w, n64 h) {
-    sura_paneli(x, y, w, h, ui("SAVED GAMES"));
+    sura_paneli(x, y, w, h, ui("SAVE GAME"));
     n64 yy = y + 36;
     n8 m[160];
     n8 jina[48];
@@ -33,15 +32,17 @@ w0 wasifu_nafasi(n64 x, n64 y, n64 w, n64 h) {
         turubai_kata(sura_t, x + 90, yy - 4, w - 260, 30);
         kama (m[0] == 0) { sura_lebo(ui("empty"), x + 90, yy + 2, 11); } sivyo { sura_lebo(m, x + 90, yy + 2, 11); }
         turubai_kata_yote(sura_t);
-        kama (n > 0) { serikali_kitufe(ui("Save"), x + w - 150, yy - 2, 0, 1, WS_HIFADHI, n); }
-        serikali_kitufe(ui("Load"), x + w - 80, yy - 2, 0, m[0] != 0, WS_PAKIA, n);
+        kama (n > 0) { serikali_kitufe(ui("Save"), x + w - 80, yy - 2, 0, 1, WS_HIFADHI, n); }
         yy = yy + 32;
         n = n + 1;
     }
     kama (wasifu_ujumbe[0] != 0) {
         sura_rangi(SURA_LAFUDHI);
         sura_lebo(wasifu_ujumbe, x + 16, yy + 4, 12);
+        yy = yy + 20;
     }
+    sura_rangi(SURA_HAFIFU);
+    sura_lebo(ui("Saved games are loaded from the opening screen."), x + 16, yy + 4, 11);
 }
 
 // Jina la mgombea wa ushauri wa fani `fani` kwa taifa.
@@ -331,6 +332,5 @@ n32 skrini_wasifu_bofya(Mchezo* g, n64 px, n64 py, n64* kituo) {
         kama (hifadhi_andika(g, hoja) == HIFADHI_SAWA) { mfuatano_umbiza(wasifu_ujumbe, 160, ui("Saved to slot %d."), hoja, 0, 0, 0, 0, 0); }
         sivyo { nakili_mfuatano(wasifu_ujumbe, ui("The game could not be saved.")); }
     }
-    kama (k == WS_PAKIA) { kituo[0] = 2 + hoja; }
     rudisha 1;
 }
