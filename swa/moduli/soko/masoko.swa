@@ -679,6 +679,8 @@ w0 soko_mataifa_hai(Mchezo* g, n64 zamu) {
                 }
                 hatari = (hatari * (100 + (upinzani * 100) / d->baraza_viti[0] + (kijeshi * 200) / d->baraza_viti[0])) / 100;
             }
+            // uongozi wa jeshi usioridhika na serikali huongeza hatari
+            kama (hatari > 0) { hatari = (hatari * (100 + jeshi_kutoridhika(d))) / 100; }
             kama (mchezaji == 0 && hatari > 0 && dola_nasibu(m, 612) % 100 < hatari) {
                 kama (dola_nasibu(m, 613) % 2 == 0) {
                     soko_tukio(t, TUKIO_MAPINDUZI, zamu, 0);
