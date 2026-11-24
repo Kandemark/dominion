@@ -1,4 +1,5 @@
 husisha { moduli/skrini/uchumi.swa }
+husisha { moduli/skrini/terminali.swa }
 husisha { moduli/soko/masoko.swa }
 
 // kituo.swa -- ukurasa wa Economy kama kituo cha masoko: mstari wa amri,
@@ -44,62 +45,6 @@ n64 kt_tajiri = -1;
 n64 kt_mkoa = -1;
 n8 kt_ujumbe[200];
 
-// ---------- vipande vya kuchora ----------
-
-w0 kt_maandishi(n8* s, n64 x, n64 y, n64 px, n64 rangi) {
-    turubai_brashi(sura_t, rangi, 255);
-    maandishi_chora(sura_t, sura_mono, s, x, y, px);
-}
-
-w0 kt_maandishi_kulia(n8* s, n64 x_kulia, n64 y, n64 px, n64 rangi) {
-    turubai_brashi(sura_t, rangi, 255);
-    maandishi_chora(sura_t, sura_mono, s, x_kulia - maandishi_upana(sura_mono, s, px), y, px);
-}
-
-w0 kt_nene(n8* s, n64 x, n64 y, n64 px, n64 rangi) {
-    turubai_brashi(sura_t, rangi, 255);
-    maandishi_chora(sura_t, sura_mono_nene, s, x, y, px);
-}
-
-// Paneli ya kituo ni paneli ya kawaida ya mchezo.
-w0 kt_paneli(n64 x, n64 y, n64 w, n64 h, n8* kichwa) {
-    sura_paneli(x, y, w, h, kichwa);
-}
-
-n64 kt_rangi_ya_badiliko(n64 v) {
-    kama (v > 0) { rudisha SURA_CHANYA; }
-    kama (v < 0) { rudisha SURA_HASI; }
-    rudisha SURA_HAFIFU;
-}
-
-// Asilimia yenye ishara kutoka alama za msingi: "+1.25%".
-w0 kt_asilimia(n8* nje, n64 bps) {
-    n64 a = bps;
-    kama (a < 0) { a = 0 - a; }
-    n8* ishara = "+";
-    kama (bps < 0) { ishara = "-"; }
-    mfuatano_umbiza(nje, 24, "%s%d.%d%d%%", ishara, a / 100, (a / 10) % 10, a % 10, 0, 0);
-}
-
-// Kitufe cha kituo: kidonge cha mandhari (lafudhi kikiwa hai); hujiandikisha.
-n64 kt_kitufe(n8* lebo, n64 x, n64 y, n32 hai, n64 kitendo, n64 hoja) {
-    n64 w = maandishi_upana(sura_mono_nene, lebo, 11) + 18;
-    kama (hai) {
-        turubai_brashi(sura_t, SURA_LAFUDHI, 255);
-        turubai_mviringo(sura_t, x, y, w, 20, 6);
-        turubai_brashi(sura_t, CHATI_GIZA, 255);
-    } sivyo {
-        turubai_brashi(sura_t, SURA_PANELI_JUU, 255);
-        turubai_mviringo(sura_t, x, y, w, 20, 6);
-        turubai_brashi(sura_t, 16777215, 26);
-        turubai_mpaka(sura_t, x, y, w, 20, 6);
-        turubai_brashi(sura_t, SURA_MAANDISHI, 255);
-    }
-    maandishi_chora(sura_t, sura_mono_nene, lebo, x + 9, y + 3, 11);
-    bofya_ongeza(x, y, w, 20, kitendo, hoja);
-    rudisha w;
-}
-
 // Mstari mdogo wa bei za wiki 52 za kampuni.
 w0 kt_mstari_wa_bei(Kampuni* c, n64 wiki, n64 x, n64 y, n64 w, n64 h) {
     n64* th = tenga(8 * wiki);
@@ -109,24 +54,6 @@ w0 kt_mstari_wa_bei(Kampuni* c, n64 wiki, n64 x, n64 y, n64 w, n64 h) {
     kama (th[wiki - 1] < th[0]) { rangi = SURA_HASI; }
     sura_sparkline(th, wiki, x, y, w, h, rangi, 40);
     achilia th;
-}
-
-// Chati ya mstari ya mfululizo (kielezo, kiwango) ndani ya paneli ya kituo,
-// na gridi, viwango vya juu na chini, na thamani ya mwisho.
-w0 kt_chati(n64* th, n64 n, n64 x, n64 y, n64 w, n64 h, n64 rangi) {
-    n64 juu = th[0];
-    n64 chini = th[0];
-    n64 i = 0;
-    wakati (i < n) {
-        kama (th[i] > juu) { juu = th[i]; }
-        kama (th[i] < chini) { chini = th[i]; }
-        i = i + 1;
-    }
-    kama (juu == chini) { juu = chini + 1; }
-    turubai_brashi(sura_t, SURA_MPAKA, 255);
-    n64 q = 0;
-    wakati (q <= 4) { turubai_jaza(sura_t, x, y + (q * h) / 4, w, 1); q = q + 1; }
-    sura_sparkline(th, n, x, y + 4, w, h - 8, rangi, 50);
 }
 
 // ---------- mikoa ----------

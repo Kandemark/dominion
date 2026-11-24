@@ -1,0 +1,107 @@
+husisha { moduli/skrini/dola_ya_taifa.swa }
+
+// historia_ya_siasa.swa -- kumbukumbu ya kila wiki ya hali ya kisiasa ya kila
+// taifa, kwa vituo vya siasa, jeshi na diplomasia (mabadiliko ya wiki 1, 4,
+// 26, 52 na chati za wiki 104).
+//
+// Kila wiki hurekodiwa, kwa kila taifa:
+//   HS_UTULIVU   utulivu wa kisiasa 0..100
+//   HS_UHALALI   uhalali wa serikali 0..100
+//   HS_HAZINA    hali ya hazina 0..100
+//   HS_VITI      viti vya serikali katika baraza la kwanza, kwa elfu
+//   HS_JESHI     kielezo cha kijeshi
+//   HS_PATO      pato ghafi (mamilioni)
+// Pete ya wiki 104: rekodi ya zamani zaidi hufutwa na mpya.
+
+n64 HS_UTULIVU = 0;
+n64 HS_UHALALI = 1;
+n64 HS_HAZINA = 2;
+n64 HS_VITI = 3;
+n64 HS_JESHI = 4;
+n64 HS_PATO = 5;
+n64 HS_VIPIMO = 6;
+n64 HS_WIKI = 104;
+
+n64* hs_data = 0;           // [taifa][wiki % HS_WIKI][kipimo]
+n64 hs_mataifa = 0;
+n64 hs_idadi = 0;           // wiki zilizorekodiwa tangu kuanza (au kupakia)
+
+// Viti vya serikali katika baraza la kwanza, kwa elfu (0 bila baraza au vyama).
+n64 hs_viti_vya_serikali(Dola* d) {
+    kama (d == 0 || d->mabaraza == 0 || d->baraza_viti[0] <= 0) { rudisha 0; }
+    n64 s = 0;
+    n64 c = 0;
+    wakati (c < d->vyama) {
+        kama (d->chama_serikalini[c]) { s = s + d->viti[c]; }
+        c = c + 1;
+    }
+    rudisha (s * 1000) / d->baraza_viti[0];
+}
+
+// Anza upya (mchezo mpya au uliopakiwa).
+w0 hs_anza(Mchezo* g) {
+    n64 N = mchezo_pata_taifa(g)->idadi;
+    kama (hs_data != 0) { achilia hs_data; }
+    hs_data = tenga(8 * N * HS_WIKI * HS_VIPIMO);
+    weka_sifuri(hs_data, 8 * N * HS_WIKI * HS_VIPIMO);
+    hs_mataifa = N;
+    hs_idadi = 0;
+}
+
+// Rekodi wiki moja kwa mataifa yote.
+w0 hs_rekodi(Mchezo* g) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    kama (hs_data == 0 || hs_mataifa != tm->idadi) { hs_anza(g); }
+    n64 nafasi = hs_idadi % HS_WIKI;
+    n64 t = 0;
+    wakati (t < hs_mataifa) {
+        n64* r = &hs_data[(t * HS_WIKI + nafasi) * HS_VIPIMO];
+        Dola* d = skrini_siasa_dola(g, t);
+        TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, t);
+        kama (d != 0) {
+            r[HS_UTULIVU] = d->utulivu;
+            r[HS_UHALALI] = d->uhalali;
+            r[HS_HAZINA] = d->hazina;
+            r[HS_VITI] = hs_viti_vya_serikali(d);
+        }
+        kama (tn != 0) {
+            r[HS_JESHI] = tn->kielezo_cha_kijeshi;
+            r[HS_PATO] = skrini_pato_la_taifa(tn) / 1000000;
+        }
+        t = t + 1;
+    }
+    hs_idadi = hs_idadi + 1;
+}
+
+// Wiki zilizopo kwenye kumbukumbu (hadi HS_WIKI).
+n64 hs_zilizopo() {
+    kama (hs_idadi > HS_WIKI) { rudisha HS_WIKI; }
+    rudisha hs_idadi;
+}
+
+// Thamani ya kipimo k ya taifa t wiki `nyuma` zilizopita (0 = ya karibuni);
+// -1 kama haipo.
+n64 hs_pata(n64 t, n64 k, n64 nyuma) {
+    kama (hs_data == 0 || t < 0 || t >= hs_mataifa || nyuma < 0 || nyuma >= hs_zilizopo()) { rudisha 0 - 1; }
+    n64 nafasi = (hs_idadi - 1 - nyuma) % HS_WIKI;
+    rudisha hs_data[(t * HS_WIKI + nafasi) * HS_VIPIMO + k];
+}
+
+// Badiliko la kipimo tangu wiki `nyuma` (kwa thamani ya sasa ikilinganishwa
+// na ya zamani zaidi iliyopo kama kumbukumbu ni fupi); 0 bila data.
+n64 hs_badiliko(n64 t, n64 k, n64 nyuma) {
+    n64 z = hs_zilizopo();
+    kama (z < 2) { rudisha 0; }
+    kama (nyuma > z - 1) { nyuma = z - 1; }
+    rudisha hs_pata(t, k, 0) - hs_pata(t, k, nyuma);
+}
+
+// Mfululizo wa wiki `n` za mwisho (wa zamani kwanza) kwenye `nje`; hurudisha
+// idadi halisi iliyopatikana.
+n64 hs_mfululizo(n64 t, n64 k, n64 n, n64* nje) {
+    n64 z = hs_zilizopo();
+    kama (n > z) { n = z; }
+    n64 i = 0;
+    wakati (i < n) { nje[i] = hs_pata(t, k, n - 1 - i); i = i + 1; }
+    rudisha n;
+}

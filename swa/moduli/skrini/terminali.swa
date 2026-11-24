@@ -1,0 +1,207 @@
+husisha { moduli/skrini/jopo.swa }
+husisha { moduli/skrini/historia_ya_siasa.swa }
+
+// terminali.swa -- vipande vya pamoja vya vituo (terminals) vya mchezo:
+// Economy (kituo.swa), Politics, Military na Diplomacy. Kituo hutofautiana na
+// ukurasa wa kawaida kwa fonti ya mono, wingi wa namba na mpangilio mnene:
+//   mstari wa amri   "GLD <GOVT> PARL <GO>", vichupo vya kazi, wigo
+//   mstari unaopita  bei/hali zinazosonga
+//   jedwali          safu za mono, vichwa vya lafudhi, safu mbadala hafifu
+// Rangi ni za mandhari ya mchezo; hakuna rangi mpya.
+
+// ---------- vipande vya kuchora ----------
+
+w0 kt_maandishi(n8* s, n64 x, n64 y, n64 px, n64 rangi) {
+    turubai_brashi(sura_t, rangi, 255);
+    maandishi_chora(sura_t, sura_mono, s, x, y, px);
+}
+
+w0 kt_maandishi_kulia(n8* s, n64 x_kulia, n64 y, n64 px, n64 rangi) {
+    turubai_brashi(sura_t, rangi, 255);
+    maandishi_chora(sura_t, sura_mono, s, x_kulia - maandishi_upana(sura_mono, s, px), y, px);
+}
+
+w0 kt_nene(n8* s, n64 x, n64 y, n64 px, n64 rangi) {
+    turubai_brashi(sura_t, rangi, 255);
+    maandishi_chora(sura_t, sura_mono_nene, s, x, y, px);
+}
+
+// Paneli ya kituo ni paneli ya kawaida ya mchezo.
+w0 kt_paneli(n64 x, n64 y, n64 w, n64 h, n8* kichwa) {
+    sura_paneli(x, y, w, h, kichwa);
+}
+
+n64 kt_rangi_ya_badiliko(n64 v) {
+    kama (v > 0) { rudisha SURA_CHANYA; }
+    kama (v < 0) { rudisha SURA_HASI; }
+    rudisha SURA_HAFIFU;
+}
+
+// Asilimia yenye ishara kutoka alama za msingi: "+1.25%".
+w0 kt_asilimia(n8* nje, n64 bps) {
+    n64 a = bps;
+    kama (a < 0) { a = 0 - a; }
+    n8* ishara = "+";
+    kama (bps < 0) { ishara = "-"; }
+    mfuatano_umbiza(nje, 24, "%s%d.%d%d%%", ishara, a / 100, (a / 10) % 10, a % 10, 0, 0);
+}
+
+// Kitufe cha kituo: kidonge cha mandhari (lafudhi kikiwa hai); hujiandikisha.
+n64 kt_kitufe(n8* lebo, n64 x, n64 y, n32 hai, n64 kitendo, n64 hoja) {
+    n64 w = maandishi_upana(sura_mono_nene, lebo, 11) + 18;
+    kama (hai) {
+        turubai_brashi(sura_t, SURA_LAFUDHI, 255);
+        turubai_mviringo(sura_t, x, y, w, 20, 6);
+        turubai_brashi(sura_t, CHATI_GIZA, 255);
+    } sivyo {
+        turubai_brashi(sura_t, SURA_PANELI_JUU, 255);
+        turubai_mviringo(sura_t, x, y, w, 20, 6);
+        turubai_brashi(sura_t, 16777215, 26);
+        turubai_mpaka(sura_t, x, y, w, 20, 6);
+        turubai_brashi(sura_t, SURA_MAANDISHI, 255);
+    }
+    maandishi_chora(sura_t, sura_mono_nene, lebo, x + 9, y + 3, 11);
+    bofya_ongeza(x, y, w, 20, kitendo, hoja);
+    rudisha w;
+}
+
+// Chati ya mstari ya mfululizo (kielezo, kiwango) ndani ya paneli ya kituo,
+// na gridi, viwango vya juu na chini, na thamani ya mwisho.
+w0 kt_chati(n64* th, n64 n, n64 x, n64 y, n64 w, n64 h, n64 rangi) {
+    n64 juu = th[0];
+    n64 chini = th[0];
+    n64 i = 0;
+    wakati (i < n) {
+        kama (th[i] > juu) { juu = th[i]; }
+        kama (th[i] < chini) { chini = th[i]; }
+        i = i + 1;
+    }
+    kama (juu == chini) { juu = chini + 1; }
+    turubai_brashi(sura_t, SURA_MPAKA, 255);
+    n64 q = 0;
+    wakati (q <= 4) { turubai_jaza(sura_t, x, y + (q * h) / 4, w, 1); q = q + 1; }
+    sura_sparkline(th, n, x, y + 4, w, h - 8, rangi, 50);
+}
+
+
+// ---------- vipande vipya vya pamoja ----------
+
+// Mstari wa amri: kisanduku, maandishi ya amri na kielekezi. Hurudisha x ya
+// kwanza baada ya amri (kwa vichupo).
+n64 kt_amri(n8* amri, n64 x, n64 y, n64 w) {
+    turubai_brashi(sura_t, SURA_PANELI, 255);
+    turubai_mviringo(sura_t, x, y, w, 30, 8);
+    turubai_brashi(sura_t, 16777215, 20);
+    turubai_mpaka(sura_t, x, y, w, 30, 8);
+    kt_nene(amri, x + 8, y + 7, 13, SURA_LAFUDHI);
+    n64 wm = maandishi_upana(sura_mono_nene, amri, 13);
+    turubai_brashi(sura_t, SURA_LAFUDHI, 255);
+    turubai_jaza(sura_t, x + 12 + wm, y + 7, 8, 16);
+    rudisha x + 40 + wm;
+}
+
+// Vitufe vya wigo (REGION, NATION, WORLD) kulia mwa mstari wa amri.
+w0 kt_wigo(n64 x_kulia, n64 y, n64 kitendo) {
+    n64 rx = x_kulia - 8;
+    rx = rx - maandishi_upana(sura_mono_nene, ui("WORLD"), 11) - 16;
+    kt_kitufe(ui("WORLD"), rx, y + 5, skrini_wigo == WIGO_DUNIA, kitendo, WIGO_DUNIA);
+    rx = rx - maandishi_upana(sura_mono_nene, ui("NATION"), 11) - 20;
+    kt_kitufe(ui("NATION"), rx, y + 5, skrini_wigo == WIGO_TAIFA, kitendo, WIGO_TAIFA);
+    rx = rx - maandishi_upana(sura_mono_nene, ui("REGION"), 11) - 20;
+    kt_kitufe(ui("REGION"), rx, y + 5, skrini_wigo == WIGO_MKOA, kitendo, WIGO_MKOA);
+    kt_maandishi_kulia(ui("SCOPE"), rx - 8, y + 8, 11, SURA_HAFIFU);
+}
+
+// Mstari unaopita: kisanduku; vipande huongezwa kwa kt_kipande.
+n64 kt_mstari_anza(n64 x, n64 y, n64 w) {
+    turubai_brashi(sura_t, SURA_PANELI, 255);
+    turubai_mviringo(sura_t, x, y, w, 24, 6);
+    turubai_kata(sura_t, x + 4, y, w - 8, 24);
+    rudisha x + 8;
+}
+
+// Kipande cha mstari unaopita: lebo (lafudhi), thamani, na badiliko lenye
+// rangi; hurudisha x inayofuata.
+n64 kt_kipande(n64 xx, n64 y, n8* lebo, n8* thamani, n64 badiliko, n32 onyesha_badiliko) {
+    kt_maandishi(lebo, xx, y + 5, 12, SURA_BAHARI);
+    xx = xx + maandishi_upana(sura_mono, lebo, 12) + 6;
+    kt_maandishi(thamani, xx, y + 5, 12, SURA_MAANDISHI);
+    xx = xx + maandishi_upana(sura_mono, thamani, 12) + 6;
+    kama (onyesha_badiliko) {
+        n8 b[24];
+        kt_badiliko(b, badiliko);
+        kt_maandishi(b, xx, y + 5, 12, kt_rangi_ya_badiliko(badiliko));
+        xx = xx + maandishi_upana(sura_mono, b, 12) + 6;
+    }
+    rudisha xx + 16;
+}
+
+w0 kt_mstari_maliza() { turubai_kata_yote(sura_t); }
+
+// Badiliko la namba nzima lenye ishara: "+3", "-12", "0".
+w0 kt_badiliko(n8* nje, n64 v) {
+    kama (v > 0) { mfuatano_umbiza(nje, 24, "+%d", v, 0, 0, 0, 0, 0); }
+    sivyo { mfuatano_umbiza(nje, 24, "%d", v, 0, 0, 0, 0, 0); }
+}
+
+// Kichwa cha safuwima (mono, lafudhi), kushoto au kulia.
+w0 kt_kichwa(n8* s, n64 x, n64 y) { kt_maandishi(s, x, y, 10, SURA_LAFUDHI); }
+w0 kt_kichwa_kulia(n8* s, n64 x_kulia, n64 y) { kt_maandishi_kulia(s, x_kulia, y, 10, SURA_LAFUDHI); }
+
+// Usuli wa safu ya jedwali: teule (lafudhi), au mbadala hafifu.
+w0 kt_safu(n64 x, n64 y, n64 w, n64 h, n64 r, n32 teule) {
+    kama (teule) { turubai_brashi(sura_t, SURA_LAFUDHI, 30); turubai_jaza(sura_t, x, y, w, h); }
+    sivyo kama (r % 2 == 1) { turubai_brashi(sura_t, 16777215, 8); turubai_jaza(sura_t, x, y, w, h); }
+}
+
+// Safu ya lebo na thamani (mono): lebo hafifu kushoto, thamani kulia.
+w0 kt_thamani(n8* lebo, n8* thamani, n64 x, n64 y, n64 w, n64 rangi) {
+    kt_maandishi(lebo, x, y, 11, SURA_HAFIFU);
+    kt_maandishi_kulia(thamani, x + w, y, 11, rangi);
+}
+
+// Safu ya kipimo chenye historia: lebo, thamani ya sasa, na mabadiliko ya
+// wiki 1, 4, 26 na 52 (kutoka historia_ya_siasa.swa), safuwima zikianzia xc.
+w0 kt_kipimo_na_historia(n8* lebo, n64 taifa, n64 k, n64 x, n64 y, n64 w) {
+    n8 m[24];
+    kt_maandishi(lebo, x, y, 11, SURA_HAFIFU);
+    n64 sasa = hs_pata(taifa, k, 0);
+    sura_namba(m, sasa);
+    n64 c = x + (w * 40) / 100;
+    n64 hatua = (w - (c - x)) / 5;
+    kt_maandishi_kulia(m, c + hatua, y, 11, SURA_MAANDISHI);
+    n64 i = 0;
+    wakati (i < 4) {
+        n64 nyuma = 1;
+        kama (i == 1) { nyuma = 4; }
+        kama (i == 2) { nyuma = 26; }
+        kama (i == 3) { nyuma = 52; }
+        kama (hs_zilizopo() > nyuma) {
+            n64 b = hs_badiliko(taifa, k, nyuma);
+            kt_badiliko(m, b);
+            kt_maandishi_kulia(m, c + (i + 2) * hatua, y, 11, kt_rangi_ya_badiliko(b));
+        } sivyo { kt_maandishi_kulia("-", c + (i + 2) * hatua, y, 11, SURA_HAFIFU); }
+        i = i + 1;
+    }
+}
+
+// Vichwa vya safu za kt_kipimo_na_historia.
+w0 kt_vichwa_vya_historia(n64 x, n64 y, n64 w) {
+    n64 c = x + (w * 40) / 100;
+    n64 hatua = (w - (c - x)) / 5;
+    kt_kichwa_kulia(ui("LAST"), c + hatua, y);
+    kt_kichwa_kulia("1W", c + 2 * hatua, y);
+    kt_kichwa_kulia("4W", c + 3 * hatua, y);
+    kt_kichwa_kulia("26W", c + 4 * hatua, y);
+    kt_kichwa_kulia("52W", c + 5 * hatua, y);
+}
+
+// Chati ya kipimo k cha taifa kwa wiki zote zilizopo, na lebo ya thamani
+// ya juu na ya chini kulia.
+w0 kt_chati_ya_historia(n64 taifa, n64 k, n64 x, n64 y, n64 w, n64 h, n64 rangi) {
+    n64* th = tenga(8 * HS_WIKI);
+    n64 n = hs_mfululizo(taifa, k, HS_WIKI, th);
+    kama (n >= 2) { kt_chati(th, n, x, y, w, h, rangi); }
+    sivyo { kt_maandishi(ui("History builds week by week."), x + 8, y + h / 2 - 6, 11, SURA_HAFIFU); }
+    achilia th;
+}

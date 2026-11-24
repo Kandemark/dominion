@@ -1,3 +1,4 @@
+husisha { moduli/skrini/historia_ya_siasa.swa }
 husisha { msingi/maktaba/mfuatano.swa }
 husisha { moduli/skrini/ramani.swa }
 husisha { moduli/skrini/kituo.swa }
@@ -629,6 +630,8 @@ w0 bofya_skrini(Mchezo* g, Hali* h, n64 skrini, n64 upana, n64 kimo, n64 px, n64
         kama (kitendo == JOPO_FUNGUA) { h->taifa = hoja; chafua_ukurasa(h); rudisha; }
         kama (kitendo == JOPO_WIGO) { skrini_wigo = hoja; chafua_ukurasa(h); rudisha; }
     }
+    kama (skrini == SKRINI_SIASA && skrini_siasa_bofya(px, py)) { chafua_ukurasa(h); rudisha; }
+    kama (skrini == SKRINI_DIPLOMASIA && skrini_diplomasia_bofya(px, py)) { chafua_ukurasa(h); rudisha; }
     kama (skrini == SKRINI_JESHI && skrini_jeshi_bofya(g, h->taifa, px, py)) { chafua_ukurasa(h); rudisha; }
     kama (skrini == SKRINI_KATIBA) {
         kumbuka_cheo_cha_mchezaji(g);
@@ -809,6 +812,8 @@ w0 pakia_nafasi(Mchezo* g, Hali* h, n64 nafasi) {
     n64 r = hifadhi_pakia(g, nafasi);
     kama (r == HIFADHI_SAWA) {
         h->taifa = mchezo_pata_taifa(g)->faharisi_ya_taifa_la_mchezaji;
+        hs_anza(g);
+        hs_rekodi(g);
         mfuatano_umbiza(wasifu_ujumbe, 160, ui("Slot %d loaded."), nafasi, 0, 0, 0, 0, 0);
     } sivyo { nakili_mfuatano(wasifu_ujumbe, ui("That slot could not be loaded.")); }
     chafua_msingi(h);
@@ -886,6 +891,7 @@ w0 zamu_inayofuata(Mchezo* g, Hali* h) {
     habari_zamu(g);
     // majeshi: kuajiri, vifaa, ari, uhamasishaji na vita
     vk_zamu(g, g->zamu_ya_sasa);
+    hs_rekodi(g);
     // kuhifadhi kwa otomatiki kila wiki nne
     kama (g->zamu_ya_sasa % 4 == 0) { hifadhi_andika(g, 0); }
     sasisha_kikasha(g);
@@ -1272,6 +1278,9 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     // masoko, pochi na katiba ya taifa la mchezaji (hifadhi/hifadhi.swa)
     hifadhi_anzisha_dominion(g, TAREHE_MWAKA_WA_MWANZO);
     kama (ameanzisha) { uanz_tumia(g); }
+    // kumbukumbu ya kisiasa ya kila wiki (skrini/historia_ya_siasa.swa)
+    hs_anza(g);
+    hs_rekodi(g);
     // daftari la maamuzi ya nafasi ya hifadhi: maamuzi ya zamani hurudi kazini
     n8* njia_ya_maamuzi = tenga(128);
     uamuzi_njia(njia_ya_maamuzi, 128, mkutano_nafasi);
