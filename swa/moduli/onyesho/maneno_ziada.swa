@@ -1513,6 +1513,27 @@ w0 maneno_jaza_ziada_3() {
 
 // maamuzi ya lazima, mshauri na tiketi ya oda (2026-11)
 w0 maneno_jaza_ziada_4() {
+    maneno_sajili("of %s allowed in peacetime", "kati ya %s wanaoruhusiwa wakati wa amani", "sur %s autorisés en temps de paix");
+    maneno_sajili("target strength %s", "lengo %s", "effectif cible %s");
+    maneno_sajili("average of %d formations", "wastani wa vikosi %d", "moyenne de %d formations");
+    maneno_sajili("%d of %d  ·  %s in %d weeks", "%d kati ya %d  ·  %s kwa wiki %d", "%d sur %d  ·  %s en %d semaines");
+    maneno_sajili("at peace", "kwa amani", "en paix");
+    maneno_sajili("at war with us", "vitani nasi", "en guerre contre nous");
+    maneno_sajili("index %d  ·  %d.%dx ours  ·  %s", "kielezo %d  ·  %d.%dx yetu  ·  %s", "indice %d  ·  %d.%dx le nôtre  ·  %s");
+    maneno_sajili("STRONGEST NEIGHBOUR", "JIRANI MWENYE NGUVU ZAIDI", "VOISIN LE PLUS FORT");
+    maneno_sajili("STR %d%%", "UJAZO %d%%", "EFF %d%%");
+    maneno_sajili("EQP %d%%", "VIFAA %d%%", "ÉQP %d%%");
+    maneno_sajili("MOR %d%%", "ARI %d%%", "MOR %d%%");
+    maneno_sajili("men", "askari", "hommes");
+    maneno_sajili("%s of %s men  ·  ready %d%%  ·  experience %d%%  ·  raised week %d", "askari %s kati ya %s  ·  tayari %d%%  ·  uzoefu %d%%  ·  kiliundwa wiki %d", "%s hommes sur %s  ·  prêt %d%%  ·  expérience %d%%  ·  levé semaine %d");
+    maneno_sajili("ORDER OF BATTLE  ·  %d FORMATIONS", "MPANGILIO WA VITA  ·  VIKOSI %d", "ORDRE DE BATAILLE  ·  %d FORMATIONS");
+    maneno_sajili("page %d of %d", "ukurasa %d kati ya %d", "page %d sur %d");
+    maneno_sajili("Point at a formation for its full record; tab 2 lists every figure.", "Elekeza kikosi kuona rekodi yake; kichupo 2 kina takwimu zote.", "Pointez une formation pour son dossier ; l'onglet 2 liste tous les chiffres.");
+    maneno_sajili("COMPOSITION  ·  MEN BY BRANCH", "MUUNDO  ·  ASKARI KWA TAWI", "COMPOSITION  ·  HOMMES PAR ARME");
+    maneno_sajili("equipment %d%%  ·  morale %d%%", "vifaa %d%%  ·  ari %d%%", "équipement %d%%  ·  moral %d%%");
+    maneno_sajili("BALANCE OF POWER  ·  NEAREST NATIONS BY MILITARY INDEX", "MIZANI YA NGUVU  ·  MATAIFA YA KARIBU KWA KIELEZO", "ÉQUILIBRE DES FORCES  ·  NATIONS PROCHES PAR INDICE");
+    maneno_sajili("at war", "vitani", "en guerre");
+    maneno_sajili("MILITARY INDEX  ·  %d WEEKS", "KIELEZO CHA KIJESHI  ·  WIKI %d", "INDICE MILITAIRE  ·  %d SEMAINES");
     maneno_sajili("Table", "Jedwali", "Tableau");
     maneno_sajili("Treemap", "Ramani ya miraba", "Carte proportionnelle");
     maneno_sajili("%s 1Y", "%s mwaka 1", "%s sur 1 an");
