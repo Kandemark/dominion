@@ -1513,6 +1513,34 @@ w0 maneno_jaza_ziada_3() {
 
 // maamuzi ya lazima, mshauri na tiketi ya oda (2026-11)
 w0 maneno_jaza_ziada_4() {
+    maneno_sajili("Agree to what they ask", "Kubali wanachoomba", "Accepter ce qu'ils demandent");
+    maneno_sajili("Agree, but on our terms", "Kubali, kwa masharti yetu", "Accepter, mais à nos conditions");
+    maneno_sajili("Decline politely", "Kataa kwa adabu", "Refuser poliment");
+    maneno_sajili("Refuse firmly", "Kataa kwa uthabiti", "Refuser fermement");
+    maneno_sajili("Hear them out and report back", "Wasikilize kisha uniletee taarifa", "Les écouter et me faire rapport");
+    maneno_sajili("You asked for this meeting. Your request read: %s", "Uliomba mkutano huu. Ombi lako lilisema: %s", "Vous avez demandé cette audience. Votre requête disait : %s");
+    maneno_sajili("Come in. You asked to see me. What is it?", "Karibu. Uliomba kuniona. Kuna nini?", "Entrez. Vous avez demandé à me voir. De quoi s'agit-il ?");
+    maneno_sajili("A meeting already in the diary for this week. Raise the most pressing matter in your area of responsibility.", "Mkutano uliopangwa tayari wiki hii. Leta jambo la dharura zaidi katika eneo lako la kazi.", "Une réunion déjà prévue cette semaine. Soulevez la question la plus pressante de votre domaine.");
+    maneno_sajili("Thank you for coming. Let us begin.", "Asante kwa kuja. Tuanze.", "Merci d'être venu. Commençons.");
+    maneno_sajili("They listened and will wait for your answer.", "Walisikiliza na watasubiri jibu lako.", "Ils ont écouté et attendront votre réponse.");
+    maneno_sajili("They left satisfied.", "Waliondoka wakiwa wameridhika.", "Ils sont repartis satisfaits.");
+    maneno_sajili("They took it badly; they had wanted to see you in person.", "Hawakupendezwa; walitaka kukuona wewe mwenyewe.", "Ils l'ont mal pris ; ils voulaient vous voir en personne.");
+    maneno_sajili(" They remarked that you sent someone of lower rank.", " Walisema ulimtuma mtu wa cheo cha chini.", " Ils ont remarqué que vous avez envoyé quelqu'un de rang inférieur.");
+    maneno_sajili(" I passed on your words: \"%s\"", " Niliwapa maneno yako: \"%s\"", " J'ai transmis vos mots : \"%s\"");
+    maneno_sajili("Report: meeting with %s", "Taarifa: mkutano na %s", "Rapport : entretien avec %s");
+    maneno_sajili("I met %s, %s, on your behalf. My instructions: %s.%s %s%s", "Nilikutana na %s, %s, kwa niaba yako. Maelekezo yangu: %s.%s %s%s", "J'ai rencontré %s, %s, en votre nom. Mes instructions : %s.%s %s%s");
+    maneno_sajili("(Sent %s, %s, in my place. Instructions: %s.)%s", "(Nilimtuma %s, %s, badala yangu. Maelekezo: %s.)%s", "(J'ai envoyé %s, %s, à ma place. Instructions : %s.)%s");
+    maneno_sajili("SEND SOMEONE IN YOUR PLACE", "TUMA MTU BADALA YAKO", "ENVOYER QUELQU'UN À VOTRE PLACE");
+    maneno_sajili("To meet %s, %s", "Kukutana na %s, %s", "Pour rencontrer %s, %s");
+    maneno_sajili("WHO GOES", "NANI AENDE", "QUI Y VA");
+    maneno_sajili("INSTRUCTIONS", "MAELEKEZO", "INSTRUCTIONS");
+    maneno_sajili("YOUR WORDS TO PASS ON (OPTIONAL)", "MANENO YAKO YA KUWAPA (HIARI)", "VOS MOTS À TRANSMETTRE (FACULTATIF)");
+    maneno_sajili("Choose who goes.", "Chagua nani aende.", "Choisissez qui y va.");
+    maneno_sajili("Sending someone of much lower rank may offend.", "Kumtuma mtu wa cheo cha chini sana kunaweza kuudhi.", "Envoyer quelqu'un de bien moindre rang peut offenser.");
+    maneno_sajili("Send", "Tuma", "Envoyer");
+    maneno_sajili("Send someone", "Tuma mtu", "Envoyer quelqu'un");
+    maneno_sajili("Meet opens the meeting now. Esc closes this panel without advancing.", "Kutana hufungua mkutano sasa. Esc hufunga jopo bila kusonga.", "Recevoir ouvre l'entretien maintenant. Échap ferme ce panneau sans avancer.");
+    maneno_sajili("Report", "Taarifa", "Rapport");
     maneno_sajili("Click a column heading to sort; again to reverse.", "Bofya kichwa cha safuwima kupanga; tena kugeuza.", "Cliquez un en-tête de colonne pour trier ; encore pour inverser.");
     maneno_sajili("This week", "Wiki hii", "Cette semaine");
     maneno_sajili("1 week ago", "Wiki 1 iliyopita", "Il y a 1 semaine");

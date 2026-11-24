@@ -14,7 +14,7 @@ husisha { msingi/maktaba/mfuatano.swa }
 //   mtoa=1
 //   anwani=127.0.0.1
 //   bandari=11434
-//   modeli=llama3
+//   modeli=llama3.2:3b
 //   ufunguo=
 //   tokeni=400
 // Ufunguo hutumwa kama "Authorization: Bearer <ufunguo>".
@@ -50,7 +50,7 @@ AkiliUsanidi* akili_usanidi_chaguomsingi() {
     u->ufunguo = tenga(256);
     nakili_mfuatano(u->anwani, "127.0.0.1");
     u->bandari = 11434;
-    nakili_mfuatano(u->modeli, "llama3");
+    nakili_mfuatano(u->modeli, "llama3.2:3b");
     u->ufunguo[0] = 0;
     u->tokeni = 400;
     rudisha u;

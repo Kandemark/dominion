@@ -63,6 +63,7 @@ n64 skrini_kikasha_bofya(n64 upana, n64 kimo, n64 px, n64 py) {
 n8* kikasha_aina_jina(n64 aina) {
     kama (aina == UJUMBE_SHAJARA) { rudisha ui("Diary"); }
     kama (aina == UJUMBE_TAHADHARI) { rudisha ui("Warning"); }
+    kama (aina == UJUMBE_TAARIFA) { rudisha ui("Report"); }
     rudisha ui("Request");
 }
 

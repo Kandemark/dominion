@@ -1,0 +1,96 @@
+husisha { moduli/skrini/maamuzi.swa }
+
+// jaribio_maamuzi.swa -- jopo la maamuzi: kutuma mjumbe (agizo, maneno,
+// taarifa kikashani, kumbukumbu ya mwombaji, msimamo) na "Kutana" (mkutano
+// hufunguliwa na ajenda yake huingia kwenye maelekezo ya AI).
+// Kumbukumbu huandikwa kwenye nafasi 97 ya majaribio na kufutwa mwishoni.
+
+n32 shindwa(n8* s) { andika("SHINDWA: %s\n", s, 0, 0, 0, 0, 0); rudisha 1; }
+
+n32 ina(n8* s, n8* kipande) {
+    n64 n = urefu_wa_mfuatano(kipande);
+    n64 i = 0;
+    wakati (s[i] != 0) {
+        n64 j = 0;
+        wakati (j < n && s[i + j] == kipande[j]) { j = j + 1; }
+        kama (j == n) { rudisha 1; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
+    Mchezo* g = mchezo_unda();
+    MchezoUsanidi usanidi;
+    mchezo_usanidi_chaguomsingi(&usanidi);
+    CivMatokeo r = mchezo_anzisha(g, &usanidi);
+    kama (r.hitilafu != CIV_SAWA) { rudisha shindwa("mchezo_anzisha"); }
+    mipangilio_akili = akili_usanidi_chaguomsingi();
+    mkutano_nafasi = 97;
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 taifa = tm->faharisi_ya_taifa_la_mchezaji;
+    Wahusika* w = skrini_mkutano_watu(g, taifa);
+    kama (w == 0 || w->idadi < 4) { rudisha shindwa("hakuna maafisa"); }
+    n64 zamu = g->zamu_ya_sasa;
+    n64 leo = tarehe_siku_ya_zamu(zamu);
+    kikasha_ongeza(2, UJUMBE_OMBI, zamu, leo, "Request for a meeting", "Wants support for a bill on grain tariffs.");
+    kikasha_ongeza(3, UJUMBE_OMBI, zamu, leo, "Request for a meeting", "Reports unrest in the ranks.");
+    n64 kwanza = maamuzi_kusanya(zamu);
+    kama (kwanza < 2) { rudisha shindwa("maombi hayakukusanywa"); }
+
+    // 1. tuma mjumbe kwa ombi la kwanza la mtu 2
+    n64 k = 0;
+    wakati (k < ma_idadi && ma_mtu_wa(k) != 2) { k = k + 1; }
+    kama (k >= ma_idadi) { rudisha shindwa("ombi la mtu 2"); }
+    MhusikaWaDola* mw = wahusika_pata(w, 2);
+    mw->msimamo = 10;
+    ma_tuma_k = k;
+    n64 wagombea[9];
+    n64 n = ma_wagombea(w, 2, wagombea);
+    kama (n < 2) { rudisha shindwa("wagombea"); }
+    n64 i = 0;
+    wakati (i < n) { kama (wagombea[i] == 2) { rudisha shindwa("mwombaji ni mgombea"); } i = i + 1; }
+    ma_mjumbe = wagombea[1];
+    ma_agizo = 4;
+    maamuzi_kibodi(35, 1);      // H
+    maamuzi_kibodi(23, 0);      // i
+    kama (linganisha_mfuatano(ma_maneno, "Hi") != 0) { rudisha shindwa("maneno ya mjumbe"); }
+    n64 kabla = kikasha_idadi;
+    maamuzi_tuma(g, w, zamu);
+    kama (mw->msimamo >= 10) { rudisha shindwa("kukataa kwa uthabiti hakukushusha msimamo"); }
+    kama (kikasha_idadi != kabla + 1) { rudisha shindwa("taarifa haikuingia kikashani"); }
+    Ujumbe* t = kikasha_pata(kikasha_idadi - 1);
+    kama (t->aina != UJUMBE_TAARIFA || t->mtumaji != wagombea[1]) { rudisha shindwa("taarifa si ya mjumbe"); }
+    kama (ina(t->mwili, "Refuse firmly") == 0 || ina(t->mwili, "Hi") == 0) { andika("[%s]\n", t->mwili, 0, 0, 0, 0, 0); rudisha shindwa("taarifa haina agizo na maneno"); }
+    kama (ma_tuma_k != 0 - 1) { rudisha shindwa("jopo la mjumbe halikufungwa"); }
+    n8 njia[128];
+    kumbukumbu_njia(njia, 128, 97);
+    n8* kb = tenga(4096);
+    kumbukumbu_soma_mwisho(njia, kb, 4096);
+    kama (ina(kb, mw->jina) == 0 || ina(kb, "Instructions") == 0) { andika("[%s]\n", kb, 0, 0, 0, 0, 0); rudisha shindwa("kumbukumbu ya mwombaji"); }
+    kama (maamuzi_kusanya(zamu) != kwanza - 1) { rudisha shindwa("ombi lililotumiwa mjumbe bado linasubiri"); }
+
+    // 2. Kutana: mkutano hufunguliwa na ajenda
+    k = 0;
+    wakati (k < ma_idadi && ma_mtu_wa(k) != 3) { k = k + 1; }
+    kama (k >= ma_idadi) { rudisha shindwa("ombi la mtu 3"); }
+    maamuzi_wazi = 1;
+    maamuzi_kutana(w, zamu, k);
+    kama (maamuzi_kutana_mtu != 3 || maamuzi_wazi != 0) { rudisha shindwa("kutana hakukuandaa mkutano"); }
+    kama (ina(maamuzi_kutana_ajenda, "unrest in the ranks") == 0) { rudisha shindwa("ajenda"); }
+    skrini_mkutano_anza_rasmi(3, w, maamuzi_kutana_ajenda, maamuzi_kutana_ufunguzi);
+    kama (mkutano_mteule != 3 || mkutano_hali != 1 || linganisha_mfuatano(mkutano_kauli, maamuzi_kutana_ufunguzi) != 0) { rudisha shindwa("mkutano haukufunguliwa"); }
+    // ajenda huingia kwenye maelekezo
+    mazungumzo_ajenda = mk_ajenda;
+    n8* p = mazungumzo_andaa(skrini_siasa_dola(g, taifa), "Test", "1 May 1900", wahusika_pata(w, 3), "Head of state", "English", njia);
+    mazungumzo_ajenda = 0;
+    kama (ina(p, "unrest in the ranks") == 0 || ina(p, "Speak first") == 0) { rudisha shindwa("ajenda haimo kwenye maelekezo"); }
+    // mshauri amezimwa: kutuma hutoa hitilafu, si kuganda
+    skrini_mkutano_tuma(g, taifa);
+    kama (mkutano_hali != 3) { rudisha shindwa("kutuma bila AI"); }
+
+    mfumo_futa(njia);
+    wito_wa_mfumo(84, "saves/nafasi_97", 0, 0, 0, 0, 0);
+    andika("SAWA: maamuzi\n", 0, 0, 0, 0, 0, 0);
+    rudisha 0;
+}

@@ -199,6 +199,9 @@ w0 mazungumzo_weka_muktadha(TaifaMfumo* tm, n64 mchezaji, n64 zamu, n8* njia_ya_
     mazungumzo_njia_ya_maamuzi = njia_ya_maamuzi;
 }
 
+// Ajenda ya mkutano unaoendelea (k.m. sababu ya ombi la mkutano), au 0.
+n8* mazungumzo_ajenda = 0;
+
 // Maelekezo ya mazungumzo (pamoja na kumbukumbu ya mwisho). Mpigaji huachilia.
 n8* mazungumzo_andaa(Dola* d, n8* taifa, n8* tarehe, MhusikaWaDola* m, n8* cheo_cha_mchezaji, n8* lugha, n8* njia_ya_kumbukumbu) {
     n8* kumbukumbu = tenga(3072);
@@ -206,6 +209,10 @@ n8* mazungumzo_andaa(Dola* d, n8* taifa, n8* tarehe, MhusikaWaDola* m, n8* cheo_
     n8* maelekezo = tenga(8192);
     mazungumzo_maelekezo(maelekezo, 8192, d, taifa, tarehe, m, cheo_cha_mchezaji, kumbukumbu, lugha);
     achilia kumbukumbu;
+    kama (mazungumzo_ajenda != 0 && mazungumzo_ajenda[0] != 0) {
+        n64 n = urefu_wa_mfuatano(maelekezo);
+        mfuatano_umbiza(&maelekezo[n], 8192 - n, "\n\nThis is a formal meeting in the %s's office. Its agenda: %s Speak first about this business when the meeting opens, plainly and in character, then answer what you are asked.", cheo_cha_mchezaji, mazungumzo_ajenda, 0, 0, 0, 0);
+    }
     rudisha maelekezo;
 }
 

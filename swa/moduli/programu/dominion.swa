@@ -749,11 +749,26 @@ w0 bofya_kikasha(Mchezo* g, Hali* h, n64 upana, n64 kimo, n64 px, n64 py) {
 }
 
 
+// "Kutana" kwenye jopo la maamuzi: fungua mkutano huo sasa hivi.
+w0 maamuzi_fungua_mkutano(Mchezo* g, Hali* h) {
+    kama (maamuzi_kutana_mtu < 0) { rudisha; }
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    Wahusika* watu = skrini_mkutano_watu(g, tm->faharisi_ya_taifa_la_mchezaji);
+    n64 mtu = maamuzi_kutana_mtu;
+    maamuzi_kutana_mtu = 0 - 1;
+    kama (watu == 0) { rudisha; }
+    h->taifa = tm->faharisi_ya_taifa_la_mchezaji;
+    skrini_mkutano_anza_rasmi(mtu, watu, maamuzi_kutana_ajenda, maamuzi_kutana_ufunguzi);
+    fungua_ukurasa(h, SKRINI_MKUTANO);
+    skrini_mkutano_tuma(g, h->taifa);
+}
+
 // Bonyezo la kushoto: upau wa juu, urambazaji, ukurasa, au ramani.
 w0 bonyeza(Mchezo* g, Hali* h, Dirisha* d, n64 px, n64 py) {
     // jopo la maamuzi likiwa wazi hupokea bofya zote
     kama (maamuzi_wazi) {
         kama (maamuzi_bofya(g, px, py)) { songa_kipindi(g, h); }
+        maamuzi_fungua_mkutano(g, h);
         chafua_msingi(h);
         chafua_ukurasa(h);
         rudisha;
@@ -1029,7 +1044,11 @@ w0 songa_kipindi(Mchezo* g, Hali* h) {
 w0 kibodi(Mchezo* g, Hali* h, Dirisha* d, n64 a) {
     // jopo la maamuzi: Esc hulifunga bila kusonga; vitufe vingine havifanyi kazi
     kama (maamuzi_wazi) {
-        kama (a == KEY_ESC) { maamuzi_wazi = 0; chafua_msingi(h); chafua_ukurasa(h); }
+        kama (a == KEY_ESC && ma_tuma_k >= 0) { ma_tuma_k = 0 - 1; ma_mjumbe = 0 - 1; }
+        sivyo kama (a == KEY_ESC) { maamuzi_wazi = 0; }
+        sivyo { maamuzi_kibodi(a, h->shift); }
+        chafua_msingi(h);
+        chafua_ukurasa(h);
         rudisha;
     }
     // Ctrl + / Ctrl - (na + / - za vitufe vya namba) hukuza ramani kutoka ukurasa wowote

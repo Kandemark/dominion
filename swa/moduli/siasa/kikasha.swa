@@ -13,6 +13,7 @@ husisha { moduli/siasa/kalenda.swa }
 n64 UJUMBE_OMBI = 0;
 n64 UJUMBE_SHAJARA = 1;
 n64 UJUMBE_TAHADHARI = 2;
+n64 UJUMBE_TAARIFA = 3;         // taarifa ya mjumbe aliyetumwa na mchezaji
 
 n64 KIKASHA_UWEZO = 300;
 

@@ -380,7 +380,10 @@ w0 skrini_mkutano_tuma(Mchezo* g, n64 taifa) {
     skrini_mkutano_tarehe(g, tarehe, 96);
     n8 njia[128];
     kumbukumbu_njia(njia, 128, mkutano_nafasi);
+    mazungumzo_ajenda = 0;
+    kama (mk_ajenda != 0 && mk_ajenda_mtu >= 0 && mk_ajenda_mtu == mkutano_mteule && mkutano_mbunge < 0 && mkutano_tajiri < 0) { mazungumzo_ajenda = mk_ajenda; }
     n8* maelekezo = mazungumzo_andaa(d, tn->jina, tarehe, m, skrini_mkutano_cheo_cha_mchezaji(w), maneno_lugha_jina(maneno_lugha), njia);
+    mazungumzo_ajenda = 0;
     kama (muda != 0) { achilia muda->cheo; achilia muda; }
     AkiliUsanidi* u = mipangilio_akili_pata();
     kama (u->mtoa == AKILI_HAKUNA) { mkutano_hali = 3; mkutano_kosa = 0 - 1; achilia maelekezo; rudisha; }
@@ -1570,6 +1573,26 @@ w0 skrini_mkutano_fungua_na(n64 mtu, Wahusika* w) {
     m->mkutano = 1;
     skrini_mkutano_chagua(mtu);
     mfuatano_umbiza(mkutano_ujumbe, 240, ui("%s is shown in."), m->jina, 0, 0, 0, 0, 0);
+}
+
+// Ajenda ya mkutano rasmi na mtu mmoja (kutoka jopo la maamuzi).
+n64 mk_ajenda_mtu = -1;
+n8* mk_ajenda = 0;
+
+// Anza mkutano rasmi: mfungulie `mtu`, weka ajenda, na mchezaji husema
+// sentensi ya kwanza; afisa hujibu kwa kueleza shughuli yake.
+w0 skrini_mkutano_anza_rasmi(n64 mtu, Wahusika* w, n8* ajenda, n8* ufunguzi) {
+    mkutano_andaa();
+    kama (mk_ajenda == 0) { mk_ajenda = tenga(512); }
+    mkutano_mteule = 0 - 3;                 // lazimisha chagua kumweka upya
+    skrini_mkutano_fungua_na(mtu, w);
+    mk_ajenda_mtu = mtu;
+    nakili_mfuatano(mk_ajenda, ajenda);
+    nakili_mfuatano(mkutano_kauli, ufunguzi);
+    mkutano_urefu = 0;
+    mkutano_ingizo[0] = 0;
+    mkutano_hali = 1;
+    mk_tembeza = 0;
 }
 
 // Panga mkutano na `mtu` baada ya siku `siku` (kutoka kikasha).
