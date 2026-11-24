@@ -1,3 +1,4 @@
+husisha { moduli/skrini/nyuso.swa }
 husisha { moduli/skrini/uanzishaji.swa }
 husisha { moduli/skrini/mkutano.swa }
 husisha { moduli/soko/masoko.swa }
@@ -222,9 +223,7 @@ w0 wasifu_washauri(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h) {
             turubai_mviringo(sura_t, x + 8, ky, w - 16, kh - 8, 8);
         }
         wasifu_jina_la_mgombea(jina, taifa, f);
-        n8 herufi[4];
-        serikali_herufi_za_jina(jina, herufi);
-        sura_avatar(herufi, x + 36, ky + 28, 18, 11032472, 255);
+        ny_chora_jina(sura_t, jina, taifa, serikali_mwaka(), 40 + f * 6, x + 36, ky + 28, 20);
         sura_rangi(SURA_MAANDISHI);
         sura_lebo_nene(jina, x + 64, ky + 8, 14);
         sura_rangi(SURA_LAFUDHI);

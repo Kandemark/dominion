@@ -1,3 +1,4 @@
+husisha { moduli/skrini/nyuso.swa }
 husisha { moduli/skrini/kuwasha.swa }
 husisha { moduli/skrini/mkutano.swa }
 husisha { moduli/onyesho/uso.swa }
@@ -31,7 +32,6 @@ n64 uanz_taifa = 0;
 n64 uanz_ukurasa = 0;
 n64 uanz_ofisi = 0;
 n64 uanz_mbegu = 1;
-Uso* mchezaji_uso = 0;          // uso wa mchezaji (0 = bado hajaunda)
 n8* mchezaji_jina = 0;          // jina la mchezaji (0 = jina la mwenye cheo)
 
 n64 uanz_kitufe(n8* lebo, n64 x, n64 y, n64 w, n32 hai, n32 inawezekana, n64 kitendo, n64 hoja) {
@@ -329,7 +329,12 @@ w0 uanz_taifa_chora(Mchezo* g, Turubai* t) {
 n64 uanz_taifa_bofya(Mchezo* g, n64 px, n64 py) {
     n64 hoja = 0;
     n64 k = bofya_tafuta(px, py, &hoja);
-    kama (k == UZ_TAIFA) { uanz_taifa = hoja; uanz_ofisi = 0; }
+    kama (k == UZ_TAIFA) {
+        uanz_taifa = hoja;
+        uanz_ofisi = 0;
+        // uso mpya kutoka jamii za taifa jipya
+        kama (mchezaji_uso != 0) { ny_zalisha_mchezaji(mchezaji_uso, uanz_taifa, uanz_taifa * 31 + uanz_mbegu * 7, uanz_mwaka); }
+    }
     kama (k == UZ_UKURASA) { uanz_ukurasa = uanz_ukurasa + hoja; }
     kama (k == UZ_OFISI) { uanz_ofisi = hoja; }
     kama (k == UZ_ENDELEA) { rudisha 1; }
@@ -347,7 +352,7 @@ w0 uanz_jina_jipya(Mchezo* g) {
 
 w0 uanz_mhusika_anzisha(Mchezo* g) {
     kama (mchezaji_uso == 0) { mchezaji_uso = tenga(ukubwa(Uso)); }
-    uso_zalisha(mchezaji_uso, uanz_taifa * 31 + uanz_mbegu * 7, uanz_mwaka);
+    ny_zalisha_mchezaji(mchezaji_uso, uanz_taifa, uanz_taifa * 31 + uanz_mbegu * 7, uanz_mwaka);
     uanz_jina_jipya(g);
 }
 
@@ -371,7 +376,7 @@ w0 uanz_mhusika_chora(Mchezo* g, Turubai* t) {
     sura_lebo_nene(ui("Who are you?"), x, y + 20, 26);
     // uso mkubwa
     n64 ukubwa = t->kimo - 240;
-    kama (ukubwa > 520) { ukubwa = 520; }
+    kama (ukubwa > 400) { ukubwa = 400; }
     n64 fy = y + 90;
     turubai_brashi(t, 16777215, 30);
     turubai_mviringo(t, x - 2, fy - 2, ukubwa + 4, ukubwa + 4, 14);
@@ -414,10 +419,11 @@ n64 uanz_mhusika_bofya(Mchezo* g, n64 px, n64 py) {
     kama (k == UZ_SIFA) {
         n64 hatua = -1;
         kama (hoja % 2 == 1) { hatua = 1; }
-        uso_badilisha(mchezaji_uso, hoja / 2, hatua);
+        // thamani zisizopatikana kwenye jamii za taifa hurukwa
+        ny_badilisha(mchezaji_uso, hoja / 2, hatua, uanz_taifa);
     }
     kama (k == UZ_JINA) { uanz_jina_jipya(g); }
-    kama (k == UZ_NASIBU) { uanz_mbegu = uanz_mbegu + 1; uso_zalisha(mchezaji_uso, uanz_taifa * 31 + uanz_mbegu * 7, uanz_mwaka); }
+    kama (k == UZ_NASIBU) { uanz_mbegu = uanz_mbegu + 1; ny_zalisha_mchezaji(mchezaji_uso, uanz_taifa, uanz_taifa * 31 + uanz_mbegu * 7, uanz_mwaka); }
     kama (k == UZ_ENDELEA) { rudisha 1; }
     kama (k == UZ_NYUMA) { rudisha -1; }
     rudisha 0;

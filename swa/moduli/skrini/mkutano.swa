@@ -1,3 +1,4 @@
+husisha { moduli/skrini/nyuso.swa }
 husisha { moduli/skrini/siasa.swa }
 husisha { moduli/skrini/mipangilio.swa }
 husisha { moduli/akili/mazungumzo.swa }
@@ -761,11 +762,13 @@ w0 serikali_tawi_chora(Dola* d, Wahusika* w, n64 tawi, n64 x, n64 y, n64 wk, n64
                     turubai_jaza(sura_t, xi - 9, yy + 4, 1, 12);
                     turubai_jaza(sura_t, xi - 9, yy + 15, 6, 1);
                 }
+                // uso mdogo, na pete ya rangi ya chama chake
                 turubai_brashi(sura_t, serikali_rangi_ya_chama(d, m->faharisi_ya_chama), 255);
-                turubai_duara(sura_t, xi + 3, yy + 15, 4);
+                turubai_duara(sura_t, xi + 8, yy + 15, 13);
+                serikali_uso(w, d, i, xi + 8, yy + 15, 11);
                 kama (i == mkutano_ofisi) { sura_rangi(SURA_LAFUDHI); } sivyo { sura_rangi(SURA_MAANDISHI); }
                 turubai_kata(sura_t, x, yy, (wk * 58) / 100, 30);
-                sura_lebo(m->cheo, xi + 14, yy + 7, 12);
+                sura_lebo(m->cheo, xi + 26, yy + 7, 12);
                 turubai_kata_yote(sura_t);
                 sura_rangi(SURA_HAFIFU);
                 turubai_kata(sura_t, x + (wk * 60) / 100, yy, (wk * 30) / 100, 30);
@@ -887,12 +890,25 @@ w0 serikali_herufi_za_jina(n8* jina, n8* nje) {
     }
 }
 
+// Mwaka wa mchezo unaochorwa (kwa mavazi na nyuso za zama).
+n64 serikali_mwaka() {
+    kama (mkutano_g == 0) { rudisha 1900; }
+    rudisha ny_mwaka_wa_zamu(mkutano_g->zamu_ya_sasa);
+}
+
+// Uso wa afisa i wa mti (wa mchezaji ikiwa ni cheo chake).
+w0 serikali_uso(Wahusika* w, Dola* d, n64 i, n64 cx, n64 cy, n64 r) {
+    MhusikaWaDola* m = wahusika_pata(w, i);
+    kama (m == 0) { rudisha; }
+    n32 mimi = mkutano_g != 0 && mkutano_taifa == mchezo_pata_taifa(mkutano_g)->faharisi_ya_taifa_la_mchezaji && i == mkutano_ofisi;
+    kama (mimi && mchezaji_uso != 0) { uso_chora_duara(sura_t, mchezaji_uso, cx, cy, r); rudisha; }
+    ny_chora_mhusika(sura_t, m, d, mkutano_taifa, serikali_mwaka(), cx, cy, r);
+}
+
 // Jalada la mjumbe wa baraza au benchi, na vitendo vyake.
 n64 serikali_jalada_mbunge(Dola* d, n64 i, n64 x, n64 y, n64 wk) {
     Mbunge* m = nguvu_pata(i);
-    n8 h[4];
-    serikali_herufi_za_jina(m->jina, h);
-    sura_avatar(h, x + 44, y + 58, 26, serikali_rangi_ya_chama(d, m->chama), 255);
+    ny_chora_jina(sura_t, m->jina, mkutano_taifa, serikali_mwaka(), 50, x + 44, y + 58, 26);
     sura_rangi(SURA_MAANDISHI);
     sura_lebo_nene(m->jina, x + 84, y + 36, 18);
     n8 c[200];
@@ -950,9 +966,7 @@ n64 serikali_jalada_mbunge(Dola* d, n64 i, n64 x, n64 y, n64 wk) {
 // Jalada la tajiri aliyekuja kukuona.
 n64 serikali_jalada_tajiri(Dola* d, n64 i, n64 x, n64 y, n64 wk) {
     Tajiri* t = soko_tajiri_pata(i);
-    n8 h[4];
-    serikali_herufi_za_jina(t->jina, h);
-    sura_avatar(h, x + 44, y + 58, 26, 15237962, 255);
+    ny_chora_jina(sura_t, t->jina, t->taifa, serikali_mwaka(), t->umri, x + 44, y + 58, 26);
     sura_rangi(SURA_MAANDISHI);
     sura_lebo_nene(t->jina, x + 84, y + 36, 18);
     n8 c[200];
@@ -985,9 +999,7 @@ n64 serikali_jalada_afisa(Dola* d, Wahusika* w, n64 x, n64 y, n64 wk) {
         serikali_kitufe(ui("Talk"), x + 16, y + 110, 0, 1, SB_KITENDO, 1005);
         rudisha y + 140;
     }
-    n8 h[4];
-    serikali_herufi_za_jina(m->jina, h);
-    sura_avatar(h, x + 44, y + 58, 26, serikali_rangi_ya_chama(d, m->faharisi_ya_chama), 255);
+    serikali_uso(w, d, mkutano_mteule, x + 44, y + 58, 26);
     sura_rangi(SURA_MAANDISHI);
     sura_lebo_nene(m->jina, x + 84, y + 36, 18);
     n8 c[200];

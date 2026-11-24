@@ -1,4 +1,5 @@
 husisha { moduli/skrini/mkutano.swa }
+husisha { moduli/skrini/nyuso.swa }
 
 // maamuzi.swa -- maamuzi ya lazima kabla wiki haijasonga.
 //
@@ -149,13 +150,14 @@ w0 maamuzi_chora(Mchezo* g, Turubai* t) {
             mfuatano_umbiza(maelezo, 240, ui("Meeting on %s at %d:00. Skipping it will offend."), tarehe, kalenda_saa[i], 0, 0, 0, 0);
         }
         kama (mh != 0) { mfuatano_umbiza(kichwa, 200, "%s  ·  %s", mh->jina, mh->cheo, 0, 0, 0, 0); } sivyo { nakili_mfuatano(kichwa, ui("An official")); }
+        kama (mh != 0) { ny_chora_mhusika(t, mh, skrini_siasa_dola(g, tm->faharisi_ya_taifa_la_mchezaji), tm->faharisi_ya_taifa_la_mchezaji, ny_mwaka_wa_zamu(g->zamu_ya_sasa), px + 46, ry + 24, 19); }
         sura_rangi(SURA_BAHARI);
-        sura_lebo_nene(aina_jina, px + 30, ry + 8, 10);
-        turubai_kata(t, px + 100, ry, pw - 340, safu_h);
+        sura_lebo_nene(aina_jina, px + 76, ry + 6, 10);
+        turubai_kata(t, px + 76, ry, pw - 320, safu_h);
         sura_rangi(SURA_MAANDISHI);
-        sura_lebo_kati(kichwa, px + 100, ry + 6, 13);
+        sura_lebo_kati(kichwa, px + 76 + maandishi_upana(sura_nene, aina_jina, 10) + 10, ry + 4, 13);
         sura_rangi(SURA_HAFIFU);
-        sura_lebo(maelezo, px + 100, ry + 26, 11);
+        sura_lebo(maelezo, px + 76, ry + 26, 11);
         turubai_kata_yote(t);
         // vitufe
         n64 bx = px + pw - 228;

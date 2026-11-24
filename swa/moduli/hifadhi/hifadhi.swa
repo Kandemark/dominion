@@ -700,7 +700,7 @@ n64 hifadhi_andika(Mchezo* g, n64 nafasi) {
     mk_mfuatano(mchezaji_jina);
     mk_n64(mchezaji_uso != 0);
     n64 s = 0;
-    wakati (s < USO_SIFA) { n64 v = 0; kama (mchezaji_uso != 0) { v = uso_sifa_ya(mchezaji_uso, s)[0]; } mk_n64(v); s = s + 1; }
+    wakati (s < USO_SIFA_ZA_FAILI) { n64 v = 0; kama (mchezaji_uso != 0) { v = uso_thamani_ya_faili(mchezaji_uso, s); } mk_n64(v); s = s + 1; }
     mk_n64(HIFADHI_ALAMA);
     hifadhi_njia(njia, nafasi, "dominion.hali");
     kama (mk_andika_faili(njia) == 0) { rudisha HIFADHI_IMEHARIBIKA; }
@@ -761,7 +761,8 @@ n64 hifadhi_pakia(Mchezo* g, n64 nafasi) {
     n64 ana_uso = mk_soma();
     kama (ana_uso && mchezaji_uso == 0) { mchezaji_uso = tenga(ukubwa(Uso)); }
     n64 s = 0;
-    wakati (s < USO_SIFA) { n64 v = mk_soma(); kama (ana_uso) { uso_sifa_ya(mchezaji_uso, s)[0] = v; } s = s + 1; }
+    kama (ana_uso) { weka_sifuri(mchezaji_uso, ukubwa(Uso)); }
+    wakati (s < USO_SIFA_ZA_FAILI) { n64 v = mk_soma(); kama (ana_uso) { uso_weka_kutoka_faili(mchezaji_uso, s, v); } s = s + 1; }
     kama (ana_uso == 0) { mchezaji_uso = 0; }
     kama (mk_soma() != HIFADHI_ALAMA) { rudisha HIFADHI_IMEHARIBIKA; }
     // AI hukumbuka mazungumzo ya nafasi hii

@@ -1513,6 +1513,10 @@ w0 maneno_jaza_ziada_3() {
 
 // maamuzi ya lazima, mshauri na tiketi ya oda (2026-11)
 w0 maneno_jaza_ziada_4() {
+    maneno_sajili("Sex", "Jinsia", "Sexe");
+    maneno_sajili("Eye colour", "Rangi ya macho", "Couleur des yeux");
+    maneno_sajili("Build", "Umbo la mwili", "Corpulence");
+    maneno_sajili("Age", "Umri", "Âge");
     maneno_sajili("DECISIONS REQUIRED", "MAAMUZI YANAHITAJIKA", "DÉCISIONS REQUISES");
     maneno_sajili("%d matters need your answer before the week can advance.", "Mambo %d yanahitaji jibu lako kabla wiki haijasonga.", "%d affaires attendent votre réponse avant que la semaine avance.");
     maneno_sajili("Every matter is answered. The week can advance.", "Kila jambo limejibiwa. Wiki inaweza kusonga.", "Toutes les affaires ont une réponse. La semaine peut avancer.");
