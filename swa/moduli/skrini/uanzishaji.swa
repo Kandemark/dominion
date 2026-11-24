@@ -333,16 +333,27 @@ n64 uanz_taifa_bofya(Mchezo* g, n64 px, n64 py) {
         uanz_taifa = hoja;
         uanz_ofisi = 0;
         // uso mpya kutoka jamii za taifa jipya
-        kama (mchezaji_uso != 0) { ny_zalisha_mchezaji(mchezaji_uso, uanz_taifa, uanz_taifa * 31 + uanz_mbegu * 7, uanz_mwaka); }
+        kama (mchezaji_uso != 0) { ny_zalisha_mchezaji(mchezaji_uso, uanz_taifa, uanz_taifa * 31 + uanz_mbegu * 7, uanz_mwaka, uanz_umri(g)); }
     }
     kama (k == UZ_UKURASA) { uanz_ukurasa = uanz_ukurasa + hoja; }
-    kama (k == UZ_OFISI) { uanz_ofisi = hoja; }
+    kama (k == UZ_OFISI) {
+        uanz_ofisi = hoja;
+        // uso hubaki ule ule, lakini umri wake unafuata mwenye cheo kipya
+        kama (mchezaji_uso != 0) { mchezaji_uso->umri = ny_kundi_la_umri(uanz_umri(g)); }
+    }
     kama (k == UZ_ENDELEA) { rudisha 1; }
     kama (k == UZ_NYUMA) { rudisha -1; }
     rudisha 0;
 }
 
 // ---------- 3: mhusika ----------
+
+// Umri wa mwenye cheo kilichochaguliwa (uso wa mchezaji hufuata umri huo).
+n64 uanz_umri(Mchezo* g) {
+    MhusikaWaDola* mh = wahusika_pata(skrini_mkutano_watu(g, uanz_taifa), uanz_ofisi);
+    kama (mh == 0) { rudisha 45; }
+    rudisha mh->umri;
+}
 
 w0 uanz_jina_jipya(Mchezo* g) {
     kama (mchezaji_jina == 0) { mchezaji_jina = tenga(48); }
@@ -352,7 +363,7 @@ w0 uanz_jina_jipya(Mchezo* g) {
 
 w0 uanz_mhusika_anzisha(Mchezo* g) {
     kama (mchezaji_uso == 0) { mchezaji_uso = tenga(ukubwa(Uso)); }
-    ny_zalisha_mchezaji(mchezaji_uso, uanz_taifa, uanz_taifa * 31 + uanz_mbegu * 7, uanz_mwaka);
+    ny_zalisha_mchezaji(mchezaji_uso, uanz_taifa, uanz_taifa * 31 + uanz_mbegu * 7, uanz_mwaka, uanz_umri(g));
     uanz_jina_jipya(g);
 }
 
@@ -423,7 +434,7 @@ n64 uanz_mhusika_bofya(Mchezo* g, n64 px, n64 py) {
         ny_badilisha(mchezaji_uso, hoja / 2, hatua, uanz_taifa);
     }
     kama (k == UZ_JINA) { uanz_jina_jipya(g); }
-    kama (k == UZ_NASIBU) { uanz_mbegu = uanz_mbegu + 1; ny_zalisha_mchezaji(mchezaji_uso, uanz_taifa, uanz_taifa * 31 + uanz_mbegu * 7, uanz_mwaka); }
+    kama (k == UZ_NASIBU) { uanz_mbegu = uanz_mbegu + 1; ny_zalisha_mchezaji(mchezaji_uso, uanz_taifa, uanz_taifa * 31 + uanz_mbegu * 7, uanz_mwaka, uanz_umri(g)); }
     kama (k == UZ_ENDELEA) { rudisha 1; }
     kama (k == UZ_NYUMA) { rudisha -1; }
     rudisha 0;

@@ -334,9 +334,18 @@ w0 ny_badilisha(Uso* u, n64 sifa, n64 hatua, n64 taifa) {
     kama (sifa == 11 && u->jinsia == 1) { u->ndevu = 0; }
 }
 
-// Uso wa mwanzo wa mchezaji: mtu wa jamii kuu ya taifa lake.
-w0 ny_zalisha_mchezaji(Uso* u, n64 taifa, n64 mbegu, n64 mwaka) {
+// Uso wa mwanzo wa mchezaji: mtu wa jamii kuu ya taifa lake, wa umri wa
+// mwenye cheo chake (miaka).
+w0 ny_zalisha_mchezaji(Uso* u, n64 taifa, n64 mbegu, n64 mwaka, n64 umri) {
     n64 mavazi = 1;
     kama (mwaka < 1850) { mavazi = 0; }
-    ny_zalisha_kwa_jamii(u, ny_chagua_jamii(taifa, mbegu), mbegu, mwaka, 0, 45, mavazi);
+    ny_zalisha_kwa_jamii(u, ny_chagua_jamii(taifa, mbegu), mbegu, mwaka, 0, umri, mavazi);
+}
+
+// Kundi la umri la uso (0..5) kwa miaka.
+n64 ny_kundi_la_umri(n64 umri) {
+    n64 k = (umri - 20) / 10;
+    kama (umri < 20) { k = 0; }
+    kama (k > 5) { k = 5; }
+    rudisha k;
 }

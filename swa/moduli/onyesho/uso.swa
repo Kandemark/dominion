@@ -493,6 +493,17 @@ w0 uso_ngozi(UsoKazi* k, Uso* u, d64 x, d64 y) {
             i = i + 1;
         }
     }
+    // mifuko chini ya macho
+    kama (u->umri >= 3) {
+        d64 mfuko = uso_kamili(y - (k->ey + 2.6 + 0.04 * (ax - k->ex) * (ax - k->ex)));
+        kama (mfuko < 0.4 && uso_kamili(ax - k->ex) < 3.2) { uso_zidisha(k, 0.84, (0.10 + 0.06 * uso_d(u->umri - 3)) * (1.0 - mfuko / 0.4)); }
+    }
+    // taya inayolegea na madoa ya uzee
+    kama (u->umri >= 4 && dy > 0.6) { uso_zidisha(k, 0.9, uso_bana((dy - 0.6) * 2.5) * uso_bana(uso_kamili(dx) - 0.5) * 1.4); }
+    kama (u->umri >= 5) {
+        d64 doa = uso_kelele(x * 1.7, y * 1.7, k->mbegu + 23);
+        kama (doa > 0.82 && dy < 0.2) { uso_zidisha(k, 0.9, (doa - 0.82) * 4.0); }
+    }
     kama (u->umri >= 3 && u->unene >= 2 && dy > 0.55) { uso_zidisha(k, 0.9, uso_bana((dy - 0.55) * 2.0) * uso_bana(uso_kamili(dx) - 0.55)); }
 }
 
@@ -599,11 +610,11 @@ w0 uso_mdomo(UsoKazi* k, Uso* u, d64 x, d64 y) {
     kama (umbo < 0.0) { umbo = 0.0; }
     n64 mdomo = uso_changanya(k->ngozi, 10111556, 70 + uso_d(u->jinsia) * 50);
     kama (u->ngozi >= 8) { mdomo = uso_changanya(k->ngozi, 5910060, 80); }
-    d64 juu_kimo = (1.0 + uso_d(u->mdomo) * 0.28) * umbo;
+    d64 juu_kimo = (1.0 + uso_d(u->mdomo) * 0.28 - uso_d(u->umri) * 0.08) * umbo;
     // upinde wa Cupid
     d64 upinde = 0.25 * uso_bana(1.0 - uso_kamili(dx) * 3.0);
     d64 juu = k->my - juu_kimo + upinde;
-    d64 chini = k->my + (1.3 + uso_d(u->mdomo) * 0.4) * umbo;
+    d64 chini = k->my + (1.3 + uso_d(u->mdomo) * 0.4 - uso_d(u->umri) * 0.1) * umbo;
     kama (y > juu && y < k->my) {
         d64 a = uso_funiko(uso_bana(y - juu) * 3.0, 1.0);
         uso_paka(k, uso_kivuli(mdomo, 0.78), a * 0.9);

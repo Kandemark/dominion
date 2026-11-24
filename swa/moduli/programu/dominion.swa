@@ -867,7 +867,7 @@ w0 pakia_nafasi(Mchezo* g, Hali* h, n64 nafasi) {
         h->taifa = mchezo_pata_taifa(g)->faharisi_ya_taifa_la_mchezaji;
         kama (mchezaji_uso == 0) {
             mchezaji_uso = tenga(ukubwa(Uso));
-            ny_zalisha_mchezaji(mchezaji_uso, h->taifa, h->taifa * 31 + 7, ny_mwaka_wa_zamu(g->zamu_ya_sasa));
+            ny_zalisha_mchezaji(mchezaji_uso, h->taifa, h->taifa * 31 + 7, ny_mwaka_wa_zamu(g->zamu_ya_sasa), umri_wa_mchezaji(g));
         }
         hs_anza(g);
         hs_rekodi(g);
@@ -875,6 +875,14 @@ w0 pakia_nafasi(Mchezo* g, Hali* h, n64 nafasi) {
     } sivyo { nakili_mfuatano(wasifu_ujumbe, ui("That slot could not be loaded.")); }
     chafua_msingi(h);
     chafua_ukurasa(h);
+}
+
+// Umri wa mwenye cheo cha mchezaji (miaka).
+n64 umri_wa_mchezaji(Mchezo* g) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    MhusikaWaDola* m = wahusika_pata(skrini_mkutano_watu(g, tm->faharisi_ya_taifa_la_mchezaji), mkutano_ofisi);
+    kama (m == 0) { rudisha 45; }
+    rudisha m->umri;
 }
 
 // Cheo cha mchezaji kwa ngazi na tawi (kwa kumweka kwenye mti mpya dola ikibadilika aina).
@@ -1357,7 +1365,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     // mchezaji asiye na uso (mchezo wa zamani au bila uanzishaji) hupata mtu wa taifa lake
     kama (mchezaji_uso == 0) {
         mchezaji_uso = tenga(ukubwa(Uso));
-        ny_zalisha_mchezaji(mchezaji_uso, tm->faharisi_ya_taifa_la_mchezaji, tm->faharisi_ya_taifa_la_mchezaji * 31 + 7, TAREHE_MWAKA_WA_MWANZO);
+        ny_zalisha_mchezaji(mchezaji_uso, tm->faharisi_ya_taifa_la_mchezaji, tm->faharisi_ya_taifa_la_mchezaji * 31 + 7, TAREHE_MWAKA_WA_MWANZO, umri_wa_mchezaji(g));
     }
     // kumbukumbu ya kisiasa ya kila wiki (skrini/historia_ya_siasa.swa)
     hs_anza(g);
