@@ -1075,9 +1075,15 @@ w0 shughulikia(Mchezo* g, Hali* h, Dirisha* d) {
             h->haja = 1;
         }
         kama (aina == DIRISHA_GURUDUMU && h->skrini == SKRINI_MKUTANO) {
-            // gurudumu kwenye ukurasa wa serikali husogeza mti wa dola
-            kama (a > 0) { skrini_mkutano_tembeza(3); }
-            kama (a < 0) { skrini_mkutano_tembeza(0 - 3); }
+            // gurudumu juu ya mazungumzo huyatembeza; vinginevyo husogeza mti wa dola
+            n64 hj = 0;
+            kama (bofya_tafuta(d->kielekezi_x, d->kielekezi_y, &hj) == MK_MAZUNGUMZO) {
+                kama (a > 0) { skrini_mkutano_mazungumzo_tembeza(0 - 60); }
+                kama (a < 0) { skrini_mkutano_mazungumzo_tembeza(60); }
+            } sivyo {
+                kama (a > 0) { skrini_mkutano_tembeza(3); }
+                kama (a < 0) { skrini_mkutano_tembeza(0 - 3); }
+            }
             h->haja = 1;
         }
         kama (aina == DIRISHA_GURUDUMU && h->skrini == SKRINI_RAMANI) {
@@ -1382,6 +1388,8 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
         mchezaji_uso = tenga(ukubwa(Uso));
         ny_zalisha_mchezaji(mchezaji_uso, tm->faharisi_ya_taifa_la_mchezaji, tm->faharisi_ya_taifa_la_mchezaji * 31 + 7, TAREHE_MWAKA_WA_MWANZO, umri_wa_mchezaji(g));
     }
+    // modeli ya ndani hupakiwa mapema, ili jibu la kwanza lisisubiri
+    kama (fremu_upeo == 0) { kazi_pasha(mipangilio_akili_pata()); }
     // kumbukumbu ya kisiasa ya kila wiki (skrini/historia_ya_siasa.swa)
     hs_anza(g);
     hs_rekodi(g);
@@ -1443,6 +1451,9 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
             }
         } sivyo {
             shughulikia(g, h, d);
+            // jibu la AI linalotiririka: chora upya maandishi mapya yanapofika
+            kama (skrini_mkutano_fuatilia(g)) { chafua_ukurasa(h); }
+            kazi_safisha();
             // kukuza kumetulia kwa 180 ms: chora ramani kamili
             kama (h->kuza_saa != 0 && saa_us() - h->kuza_saa > 180000) { h->kuza_saa = 0; chafua_msingi(h); }
         }
@@ -1462,7 +1473,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
             dirisha_onyesha(d);
             h->haja = 0;
             fremu = fremu + 1;
-            // kauli inayosubiri: fremu ya "anafikiri" imeshaonyeshwa; sasa uliza AI
+            // kauli inayosubiri: ombi huanza nyuma; jibu hufuatiliwa kila mzunguko
             kama (mkutano_hali == 1) {
                 skrini_mkutano_tuma(g, h->taifa);
                 chafua_ukurasa(h);

@@ -1513,6 +1513,10 @@ w0 maneno_jaza_ziada_3() {
 
 // maamuzi ya lazima, mshauri na tiketi ya oda (2026-11)
 w0 maneno_jaza_ziada_4() {
+    maneno_sajili("Could not reach the adviser's server. Is it running?", "Seva ya mshauri haifikiki. Je, inaendeshwa?", "Impossible de joindre le serveur du conseiller. Est-il lancé ?");
+    maneno_sajili("CONVERSATION  ·  %s  ·  %d messages", "MAZUNGUMZO  ·  %s  ·  ujumbe %d", "CONVERSATION  ·  %s  ·  %d messages");
+    maneno_sajili("Stop", "Simamisha", "Arrêter");
+    maneno_sajili("typing...", "anaandika...", "écrit...");
     maneno_sajili("Sex", "Jinsia", "Sexe");
     maneno_sajili("Eye colour", "Rangi ya macho", "Couleur des yeux");
     maneno_sajili("Build", "Umbo la mwili", "Corpulence");
