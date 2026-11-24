@@ -1,5 +1,6 @@
 husisha { moduli/skrini/jopo.swa }
 husisha { moduli/skrini/historia_ya_siasa.swa }
+husisha { moduli/onyesho/elea.swa }
 
 // terminali.swa -- vipande vya pamoja vya vituo (terminals) vya mchezo:
 // Economy (kituo.swa), Politics, Military na Diplomacy. Kituo hutofautiana na
@@ -67,6 +68,8 @@ n64 kt_kitufe(n8* lebo, n64 x, n64 y, n32 hai, n64 kitendo, n64 hoja) {
 
 // Chati ya mstari ya mfululizo (kielezo, kiwango) ndani ya paneli ya kituo,
 // na gridi, viwango vya juu na chini, na thamani ya mwisho.
+n32 kt_chati_bei = 0;            // 1: thamani ni bei kwa senti (k.m. hisa, vielezo)
+
 w0 kt_chati(n64* th, n64 n, n64 x, n64 y, n64 w, n64 h, n64 rangi) {
     n64 juu = th[0];
     n64 chini = th[0];
@@ -81,6 +84,24 @@ w0 kt_chati(n64* th, n64 n, n64 x, n64 y, n64 w, n64 h, n64 rangi) {
     n64 q = 0;
     wakati (q <= 4) { turubai_jaza(sura_t, x, y + (q * h) / 4, w, 1); q = q + 1; }
     sura_sparkline(th, n, x, y + 4, w, h - 8, rangi, 50);
+    // thamani ya kila nukta kielekezi kikiwa juu yake
+    kama (n >= 2) {
+        n8 kichwa[48];
+        n8 thamani[48];
+        n64 hatua = w / (n - 1);
+        kama (hatua < 1) { hatua = 1; }
+        n64 j = 0;
+        wakati (j < n) {
+            n64 px = x + (j * w) / (n - 1);
+            n64 nyuma = n - 1 - j;
+            kama (nyuma == 0) { nakili_mfuatano(kichwa, ui("This week")); }
+            sivyo kama (nyuma == 1) { nakili_mfuatano(kichwa, ui("1 week ago")); }
+            sivyo { mfuatano_umbiza(kichwa, 48, ui("%d weeks ago"), nyuma, 0, 0, 0, 0, 0); }
+            kama (kt_chati_bei) { soko_bei_maandishi(thamani, th[j]); } sivyo { sura_namba(thamani, th[j]); }
+            elea_ongeza(px - hatua / 2, y, hatua, h, kichwa, thamani);
+            j = j + 1;
+        }
+    }
 }
 
 

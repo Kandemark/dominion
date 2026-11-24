@@ -1513,6 +1513,11 @@ w0 maneno_jaza_ziada_3() {
 
 // maamuzi ya lazima, mshauri na tiketi ya oda (2026-11)
 w0 maneno_jaza_ziada_4() {
+    maneno_sajili("This week", "Wiki hii", "Cette semaine");
+    maneno_sajili("1 week ago", "Wiki 1 iliyopita", "Il y a 1 semaine");
+    maneno_sajili("%d weeks ago", "Wiki %d zilizopita", "Il y a %d semaines");
+    maneno_sajili("1 nation", "Taifa 1", "1 nation");
+    maneno_sajili("%d nations", "Mataifa %d", "%d nations");
     maneno_sajili("Govern a nation of your choosing", "Tawala taifa ulilochagua", "Gouvernez la nation de votre choix");
     maneno_sajili("CONTINUE", "ENDELEA", "CONTINUER");
     maneno_sajili("LOAD A SAVED GAME", "PAKIA MCHEZO ULIOHIFADHIWA", "CHARGER UNE PARTIE");

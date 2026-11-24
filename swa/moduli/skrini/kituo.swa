@@ -268,7 +268,9 @@ w0 kt_kielezo(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h) {
     }
     n64 hc = h - 200;
     kama (hc < 60) { hc = 60; }
+    kt_chati_bei = 1;
     kt_chati(th, SOKO_WIKI, x + 10, y + 96, w - 20, hc, SURA_BAHARI);
+    kt_chati_bei = 0;
     achilia th;
     // takwimu
     yy = y + 96 + hc + 10;
@@ -521,7 +523,9 @@ w0 kt_kampuni_chora(Mchezo* g, n64 x, n64 y, n64 w, n64 h) {
     }
     n64 rangi = SURA_CHANYA;
     kama (c->bei < th[0]) { rangi = SURA_HASI; }
+    kt_chati_bei = 1;
     kt_chati(th, SOKO_WIKI, x + 10, y + 104, w - 20, 110, rangi);
+    kt_chati_bei = 0;
     achilia th;
     // takwimu
     n64 yy = y + 222;

@@ -417,6 +417,15 @@ w0 jopo_mgawanyo(Mchezo* g, n64 taifa, n64 k, n8* kichwa, n64 x, n64 y, n64 w, n
         kama (i == yangu) { turubai_brashi(sura_t, SURA_LAFUDHI, 255); }
         sivyo { turubai_brashi(sura_t, kipimo_rangi(k), 150); }
         turubai_mviringo(sura_t, gx + i * cw + 1, gy + gh - bh, cw - 3, bh, 2);
+        n8 e_a[32];
+        n8 e_b[32];
+        n8 e_kichwa[96];
+        n8 e_thamani[48];
+        kipimo_maandishi(k, chini + ((juu - chini) * i) / nguzo, e_a);
+        kipimo_maandishi(k, chini + ((juu - chini) * (i + 1)) / nguzo, e_b);
+        mfuatano_umbiza(e_kichwa, 96, "%s - %s", e_a, e_b, 0, 0, 0, 0);
+        kama (idadi[i] == 1) { nakili_mfuatano(e_thamani, ui("1 nation")); } sivyo { mfuatano_umbiza(e_thamani, 48, ui("%d nations"), idadi[i], 0, 0, 0, 0, 0); }
+        elea_ongeza(gx + i * cw, gy, cw, gh, e_kichwa, e_thamani);
         i = i + 1;
     }
     turubai_brashi(sura_t, 16777215, 30);
@@ -493,6 +502,13 @@ w0 jopo_mtawanyiko(Mchezo* g, n64 taifa, n64 kx, n64 ky, n8* kichwa, n64 x, n64 
             n64 py = gy + gh - ((jopo_mhimili(ky, kipimo_thamani(g, i, ky)) - ya) * gh) / (yb - ya);
             turubai_brashi(sura_t, tn->rangi, 190);
             turubai_duara(sura_t, px, py, 3);
+            n8 e_a[32];
+            n8 e_b[32];
+            n8 e_thamani[96];
+            kipimo_maandishi(kx, kipimo_thamani(g, i, kx), e_a);
+            kipimo_maandishi(ky, kipimo_thamani(g, i, ky), e_b);
+            mfuatano_umbiza(e_thamani, 96, "%s  ·  %s", e_a, e_b, 0, 0, 0, 0);
+            elea_ongeza(px - 5, py - 5, 11, 11, tn->jina, e_thamani);
         }
         i = i + 1;
     }

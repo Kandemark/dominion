@@ -142,6 +142,7 @@ muundo Hali {
     n64 shift;              // Shift imebonyezwa
     n64 ctrl;               // Ctrl imebonyezwa
     n64 kuza_saa;           // saa (us) ya hatua ya mwisho ya kukuza; 0 = hakuna
+    n64 elea_kitu;          // eneo la chati chini ya kielekezi (elea.swa), au -1
     n64 skrini_nzima;       // 1 = skrini nzima (F11 hubadili)
 }
 
@@ -804,7 +805,14 @@ w0 bonyeza(Mchezo* g, Hali* h, Dirisha* d, n64 px, n64 py) {
 
 // Mwendo wa kielekezi: buruta ramani, au kadi ya taifa chini ya kielekezi.
 w0 sogeza(Hali* h, Dirisha* d, n64 px, n64 py) {
-    kama (h->skrini != SKRINI_RAMANI) { rudisha; }
+    kama (h->skrini != SKRINI_RAMANI) {
+        // kurasa: chora upya tu kitu cha chati chini ya kielekezi kikibadilika
+        n64 kitu = elea_tafuta(px, py);
+        kama (kitu != h->elea_kitu) { h->elea_kitu = kitu; h->haja = 1; }
+        h->elea_x = px;
+        h->elea_y = py;
+        rudisha;
+    }
     kama (h->inavutwa) {
         n64 dx = px - h->vuta_x;
         n64 dy = py - h->vuta_y;
@@ -1148,10 +1156,13 @@ w0 chora_fremu(Mchezo* g, Hali* h, Dirisha* d, Turubai* t) {
         h->haja_msingi = 1;
     }
     kama (h->skrini != SKRINI_RAMANI) {
+        elea_anza();
         chora_skrini_ya_taifa(g, t, h->skrini, h->taifa);
         sura_anzisha(t);
         chora_sanduku_la_mtu(g, t, h);
         skrini_kipindi_chora(t);
+        h->elea_kitu = elea_tafuta(h->elea_x, h->elea_y);
+        kama (h->elea_kitu >= 0 && maamuzi_wazi == 0) { elea_chora(t, h->elea_kitu); }
         kama (maamuzi_wazi) { maamuzi_chora(g, t); }
         rudisha;
     }
@@ -1275,6 +1286,8 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     n32 bandika_mwanzoni = 0;
     n32 dirishani = 0;
     n64 pakia_mwanzoni = 0 - 1;     // nafasi iliyochaguliwa kwenye ukurasa wa kwanza
+    n64 kielekezi_x = 0 - 1;        // --kielekezi X Y: kielekezi cha picha (thamani za chati)
+    n64 kielekezi_y = 0 - 1;
     n64 bila_upana = 0;
     n64 bila_kimo = 0;
     n64 k = 1;
@@ -1297,6 +1310,11 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
             bila_dirisha_hali = 1;
             bila_upana = mfuatano_hadi_n64(hoja_za_mstari[k + 1]);
             bila_kimo = mfuatano_hadi_n64(hoja_za_mstari[k + 2]);
+            k = k + 2;
+        }
+        kama (linganisha_mfuatano(hoja_za_mstari[k], "--kielekezi") == 0 && k + 2 < idadi_ya_hoja) {
+            kielekezi_x = mfuatano_hadi_n64(hoja_za_mstari[k + 1]);
+            kielekezi_y = mfuatano_hadi_n64(hoja_za_mstari[k + 2]);
             k = k + 2;
         }
         kama (linganisha_mfuatano(hoja_za_mstari[k], "--pakia") == 0 && k + 1 < idadi_ya_hoja) {
@@ -1390,6 +1408,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
 
     Hali* h = tenga(ukubwa(Hali));
     weka_sifuri(h, ukubwa(Hali));
+    h->elea_kitu = 0 - 1;
     h->elea_taifa = 0 - 1;
     h->elea_kata = 0 - 1;
     h->bandika_kata = 0 - 1;
@@ -1437,6 +1456,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
         kama (kipimo_mwanzoni > 0) { h->kipimo = kipimo_mwanzoni; }
     }
     h->skrini = SKRINI_RAMANI;
+    kama (kielekezi_x >= 0) { h->elea_x = kielekezi_x; h->elea_y = kielekezi_y; }
     // mchezo uliohifadhiwa: pakia sasa, kisha elekeza ramani kwenye taifa lake
     kama (pakia_mwanzoni >= 0) {
         pakia_nafasi(g, h, pakia_mwanzoni);

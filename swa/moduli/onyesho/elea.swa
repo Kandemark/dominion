@@ -1,0 +1,95 @@
+husisha { moduli/onyesho/vipengele.swa }
+
+// elea.swa -- thamani zinazoonekana kielekezi kikiwa juu ya chati.
+//
+// Kila chati huandikisha eneo la kila nukta yake (elea_ongeza) pamoja na
+// maandishi mawili: kichwa ("14 May 1900") na thamani ("107.45 B"). Ukurasa
+// ukichorwa, kielekezi kikiwa juu ya eneo, kisanduku kidogo huchorwa juu
+// ya eneo hilo (si kufuata kielekezi, ili fremu mpya ichorwe tu kitu
+// kinapobadilika). Orodha huanza upya kila fremu.
+
+n64 ELEA_JUU = 2048;
+n64 ELEA_HAZINA = 131072;
+n64* elea_maeneo = 0;           // [x, y, w, h, kichwa, thamani] kwa kila eneo
+n8* elea_hazina = 0;
+n64 elea_urefu = 0;
+n64 elea_idadi = 0;
+
+w0 elea_anza() {
+    kama (elea_maeneo == 0) {
+        elea_maeneo = tenga(8 * 6 * ELEA_JUU);
+        elea_hazina = tenga(ELEA_HAZINA);
+    }
+    elea_idadi = 0;
+    elea_urefu = 0;
+}
+
+n8* elea_nakili(n8* s) {
+    n64 n = urefu_wa_mfuatano(s);
+    kama (elea_urefu + n + 1 > ELEA_HAZINA) { rudisha ""; }
+    n8* p = &elea_hazina[elea_urefu];
+    nakili(p, s, n);
+    p[n] = 0;
+    elea_urefu = elea_urefu + n + 1;
+    rudisha p;
+}
+
+w0 elea_ongeza(n64 x, n64 y, n64 w, n64 h, n8* kichwa, n8* thamani) {
+    kama (elea_maeneo == 0) { elea_anza(); }
+    kama (elea_idadi >= ELEA_JUU || w <= 0 || h <= 0) { rudisha; }
+    n64 b = elea_idadi * 6;
+    elea_maeneo[b] = x;
+    elea_maeneo[b + 1] = y;
+    elea_maeneo[b + 2] = w;
+    elea_maeneo[b + 3] = h;
+    elea_maeneo[b + 4] = elea_nakili(kichwa);
+    elea_maeneo[b + 5] = elea_nakili(thamani);
+    elea_idadi = elea_idadi + 1;
+}
+
+// Eneo lililo chini ya (px, py): la mwisho kuandikishwa hushinda; -1 hakuna.
+n64 elea_tafuta(n64 px, n64 py) {
+    n64 i = elea_idadi - 1;
+    wakati (i >= 0) {
+        n64 b = i * 6;
+        kama (px >= elea_maeneo[b] && px < elea_maeneo[b] + elea_maeneo[b + 2] && py >= elea_maeneo[b + 1] && py < elea_maeneo[b + 1] + elea_maeneo[b + 3]) { rudisha i; }
+        i = i - 1;
+    }
+    rudisha 0 - 1;
+}
+
+// Chora kisanduku cha eneo i juu ya eneo lenyewe.
+w0 elea_chora(Turubai* t, n64 i) {
+    kama (i < 0 || i >= elea_idadi) { rudisha; }
+    n64 b = i * 6;
+    n8* kichwa = elea_maeneo[b + 4];
+    n8* thamani = elea_maeneo[b + 5];
+    n64 w1 = maandishi_upana(sura_kawaida, kichwa, 11);
+    n64 w2 = maandishi_upana(sura_nene, thamani, 14);
+    n64 w = w1;
+    kama (w2 > w) { w = w2; }
+    w = w + 24;
+    n64 h = 46;
+    kama (thamani[0] == 0) { h = 28; }
+    n64 cx = elea_maeneo[b] + elea_maeneo[b + 2] / 2;
+    n64 x = cx - w / 2;
+    n64 y = elea_maeneo[b + 1] - h - 8;
+    kama (y < 70) { y = elea_maeneo[b + 1] + elea_maeneo[b + 3] + 8; }
+    kama (x < 4) { x = 4; }
+    kama (x + w > t->upana - 4) { x = t->upana - 4 - w; }
+    // alama ya eneo lenyewe
+    turubai_brashi(t, 16777215, 40);
+    turubai_mpaka(t, elea_maeneo[b] - 1, elea_maeneo[b + 1] - 1, elea_maeneo[b + 2] + 2, elea_maeneo[b + 3] + 2, 3);
+    turubai_brashi(t, 0, 90);
+    turubai_mviringo(t, x + 2, y + 3, w, h, 7);
+    turubai_brashi(t, 2501940, 250);
+    turubai_mviringo(t, x, y, w, h, 7);
+    turubai_brashi(t, 16777215, 40);
+    turubai_mpaka(t, x, y, w, h, 7);
+    turubai_brashi(t, 10331836, 255);
+    maandishi_chora(t, sura_kawaida, kichwa, x + 12, y + 7, 11);
+    kama (thamani[0] != 0) {
+        turubai_brashi(t, 15528690, 255);
+        maandishi_chora(t, sura_nene, thamani, x + 12, y + 22, 14);
+    }
+}

@@ -1,5 +1,6 @@
 husisha { moduli/onyesho/vipengele.swa }
 husisha { moduli/injini/tarehe.swa }
+husisha { moduli/onyesho/elea.swa }
 
 // chati_kadi.swa -- vipengele vya data vya dashibodi: vigae vya takwimu
 // (KPI), chati ya pau yenye mstari wa lengo, geji ya vipande, faneli,
@@ -173,6 +174,11 @@ w0 chati_pau_lengo(n64 x, n64 y, n64 w, n64 h, n64* thamani, n64 idadi, n64 leng
         kama (bh < 2) { bh = 2; }
         n64 bx = x + i * hatua + (hatua - wp) / 2;
         n64 by = y + hc - bh;
+        n8 e_kichwa[48];
+        n8 e_thamani[32];
+        tarehe_maandishi(siku_ya_kwanza + i * 7, e_kichwa, 48);
+        sura_namba_fupi(e_thamani, thamani[i]);
+        elea_ongeza(x + i * hatua, y, hatua, hc, e_kichwa, e_thamani);
         kama (i == idadi - 1) {
             turubai_brashi(sura_t, SURA_BAHARI, 255);
             turubai_mviringo(sura_t, bx, by, wp, bh, 4);
