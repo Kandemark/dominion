@@ -1,0 +1,231 @@
+husisha { moduli/akili/mshauri.swa }
+
+// kazi.swa -- maombi ya AI yanayofanyika nyuma, bila kuzuia mchezo.
+//
+// Mchezo hugawanyika (fork): mchakato mtoto huunganisha na seva, hutuma ombi
+// la mtiririko (stream), na huandika kila kipande cha jibu kwenye faili kadiri
+// kinavyofika. Mchezo husoma faili hilo kila fremu (jibu huonekana neno kwa
+// neno) na huuliza kwa wait4 isiyozuia kama mtoto amemaliza. Hivyo dirisha
+// hubaki likijibu wakati wote, na jibu linaweza kusitishwa.
+//
+// Mtoa wa ndani (Ollama) hutumia /api/chat yenye keep_alive ili modeli ibaki
+// kwenye kumbukumbu, na think:false ili modeli zenye "kufikiri" zijibu moja
+// kwa moja. Seva maalum hutumia /v1/chat/completions (mtiririko wa SSE).
+// HTTP/1.0 hutumika ili jibu lisije kwa vipande vya "chunked".
+//
+// Faili: saves/.akili_jibu (maandishi ya jibu hadi sasa) na saves/.akili_hali
+// (msimbo: 1 sawa, hasi hitilafu; kisha ujumbe wa seva ikiwa upo).
+
+n64 kazi_pid = 0;
+n64 kazi_pasha_pid = 0;
+n8* kazi_faili_la_jibu() { rudisha "saves/.akili_jibu"; }
+n8* kazi_faili_la_hali() { rudisha "saves/.akili_hali"; }
+n64 KAZI_MUDA = 180;            // sekunde: kikomo cha jibu zima
+
+// Ombi kamili la HTTP la mtiririko. Hurudisha urefu wake.
+n64 kazi_jenga_ombi(AkiliUsanidi* u, n8* maelekezo, n8* swali, n64 tokeni, n8* ombi, n64 uwezo) {
+    n64 uw = uwezo - 2048;
+    n8* m1 = tenga(uw);
+    n8* m2 = tenga(uw);
+    n8* m3 = tenga(256);
+    akili_json_toroka(m1, uw / 2, maelekezo);
+    akili_json_toroka(m2, uw / 2, swali);
+    akili_json_toroka(m3, 256, u->modeli);
+    n8* mwili = tenga(uw);
+    n8* njia = "/v1/chat/completions";
+    n64 nm = 0;
+    kama (u->mtoa == AKILI_WA_NDANI) {
+        njia = "/api/chat";
+        nm = mfuatano_umbiza(mwili, uw, "{\"model\":\"%s\",\"stream\":true,\"keep_alive\":\"30m\",\"think\":false,\"options\":{\"num_predict\":%d},\"messages\":[{\"role\":\"system\",\"content\":\"%s\"},{\"role\":\"user\",\"content\":\"%s\"}]}", m3, tokeni, m1, m2, 0, 0);
+    } sivyo {
+        nm = mfuatano_umbiza(mwili, uw, "{\"model\":\"%s\",\"stream\":true,\"max_tokens\":%d,\"messages\":[{\"role\":\"system\",\"content\":\"%s\"},{\"role\":\"user\",\"content\":\"%s\"}]}", m3, tokeni, m1, m2, 0, 0);
+    }
+    n8 idhini[320];
+    akili_kichwa_cha_idhini(u, idhini, 320);
+    n8 vichwa[1024];
+    mfuatano_umbiza(vichwa, 1024, "POST %s HTTP/1.0\nHost: %s\nContent-Type: application/json\n%sContent-Length: %d\n\n", njia, u->anwani, idhini, nm, 0, 0);
+    n64 nk = akili_crlf(ombi, vichwa);
+    nakili(&ombi[nk], mwili, nm);
+    achilia m1;
+    achilia m2;
+    achilia m3;
+    achilia mwili;
+    rudisha nk + nm;
+}
+
+n32 kazi_bila_hali = 0;         // mtoto wa kupasha haandiki hali
+
+w0 kazi_andika_hali(n64 msimbo, n8* ujumbe) {
+    kama (kazi_bila_hali) { rudisha; }
+    n64 fd = mfumo_fungua(kazi_faili_la_hali(), 577, 384);
+    kama (fd < 0) { rudisha; }
+    n8 m[400];
+    n64 n = mfuatano_umbiza(m, 400, "%d\n%s", msimbo, ujumbe, 0, 0, 0, 0);
+    mfumo_andika(fd, m, n);
+    mfumo_funga(fd);
+}
+
+// Mstari mmoja wa mtiririko: maudhui huandikwa kwenye faili; ujumbe wa
+// hitilafu huhifadhiwa kwenye kosa.
+w0 kazi_mstari(n8* mstari, n64 hali_k, n64 nje, n8* kipande, n8* kosa) {
+    n32 c = tafuta_mfuatano(mstari, "\"content\":\"");
+    kama (c >= 0 && hali_k == 200) {
+        n64 k = akili_json_soma_mfuatano(&mstari[c + 11], kipande, 8192);
+        kama (k > 0 && nje >= 0) { mfumo_andika(nje, kipande, k); }
+    }
+    kama (kosa[0] == 0) {
+        n32 e = tafuta_mfuatano(mstari, "\"error\"");
+        kama (e >= 0) {
+            n32 msg = tafuta_mfuatano(mstari, "\"message\":\"");
+            kama (msg >= 0) { akili_json_soma_mfuatano(&mstari[msg + 11], kosa, 400); }
+            sivyo {
+                n64 q = e + 7;
+                wakati (mstari[q] != 0 && mstari[q] != 34) { q = q + 1; }
+                kama (mstari[q] == 34) { akili_json_soma_mfuatano(&mstari[q + 1], kosa, 400); }
+            }
+        }
+    }
+}
+
+// Kazi ya mchakato mtoto: tuma, soma mtiririko, andika maudhui, toka.
+w0 kazi_mtoto(AkiliUsanidi* u, n8* ombi, n64 n, n8* faili) {
+    n64 nje = mfumo_fungua(faili, 577, 384);
+    n64 fd = akili_unganisha(u->anwani, u->bandari, KAZI_MUDA);
+    kama (fd < 0) { kazi_andika_hali(0 - 3, ""); wito_wa_mfumo(231, 0, 0, 0, 0, 0, 0); }
+    n64 imetumwa = 0;
+    wakati (imetumwa < n) {
+        n64 w = mfumo_andika(fd, &ombi[imetumwa], n - imetumwa);
+        kama (w <= 0) { kazi_andika_hali(0 - 3, ""); wito_wa_mfumo(231, 0, 0, 0, 0, 0, 0); }
+        imetumwa = imetumwa + w;
+    }
+    n64 uwezo = 1048576;
+    n8* b = tenga(uwezo);
+    n64 urefu = 0;
+    n64 skani = 0;              // mstari unaofuata kuchanganuliwa
+    n64 mwili = 0 - 1;          // mwanzo wa mwili baada ya vichwa
+    n64 hali_k = 0;
+    n8* kipande = tenga(8192);
+    n8* kosa = tenga(400);
+    kosa[0] = 0;
+    n32 mwisho = 0;
+    wakati (mwisho == 0) {
+        n64 r = mfumo_soma(fd, &b[urefu], uwezo - 2 - urefu);
+        kama (r <= 0 || urefu + r >= uwezo - 2) {
+            mwisho = 1;
+            // mstari wa mwisho usio na LF (k.m. {"error":...}) huchanganuliwa pia
+            kama (urefu > skani) { b[urefu] = 10; urefu = urefu + 1; b[urefu] = 0; }
+        } sivyo {
+            urefu = urefu + r;
+            b[urefu] = 0;
+        }
+        kama (mwili < 0) {
+            n64 v = akili_mwisho_wa_vichwa(b, urefu);
+            kama (v > 0) { mwili = v; skani = v; hali_k = akili_http_hali(b); }
+        }
+        kama (mwili >= 0) {
+            n64 i = skani;
+            wakati (i < urefu) {
+                kama (b[i] == 10) {
+                    b[i] = 0;
+                    kazi_mstari(&b[skani], hali_k, nje, kipande, kosa);
+                    b[i] = 10;
+                    skani = i + 1;
+                }
+                i = i + 1;
+            }
+        }
+    }
+    mfumo_funga(fd);
+    kama (nje >= 0) { mfumo_funga(nje); }
+    kama (mwili < 0) { kazi_andika_hali(0 - 4, ""); }
+    sivyo kama (hali_k != 200 || kosa[0] != 0) { kazi_andika_hali(0 - 10, kosa); }
+    sivyo { kazi_andika_hali(1, ""); }
+    wito_wa_mfumo(231, 0, 0, 0, 0, 0, 0);
+}
+
+// Anza ombi la nyuma. 1 limeanza, 0 hapana (AI imezimwa au fork imeshindwa).
+n32 kazi_anza(AkiliUsanidi* u, n8* maelekezo, n8* swali) {
+    kama (u->mtoa == AKILI_HAKUNA) { rudisha 0; }
+    kama (kazi_pid != 0) { kazi_simamisha(); }
+    mfumo_unda_saraka("saves", 493);
+    mfumo_futa(kazi_faili_la_jibu());
+    mfumo_futa(kazi_faili_la_hali());
+    n64 uwezo = 65536;
+    n8* ombi = tenga(uwezo);
+    n64 n = kazi_jenga_ombi(u, maelekezo, swali, u->tokeni, ombi, uwezo);
+    n64 pid = mfumo_gawanyika();
+    kama (pid == 0) { kazi_mtoto(u, ombi, n, kazi_faili_la_jibu()); }
+    achilia ombi;
+    kama (pid < 0) { rudisha 0; }
+    kazi_pid = pid;
+    rudisha 1;
+}
+
+// Maandishi ya jibu hadi sasa kwenye nje (yameishia sifuri). Hurudisha urefu.
+n64 kazi_soma(n8* nje, n64 uwezo) {
+    nje[0] = 0;
+    n64 fd = mfumo_fungua(kazi_faili_la_jibu(), 0, 0);
+    kama (fd < 0) { rudisha 0; }
+    n64 n = mfumo_soma(fd, nje, uwezo - 1);
+    mfumo_funga(fd);
+    kama (n < 0) { n = 0; }
+    nje[n] = 0;
+    rudisha n;
+}
+
+// Hali ya kazi: 0 hakuna, 1 inaendelea, 2 imekamilika sawa, hasi hitilafu
+// (ujumbe wa seva huwekwa kwenye akili_kosa_ujumbe).
+n64 kazi_hali() {
+    kama (kazi_pid == 0) { rudisha 0; }
+    n32 st = 0;
+    n64 r = mfumo_subiri4(kazi_pid, &st, 1);
+    kama (r == 0) { rudisha 1; }
+    kazi_pid = 0;
+    n8 m[512];
+    m[0] = 0;
+    n64 fd = mfumo_fungua(kazi_faili_la_hali(), 0, 0);
+    kama (fd < 0) { rudisha 0 - 4; }
+    n64 n = mfumo_soma(fd, m, 511);
+    mfumo_funga(fd);
+    kama (n < 0) { n = 0; }
+    m[n] = 0;
+    n64 msimbo = 0;
+    n64 ishara = 1;
+    n64 i = 0;
+    kama (m[0] == 45) { ishara = 0 - 1; i = 1; }
+    wakati (m[i] >= 48 && m[i] <= 57) { msimbo = msimbo * 10 + m[i] - 48; i = i + 1; }
+    msimbo = msimbo * ishara;
+    akili_kosa_ujumbe[0] = 0;
+    kama (m[i] == 10) { nakili_mfuatano(akili_kosa_ujumbe, &m[i + 1]); }
+    kama (msimbo == 1) { rudisha 2; }
+    kama (msimbo == 0) { rudisha 0 - 4; }
+    rudisha msimbo;
+}
+
+// Sitisha ombi linaloendelea.
+w0 kazi_simamisha() {
+    kama (kazi_pid == 0) { rudisha; }
+    mfumo_tuma_ishara(kazi_pid, 9);
+    n32 st = 0;
+    mfumo_subiri4(kazi_pid, &st, 0);
+    kazi_pid = 0;
+}
+
+// Pasha modeli ya ndani moto (ipakiwe kwenye kumbukumbu) mchezo unapoanza,
+// bila kusubiri jibu. Mtoto wa kupasha huvunwa na kazi_safisha.
+w0 kazi_pasha(AkiliUsanidi* u) {
+    kama (u->mtoa != AKILI_WA_NDANI || kazi_pasha_pid != 0) { rudisha; }
+    n64 uwezo = 8192;
+    n8* ombi = tenga(uwezo);
+    n64 n = kazi_jenga_ombi(u, "Reply with one word.", "Ready?", 1, ombi, uwezo);
+    n64 pid = mfumo_gawanyika();
+    kama (pid == 0) { kazi_bila_hali = 1; kazi_mtoto(u, ombi, n, "/dev/null"); }
+    achilia ombi;
+    kama (pid > 0) { kazi_pasha_pid = pid; }
+}
+
+w0 kazi_safisha() {
+    kama (kazi_pasha_pid == 0) { rudisha; }
+    n32 st = 0;
+    kama (mfumo_subiri4(kazi_pasha_pid, &st, 1) != 0) { kazi_pasha_pid = 0; }
+}

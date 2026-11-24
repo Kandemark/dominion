@@ -199,19 +199,19 @@ w0 mazungumzo_weka_muktadha(TaifaMfumo* tm, n64 mchezaji, n64 zamu, n8* njia_ya_
     mazungumzo_njia_ya_maamuzi = njia_ya_maamuzi;
 }
 
-// Mazungumzo kamili: jenga maelekezo (pamoja na kumbukumbu), muulize AI,
-// tenganisha uamuzi na athari, tumia na uhifadhi, na uandike kwenye
-// kumbukumbu. Hurudisha urefu wa jibu linaloonyeshwa, au hasi kwa hitilafu
-// ya mshauri.
-n64 mazungumzo_sema(AkiliUsanidi* u, Dola* d, n8* taifa, n8* tarehe, MhusikaWaDola* m, n8* cheo_cha_mchezaji, n8* lugha, n8* njia_ya_kumbukumbu, n8* kauli, n8* nje, n64 uwezo, n64* athari) {
+// Maelekezo ya mazungumzo (pamoja na kumbukumbu ya mwisho). Mpigaji huachilia.
+n8* mazungumzo_andaa(Dola* d, n8* taifa, n8* tarehe, MhusikaWaDola* m, n8* cheo_cha_mchezaji, n8* lugha, n8* njia_ya_kumbukumbu) {
     n8* kumbukumbu = tenga(3072);
     kumbukumbu_soma_mwisho(njia_ya_kumbukumbu, kumbukumbu, 3072);
     n8* maelekezo = tenga(8192);
     mazungumzo_maelekezo(maelekezo, 8192, d, taifa, tarehe, m, cheo_cha_mchezaji, kumbukumbu, lugha);
-    n64 r = akili_uliza(u, maelekezo, kauli, nje, uwezo);
     achilia kumbukumbu;
-    achilia maelekezo;
-    kama (r < 0) { rudisha r; }
+    rudisha maelekezo;
+}
+
+// Baada ya jibu kamili: tenganisha uamuzi na athari, tumia na uhifadhi, na
+// uandike mabadilishano kwenye kumbukumbu. Hurudisha urefu wa jibu.
+n64 mazungumzo_maliza(Dola* d, n8* tarehe, MhusikaWaDola* m, n8* njia_ya_kumbukumbu, n8* kauli, n8* nje, n64* athari) {
     kama (mazungumzo_uamuzi == 0) { mazungumzo_uamuzi = tenga(ukubwa(Uamuzi)); }
     mazungumzo_uamuzi_hali = uamuzi_changanua(nje, mazungumzo_mataifa, mazungumzo_mchezaji, mazungumzo_zamu, mazungumzo_uamuzi);
     kama (mazungumzo_uamuzi_hali == UAMUZI_SAWA) {
@@ -224,4 +224,13 @@ n64 mazungumzo_sema(AkiliUsanidi* u, Dola* d, n8* taifa, n8* tarehe, MhusikaWaDo
     kama (m != 0) { nani = m->jina; }
     kumbukumbu_ongeza(njia_ya_kumbukumbu, tarehe, nani, kauli, nje);
     rudisha urefu_wa_mfuatano(nje);
+}
+
+// Mazungumzo kamili kwa njia inayozuia (majaribio): andaa, uliza, maliza.
+n64 mazungumzo_sema(AkiliUsanidi* u, Dola* d, n8* taifa, n8* tarehe, MhusikaWaDola* m, n8* cheo_cha_mchezaji, n8* lugha, n8* njia_ya_kumbukumbu, n8* kauli, n8* nje, n64 uwezo, n64* athari) {
+    n8* maelekezo = mazungumzo_andaa(d, taifa, tarehe, m, cheo_cha_mchezaji, lugha, njia_ya_kumbukumbu);
+    n64 r = akili_uliza(u, maelekezo, kauli, nje, uwezo);
+    achilia maelekezo;
+    kama (r < 0) { rudisha r; }
+    rudisha mazungumzo_maliza(d, tarehe, m, njia_ya_kumbukumbu, kauli, nje, athari);
 }

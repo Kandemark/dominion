@@ -1,5 +1,21 @@
+// Nakili baiti n kwenda mbele. Maneno ya baiti 8 hutumika pale vipande
+// viwili haviingiliani kwa chini ya baiti 8 (kunakili kwenda mbele kwa
+// baiti moja moja hubaki sawa kwa kuingiliana kidogo); mabaki kwa baiti.
 w0 nakili(n8* lengwa, n8* chanzo, n64 n) {
     n64 i = 0;
+    n64 al = lengwa;
+    n64 ac = chanzo;
+    n64 tofauti = al - ac;
+    kama (tofauti < 0) { tofauti = 0 - tofauti; }
+    kama (tofauti >= 8 || al < ac) {
+        n64* l8 = lengwa;
+        n64* c8 = chanzo;
+        n64 maneno = n / 8;
+        kama (tofauti >= 8) {
+            wakati (i < maneno) { l8[i] = c8[i]; i = i + 1; }
+            i = maneno * 8;
+        }
+    }
     wakati (i < n) {
         lengwa[i] = chanzo[i];
         i = i + 1;
@@ -7,7 +23,11 @@ w0 nakili(n8* lengwa, n8* chanzo, n64 n) {
 }
 
 w0 weka_sifuri(n8* lengwa, n64 n) {
+    n64* l8 = lengwa;
+    n64 maneno = n / 8;
     n64 i = 0;
+    wakati (i < maneno) { l8[i] = 0; i = i + 1; }
+    i = maneno * 8;
     wakati (i < n) {
         lengwa[i] = 0;
         i = i + 1;

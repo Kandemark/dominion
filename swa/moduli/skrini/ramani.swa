@@ -483,28 +483,53 @@ n32 skrini_ramani_hakikisho(Mchezo* g, Turubai* t, n64 kitovu_x, n64 kitovu_y, n
     n64 y = SKRINI_UPAU_WA_JUU + 1;
     n64 w = t->upana - x - SKRINI_RAMANI_PANELI;
     n64 h = t->kimo - y;
-    kama (skrini_akiba == 0 || kipimo != skrini_akiba_kipimo || w != skrini_akiba_w || h != skrini_akiba_h) { rudisha 0; }
+    kama (skrini_akiba == 0 || w != skrini_akiba_w || h != skrini_akiba_h) { rudisha 0; }
     sura_anzisha(t);
     turubai_brashi(t, SURA_USULI, 255);
     turubai_jaza(t, 0, 0, t->upana, t->kimo);
     skrini_upau_wa_juu(g, t);
     skrini_urambazaji(t, 7);
-    // pikseli (i,j) ya sasa = pikseli (i+dx, j+dy) ya akiba
-    n64 dx = (kitovu_x - skrini_akiba_x) / kipimo;
-    n64 dy = (kitovu_y - skrini_akiba_y) / kipimo;
-    turubai_brashi(t, ATLASI_RANGI_BAHARI, 255);
-    turubai_jaza(t, x, y, w, h);
-    n64 i0 = 0;
-    kama (dx < 0) { i0 = 0 - dx; }
-    n64 i1 = w;
-    kama (dx > 0) { i1 = w - dx; }
-    n64 j = 0;
-    wakati (j < h) {
-        n64 js = j + dy;
-        kama (js >= 0 && js < h && i1 > i0) {
-            nakili(t->pikseli + (y + j) * t->hatua + (x + i0) * 4, skrini_akiba + js * w * 4 + (i0 + dx) * 4, (i1 - i0) * 4);
+    kama (kipimo == skrini_akiba_kipimo) {
+        // kusogeza: pikseli (i,j) ya sasa = pikseli (i+dx, j+dy) ya akiba
+        n64 dx = (kitovu_x - skrini_akiba_x) / kipimo;
+        n64 dy = (kitovu_y - skrini_akiba_y) / kipimo;
+        turubai_brashi(t, ATLASI_RANGI_BAHARI, 255);
+        turubai_jaza(t, x, y, w, h);
+        n64 i0 = 0;
+        kama (dx < 0) { i0 = 0 - dx; }
+        n64 i1 = w;
+        kama (dx > 0) { i1 = w - dx; }
+        n64 j = 0;
+        wakati (j < h) {
+            n64 js = j + dy;
+            kama (js >= 0 && js < h && i1 > i0) {
+                nakili(t->pikseli + (y + j) * t->hatua + (x + i0) * 4, skrini_akiba + js * w * 4 + (i0 + dx) * 4, (i1 - i0) * 4);
+            }
+            j = j + 1;
         }
-        j = j + 1;
+    } sivyo {
+        // kukuza: kila pikseli huchukua pikseli ya karibu ya akiba kwa kipimo kipya
+        n64 bahari = ATLASI_RANGI_BAHARI;
+        n64* safu_x = tenga(8 * w);
+        n64 i = 0;
+        wakati (i < w) {
+            safu_x[i] = (kitovu_x + (i - w / 2) * kipimo - skrini_akiba_x) / skrini_akiba_kipimo + w / 2;
+            i = i + 1;
+        }
+        n64 j = 0;
+        wakati (j < h) {
+            n64 js = (kitovu_y + (j - h / 2) * kipimo - skrini_akiba_y) / skrini_akiba_kipimo + h / 2;
+            n32* lengo = t->pikseli + (y + j) * t->hatua + x * 4;
+            n32* chanzo = skrini_akiba + js * w * 4;
+            i = 0;
+            wakati (i < w) {
+                n64 is = safu_x[i];
+                kama (js >= 0 && js < h && is >= 0 && is < w) { lengo[i] = chanzo[is]; } sivyo { lengo[i] = bahari; }
+                i = i + 1;
+            }
+            j = j + 1;
+        }
+        achilia safu_x;
     }
     skrini_ramani_vidhibiti_chora(t);
     kama (skrini_dunia != 0) { skrini_dunia_paneli(g, t, skrini_dunia, taifa); }

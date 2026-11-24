@@ -30,19 +30,16 @@ w0 weka_u16(n8* buf, n64 off, n64 v) {
     buf[off + 1] = (v >> 8) & 255;
 }
 
+// Andiko moja la biti 32 (x86 huruhusu anwani zisizopangwa): mara ~7 kasi
+// zaidi ya baiti nne tofauti, na ndilo msingi wa kila pikseli.
 w0 weka_u32(n8* buf, n64 off, n64 v) {
-    buf[off] = v & 255;
-    buf[off + 1] = (v >> 8) & 255;
-    buf[off + 2] = (v >> 16) & 255;
-    buf[off + 3] = (v >> 24) & 255;
+    n32* p = buf + off;
+    p[0] = v;
 }
 
 w0 weka_u64(n8* buf, n64 off, n64 v) {
-    n64 i = 0;
-    wakati (i < 8) {
-        buf[off + i] = (v >> (i * 8)) & 255;
-        i = i + 1;
-    }
+    n64* p = buf + off;
+    p[0] = v;
 }
 
 // MUHIMU: n8 ni aina yenye ishara (kama `char` ya C) -- `buf[off]`
@@ -60,11 +57,9 @@ n64 pata_u16(n8* buf, n64 off) {
 }
 
 n64 pata_u32(n8* buf, n64 off) {
-    n64 a = buf[off] & 255;
-    n64 b = buf[off + 1] & 255;
-    n64 c = buf[off + 2] & 255;
-    n64 d = buf[off + 3] & 255;
-    rudisha a | (b << 8) | (c << 16) | (d << 24);
+    n32* p = buf + off;
+    n64 v = p[0];
+    rudisha v & 4294967295;
 }
 
 n64 pata_u64(n8* buf, n64 off) {

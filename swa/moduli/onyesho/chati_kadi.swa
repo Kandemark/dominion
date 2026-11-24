@@ -83,14 +83,17 @@ w0 chati_kpi(n64 x, n64 y, n64 w, n64 h, n8* lebo, n8* thamani, n64 mabadiliko, 
 // Mistari ya mshazari ndani ya mstatili (kwa pau za kipindi kilichopita).
 w0 chati_mistari_ya_mshazari(n64 x, n64 y, n64 w, n64 h, n64 rangi, n64 uwazi) {
     kama (w <= 0 || h <= 0) { rudisha; }
-    turubai_kata(sura_t, x, y, w, h);
+    // mistari ya mshazari kila pikseli 7, kwa kujaza pikseli moja kwa moja
     turubai_brashi(sura_t, rangi, uwazi);
-    n64 k = 0 - h;
-    wakati (k < w) {
-        turubai_mstari(sura_t, x + k, y + h, x + k + h, y, 256);
-        k = k + 7;
+    n64 j = 0;
+    wakati (j < h) {
+        n64 i = (7 - (j % 7)) % 7;
+        wakati (i < w) {
+            turubai_changanya(sura_t, x + i, y + j, 256);
+            i = i + 7;
+        }
+        j = j + 1;
     }
-    turubai_kata_yote(sura_t);
 }
 
 // Mstari wa vistari kati ya x0 na x1 kwenye y.
@@ -386,6 +389,28 @@ w0 chati_safu_ya_umakini(n64 x, n64 y, n64 w, n64 ikoni, n8* kichwa, n8* maelezo
     sura_ikoni(x + w - 10, y + 24, 9, SURA_ICON_CHEVRON, SURA_HAFIFU, 255);
 }
 
+// Sehemu ya donati ya pikseli (dx, dy kutoka kitovu, y chini): pembe kwa saa
+// kutoka juu, kwa vizio 0..4096 vya "pembe ya almasi"; -1 ikiwa ni pengo.
+n64 chati_sehemu_ya_pembe(n64 dx, n64 dy, n64* mipaka, n64 idadi) {
+    n64 ax = dx;
+    kama (ax < 0) { ax = 0 - ax; }
+    n64 ay = dy;
+    kama (ay < 0) { ay = 0 - ay; }
+    kama (ax + ay == 0) { rudisha 0 - 1; }
+    // robo kwa saa kuanzia juu: juu-kulia, chini-kulia, chini-kushoto, juu-kushoto
+    n64 p = 0;
+    kama (dx >= 0 && dy < 0) { p = (ax * 1024) / (ax + ay); }
+    sivyo kama (dx >= 0) { p = 1024 + (ay * 1024) / (ax + ay); }
+    sivyo kama (dy >= 0) { p = 2048 + (ax * 1024) / (ax + ay); }
+    sivyo { p = 3072 + (ay * 1024) / (ax + ay); }
+    n64 i = 0;
+    wakati (i < idadi) {
+        kama (p >= mipaka[2 * i] && p < mipaka[2 * i + 1]) { rudisha i; }
+        i = i + 1;
+    }
+    rudisha 0 - 1;
+}
+
 // Donati yenye nafasi kati ya sehemu, jumla katikati, na hadithi kama
 // vidonge: "Executive: 41% · 24".
 w0 chati_donati(n64 x, n64 y, n64 w, n64 h, n64* thamani, n64* rangi, n8** majina, n64 idadi, n8* lebo_ya_jumla) {
@@ -399,7 +424,10 @@ w0 chati_donati(n64 x, n64 y, n64 w, n64 h, n64* thamani, n64* rangi, n8** majin
     n64 cy = y + h / 2;
     d64 pi = pi_hesabu();
     n64 unene = (r * 30) / 100;
-    // kila sehemu: mistari ya mionzi midogo kwenye pembe zake, ikiacha pengo
+    // kila sehemu ni kipande cha pete, na pengo dogo kati ya sehemu. Pete hujazwa
+    // pikseli kwa pikseli: pembe ya kila pikseli hupimwa kwa "pembe ya almasi"
+    // (inayoongezeka pamoja na pembe halisi, bila sin/cos), kuanzia juu kwa saa.
+    n64* mipaka = tenga(8 * (idadi * 2 + 2));
     n64 hatua = 360 * 4;
     n64 mwanzo = 0;
     i = 0;
@@ -407,23 +435,33 @@ w0 chati_donati(n64 x, n64 y, n64 w, n64 h, n64* thamani, n64* rangi, n8** majin
         n64 urefu = (thamani[i] * hatua) / jumla;
         n64 pengo = 8;
         kama (urefu <= pengo * 2) { pengo = 0; }
-        turubai_brashi(sura_t, rangi[i], 255);
-        n64 s = mwanzo + pengo;
-        wakati (s < mwanzo + urefu - pengo) {
-            d64 sd = s;
-            d64 a = pi / 2.0 - (2.0 * pi * sd) / 1440.0;
-            d64 r1 = r - unene;
-            d64 r2 = r;
-            n64 x1 = cx * 256 + r1 * 256.0 * cos_hesabu(a);
-            n64 y1 = cy * 256 - r1 * 256.0 * sin_hesabu(a);
-            n64 x2 = cx * 256 + r2 * 256.0 * cos_hesabu(a);
-            n64 y2 = cy * 256 - r2 * 256.0 * sin_hesabu(a);
-            turubai_mstari256(sura_t, x1, y1, x2, y2, 3 * 256);
-            s = s + 2;
-        }
+        mipaka[2 * i] = ((mwanzo + pengo) * 4096) / hatua;
+        mipaka[2 * i + 1] = ((mwanzo + urefu - pengo) * 4096) / hatua;
         mwanzo = mwanzo + urefu;
         i = i + 1;
     }
+    n64 r_nje = r * 256;
+    n64 r_ndani = (r - unene) * 256;
+    n64 j = 0 - r - 1;
+    wakati (j <= r + 1) {
+        n64 ii = 0 - r - 1;
+        wakati (ii <= r + 1) {
+            n64 f_nje = turubai_funiko_duara(cx + ii, cy + j, cx * 256, cy * 256, r_nje);
+            kama (f_nje > 0) {
+                n64 f = f_nje - turubai_funiko_duara(cx + ii, cy + j, cx * 256, cy * 256, r_ndani);
+                kama (f > 0) {
+                    n64 sehemu = chati_sehemu_ya_pembe(ii * 2 + 1, j * 2 + 1, mipaka, idadi);
+                    kama (sehemu >= 0) {
+                        turubai_brashi(sura_t, rangi[sehemu], 255);
+                        turubai_changanya(sura_t, cx + ii, cy + j, f);
+                    }
+                }
+            }
+            ii = ii + 1;
+        }
+        j = j + 1;
+    }
+    achilia mipaka;
     n8 m[24];
     sura_namba(m, jumla);
     n64 wm = maandishi_upana(sura_nene, m, 26);

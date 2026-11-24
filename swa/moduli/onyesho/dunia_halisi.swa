@@ -392,16 +392,44 @@ w0 dunia_halisi_chora_msingi(DuniaHalisi* d, Turubai* t, n64 x0, n64 y0, n64 kip
     n64* mpaka = tenga(8 * n);
     n64* mkoa_m = tenga(8 * n);
     n64 mbali = 1 << 30;
+    // kupinda kwa pwani ni laini kwa kiwango cha skrini: huhesabiwa kwenye gridi
+    // ya kila pikseli s na kuchanganywa katikati (s = 1 ukuzaji ukiwa mkubwa)
+    n64 s = 1;
+    kama (kipimo >= 48) { s = 2; }
+    kama (kipimo >= 96) { s = 4; }
+    n64 gw = w / s + 2;
+    n64 gh = h / s + 2;
+    n64* pinda_x = tenga(8 * gw * gh);
+    n64* pinda_y = tenga(8 * gw * gh);
+    n64 b = 0;
+    wakati (b < gh) {
+        n64 a = 0;
+        wakati (a < gw) {
+            n64 ux = x0 + a * s * kipimo;
+            n64 uy = y0 + b * s * kipimo;
+            pinda_x[b * gw + a] = dh_pinda(ux, uy, 12, 190);
+            pinda_y[b * gw + a] = dh_pinda(ux, uy, 11, 190);
+            a = a + 1;
+        }
+        b = b + 1;
+    }
     n64 j = 0;
     wakati (j < h) {
+        n64 bj = j / s;
+        n64 fj = j - bj * s;
         n64 i = 0;
         wakati (i < w) {
             n64 ux = x0 + i * kipimo;
             n64 uy = y0 + j * kipimo;
-            n64 gy = (uy + dh_pinda(ux, uy, 11, 190)) >> 8;
+            n64 ai = i / s;
+            n64 fi = i - ai * s;
+            n64 q = bj * gw + ai;
+            n64 kx = ((pinda_x[q] * (s - fi) + pinda_x[q + 1] * fi) * (s - fj) + (pinda_x[q + gw] * (s - fi) + pinda_x[q + gw + 1] * fi) * fj) / (s * s);
+            n64 ky = ((pinda_y[q] * (s - fi) + pinda_y[q + 1] * fi) * (s - fj) + (pinda_y[q + gw] * (s - fi) + pinda_y[q + gw + 1] * fi) * fj) / (s * s);
+            n64 gy = (uy + ky) >> 8;
             kama (gy < 0) { gy = 0; }
             kama (gy >= d->kimo) { gy = d->kimo - 1; }
-            n64 gx = ((ux + dh_pinda(ux, uy, 12, 190)) >> 8) % d->upana;
+            n64 gx = ((ux + kx) >> 8) % d->upana;
             kama (gx < 0) { gx = gx + d->upana; }
             n64 g = gy * d->upana + gx;
             n64 k = j * w + i;
@@ -420,6 +448,8 @@ w0 dunia_halisi_chora_msingi(DuniaHalisi* d, Turubai* t, n64 x0, n64 y0, n64 kip
         }
         j = j + 1;
     }
+    achilia pinda_x;
+    achilia pinda_y;
     // vyanzo vya mpaka wa taifa na wa mkoa
     j = 0;
     wakati (j < h) {
@@ -551,8 +581,30 @@ w0 dh_chora_mnyororo(DuniaHalisi* d, Turubai* t, n64 o, n64 x0, n64 y0, n64 kipi
         dh_py[i] = ((gy + 128 - y0) * 256) / kipimo;
         i = i + 1;
     }
+    // ondoa nukta zilizo karibu kuliko ~pikseli 1.2 kwenye skrini (hazionekani,
+    // lakini kila kipande kina gharama ya mstari laini)
+    n64 baki = 1;
+    i = 1;
+    wakati (i < n) {
+        n64 ax = dh_px[i] - dh_px[baki - 1];
+        n64 ay = dh_py[i] - dh_py[baki - 1];
+        kama (ax < 0) { ax = 0 - ax; }
+        kama (ay < 0) { ay = 0 - ay; }
+        kama (ax + ay >= 300 || i == n - 1) {
+            dh_px[baki] = dh_px[i];
+            dh_py[baki] = dh_py[i];
+            baki = baki + 1;
+        }
+        i = i + 1;
+    }
+    n = baki;
+    kama (n < 2) { rudisha; }
+    // kulainisha kunaonekana tu kwa ukuzaji mkubwa
+    n64 mizunguko = 2;
+    kama (kipimo > 160) { mizunguko = 1; }
+    kama (kipimo > 320) { mizunguko = 0; }
     n64 r = 0;
-    wakati (r < 2) {
+    wakati (r < mizunguko) {
         n64 m = 0;
         dh_qx[m] = dh_px[0];
         dh_qy[m] = dh_py[0];

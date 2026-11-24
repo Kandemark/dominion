@@ -85,19 +85,21 @@ w0 turubai_kata_yote(Turubai* t) {
 // Uwazi halisi = funiko * uwazi wa brashi. Nje ya eneo la kukata: hakuna.
 w0 turubai_changanya(Turubai* t, n64 x, n64 y, n64 funiko) {
     kama (x < t->kx0 || x >= t->kx1 || y < t->ky0 || y >= t->ky1) { rudisha; }
-    n64 a = (funiko * t->uwazi) / 256;
+    n64 a = (funiko * t->uwazi) >> 8;
     kama (a <= 0) { rudisha; }
-    n64 mahali = y * t->hatua + x * 4;
+    n32* p = t->pikseli + y * t->hatua + x * 4;
     kama (a >= 255) {
-        weka_u32(t->pikseli, mahali, t->rangi);
+        p[0] = t->rangi;
         rudisha;
     }
-    n64 chini = pata_u32(t->pikseli, mahali);
+    n64 chini = p[0];
     n64 b = 255 - a;
-    n64 r = (((t->rangi >> 16) & 255) * a + ((chini >> 16) & 255) * b) / 255;
-    n64 g = (((t->rangi >> 8) & 255) * a + ((chini >> 8) & 255) * b) / 255;
-    n64 bl = ((t->rangi & 255) * a + (chini & 255) * b) / 255;
-    weka_u32(t->pikseli, mahali, (r << 16) | (g << 8) | bl);
+    n64 rangi = t->rangi;
+    // (v * 257 + 257) >> 16 ni sawa kabisa na v / 255 kwa 0..65025
+    n64 r = (((((rangi >> 16) & 255) * a + ((chini >> 16) & 255) * b) * 257) + 257) >> 16;
+    n64 g = (((((rangi >> 8) & 255) * a + ((chini >> 8) & 255) * b) * 257) + 257) >> 16;
+    n64 bl = ((((rangi & 255) * a + (chini & 255) * b) * 257) + 257) >> 16;
+    p[0] = (r << 16) | (g << 8) | bl;
 }
 
 // Mstari mlalo [x0,x1) kwenye safu y, funiko kamili. Njia ya haraka ya
@@ -109,13 +111,11 @@ w0 turubai_safu(Turubai* t, n64 x0, n64 x1, n64 y) {
     kama (a0 < t->kx0) { a0 = t->kx0; }
     kama (a1 > t->kx1) { a1 = t->kx1; }
     kama (a1 <= a0) { rudisha; }
-    n64 mahali = y * t->hatua + a0 * 4;
-    n64 mwisho = y * t->hatua + a1 * 4;
+    n32* safu = t->pikseli + y * t->hatua;
+    n64 x = a0;
     kama (t->uwazi >= 255) {
-        wakati (mahali < mwisho) {
-            weka_u32(t->pikseli, mahali, t->rangi);
-            mahali = mahali + 4;
-        }
+        n64 rangi = t->rangi;
+        wakati (x < a1) { safu[x] = rangi; x = x + 1; }
         rudisha;
     }
     n64 a = t->uwazi;
@@ -123,13 +123,14 @@ w0 turubai_safu(Turubai* t, n64 x0, n64 x1, n64 y) {
     n64 sr = ((t->rangi >> 16) & 255) * a;
     n64 sg = ((t->rangi >> 8) & 255) * a;
     n64 sb = (t->rangi & 255) * a;
-    wakati (mahali < mwisho) {
-        n64 chini = pata_u32(t->pikseli, mahali);
-        n64 r = (sr + ((chini >> 16) & 255) * b) / 255;
-        n64 g = (sg + ((chini >> 8) & 255) * b) / 255;
-        n64 bl = (sb + (chini & 255) * b) / 255;
-        weka_u32(t->pikseli, mahali, (r << 16) | (g << 8) | bl);
-        mahali = mahali + 4;
+    wakati (x < a1) {
+        n64 chini = safu[x];
+        // (v * 257 + 257) >> 16 ni sawa na v / 255 kwa 0..65025, bila kugawanya
+        n64 r = ((sr + ((chini >> 16) & 255) * b) * 257 + 257) >> 16;
+        n64 g = ((sg + ((chini >> 8) & 255) * b) * 257 + 257) >> 16;
+        n64 bl = ((sb + (chini & 255) * b) * 257 + 257) >> 16;
+        safu[x] = (r << 16) | (g << 8) | bl;
+        x = x + 1;
     }
 }
 
@@ -166,7 +167,13 @@ n64 turubai_kipeuo(n64 n) {
 n64 turubai_funiko_duara(n64 px, n64 py, n64 cx256, n64 cy256, n64 r256) {
     n64 dx = px * 256 + 128 - cx256;
     n64 dy = py * 256 + 128 - cy256;
-    n64 umbali = turubai_kipeuo(dx * dx + dy * dy);
+    n64 d2 = dx * dx + dy * dy;
+    // ndani kabisa au nje kabisa: bila kipeuo (kipeuo hutumika ukingoni tu)
+    n64 ndani = r256 - 128;
+    kama (ndani > 0 && d2 <= ndani * ndani) { rudisha 256; }
+    n64 nje = r256 + 128;
+    kama (d2 >= nje * nje) { rudisha 0; }
+    n64 umbali = turubai_kipeuo(d2);
     n64 f = r256 - umbali + 128;
     kama (f < 0) { rudisha 0; }
     kama (f > 256) { rudisha 256; }
