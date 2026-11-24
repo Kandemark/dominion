@@ -55,6 +55,8 @@ husisha { moduli/onyesho/wayland/dirisha.swa }
 //                   dirisha (pamoja na --fremu na --dampo kwa picha)
 
 n64 KITUFE_KUSHOTO = 272;
+n32 bila_dirisha_hali = 0;      // --bila-dirisha: picha tu, hakuna kuhifadhi
+
 n64 KEY_ESC = 1;
 n64 KEY_SPACE = 57;
 n64 KEY_MINUS = 12;
@@ -863,6 +865,10 @@ w0 pakia_nafasi(Mchezo* g, Hali* h, n64 nafasi) {
     n64 r = hifadhi_pakia(g, nafasi);
     kama (r == HIFADHI_SAWA) {
         h->taifa = mchezo_pata_taifa(g)->faharisi_ya_taifa_la_mchezaji;
+        kama (mchezaji_uso == 0) {
+            mchezaji_uso = tenga(ukubwa(Uso));
+            ny_zalisha_mchezaji(mchezaji_uso, h->taifa, h->taifa * 31 + 7, ny_mwaka_wa_zamu(g->zamu_ya_sasa));
+        }
         hs_anza(g);
         hs_rekodi(g);
         mfuatano_umbiza(wasifu_ujumbe, 160, ui("Slot %d loaded."), nafasi, 0, 0, 0, 0, 0);
@@ -944,7 +950,8 @@ w0 zamu_inayofuata(Mchezo* g, Hali* h) {
     vk_zamu(g, g->zamu_ya_sasa);
     hs_rekodi(g);
     // kuhifadhi kwa otomatiki kila wiki nne
-    kama (g->zamu_ya_sasa % 4 == 0) { hifadhi_andika(g, 0); }
+    // picha za bila dirisha (--bila-dirisha) haziandiki kamwe kwenye nafasi za mchezaji
+    kama (g->zamu_ya_sasa % 4 == 0 && bila_dirisha_hali == 0) { hifadhi_andika(g, 0); }
     sasisha_kikasha(g);
     chafua_msingi(h);
     chafua_ukurasa(h);
@@ -1258,6 +1265,7 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
             k = k + 1;
         }
         kama (linganisha_mfuatano(hoja_za_mstari[k], "--bila-dirisha") == 0 && k + 2 < idadi_ya_hoja) {
+            bila_dirisha_hali = 1;
             bila_upana = mfuatano_hadi_n64(hoja_za_mstari[k + 1]);
             bila_kimo = mfuatano_hadi_n64(hoja_za_mstari[k + 2]);
             k = k + 2;
@@ -1346,6 +1354,11 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     // masoko, pochi na katiba ya taifa la mchezaji (hifadhi/hifadhi.swa)
     hifadhi_anzisha_dominion(g, TAREHE_MWAKA_WA_MWANZO);
     kama (ameanzisha) { uanz_tumia(g); }
+    // mchezaji asiye na uso (mchezo wa zamani au bila uanzishaji) hupata mtu wa taifa lake
+    kama (mchezaji_uso == 0) {
+        mchezaji_uso = tenga(ukubwa(Uso));
+        ny_zalisha_mchezaji(mchezaji_uso, tm->faharisi_ya_taifa_la_mchezaji, tm->faharisi_ya_taifa_la_mchezaji * 31 + 7, TAREHE_MWAKA_WA_MWANZO);
+    }
     // kumbukumbu ya kisiasa ya kila wiki (skrini/historia_ya_siasa.swa)
     hs_anza(g);
     hs_rekodi(g);

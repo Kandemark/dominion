@@ -868,15 +868,35 @@ Turubai* uso_picha(Uso* u, n64 ukubwa) {
     }
     Turubai* p = turubai_unda(ukubwa, ukubwa);
     UsoKazi* k = tenga(ukubwa(UsoKazi));
-    uso_andaa(k, u, ukubwa);
-    d64 hatua = 100.0 / uso_d(ukubwa);
+    // picha ndogo huchorwa kwa sampuli nyingi kwa kila pikseli, ili sura ionekane wazi
+    n64 ss = 1;
+    kama (ukubwa < 96) { ss = 2; }
+    kama (ukubwa < 48) { ss = 3; }
+    uso_andaa(k, u, ukubwa * ss);
+    d64 hatua = 100.0 / uso_d(ukubwa * ss);
     n64 j = 0;
     wakati (j < ukubwa) {
         n64 ii = 0;
         wakati (ii < ukubwa) {
-            d64 x = (uso_d(ii) + 0.5) * hatua;
-            d64 y = (uso_d(j) + 0.5) * hatua;
-            weka_u32(p->pikseli, j * p->hatua + ii * 4, uso_pikseli(k, u, x, y));
+            n64 jr = 0;
+            n64 jg = 0;
+            n64 jb = 0;
+            n64 sy = 0;
+            wakati (sy < ss) {
+                n64 sx = 0;
+                wakati (sx < ss) {
+                    d64 x = (uso_d(ii * ss + sx) + 0.5) * hatua;
+                    d64 y = (uso_d(j * ss + sy) + 0.5) * hatua;
+                    n64 c = uso_pikseli(k, u, x, y);
+                    jr = jr + ((c >> 16) & 255);
+                    jg = jg + ((c >> 8) & 255);
+                    jb = jb + (c & 255);
+                    sx = sx + 1;
+                }
+                sy = sy + 1;
+            }
+            n64 n = ss * ss;
+            weka_u32(p->pikseli, j * p->hatua + ii * 4, ((jr / n) << 16) | ((jg / n) << 8) | (jb / n));
             ii = ii + 1;
         }
         j = j + 1;
