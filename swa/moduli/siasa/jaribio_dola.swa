@@ -1,3 +1,4 @@
+husisha { moduli/siasa/mwitikio.swa }
 husisha { moduli/siasa/dola.swa }
 
 // jaribio_dola.swa -- dola za kila aina: idadi ya mabaraza ni 0..4, viti vya
@@ -96,6 +97,29 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
     wakati (c < jm->vyama) { jm->chama_itikadi[c] = ITIKADI_UHURU_BINAFSI; c = c + 1; }
     n64 kodi_ubepari = dola_mwitikio(jm, -30, 60, 20, 0, 0);
     kama (kodi_ujamaa <= 0 || kodi_ubepari >= 0) { andika("SHINDWA: kodi %d / %d\n", kodi_ujamaa, kodi_ubepari, 0, 0, 0, 0); makosa = makosa + 1; }
+    // maafisa: vyama bila itikadi, tabia za maafisa pekee huamua mwitikio wa vita
+    Dola* dm = dola_ya_taifa(300, "Republic of Maafisa", 12000000);
+    Wahusika* wm = wahusika_wa_taifa(300, dm, 12000000);
+    c = 0;
+    wakati (c < dm->vyama) { dm->chama_itikadi[c] = ITIKADI_HURU; c = c + 1; }
+    n64 i2 = 0;
+    wakati (i2 < wm->idadi) { MhusikaWaDola* mh = wahusika_pata(wm, i2); mh->itikadi = ITIKADI_HURU; mh->tabia_1 = 6; mh->tabia_2 = 6; i2 = i2 + 1; }
+    n64 vita_wakali = dola_mwitikio_wote(dm, 0, 0, 30, 0, 60);
+    i2 = 0;
+    wakati (i2 < wm->idadi) { MhusikaWaDola* mh = wahusika_pata(wm, i2); mh->tabia_1 = 7; mh->tabia_2 = 7; i2 = i2 + 1; }
+    n64 vita_wapatanishi = dola_mwitikio_wote(dm, 0, 0, 30, 0, 60);
+    kama (vita_wakali <= 0 || vita_wapatanishi >= 0) { andika("SHINDWA: maafisa %d / %d\n", vita_wakali, vita_wapatanishi, 0, 0, 0, 0); makosa = makosa + 1; }
+    // uongozi wa jeshi: wakali dhidi ya serikali ya wapatanishi -> kutoridhika
+    c = 0;
+    wakati (c < dm->vyama) { dm->chama_itikadi[c] = ITIKADI_KIJANI; c = c + 1; }
+    i2 = 0;
+    wakati (i2 < wm->idadi) { MhusikaWaDola* mh = wahusika_pata(wm, i2); mh->itikadi = ITIKADI_UJESHI; mh->tabia_1 = 6; mh->tabia_2 = 1; i2 = i2 + 1; }
+    n64 mbali = jeshi_kutoridhika(dm);
+    i2 = 0;
+    wakati (i2 < wm->idadi) { MhusikaWaDola* mh = wahusika_pata(wm, i2); mh->itikadi = ITIKADI_KIJANI; mh->tabia_1 = 2; mh->tabia_2 = 2; i2 = i2 + 1; }
+    n64 karibu = jeshi_kutoridhika(dm);
+    kama (mbali <= karibu || mbali < 40) { andika("SHINDWA: jeshi %d / %d\n", mbali, karibu, 0, 0, 0, 0); makosa = makosa + 1; }
+    andika("maafisa: vita %d / %d, jeshi %d / %d\n", vita_wakali, vita_wapatanishi, mbali, karibu, 0, 0);
     kama (makosa == 0) { andika("dola: sawa\n", 0, 0, 0, 0, 0, 0); rudisha 0; }
     rudisha 1;
 }

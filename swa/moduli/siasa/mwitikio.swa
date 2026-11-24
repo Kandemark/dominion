@@ -1,0 +1,139 @@
+husisha { moduli/siasa/wahusika.swa }
+
+// mwitikio.swa -- jinsi watu wa dola wanavyopokea jambo lenye mwelekeo.
+//
+// Jambo lolote (uamuzi, marekebisho ya katiba) lina mwelekeo kwenye mihimili
+// ya itikadi (siasa/dola.swa). Watu wawili hulipokea:
+//   vyama      kwa viti vyao (asilimia 60 ya mwitikio)
+//   maafisa    kila mtu wa mti wa dola kwa uzito wa ngazi yake (asilimia 40):
+//              itikadi ya chama chake (huru: bila itikadi) pamoja na tabia
+//              zake -- mwenye msimamo mkali wa kijeshi huelekea taifa na
+//              mamlaka, mpatanishi kinyume chake, mcha Mungu huelekea mila,
+//              mtaalamu huelekea mamlaka na mbali na mila, mpenda umaarufu
+//              huelekea usawa; mwenye maadili hupokea kwa nguvu, mwenye
+//              vitendo, mwangalifu, mwenye shaka na fisadi kwa upole;
+//              mtiifu huipa dola nafasi, mwenye tamaa hukuza makosa yake.
+// Hakuna jambo lililo zuri au baya lenyewe: matokeo ni ya watu hawa tu.
+
+// Mti wa dola wa taifa linalomiliki dola hii, ikiwa umeshajengwa.
+Wahusika* wahusika_wa_dola(Dola* d) {
+    kama (d == 0 || dola_akiba == 0 || wahusika_akiba == 0) { rudisha 0; }
+    n64 i = 0;
+    wakati (i < DOLA_AKIBA_UWEZO) {
+        kama (dola_akiba[i] == d) { rudisha wahusika_akiba[i]; }
+        i = i + 1;
+    }
+    rudisha 0;
+}
+
+n32 mhusika_ana_tabia(MhusikaWaDola* m, n64 t) { rudisha m->tabia_1 == t || m->tabia_2 == t; }
+
+// Msimamo wa afisa kwenye mhimili: itikadi yake pamoja na mielekeo ya tabia zake.
+n64 mhusika_msimamo(MhusikaWaDola* m, n64 mh) {
+    n64 v = itikadi_msimamo(m->itikadi, mh);
+    kama (mhusika_ana_tabia(m, 6)) { kama (mh == MHIMILI_TAIFA) { v = v + 50; } kama (mh == MHIMILI_MAMLAKA) { v = v + 20; } }
+    kama (mhusika_ana_tabia(m, 7)) { kama (mh == MHIMILI_TAIFA) { v = v - 40; } kama (mh == MHIMILI_MAMLAKA) { v = v - 20; } }
+    kama (mhusika_ana_tabia(m, 10) && mh == MHIMILI_MILA) { v = v + 50; }
+    kama (mhusika_ana_tabia(m, 9)) { kama (mh == MHIMILI_MILA) { v = v - 30; } kama (mh == MHIMILI_MAMLAKA) { v = v + 20; } }
+    kama (mhusika_ana_tabia(m, 8) && mh == MHIMILI_USAWA) { v = v + 30; }
+    kama (v > 100) { v = 100; }
+    kama (v < -100) { v = -100; }
+    rudisha v;
+}
+
+n64 mwitikio_kipeuo(n64 n) {
+    n64 b = 1;
+    wakati ((b + 1) * (b + 1) <= n) { b = b + 1; }
+    rudisha b;
+}
+
+// Mwitikio wa afisa mmoja (-100..100).
+n64 mhusika_mwitikio(MhusikaWaDola* m, n64 b0, n64 b1, n64 b2, n64 b3, n64 b4) {
+    n64 ukubwa = b0 * b0 + b1 * b1 + b2 * b2 + b3 * b3 + b4 * b4;
+    kama (ukubwa == 0) { rudisha 0; }
+    n64 dot = mhusika_msimamo(m, 0) * b0 + mhusika_msimamo(m, 1) * b1 + mhusika_msimamo(m, 2) * b2 + mhusika_msimamo(m, 3) * b3 + mhusika_msimamo(m, 4) * b4;
+    n64 r = dot / mwitikio_kipeuo(ukubwa);
+    // nguvu ya mwitikio kwa tabia
+    kama (mhusika_ana_tabia(m, 4)) { r = (r * 15) / 10; }
+    kama (mhusika_ana_tabia(m, 5)) { r = r / 2; }
+    kama (mhusika_ana_tabia(m, 0)) { r = (r * 6) / 10; }
+    kama (mhusika_ana_tabia(m, 11)) { r = r / 2; }
+    kama (mhusika_ana_tabia(m, 3)) { r = (r * 7) / 10; }
+    kama (mhusika_ana_tabia(m, 1) && r < 0) { r = (r * 13) / 10; }
+    kama (mhusika_ana_tabia(m, 2)) { r = r + 20; }
+    kama (r > 100) { r = 100; }
+    kama (r < -100) { r = -100; }
+    rudisha r;
+}
+
+// Mwitikio wa maafisa wote kwa uzito wa ngazi; `ipo` huwekwa 0 ikiwa hakuna mti.
+n64 wahusika_mwitikio(Wahusika* w, n64 b0, n64 b1, n64 b2, n64 b3, n64 b4, n32* ipo) {
+    ipo[0] = 0;
+    kama (w == 0 || w->idadi == 0) { rudisha 0; }
+    n64 jumla = 0;
+    n64 uzito = 0;
+    n64 i = 0;
+    wakati (i < w->idadi) {
+        MhusikaWaDola* m = wahusika_pata(w, i);
+        kama (m->tawi != TAWI_OFISI) {
+            n64 u = m->ngazi + 1;
+            jumla = jumla + mhusika_mwitikio(m, b0, b1, b2, b3, b4) * u;
+            uzito = uzito + u;
+        }
+        i = i + 1;
+    }
+    kama (uzito == 0) { rudisha 0; }
+    ipo[0] = 1;
+    rudisha jumla / uzito;
+}
+
+// Mwitikio wa dola yote: vyama na maafisa.
+n64 dola_mwitikio_wote(Dola* d, n64 b0, n64 b1, n64 b2, n64 b3, n64 b4) {
+    n64 vyama = dola_mwitikio(d, b0, b1, b2, b3, b4);
+    n32 ipo = 0;
+    n64 maafisa = wahusika_mwitikio(wahusika_wa_dola(d), b0, b1, b2, b3, b4, &ipo);
+    kama (ipo == 0) { rudisha vyama; }
+    kama (d == 0 || d->vyama == 0) { rudisha maafisa; }
+    rudisha (vyama * 60 + maafisa * 40) / 100;
+}
+
+// Tumia mwitikio: uhalali hubadilika kwa `nguvu` * mwitikio / 100, utulivu kwa nusu yake.
+w0 dola_pokea(Dola* d, n64 nguvu, n64 b0, n64 b1, n64 b2, n64 b3, n64 b4) {
+    kama (d == 0) { rudisha; }
+    n64 r = dola_mwitikio_wote(d, b0, b1, b2, b3, b4);
+    d->uhalali = dola_rekebisha(d->uhalali, (r * nguvu) / 100);
+    d->utulivu = dola_rekebisha(d->utulivu, (r * nguvu) / 200);
+}
+
+// Kutoridhika kwa uongozi wa jeshi na serikali (0..100): umbali kati ya
+// misimamo ya maafisa wa jeshi (kwa ngazi) na ya vyama vya serikali.
+n64 jeshi_kutoridhika(Dola* d) {
+    Wahusika* w = wahusika_wa_dola(d);
+    kama (w == 0 || d == 0) { rudisha 0; }
+    n64 jumla = 0;
+    n64 uzito = 0;
+    n64 i = 0;
+    wakati (i < w->idadi) {
+        MhusikaWaDola* m = wahusika_pata(w, i);
+        kama (m->tawi == TAWI_JESHI) {
+            n64 umbali = 0;
+            n64 mh = 0;
+            wakati (mh < MIHIMILI) {
+                n64 tofauti = mhusika_msimamo(m, mh) - dola_msimamo(d, mh, 1);
+                kama (tofauti < 0) { tofauti = 0 - tofauti; }
+                umbali = umbali + tofauti;
+                mh = mh + 1;
+            }
+            umbali = umbali / MIHIMILI;
+            kama (mhusika_ana_tabia(m, 2)) { umbali = umbali / 2; }
+            kama (mhusika_ana_tabia(m, 1)) { umbali = (umbali * 13) / 10; }
+            jumla = jumla + umbali * (m->ngazi + 1);
+            uzito = uzito + m->ngazi + 1;
+        }
+        i = i + 1;
+    }
+    kama (uzito == 0) { rudisha 0; }
+    n64 r = jumla / uzito;
+    kama (r > 100) { r = 100; }
+    rudisha r;
+}

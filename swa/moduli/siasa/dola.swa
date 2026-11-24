@@ -189,14 +189,6 @@ n64 dola_mwitikio(Dola* d, n64 b0, n64 b1, n64 b2, n64 b3, n64 b4) {
     rudisha r;
 }
 
-// Tumia mwitikio: uhalali hubadilika kwa `nguvu` * mwitikio / 100, utulivu kwa nusu yake.
-w0 dola_pokea(Dola* d, n64 nguvu, n64 b0, n64 b1, n64 b2, n64 b3, n64 b4) {
-    kama (d == 0) { rudisha; }
-    n64 r = dola_mwitikio(d, b0, b1, b2, b3, b4);
-    d->uhalali = dola_rekebisha(d->uhalali, (r * nguvu) / 100);
-    d->utulivu = dola_rekebisha(d->utulivu, (r * nguvu) / 200);
-}
-
 n8* itikadi_jina(n64 i) {
     kama (i == ITIKADI_UKOMUNISTI) { rudisha ui("Communism"); }
     kama (i == ITIKADI_UJAMAA) { rudisha ui("Socialism"); }
