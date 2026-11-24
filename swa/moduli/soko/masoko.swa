@@ -688,6 +688,7 @@ w0 soko_mataifa_hai(Mchezo* g, n64 zamu) {
                     // junta: dola hujengwa upya (mabaraza, vyama na vyeo vya kijeshi)
                     dola_badilisha_aina(d, DOLA_UTAWALA_WA_KIJESHI, 0);
                     wahusika_futa_akiba(t);
+                    wahusika_wa_taifa(t, d, dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), t)->idadi_ya_watu);   // mti mpya wa junta mara moja
                     d->mkuu_wa_dola = ui("Chairman of the Military Council");
                     d->utulivu = 40;
                     d->uhalali = 20;

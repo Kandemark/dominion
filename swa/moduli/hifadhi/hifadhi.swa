@@ -645,6 +645,10 @@ w0 hifadhi_anzisha_dominion(Mchezo* g, n64 mwaka) {
     nguvu_hakikisha(d, mimi);
     // majeshi kwanza: vikomo vya katiba hutoka kwenye majeshi ya mwanzo
     vk_anzisha(g);
+    // mti wa dola wa kila taifa hujengwa sasa: maafisa wote hushiriki
+    // kwenye mwitikio (siasa/mwitikio.swa) tangu wiki ya kwanza
+    n64 tt = 0;
+    wakati (tt < tm->idadi) { skrini_mkutano_watu(g, tt); tt = tt + 1; }
     hati_taifa = 0 - 1;
     hati_taifa_la_mchezaji = mimi;
     hati_historia_idadi = 0;
