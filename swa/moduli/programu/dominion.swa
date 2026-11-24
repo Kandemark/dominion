@@ -55,7 +55,15 @@ husisha { moduli/onyesho/wayland/dirisha.swa }
 //                   dirisha (pamoja na --fremu na --dampo kwa picha)
 
 n64 KITUFE_KUSHOTO = 272;
-n32 bila_dirisha_hali = 0;      // --bila-dirisha: picha tu, hakuna kuhifadhi
+n32 bila_dirisha_hali = 0;
+n64 pima = 0;                   // --pima: 1 ukurasa, 2 ramani yote kila fremu (vipimo vya muda)
+
+// Saa ya monotonic kwa mikrosekunde (vipimo vya kasi).
+n64 saa_us() {
+    n64 b[2];
+    wito_wa_mfumo(228, 1, b, 0, 0, 0, 0);
+    rudisha b[0] * 1000000 + b[1] / 1000;
+}      // --bila-dirisha: picha tu, hakuna kuhifadhi
 
 n64 KEY_ESC = 1;
 n64 KEY_SPACE = 57;
@@ -131,6 +139,7 @@ muundo Hali {
     Turubai* msingi;        // ramani na fremu ya mchezo, tayari kunakiliwa
     n64 shift;              // Shift imebonyezwa
     n64 ctrl;               // Ctrl imebonyezwa
+    n64 kuza_saa;           // saa (us) ya hatua ya mwisho ya kukuza; 0 = hakuna
     n64 skrini_nzima;       // 1 = skrini nzima (F11 hubadili)
 }
 
@@ -213,6 +222,8 @@ w0 badili_kipimo(Hali* h, Dirisha* d, n64 kipimo_kipya, n64 px, n64 py) {
     h->kitovu_y = wy - dy * k;
     h->kipimo = k;
     bana_mtazamo(h, d);
+    // hakikisho la haraka sasa; ramani kamili ikitulia (angalia kitanzi kikuu)
+    kama (bila_dirisha_hali == 0) { h->kuza_saa = saa_us(); }
     chafua_msingi(h);
 }
 
@@ -1101,7 +1112,7 @@ w0 chora_msingi(Mchezo* g, Hali* h, Dirisha* d) {
     kama (skrini_dunia != 0) { taifa = h->taifa_dunia; }
     // wakati wa kuburuta: hakikisho la haraka; fremu kamili ikiachiliwa
     n32 haraka = 0;
-    kama (h->inavutwa && h->imesogea) { haraka = skrini_ramani_hakikisho(g, t, h->kitovu_x, h->kitovu_y, h->kipimo, taifa); }
+    kama ((h->inavutwa && h->imesogea) || h->kuza_saa != 0) { haraka = skrini_ramani_hakikisho(g, t, h->kitovu_x, h->kitovu_y, h->kipimo, taifa); }
     kama (haraka == 0) {
         kama (skrini_dunia != 0) {
             // ukuzaji na mipaka ya kaskazini-kusini; mashariki-magharibi huzunguka
@@ -1278,6 +1289,10 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
             bila_kimo = mfuatano_hadi_n64(hoja_za_mstari[k + 2]);
             k = k + 2;
         }
+        kama (linganisha_mfuatano(hoja_za_mstari[k], "--pima") == 0 && k + 1 < idadi_ya_hoja) {
+            pima = mfuatano_hadi_n64(hoja_za_mstari[k + 1]);
+            k = k + 1;
+        }
         kama (linganisha_mfuatano(hoja_za_mstari[k], "--wiki") == 0 && k + 1 < idadi_ya_hoja) {
             wiki_mwanzoni = mfuatano_hadi_n64(hoja_za_mstari[k + 1]);
             k = k + 1;
@@ -1428,12 +1443,17 @@ n32 anza(n32 idadi_ya_hoja, n8** hoja_za_mstari) {
             }
         } sivyo {
             shughulikia(g, h, d);
+            // kukuza kumetulia kwa 180 ms: chora ramani kamili
+            kama (h->kuza_saa != 0 && saa_us() - h->kuza_saa > 180000) { h->kuza_saa = 0; chafua_msingi(h); }
         }
         n32 inahitajika = h->haja != 0 || h->haja_msingi != 0;
         kama (fremu_upeo > 0) { inahitajika = 1; }      // majaribio huchora kila fremu hadi N
         kama (inahitajika && d->fremu_tayari && d->imefungwa == 0) {
             turubai_funga(t, dirisha_bafa(d), d->hatua, d->upana, d->kimo);
+            kama (pima == 2) { chafua_msingi(h); }
+            n64 t0 = saa_us();
             chora_fremu(g, h, d, t);
+            kama (pima > 0) { andika("PIMA fremu %d skrini %d ms %d\n", fremu, h->skrini, (saa_us() - t0) / 1000, 0, 0, 0); }
             kama (dampo != 0) {
                 n64 fd = mfumo_fungua(dampo, 577, 420);
                 mfumo_andika(fd, t->pikseli, t->hatua * t->kimo);
