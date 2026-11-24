@@ -1,6 +1,126 @@
 husisha { moduli/skrini/jopo.swa }
 
-// Skrini ya teknolojia: uwekezaji na viwango halisi vya nyanja 12.
+// teknolojia.swa -- skrini ya teknolojia. Kila taifa lina kielezo kimoja cha
+// teknolojia (dunia/taifa.swa); nyanja 12 hutokana nacho pamoja na kipimo
+// halisi kinachohusiana na nyanja hiyo (jeshi kwa sayansi ya jeshi, uchumi
+// kwa biashara, utamaduni kwa falsafa, utajiri kwa uganga, uhalali kwa
+// nadharia ya utawala). Kipimo kinachohusiana hupimwa kwa nafasi yake kati
+// ya mataifa yote, kwa hiyo kila nyanja huonyesha nguvu halisi ya taifa
+// ukilinganisha na wengine. Nafasi na wastani hukokotolewa upya kila fremu.
+
+n8* tek_jina(n64 i) {
+    kama (i == 0) { rudisha ui("Writing and records"); }
+    kama (i == 1) { rudisha ui("Engineering and building"); }
+    kama (i == 2) { rudisha ui("Agriculture and husbandry"); }
+    kama (i == 3) { rudisha ui("Military science"); }
+    kama (i == 4) { rudisha ui("Medicine"); }
+    kama (i == 5) { rudisha ui("Astronomy and mathematics"); }
+    kama (i == 6) { rudisha ui("Metallurgy"); }
+    kama (i == 7) { rudisha ui("Cartography and navigation"); }
+    kama (i == 8) { rudisha ui("Architecture and planning"); }
+    kama (i == 9) { rudisha ui("Philosophy and ethics"); }
+    kama (i == 10) { rudisha ui("Commerce and money"); }
+    rudisha ui("Theory of government");
+}
+
+// Kipimo halisi kinachoongoza nyanja i; -1 = teknolojia pekee.
+n64 tek_kipimo(n64 i) {
+    kama (i == 0 || i == 8 || i == 9) { rudisha KIPIMO_UTAMADUNI; }
+    kama (i == 1 || i == 7 || i == 10) { rudisha KIPIMO_UCHUMI; }
+    kama (i == 2) { rudisha KIPIMO_WATU; }
+    kama (i == 3 || i == 6) { rudisha KIPIMO_JESHI; }
+    kama (i == 4) { rudisha KIPIMO_KWA_MTU; }
+    kama (i == 11) { rudisha KIPIMO_UHALALI; }
+    rudisha 0 - 1;
+}
+
+// Hesabu viwango vya nyanja zote kwa mataifa yote: viwango[t * 12 + i].
+n64* tek_viwango(Mchezo* g) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 N = tm->idadi;
+    n64* v = tenga(8 * N * TEKNOLOJIA_IDADI_YA_NYANJA + 8);
+    n64* thamani = tenga(8 * N + 8);
+    n64 i = 0;
+    wakati (i < TEKNOLOJIA_IDADI_YA_NYANJA) {
+        n64 k = tek_kipimo(i);
+        n64 t = 0;
+        kama (k >= 0) { wakati (t < N) { thamani[t] = kipimo_thamani(g, t, k); t = t + 1; } }
+        t = 0;
+        wakati (t < N) {
+            n64 tech = kipimo_thamani(g, t, KIPIMO_TEKNOLOJIA);
+            n64 lv = tech;
+            kama (k >= 0) {
+                // nafasi ya kipimo kinachohusiana, 0..1000
+                n64 chini = 0;
+                n64 j = 0;
+                wakati (j < N) { kama (thamani[j] < thamani[t]) { chini = chini + 1; } j = j + 1; }
+                n64 asilimia = 0;
+                kama (N > 1) { asilimia = (chini * 1000) / (N - 1); }
+                lv = (tech * 60 + (100 + (asilimia * 380) / 1000) * 40) / 100;
+            }
+            v[t * TEKNOLOJIA_IDADI_YA_NYANJA + i] = lv;
+            t = t + 1;
+        }
+        i = i + 1;
+    }
+    achilia thamani;
+    rudisha v;
+}
+
+n64 tek_cheo(n64* v, n64 N, n64 taifa, n64 i) {
+    n64 c = 1;
+    n64 t = 0;
+    wakati (t < N) { kama (v[t * TEKNOLOJIA_IDADI_YA_NYANJA + i] > v[taifa * TEKNOLOJIA_IDADI_YA_NYANJA + i]) { c = c + 1; } t = t + 1; }
+    rudisha c;
+}
+
+n64 tek_wastani(n64* v, n64 N, n64 i) {
+    n64 s = 0;
+    n64 t = 0;
+    wakati (t < N) { s = s + v[t * TEKNOLOJIA_IDADI_YA_NYANJA + i]; t = t + 1; }
+    kama (N == 0) { rudisha 0; }
+    rudisha s / N;
+}
+
+// Ramani ya utafiti: nyanja 12 kwa safu mbili, kila moja na kiwango, nafasi,
+// wastani wa dunia, kiongozi wa dunia na pau dhidi ya kiongozi.
+w0 tek_ramani(Mchezo* g, n64 taifa, n64* v, n64 x, n64 y, n64 w, n64 h) {
+    TaifaMfumo* tm = mchezo_pata_taifa(g);
+    n64 N = tm->idadi;
+    sura_paneli(x, y, w, h, ui("RESEARCH FIELDS"));
+    n64 col_w = (w - 32) / 2;
+    n64 rh = (h - 46) / 6;
+    n8 m[160];
+    n64 i = 0;
+    wakati (i < TEKNOLOJIA_IDADI_YA_NYANJA) {
+        n64 rx = x + 16 + (i / 6) * col_w;
+        n64 ry = y + 38 + (i % 6) * rh;
+        n64 lv = v[taifa * TEKNOLOJIA_IDADI_YA_NYANJA + i];
+        n64 cheo = tek_cheo(v, N, taifa, i);
+        n64 wastani = tek_wastani(v, N, i);
+        n64 kiongozi = 0;
+        n64 t = 0;
+        wakati (t < N) { kama (v[t * TEKNOLOJIA_IDADI_YA_NYANJA + i] > v[kiongozi * TEKNOLOJIA_IDADI_YA_NYANJA + i]) { kiongozi = t; } t = t + 1; }
+        n64 juu = v[kiongozi * TEKNOLOJIA_IDADI_YA_NYANJA + i];
+        kama (juu <= 0) { juu = 1; }
+        sura_safu(rx, ry, col_w - 12, rh - 4, i % 6, 0);
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo(tek_jina(i), rx + 12, ry + 5, 12);
+        mfuatano_umbiza(m, 160, "%d", lv, 0, 0, 0, 0, 0);
+        sura_lebo_nene(m, rx + col_w - 70, ry + 3, 14);
+        kama (lv >= wastani) { sura_rangi(SURA_CHANYA); } sivyo { sura_rangi(SURA_HASI); }
+        kama (lv >= wastani) { mfuatano_umbiza(m, 160, "+%d", lv - wastani, 0, 0, 0, 0, 0); } sivyo { mfuatano_umbiza(m, 160, "%d", lv - wastani, 0, 0, 0, 0, 0); }
+        sura_lebo_kulia(m, x + 16 + (i / 6 + 1) * col_w - 24, ry + 6, 10);
+        mfuatano_umbiza(m, 160, ui("Rank %d of %d  ·  world avg %d  ·  leader %s"), cheo, N, wastani, dunia_taifa_mfumo_pata_kwa_faharisi(tm, kiongozi)->jina, 0, 0);
+        sura_rangi(SURA_HAFIFU);
+        turubai_kata(sura_t, rx, ry, col_w - 20, rh);
+        sura_lebo(m, rx + 12, ry + 24, 10);
+        turubai_kata_yote(sura_t);
+        sura_pau(rx + 12, ry + rh - 12, col_w - 48, 4, (lv * 1000) / juu, SURA_BAHARI);
+        i = i + 1;
+    }
+}
+
 w0 skrini_teknolojia_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_anzisha(t);
     bofya_anza();
@@ -10,70 +130,58 @@ w0 skrini_teknolojia_chora(Mchezo* g, Turubai* t, n64 taifa) {
     skrini_urambazaji(t, 6);
     TaifaMfumo* tm = mchezo_pata_taifa(g);
     TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(tm, taifa);
-    TeknolojiaMfumo* tech = mchezo_pata_teknolojia(g);
-    kama (tn == 0 || tech == 0) { rudisha; }
+    kama (tn == 0) { rudisha; }
+    n64 N = tm->idadi;
     n64 x = SKRINI_UPANA_WA_PEMBENI + 25;
     n64 y = SKRINI_UPAU_WA_JUU + 25;
     n64 w = t->upana - x - 24;
-    skrini_kichwa_fm(g, t, ui("Technology"), ui("World technology research."), x, y - 15);
+    n64* v = tek_viwango(g);
+    // nyanja imara na dhaifu zaidi kwa nafasi
+    n64 imara = 0;
+    n64 dhaifu = 0;
+    n64 i = 0;
+    wakati (i < TEKNOLOJIA_IDADI_YA_NYANJA) {
+        kama (tek_cheo(v, N, taifa, i) < tek_cheo(v, N, taifa, imara)) { imara = i; }
+        kama (tek_cheo(v, N, taifa, i) > tek_cheo(v, N, taifa, dhaifu)) { dhaifu = i; }
+        i = i + 1;
+    }
+    n8 chini[160];
+    mfuatano_umbiza(chini, 160, ui("Strongest in %s, weakest in %s."), tek_jina(imara), tek_jina(dhaifu), 0, 0, 0, 0);
+    skrini_kichwa_fm(g, t, ui("Technology"), chini, x, y - 15);
     jopo_weka_kituo(g, taifa);
     jopo_wigo_chora(t->upana - 24, y - 1);
     y = y + 66;
-    n64 gap = 16;
-    n64 cw = (w - 3 * gap) / 4;
-    n8 value[40];
-    sura_namba(value, tech->kiwango_jumla);
-    sura_kadi(x, y, cw, ui("TOTAL LEVEL"), value, 0);
-    sura_namba(value, tech->cheo_jumla);
-    sura_kadi(x + cw + gap, y, cw, ui("PROVISIONAL RANK"), value, 0);
-    n64 budget = tech->bajeti_jumla * 1000.0;
-    sura_namba_fupi(value, budget);
-    sura_kadi(x + 2 * (cw + gap), y, cw, ui("RESEARCH BUDGET"), value, 0);
-    sura_namba(value, TEKNOLOJIA_IDADI_YA_NYANJA);
-    sura_kadi(x + 3 * (cw + gap), y, cw, ui("RESEARCH FIELDS"), value, 0);
+    n64 gap = 12;
+    n64 cw = (w - 4 * gap) / 5;
+    n8 value[64];
+    sura_namba(value, tn->kielezo_cha_teknolojia);
+    sura_kadi(x, y, cw, ui("TECHNOLOGY INDEX"), value, 0);
+    n64 cheo = 1;
+    n64 tt = 0;
+    wakati (tt < N) { kama (kipimo_thamani(g, tt, KIPIMO_TEKNOLOJIA) > tn->kielezo_cha_teknolojia) { cheo = cheo + 1; } tt = tt + 1; }
+    mfuatano_umbiza(value, 64, ui("%d of %d"), cheo, N, 0, 0, 0, 0);
+    sura_kadi(x + (cw + gap), y, cw, ui("WORLD RANK"), value, 0);
+    n64 juu_ya_wastani = 0;
+    i = 0;
+    wakati (i < TEKNOLOJIA_IDADI_YA_NYANJA) { kama (v[taifa * TEKNOLOJIA_IDADI_YA_NYANJA + i] >= tek_wastani(v, N, i)) { juu_ya_wastani = juu_ya_wastani + 1; } i = i + 1; }
+    mfuatano_umbiza(value, 64, ui("%d of 12"), juu_ya_wastani, 0, 0, 0, 0, 0);
+    sura_kadi(x + 2 * (cw + gap), y, cw, ui("FIELDS ABOVE AVERAGE"), value, 0);
+    mfuatano_umbiza(value, 64, "#%d", tek_cheo(v, N, taifa, imara), 0, 0, 0, 0, 0);
+    sura_kadi(x + 3 * (cw + gap), y, cw, ui("BEST FIELD RANK"), value, 0);
+    mfuatano_umbiza(value, 64, "#%d", tek_cheo(v, N, taifa, dhaifu), 0, 0, 0, 0, 0);
+    sura_kadi(x + 4 * (cw + gap), y, cw, ui("WORST FIELD RANK"), value, 0);
     y = y + 108;
-    // ramani ya utafiti kushoto, nafasi ya dunia kulia; chini mgawanyo,
-    // mtawanyiko, majirani na aina za utawala
     n64 pengo = 12;
-    n64 panel_h = 6 * 48 + 62;
+    n64 panel_h = ((t->kimo - y - 24) * 58) / 100;
     n64 w_ramani = (w * 62) / 100;
+    tek_ramani(g, taifa, v, x, y, w_ramani, panel_h);
     jopo_nafasi(g, taifa, KIPIMO_TEKNOLOJIA, ui("RANKING  ·  TECHNOLOGY"), x + w_ramani + pengo, y, w - w_ramani - pengo, panel_h);
     n64 y_chini = y + panel_h + pengo;
     n64 h_chini = t->kimo - y_chini - 24;
     n64 w4 = (w - 3 * pengo) / 4;
     jopo_mgawanyo(g, taifa, KIPIMO_TEKNOLOJIA, ui("DISTRIBUTION  ·  TECHNOLOGY"), x, y_chini, w4, h_chini);
     jopo_mtawanyiko(g, taifa, KIPIMO_KWA_MTU, KIPIMO_TEKNOLOJIA, ui("NATIONS  ·  WEALTH / TECHNOLOGY"), x + (w4 + pengo), y_chini, w4, h_chini);
-    jopo_majirani(g, taifa, KIPIMO_TEKNOLOJIA, ui("NEIGHBOURS  ·  TECHNOLOGY"), x + 2 * (w4 + pengo), y_chini, w4, h_chini);
+    jopo_majirani(g, taifa, KIPIMO_TEKNOLOJIA, ui("NEARBY  ·  TECHNOLOGY"), x + 2 * (w4 + pengo), y_chini, w4, h_chini);
     jopo_kwa_utawala(g, taifa, KIPIMO_TEKNOLOJIA, ui("TECHNOLOGY BY FORM OF GOVERNMENT"), x + 3 * (w4 + pengo), y_chini, w - 3 * (w4 + pengo), h_chini);
-    w = w_ramani;
-    sura_paneli(x, y, w, panel_h, ui("RESEARCH MAP · WORLD RANKS ARE PROVISIONAL"));
-    n64 col_w = (w - 40) / 2;
-    n64 i = 0;
-    wakati (i < TEKNOLOJIA_IDADI_YA_NYANJA) {
-        n64 col = i / 6;
-        n64 row = i % 6;
-        n64 rx = x + 16 + col * col_w;
-        n64 ry = y + 50 + row * 48;
-        n64 level = teknolojia_pata_kiwango(tech, i);
-        n64 progress = level * 2;
-        kama (progress < 0) { progress = 0; }
-        kama (progress > 1000) { progress = 1000; }
-        n64 rank = tech->cheo_duniani[i];
-        n64 mean = tech->wastani_duniani[i];
-        sura_safu(rx, ry, col_w - 12, 42, row, 0);
-        sura_rangi(SURA_MAANDISHI);
-        sura_lebo(teknolojia_jina_la_nyanja(i), rx + 12, ry + 4, 12);
-        n8 detail[40];
-        n8 lv[18];
-        n8 rk[18];
-        n8 avg[18];
-        sura_namba(lv, level);
-        sura_namba(rk, rank);
-        sura_namba(avg, mean);
-        mfuatano_umbiza(detail, 40, ui("Level %s  |  Rank %s / %s"), lv, rk, avg, 0, 0, 0);
-        sura_rangi(SURA_HAFIFU);
-        sura_lebo(detail, rx + 12, ry + 25, 10);
-        sura_pau(rx + col_w - 100, ry + 18, 78, 5, progress, SURA_BAHARI);
-        i = i + 1;
-    }
+    achilia v;
 }

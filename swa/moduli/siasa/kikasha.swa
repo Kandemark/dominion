@@ -91,13 +91,13 @@ w0 kikasha_zamu(Dola* d, Wahusika* w, n64 ofisi, n64 zamu) {
     }
     // tahadhari, kila zamu nne
     kama (zamu % 4 == 1) {
-        n64 ndani = wahusika_tafuta(w, "Minister of the Interior");
+        n64 ndani = wahusika_tafuta(w, ui("Minister of the Interior"));
         kama (d->utulivu < 40 && ndani >= 0) {
             n8* mwili = tenga(240);
             mfuatano_umbiza(mwili, 240, ui("Stability has fallen to %d. Strikes are spreading in the provinces and the police ask for instructions."), d->utulivu, 0, 0, 0, 0, 0);
             kikasha_ongeza(ndani, UJUMBE_TAHADHARI, zamu, leo, ui("Unrest in the provinces"), mwili);
         }
-        n64 fedha = wahusika_tafuta(w, "Minister of Finance");
+        n64 fedha = wahusika_tafuta(w, ui("Minister of Finance"));
         kama (d->hazina < 40 && fedha >= 0) {
             n8* mwili = tenga(240);
             mfuatano_umbiza(mwili, 240, ui("Treasury health stands at %d. Salaries for the civil service are due and the reserves will not cover them for long."), d->hazina, 0, 0, 0, 0, 0);

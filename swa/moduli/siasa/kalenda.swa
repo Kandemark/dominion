@@ -88,11 +88,11 @@ n64 kalenda_matukio_ya_siku(Dola* d, Wahusika* w, n64 siku, TukioLaSiku* nje) {
             kama (d->aina == DOLA_CHAMA_KIMOJA) { jina = ui("Party Congress"); }
             kalenda_weka(nje, &n, TUKIO_BARAZA_LA_DOLA, 8, 9, jina, 0);
         }
-        kama (wiki == 0 && wahusika_tafuta(w, "Minister of Finance") >= 0) {
-            kalenda_weka(nje, &n, TUKIO_BARAZA_LA_MAWAZIRI, 9, 11, ui("Cabinet meeting"), wahusika_tafuta(w, "Minister of Finance"));
+        kama (wiki == 0 && wahusika_tafuta(w, ui("Minister of Finance")) >= 0) {
+            kalenda_weka(nje, &n, TUKIO_BARAZA_LA_MAWAZIRI, 9, 11, ui("Cabinet meeting"), wahusika_tafuta(w, ui("Minister of Finance")));
         }
-        kama (wiki == 4 && wahusika_tafuta(w, "Press Secretary") >= 0) {
-            kalenda_weka(nje, &n, TUKIO_WANAHABARI, 11, 12, ui("Press briefing"), wahusika_tafuta(w, "Press Secretary"));
+        kama (wiki == 4 && wahusika_tafuta(w, ui("Press Secretary")) >= 0) {
+            kalenda_weka(nje, &n, TUKIO_WANAHABARI, 11, 12, ui("Press briefing"), wahusika_tafuta(w, ui("Press Secretary")));
         }
     }
     kama ((wiki == 1 || wiki == 3) && d->mabaraza > 0) {

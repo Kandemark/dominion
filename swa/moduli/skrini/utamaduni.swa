@@ -1,7 +1,137 @@
 husisha { moduli/skrini/jopo.swa }
+husisha { moduli/siasa/hati.swa }
 
-// Skrini ya utamaduni: identities, imani na mawazo; inaonyesha tupu wazi
-// kwa sababu mifumo hii huanza bila rekodi kwenye mchezo mpya.
+// utamaduni.swa -- skrini ya utamaduni:
+//   vigae     kielezo na nafasi ya utamaduni, lugha, dini ya dola, sikukuu, haki
+//             za kitamaduni zinazolindwa
+//   kati      nafasi, mgawanyo na mtawanyiko wa utamaduni kati ya mataifa
+//   chini     mataifa ya karibu, utamaduni kwa aina ya utawala, haki za
+//             kitamaduni kwenye katiba (kiwango cha ulinzi), na mtazamo wa jamii:
+//             misimamo ya vyama kwa mihimili mitano na itikadi za maafisa
+// Mifumo ya utambulisho na dini huanza tupu kwenye mchezo mpya; idadi zao
+// huonyeshwa kwenye vigae na hujaa zinapojitokeza.
+
+n64 UT_HAKI_IDADI = 9;
+n64 ut_haki(n64 i) {
+    kama (i == 0) { rudisha 10; }
+    kama (i == 1) { rudisha 11; }
+    kama (i == 2) { rudisha 12; }
+    kama (i == 3) { rudisha 13; }
+    kama (i == 4) { rudisha 14; }
+    kama (i == 5) { rudisha 22; }
+    kama (i == 6) { rudisha 28; }
+    kama (i == 7) { rudisha 29; }
+    rudisha 30;
+}
+
+n8* ut_mhimili_jina(n64 m) {
+    kama (m == 0) { rudisha ui("Liberty"); }
+    kama (m == 1) { rudisha ui("Equality"); }
+    kama (m == 2) { rudisha ui("Authority"); }
+    kama (m == 3) { rudisha ui("Tradition"); }
+    rudisha ui("Nation");
+}
+
+// Haki za kitamaduni kwenye katiba: ulinzi kamili, kwa sheria, kwa amri, au hakuna.
+w0 ut_haki_jopo(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h) {
+    sura_paneli(x, y, w, h, ui("CULTURAL RIGHTS"));
+    kama (hati_taifa != taifa) {
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(ui("Open the Constitution to read this nation's charter."), x + 16, y + 44, 11);
+        rudisha;
+    }
+    n64 rh = (h - 44) / UT_HAKI_IDADI;
+    kama (rh > 30) { rh = 30; }
+    n64 i = 0;
+    wakati (i < UT_HAKI_IDADI) {
+        n64 hk = ut_haki(i);
+        Kifungu* k = hati_tafuta(K_HAKI, hk);
+        n64 ry = y + 38 + i * rh;
+        n8* ulinzi = ui("Not in the charter");
+        // rangi hueleza kiwango cha ulinzi tu, si uzuri au ubaya wake
+        n64 rangi = SURA_HAFIFU;
+        kama (k != 0) {
+            kama (k->p0 == 0) { ulinzi = ui("Guaranteed"); rangi = SURA_LAFUDHI; }
+            kama (k->p0 == 1) { ulinzi = ui("Limited by law"); rangi = SURA_BAHARI; }
+            kama (k->p0 == 2) { ulinzi = ui("Limited by decree"); rangi = SURA_MAANDISHI; }
+        }
+        turubai_brashi(sura_t, rangi, 255);
+        turubai_duara(sura_t, x + 20, ry + 8, 3);
+        sura_rangi(SURA_MAANDISHI);
+        turubai_kata(sura_t, x + 28, ry, w - 150, rh);
+        sura_lebo(haki_jina(hk), x + 30, ry + 1, 11);
+        turubai_kata_yote(sura_t);
+        sura_rangi(rangi);
+        sura_lebo_kulia(ulinzi, x + w - 16, ry + 1, 10);
+        i = i + 1;
+    }
+}
+
+// Mtazamo: msimamo wa baraza zima kwa mihimili mitano (-100..100), kisha
+// itikadi za maafisa wa dola kwa idadi.
+w0 ut_mtazamo(Mchezo* g, n64 taifa, n64 x, n64 y, n64 w, n64 h) {
+    sura_paneli(x, y, w, h, ui("OUTLOOK"));
+    Dola* d = skrini_siasa_dola(g, taifa);
+    TaifaNchi* tn = dunia_taifa_mfumo_pata_kwa_faharisi(mchezo_pata_taifa(g), taifa);
+    Wahusika* wh = 0;
+    kama (d != 0 && tn != 0) { wh = wahusika_wa_taifa(taifa, d, tn->idadi_ya_watu); }
+    kama (d == 0) { rudisha; }
+    n8 m[32];
+    n64 yy = y + 38;
+    n64 k = 0;
+    n64 xc = x + 110 + (w - 170) / 2;
+    wakati (k < MIHIMILI) {
+        n64 v = dola_msimamo(d, k, 0);
+        sura_rangi(SURA_HAFIFU);
+        sura_lebo(ut_mhimili_jina(k), x + 16, yy, 10);
+        turubai_brashi(sura_t, SURA_PANELI_JUU, 255);
+        turubai_jaza(sura_t, x + 110, yy + 5, w - 170, 4);
+        turubai_brashi(sura_t, 16777215, 60);
+        turubai_jaza(sura_t, xc, yy + 1, 1, 12);
+        n64 urefu = (v * ((w - 170) / 2)) / 100;
+        turubai_brashi(sura_t, SURA_BAHARI, 255);
+        kama (urefu >= 0) { turubai_jaza(sura_t, xc, yy + 5, urefu, 4); } sivyo { turubai_jaza(sura_t, xc + urefu, yy + 5, 0 - urefu, 4); }
+        kama (v > 0) { mfuatano_umbiza(m, 32, "+%d", v, 0, 0, 0, 0, 0); } sivyo { mfuatano_umbiza(m, 32, "%d", v, 0, 0, 0, 0, 0); }
+        sura_rangi(SURA_MAANDISHI);
+        sura_lebo_kulia(m, x + w - 16, yy, 10);
+        yy = yy + 20;
+        k = k + 1;
+    }
+    kama (wh == 0) { rudisha; }
+    yy = yy + 8;
+    sura_kichwa_cha_safuwima(ui("OFFICIALS BY IDEOLOGY"), x + 16, yy, 0);
+    yy = yy + 18;
+    n64* idadi = tenga(8 * ITIKADI_IDADI);
+    weka_sifuri(idadi, 8 * ITIKADI_IDADI);
+    n64 i = 0;
+    wakati (i < wh->idadi) {
+        n64 it = wahusika_pata(wh, i)->itikadi;
+        kama (it >= 0 && it < ITIKADI_IDADI) { idadi[it] = idadi[it] + 1; }
+        i = i + 1;
+    }
+    n64 juu = 1;
+    i = 0;
+    wakati (i < ITIKADI_IDADI) { kama (idadi[i] > juu) { juu = idadi[i]; } i = i + 1; }
+    // zilizo nyingi kwanza, hadi nafasi ijae
+    wakati (yy + 18 < y + h) {
+        n64 bora = 0 - 1;
+        i = 0;
+        wakati (i < ITIKADI_IDADI) { kama (idadi[i] > 0 && (bora < 0 || idadi[i] > idadi[bora])) { bora = i; } i = i + 1; }
+        kama (bora < 0) { yy = y + h; } sivyo {
+            sura_rangi(SURA_MAANDISHI);
+            turubai_kata(sura_t, x + 16, yy, 120, 18);
+            sura_lebo(itikadi_jina(bora), x + 16, yy, 10);
+            turubai_kata_yote(sura_t);
+            sura_pau(x + 140, yy + 5, w - 200, 4, (idadi[bora] * 1000) / juu, SURA_LAFUDHI);
+            sura_namba(m, idadi[bora]);
+            sura_lebo_kulia(m, x + w - 16, yy, 10);
+            idadi[bora] = 0;
+            yy = yy + 18;
+        }
+    }
+    achilia idadi;
+}
+
 w0 skrini_utamaduni_chora(Mchezo* g, Turubai* t, n64 taifa) {
     sura_anzisha(t);
     bofya_anza();
@@ -23,9 +153,9 @@ w0 skrini_utamaduni_chora(Mchezo* g, Turubai* t, n64 taifa) {
     jopo_weka_kituo(g, taifa);
     jopo_wigo_chora(t->upana - 24, y - 1);
     y = y + 66;
-    n64 gap = 16;
-    n64 cw = (w - 3 * gap) / 4;
-    n8 value[40];
+    n64 gap = 12;
+    n64 cw = (w - 5 * gap) / 6;
+    n8 value[64];
     n64 culture_count = 0;
     n64 faith_count = 0;
     n64 ideology_count = 0;
@@ -34,75 +164,38 @@ w0 skrini_utamaduni_chora(Mchezo* g, Turubai* t, n64 taifa) {
     kama (faiths != 0) { faith_count = faiths->idadi; }
     kama (ideologies != 0) { ideology_count = ideologies->idadi; }
     kama (diffusion != 0) { diffusion_count = diffusion->idadi_ya_matukio; }
-    sura_namba(value, culture_count);
-    sura_kadi(x, y, cw, ui("IDENTITIES"), value, 0);
-    sura_namba(value, faith_count);
-    sura_kadi(x + cw + gap, y, cw, ui("FAITHS"), value, 0);
-    sura_namba(value, ideology_count);
-    sura_kadi(x + 2 * (cw + gap), y, cw, ui("SCHOOLS OF THOUGHT"), value, 0);
-    sura_namba(value, diffusion_count);
-    sura_kadi(x + 3 * (cw + gap), y, cw, ui("DIFFUSION EVENTS"), value, 0);
+    sura_namba(value, tn->kielezo_cha_utamaduni);
+    sura_kadi(x, y, cw, ui("CULTURE INDEX"), value, 0);
+    n64 cheo = 1;
+    n64 tt = 0;
+    wakati (tt < tm->idadi) { kama (kipimo_thamani(g, tt, KIPIMO_UTAMADUNI) > tn->kielezo_cha_utamaduni) { cheo = cheo + 1; } tt = tt + 1; }
+    mfuatano_umbiza(value, 64, ui("%d of %d"), cheo, tm->idadi, 0, 0, 0, 0);
+    sura_kadi(x + (cw + gap), y, cw, ui("WORLD RANK"), value, 0);
+    Dola* d = skrini_siasa_dola(g, taifa);
+    nakili_mfuatano(value, "-");
+    kama (d != 0) { kama (d->aina == DOLA_UTAWALA_WA_KIDINI) { nakili_mfuatano(value, ui("State faith")); } sivyo { nakili_mfuatano(value, ui("Secular")); } }
+    sura_kadi(x + 2 * (cw + gap), y, cw, ui("RELIGION AND STATE"), value, 0);
+    nakili_mfuatano(value, "-");
+    n64 haki = 0;
+    kama (hati_taifa == taifa) {
+        Kifungu* sk = hati_tafuta(K_ALAMA, 5);
+        kama (sk != 0) { sura_namba(value, sk->p0); }
+        n64 i = 0;
+        wakati (i < UT_HAKI_IDADI) { Kifungu* k = hati_tafuta(K_HAKI, ut_haki(i)); kama (k != 0 && k->p0 == 0) { haki = haki + 1; } i = i + 1; }
+    }
+    sura_kadi(x + 3 * (cw + gap), y, cw, ui("PUBLIC HOLIDAYS"), value, 0);
+    mfuatano_umbiza(value, 64, ui("%d of %d"), haki, UT_HAKI_IDADI, 0, 0, 0, 0);
+    sura_kadi(x + 4 * (cw + gap), y, cw, ui("RIGHTS GUARANTEED"), value, 0);
+    mfuatano_umbiza(value, 64, "%d  ·  %d  ·  %d", culture_count, faith_count, ideology_count + diffusion_count, 0, 0, 0);
+    sura_kadi(x + 5 * (cw + gap), y, cw, ui("IDENTITIES · FAITHS · IDEAS"), value, 0);
     y = y + 108;
-    // utamaduni kati ya mataifa, kisha majirani na aina za utawala
-    jopo_safu_ya_dunia(g, taifa, KIPIMO_UTAMADUNI, KIPIMO_TEKNOLOJIA, x, y, w, 300);
-    y = y + 300 + 12;
+    n64 h_juu = ((t->kimo - y - 24) * 45) / 100;
+    jopo_safu_ya_dunia(g, taifa, KIPIMO_UTAMADUNI, KIPIMO_TEKNOLOJIA, x, y, w, h_juu);
+    y = y + h_juu + 12;
     n64 w4 = (w - 3 * 12) / 4;
     n64 h_chini = t->kimo - y - 24;
-    jopo_majirani(g, taifa, KIPIMO_UTAMADUNI, ui("NEIGHBOURS  ·  CULTURE"), x, y, w4, h_chini);
+    jopo_majirani(g, taifa, KIPIMO_UTAMADUNI, ui("NEARBY  ·  CULTURE"), x, y, w4, h_chini);
     jopo_kwa_utawala(g, taifa, KIPIMO_UTAMADUNI, ui("CULTURE BY FORM OF GOVERNMENT"), x + w4 + 12, y, w4, h_chini);
-    x = x + 2 * (w4 + 12);
-    w = w - 2 * (w4 + 12);
-    gap = 12;
-    n64 left_w = (w - gap) / 2;
-    n64 right_x = x + left_w + gap;
-    n64 right_w = w - left_w - gap;
-    n64 panel_h = t->kimo - y - 24;
-    sura_paneli(x, y, left_w, panel_h, ui("SOCIAL IDENTITY"));
-    sura_paneli(right_x, y, right_w, panel_h, ui("FAITHS AND SCHOOLS OF THOUGHT"));
-    kama (cultures == 0 || culture_count == 0) {
-        sura_hali_tupu(ui("No identities recorded"), ui("Cultural systems are ready; their data has not been generated yet."), 0,
-                       x + 12, y + 52, left_w - 24, panel_h - 64);
-    } sivyo {
-        n64 i = 0;
-        wakati (i < culture_count && i < 5) {
-            UtamaduniKitambulisho* c = utamaduni_kitambulisho_mfumo_pata(cultures, i);
-            n64 ry = y + 50 + i * 56;
-            sura_safu(x + 12, ry, left_w - 24, 50, i, 0);
-            sura_rangi(SURA_MAANDISHI);
-            sura_lebo(c->jina, x + 26, ry + 4, 13);
-            n8 cohesion[24];
-            sura_asilimia(cohesion, c->mshikamano * 1000.0, 0);
-            sura_mita(ui("Cohesion"), cohesion, x + 26, ry + 24, left_w - 54, c->mshikamano * 1000.0, SURA_BAHARI);
-            i = i + 1;
-        }
-    }
-    kama ((faiths == 0 || faith_count == 0) && (ideologies == 0 || ideology_count == 0)) {
-        sura_hali_tupu(ui("No faiths or ideologies yet"), ui("Faiths, values and outlooks appear once they emerge."), 0,
-                       right_x + 12, y + 52, right_w - 24, panel_h - 64);
-    } sivyo {
-        n64 row = 0;
-        wakati (faiths != 0 && row < faith_count && row < 4) {
-            UtamaduniDini* d = utamaduni_dini_mfumo_pata(faiths, row);
-            n64 ry = y + 50 + row * 46;
-            sura_safu(right_x + 12, ry, right_w - 24, 40, row, 0);
-            sura_rangi(SURA_MAANDISHI);
-            sura_lebo(d->jina, right_x + 26, ry + 5, 12);
-            sura_rangi(SURA_HAFIFU);
-            sura_lebo(ui("Trust"), right_x + right_w - 85, ry + 5, 10);
-            row = row + 1;
-        }
-        n64 base = y + 50 + row * 46;
-        n64 i = 0;
-        wakati (ideologies != 0 && i < ideology_count && i < 3 && base + (i + 1) * 44 < y + panel_h) {
-            UtamaduniItikadi* idea = utamaduni_itikadi_mfumo_pata(ideologies, i);
-            sura_safu(right_x + 12, base + i * 44, right_w - 24, 40, i, 0);
-            sura_rangi(SURA_MAANDISHI);
-            sura_lebo(idea->jina, right_x + 26, base + i * 44 + 5, 12);
-            n8 cohesion[24];
-            sura_asilimia(cohesion, idea->mshikamano * 1000.0, 0);
-            sura_rangi(SURA_HAFIFU);
-            sura_lebo(cohesion, right_x + right_w - 84, base + i * 44 + 5, 11);
-            i = i + 1;
-        }
-    }
+    ut_haki_jopo(g, taifa, x + 2 * (w4 + 12), y, w4, h_chini);
+    ut_mtazamo(g, taifa, x + 3 * (w4 + 12), y, w - 3 * (w4 + 12), h_chini);
 }

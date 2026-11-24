@@ -249,6 +249,6 @@ w0 skrini_jeshi_chora(Mchezo* g, Turubai* t, n64 taifa) {
     n64 w4 = (w - 3 * pengo) / 4;
     jopo_vyeo(g, taifa, TAWI_JESHI, ui("HIGH COMMAND"), x, y, w4, h_chini);
     jeshi_matawi(g, taifa, mwaka, x + (w4 + pengo), y, w4, h_chini);
-    jopo_majirani(g, taifa, KIPIMO_JESHI, ui("NEIGHBOURS  ·  MILITARY"), x + 2 * (w4 + pengo), y, w4, h_chini);
+    jopo_majirani(g, taifa, KIPIMO_JESHI, ui("NEARBY  ·  MILITARY"), x + 2 * (w4 + pengo), y, w4, h_chini);
     jeshi_vikosi(g, taifa, mwaka, x + 3 * (w4 + pengo), y, w - 3 * (w4 + pengo), h_chini);
 }

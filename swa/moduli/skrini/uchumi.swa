@@ -298,6 +298,6 @@ w0 skrini_uchumi_makro_chora(Mchezo* g, Turubai* t, n64 taifa, n64 y0) {
         jopo_nafasi(g, taifa, KIPIMO_KWA_MTU, ui("RANKING  ·  GDP PER CAPITA"), x, y_chini, w4, h_chini);
         jopo_mgawanyo(g, taifa, KIPIMO_UKUAJI, ui("DISTRIBUTION  ·  GROWTH, 1 YEAR"), x + w4 + pengo, y_chini, w4, h_chini);
         jopo_mtawanyiko(g, taifa, KIPIMO_WATU, KIPIMO_PATO, ui("NATIONS  ·  POPULATION / GDP"), x + 2 * (w4 + pengo), y_chini, w4, h_chini);
-        jopo_majirani(g, taifa, KIPIMO_PATO, ui("NEIGHBOURS  ·  GDP"), x + 3 * (w4 + pengo), y_chini, w - 3 * (w4 + pengo), h_chini);
+        jopo_majirani(g, taifa, KIPIMO_PATO, ui("NEARBY  ·  GDP"), x + 3 * (w4 + pengo), y_chini, w - 3 * (w4 + pengo), h_chini);
     }
 }
